@@ -325,6 +325,13 @@ securityForm.addEventListener("submit", async (e) => {
         }
     }
 
+    const btnSaveSecurity = document.getElementById("btnSaveSecurity");
+    const originalSecText = btnSaveSecurity ? btnSaveSecurity.innerText : "Update Credentials";
+    if (btnSaveSecurity) {
+        btnSaveSecurity.disabled = true;
+        btnSaveSecurity.innerHTML = '<span class="btn-spinner"></span> <span>Updating...</span>';
+    }
+
     try {
         const res = await fetch(`${API_BASE}/security/credentials`, {
             method: "POST",
@@ -349,6 +356,11 @@ securityForm.addEventListener("submit", async (e) => {
     } catch (err) {
         securityError.innerText = "Network error. Please try again.";
         securityError.style.display = "block";
+    } finally {
+        if (btnSaveSecurity) {
+            btnSaveSecurity.disabled = false;
+            btnSaveSecurity.innerHTML = originalSecText;
+        }
     }
 });
 
@@ -359,6 +371,19 @@ loginForm.addEventListener("submit", async (e) => {
     const username = document.getElementById("loginUsername").value.trim();
     const password = document.getElementById("loginPassword").value;
 
+    const originalBtnHtml = `
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+        <span>Sign In to Dashboard</span>
+    `;
+
+    // Immediate visual feedback to user click
+    btnLogin.disabled = true;
+    btnLogin.classList.add("is-loading");
+    btnLogin.innerHTML = `
+        <span class="btn-spinner"></span>
+        <span>Authenticating...</span>
+    `;
+
     try {
         const res = await fetch(`${API_BASE}/login`, {
             method: "POST",
@@ -366,14 +391,30 @@ loginForm.addEventListener("submit", async (e) => {
             body: JSON.stringify({ username, password })
         });
         const data = await res.json().catch(() => ({}));
+
         if (res.ok && data.ok) {
+            // Success visual confirmation
+            btnLogin.classList.remove("is-loading");
+            btnLogin.classList.add("is-success");
+            btnLogin.innerHTML = `
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                <span>Authenticated! Redirecting...</span>
+            `;
+
             if (lockoutCountdownTimer) {
                 clearInterval(lockoutCountdownTimer);
                 lockoutCountdownTimer = null;
             }
             lockoutAlert.style.display = "none";
-            showDashboard(data.username);
-            showToast(`Authenticated securely · Welcome, ${data.username}!`);
+
+            setTimeout(() => {
+                btnLogin.classList.remove("is-success");
+                btnLogin.disabled = false;
+                btnLogin.innerHTML = originalBtnHtml;
+                showDashboard(data.username);
+                showToast(`Authenticated securely · Welcome, ${data.username}!`);
+            }, 250);
+            return;
         } else if (res.status === 429) {
             const remaining = data.remaining_seconds || 900;
             startLockoutTimer(remaining);
@@ -382,10 +423,23 @@ loginForm.addEventListener("submit", async (e) => {
         } else {
             loginError.innerText = data.error || "Invalid username or password";
             loginError.style.display = "block";
+            // Tactile shake feedback on error
+            const card = document.querySelector(".login-card");
+            if (card) {
+                card.classList.remove("shake-anim");
+                void card.offsetWidth;
+                card.classList.add("shake-anim");
+            }
         }
     } catch (err) {
         loginError.innerText = "Connection error. Is the service running?";
         loginError.style.display = "block";
+    } finally {
+        if (!btnLogin.classList.contains("is-success")) {
+            btnLogin.classList.remove("is-loading");
+            btnLogin.disabled = false;
+            btnLogin.innerHTML = originalBtnHtml;
+        }
     }
 });
 
@@ -876,6 +930,13 @@ ruleForm.addEventListener("submit", async (e) => {
         ]
     };
 
+    const btnSaveRule = document.getElementById("btnSaveRule");
+    const originalSaveText = btnSaveRule ? btnSaveRule.innerText : "Save & Apply Changes";
+    if (btnSaveRule) {
+        btnSaveRule.disabled = true;
+        btnSaveRule.innerHTML = '<span class="btn-spinner"></span> <span>Applying...</span>';
+    }
+
     try {
         const res = await fetch(`${API_BASE}/rule`, {
             method: "POST",
@@ -892,6 +953,11 @@ ruleForm.addEventListener("submit", async (e) => {
         }
     } catch (err) {
         showToast("Error communicating with server", "error");
+    } finally {
+        if (btnSaveRule) {
+            btnSaveRule.disabled = false;
+            btnSaveRule.innerHTML = originalSaveText;
+        }
     }
 });
 

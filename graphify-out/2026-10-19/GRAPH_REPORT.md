@@ -1,17 +1,17 @@
 # Graph Report - Forward-Manager  (2026-10-19)
 
 ## Corpus Check
-- 45 files · ~25,251 words
+- 45 files · ~25,528 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 8 file(s) not represented in the graph (top: .service 4, (none) 2, .example 1)
 
 ## Summary
-- 446 nodes · 718 edges · 26 communities (25 shown, 1 thin omitted)
+- 447 nodes · 722 edges · 26 communities (25 shown, 1 thin omitted)
 - Extraction: 97% EXTRACTED · 3% INFERRED · 0% AMBIGUOUS · INFERRED: 19 edges (avg confidence: 0.95)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `d9d2384c`
+- Built from commit: `a53eb931`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -45,15 +45,15 @@
 
 ## God Nodes (most connected - your core abstractions)
 1. `XForwarderEngine` - 22 edges
-2. `XForwarderWebHandler` - 13 edges
-3. `xforwarder.sh script` - 12 edges
+2. `xforwarder.sh script` - 14 edges
+3. `XForwarderWebHandler` - 13 edges
 4. `modify_web_settings_menu()` - 12 edges
 5. `show_web_access_info()` - 12 edges
 6. `check_root()` - 11 edges
 7. `load_config()` - 10 edges
 8. `TestXForwarderSecurity` - 10 edges
 9. `msg_ok()` - 10 edges
-10. `install_xforwarder()` - 10 edges
+10. `msg_err()` - 10 edges
 
 ## Surprising Connections (you probably didn't know these)
 - `4. Invariants & Rules for AI Agents` --references--> `hash_password()`  [INFERRED]
@@ -86,15 +86,15 @@ Nodes (10): checkAuth(), escapeHtml(), fetchStatus(), formatLatencyBadge(), hand
 
 ### Community 4 - "web_server.py"
 Cohesion: 0.06
-Nodes (29): 4. Invariants & Rules for AI Agents, check_file(), main(), get_next_number(), main(), slugify(), load_state(), main() (+21 more)
+Nodes (28): check_file(), main(), get_next_number(), main(), slugify(), load_state(), main(), save_state() (+20 more)
 
 ### Community 5 - "🌐 XForwarder"
 Cohesion: 0.14
 Nodes (13): 🌐 XForwarder, روش اول — از طریق ترمینال سرور:, روش دوم — با دستور تک‌خطی از گیت‌هاب:, قانون عدم تداخل پورت‌ها (Zero-Collision Forwarding):, 📄 لایسنس (License), ⚡ ۱. نصب سریع با دستور تک‌خطی (Quick One-Liner Install), 🔄 ۲. بروزرسانی بدون قطعی (Zero-Downtime Update), 🏛 ۳. معماری و نحوه کارکرد سیستم (Architecture) (+5 more)
 
 ### Community 6 - "xforwarder.sh"
-Cohesion: 0.38
-Nodes (22): change_all_web_settings(), change_password(), change_web_password(), change_web_port(), change_web_secret_path(), change_web_username(), check_root(), detect_wan_iface() (+14 more)
+Cohesion: 0.37
+Nodes (23): change_all_web_settings(), change_password(), change_web_password(), change_web_port(), change_web_secret_path(), change_web_username(), check_root(), detect_wan_iface() (+15 more)
 
 ### Community 7 - "Workflow: Deploy & Update Services"
 Cohesion: 0.29
@@ -106,7 +106,7 @@ Nodes (25): 1. Project Overview & Terminology, 2. Non-Negotiable Architectural C
 
 ### Community 9 - "experiences/README.md"
 Cohesion: 0.06
-Nodes (27): 1. Context & Motivation, 2. Root Cause / Core Dynamics, 3. Architecture & Solution Implemented, 4. Invariants & Rules for AI Agents, 5. Verification & Testing, Experience 001: Zero-Collision HAProxy and NFTables Failover, 1. Context & Motivation, 2. Root Cause / Core Dynamics (+19 more)
+Nodes (28): 1. Context & Motivation, 2. Root Cause / Core Dynamics, 3. Architecture & Solution Implemented, 4. Invariants & Rules for AI Agents, 5. Verification & Testing, Experience 001: Zero-Collision HAProxy and NFTables Failover, 1. Context & Motivation, 2. Root Cause / Core Dynamics (+20 more)
 
 ### Community 10 - "Mandatory Task Completion & Verification Workflow (XForwarder)"
 Cohesion: 0.18
@@ -183,10 +183,10 @@ _Questions this graph is uniquely positioned to answer:_
 - **Should `TestXForwarderSecurity` be split into smaller, more focused modules?**
   _Cohesion score 0.11428571428571428 - nodes in this community are weakly interconnected._
 - **Why does `XForwarder Master Architecture Constitution` connect `.migrate_and_normalize_config` to `.agents/AGENTS.md`?**
-  _High betweenness centrality (0.099) - this node is a cross-community bridge._
+  _High betweenness centrality (0.098) - this node is a cross-community bridge._
 - **Should `app.js` be split into smaller, more focused modules?**
   _Cohesion score 0.03076923076923077 - nodes in this community are weakly interconnected._
 - **Should `XForwarderEngine` be split into smaller, more focused modules?**
   _Cohesion score 0.07682926829268293 - nodes in this community are weakly interconnected._
 - **Should `web_server.py` be split into smaller, more focused modules?**
-  _Cohesion score 0.056140350877192984 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.057297297297297295 - nodes in this community are weakly interconnected._

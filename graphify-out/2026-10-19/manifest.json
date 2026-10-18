@@ -90,9 +90,9 @@
     "semantic_hash": ""
   },
   "xforwarder.sh": {
-    "mtime": 1792359970.7533128,
-    "seen": 1792360478.6330378,
-    "ast_hash": "7f73f250ac92a38bda212c6926704e3e",
+    "mtime": 1792363452.2393417,
+    "seen": 1792363513.6470387,
+    "ast_hash": "41dfc499dff24d883c22fa27694a56ca",
     "semantic_hash": ""
   },
   ".agents/skills/xfwd-ops/SKILL.md": {
@@ -144,9 +144,9 @@
     "semantic_hash": ""
   },
   ".agents/session-state.json": {
-    "mtime": 1792353063.8490798,
-    "seen": 1792353087.6447773,
-    "ast_hash": "b56dc640cc777bcd8ff5b4fd1c89d600",
+    "mtime": 1792363558.1341307,
+    "seen": 1792363566.624913,
+    "ast_hash": "a6ab3f1b01261119dd1172149871407f",
     "semantic_hash": ""
   },
   ".agents/AGENTS.md": {
