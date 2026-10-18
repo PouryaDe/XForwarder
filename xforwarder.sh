@@ -7,6 +7,11 @@
 
 set -Eeuo pipefail
 
+# Reconnect stdin to terminal if piped (e.g. curl ... | bash)
+if [[ ! -t 0 && -e /dev/tty ]]; then
+    exec < /dev/tty 2>/dev/null || true
+fi
+
 SCRIPT_VERSION="1.3.0"
 INSTALL_DIR="/opt/xforwarder"
 CONFIG_DIR="/etc/xforwarder"
@@ -88,6 +93,17 @@ resolve_active_config() {
     else
         echo "$CONFIG_FILE"
     fi
+}
+
+is_installed() {
+    local active_cfg
+    active_cfg=$(resolve_active_config)
+    if [[ -f "$active_cfg" && -f "$INSTALL_DIR/core/engine.py" && -f "$INSTALL_DIR/core/web_server.py" ]]; then
+        return 0
+    elif [[ -f "$active_cfg" && -f "/opt/forward-manager/core/engine.py" ]]; then
+        return 0
+    fi
+    return 1
 }
 
 install_xforwarder() {
@@ -756,38 +772,92 @@ case "${1:-}" in
         install_xforwarder
         ;;
     update|upgrade)
-        update_xforwarder
+        if ! is_installed; then
+            echo
+            printf "%b=======================================================%b\n" "$CYAN" "$NC"
+            printf "%b   XForwarder is not installed on this system.%b\n" "$YELLOW" "$NC"
+            printf "%b   Starting initial installation wizard...%b\n" "$GREEN" "$NC"
+            printf "%b=======================================================%b\n\n" "$CYAN" "$NC"
+            install_xforwarder
+        else
+            update_xforwarder
+        fi
         ;;
     status)
+        if ! is_installed; then
+            msg_err "XForwarder is not installed. Please run installation first."
+            exit 1
+        fi
         show_status
         ;;
     url|web)
+        if ! is_installed; then
+            msg_err "XForwarder is not installed. Please run installation first."
+            exit 1
+        fi
         show_web_access_info
         ;;
     port)
+        if ! is_installed; then
+            msg_err "XForwarder is not installed. Please run installation first."
+            exit 1
+        fi
         change_web_port
         ;;
     username)
+        if ! is_installed; then
+            msg_err "XForwarder is not installed. Please run installation first."
+            exit 1
+        fi
         change_web_username
         ;;
     password)
+        if ! is_installed; then
+            msg_err "XForwarder is not installed. Please run installation first."
+            exit 1
+        fi
         change_web_password
         ;;
     path|secret)
+        if ! is_installed; then
+            msg_err "XForwarder is not installed. Please run installation first."
+            exit 1
+        fi
         change_web_secret_path
         ;;
     settings|web-config)
+        if ! is_installed; then
+            msg_err "XForwarder is not installed. Please run installation first."
+            exit 1
+        fi
         modify_web_settings_menu
         ;;
     restart)
+        if ! is_installed; then
+            msg_err "XForwarder is not installed. Please run installation first."
+            exit 1
+        fi
         systemctl restart "$DAEMON_SERVICE" "$WEB_SERVICE"
         msg_ok "XForwarder services restarted."
         ;;
     log|logs)
+        if ! is_installed; then
+            msg_err "XForwarder is not installed. Please run installation first."
+            exit 1
+        fi
         journalctl -u "$DAEMON_SERVICE" -f
         ;;
     "")
-        show_menu
+        if ! is_installed; then
+            echo
+            printf "%b=======================================================%b\n" "$CYAN" "$NC"
+            printf "%b   XForwarder is not installed on this system.%b\n" "$YELLOW" "$NC"
+            printf "%b   Starting initial installation wizard...%b\n" "$GREEN" "$NC"
+            printf "%b=======================================================%b\n\n" "$CYAN" "$NC"
+            install_xforwarder
+        else
+            show_menu
+        fi
         ;;
     *)
         echo "Usage: xforwarder {install|update|status|url|port|username|password|path|settings|restart|logs}"
