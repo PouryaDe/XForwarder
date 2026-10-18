@@ -474,7 +474,7 @@ body {
 /* ── Paths Row ── */
 .paths-grid {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
     gap: 14px;
 }
 
@@ -516,6 +516,10 @@ body {
 
 .path-tag-1 { background: rgba(99, 102, 241, 0.2); color: var(--accent-primary); }
 .path-tag-2 { background: rgba(245, 158, 11, 0.2); color: var(--accent-amber); }
+.path-tag-3 { background: rgba(6, 182, 212, 0.2); color: var(--accent-cyan); }
+.path-tag-4 { background: rgba(168, 85, 247, 0.2); color: #C084FC; }
+.path-tag-5 { background: rgba(236, 72, 153, 0.2); color: #F472B6; }
+.path-tag-n { background: rgba(156, 163, 175, 0.2); color: var(--text-secondary); }
 
 .path-status {
     font-size: 0.75rem;
@@ -645,8 +649,14 @@ body {
     border: 1px solid var(--border-color);
     border-radius: 12px;
     padding: 16px;
-    margin-bottom: 16px;
+    margin-bottom: 12px;
     background: rgba(11, 15, 25, 0.4);
+    position: relative;
+    transition: border-color 0.2s ease;
+}
+
+.priority-box:hover {
+    border-color: rgba(255, 255, 255, 0.15);
 }
 
 .priority-header {
@@ -659,7 +669,91 @@ body {
 .prio-tag { font-size: 0.78rem; font-weight: 700; padding: 3px 10px; border-radius: 6px; }
 .prio-tag-1 { background: rgba(99, 102, 241, 0.2); color: var(--accent-primary); }
 .prio-tag-2 { background: rgba(245, 158, 11, 0.2); color: var(--accent-amber); }
-.prio-sub { font-size: 0.75rem; color: var(--text-muted); }
+.prio-tag-3 { background: rgba(6, 182, 212, 0.2); color: var(--accent-cyan); }
+.prio-tag-4 { background: rgba(168, 85, 247, 0.2); color: #C084FC; }
+.prio-tag-5 { background: rgba(236, 72, 153, 0.2); color: #F472B6; }
+.prio-tag-n { background: rgba(156, 163, 175, 0.2); color: var(--text-secondary); }
+.prio-sub { font-size: 0.75rem; color: var(--text-muted); margin-left: 8px; }
+
+/* ── Dynamic Destinations Section ── */
+.destinations-section {
+    margin-top: 18px;
+    margin-bottom: 20px;
+    border-top: 1px solid var(--border-color);
+    padding-top: 16px;
+}
+
+.destinations-section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 14px;
+}
+
+.destinations-label {
+    display: block;
+    font-size: 0.92rem;
+    font-weight: 700;
+    color: #FFF;
+}
+
+.destinations-sub {
+    display: block;
+    font-size: 0.76rem;
+    color: var(--text-muted);
+    margin-top: 2px;
+}
+
+.destinations-container {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 14px;
+}
+
+.add-prio-btn {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    height: 40px;
+    border: 1px dashed rgba(99, 102, 241, 0.4);
+    background: rgba(99, 102, 241, 0.08);
+    color: #C7D2FE;
+    font-size: 0.85rem;
+    font-weight: 600;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.add-prio-btn:hover {
+    background: rgba(99, 102, 241, 0.18);
+    border-color: var(--accent-primary);
+    color: #FFF;
+}
+
+.btn-remove-prio {
+    background: rgba(239, 68, 68, 0.12);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    color: var(--accent-rose);
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 1.15rem;
+    line-height: 1;
+    transition: all 0.2s ease;
+}
+
+.btn-remove-prio:hover {
+    background: var(--accent-rose);
+    color: #FFF;
+}
 
 .modal-footer {
     display: flex;

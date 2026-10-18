@@ -270,62 +270,23 @@
                     </div>
                 </div>
 
-                <div class="priority-box priority-1">
-                    <div class="priority-header">
-                        <span class="prio-tag prio-tag-1">Priority 1 (Primary Uplink)</span>
-                        <span class="prio-sub">Standard operating path</span>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-group flex-1">
-                            <label>Engine Type</label>
-                            <select id="p1Type" class="form-control">
-                                <option value="haproxy">HAProxy (Direct Zero-Tunnel IPv6)</option>
-                                <option value="nginx">Nginx (Stream TCP/UDP Proxy)</option>
-                                <option value="nftables">NFTables (Kernel Tunnel DNAT)</option>
-                            </select>
-                        </div>
-                        <div class="form-group flex-2">
-                            <label>Destination Target IP / Host</label>
-                            <input type="text" id="p1Target" class="form-control" placeholder="2001:4ba0:cafe:84e::1" required>
-                        </div>
-                        <div class="form-group flex-1">
-                            <label>Target Port</label>
-                            <input type="number" id="p1Port" class="form-control" placeholder="Same as listen" min="1" max="65535">
+                <div class="destinations-section">
+                    <div class="destinations-section-header">
+                        <div>
+                            <span class="destinations-label">Failover Priority Chain</span>
+                            <span class="destinations-sub">Traffic cascades in order from Priority 1 to 2, 3, etc. on failure</span>
                         </div>
                     </div>
-                    <div class="form-group">
-                        <label>Comment / Label</label>
-                        <input type="text" id="p1Comment" class="form-control" placeholder="e.g. Foreign Server 1 - Primary IPv6">
-                    </div>
-                </div>
 
-                <div class="priority-box priority-2">
-                    <div class="priority-header">
-                        <span class="prio-tag prio-tag-2">Priority 2 (Failover Uplink)</span>
-                        <span class="prio-sub">Automatic standby path</span>
+                    <!-- Dynamic Destinations Container -->
+                    <div id="destinationsContainer" class="destinations-container">
+                        <!-- Injected via JavaScript -->
                     </div>
-                    <div class="form-row">
-                        <div class="form-group flex-1">
-                            <label>Engine Type</label>
-                            <select id="p2Type" class="form-control">
-                                <option value="nftables" selected>NFTables (Kernel Tunnel DNAT)</option>
-                                <option value="nginx">Nginx (Stream TCP/UDP Proxy)</option>
-                                <option value="haproxy">HAProxy (Alternative IPv6)</option>
-                            </select>
-                        </div>
-                        <div class="form-group flex-2">
-                            <label>Destination Target IP / Host</label>
-                            <input type="text" id="p2Target" class="form-control" placeholder="10.88.1.2" required>
-                        </div>
-                        <div class="form-group flex-1">
-                            <label>Target Port</label>
-                            <input type="number" id="p2Port" class="form-control" placeholder="Same as listen" min="1" max="65535">
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label>Comment / Label</label>
-                        <input type="text" id="p2Comment" class="form-control" placeholder="e.g. Backup FakeTCP/GRE Tunnel 10.88.1.2">
-                    </div>
+
+                    <button type="button" class="btn btn-secondary btn-block add-prio-btn" id="btnAddDestination">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                        <span>+ Add Another Failover Priority</span>
+                    </button>
                 </div>
 
                 <div class="modal-footer">

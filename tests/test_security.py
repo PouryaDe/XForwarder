@@ -186,6 +186,32 @@ class TestXForwarderSecurity(unittest.TestCase):
         self.assertTrue(validate_rule({"port": 1, "protocol": "tcp", "destinations": [{"target": "1.1.1.1", "port": 1}]})[0])
         self.assertTrue(validate_rule({"port": 65535, "protocol": "udp", "destinations": [{"target": "1.1.1.1", "port": 65535}]})[0])
 
+    def test_validate_rule_multi_priority_cascading(self):
+        """Verifies that arbitrary positive priority numbers (N-tier failover) are accepted and normalized."""
+        multi_rule = {
+            "port": 8443,
+            "protocol": "both",
+            "destinations": [
+                {"priority": 1, "type": "haproxy", "target": "2001:db8::1", "port": 8443},
+                {"priority": 2, "type": "nftables", "target": "10.88.1.2", "port": 8443},
+                {"priority": 3, "type": "haproxy", "target": "2001:db8::3", "port": 8443},
+                {"priority": 4, "type": "nftables", "target": "10.88.2.2", "port": 8443},
+                {"priority": 5, "type": "nginx", "target": "10.88.3.2", "port": 8443}
+            ]
+        }
+        ok, err = validate_rule(multi_rule)
+        self.assertTrue(ok, f"Multi-priority rule should validate, got error: {err}")
+        self.assertEqual(len(multi_rule["destinations"]), 5)
+        for i, d in enumerate(multi_rule["destinations"], start=1):
+            self.assertEqual(d["priority"], i)
+
+        # Invalid priority <= 0
+        self.assertFalse(validate_rule({"port": 443, "destinations": [{"priority": 0, "target": "1.1.1.1"}]})[0])
+        self.assertFalse(validate_rule({"port": 443, "destinations": [{"priority": -1, "target": "1.1.1.1"}]})[0])
+
+        # Non-integer priority string
+        self.assertFalse(validate_rule({"port": 443, "destinations": [{"priority": "first", "target": "1.1.1.1"}]})[0])
+
 
 if __name__ == "__main__":
     unittest.main()

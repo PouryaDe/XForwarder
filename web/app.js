@@ -558,12 +558,12 @@ function renderStats(rules, runtime) {
         const rId = String(r.id || `rule-${r.port}`);
         const rState = rulesState[rId] || {};
         const destStats = rState.dest_stats || {};
-        const d1Stat = destStats['prio_1'] || {};
-        const d1Healthy = (d1Stat.status === 'healthy');
+        const activeStat = destStats[`prio_${activePrio}`] || {};
+        const isHealthy = (activeStat.status === 'healthy');
 
-        if (activePrio === 1 && d1Healthy) {
+        if (activePrio === 1 && isHealthy) {
             p1ActiveCount++;
-        } else if (activePrio === 2) {
+        } else if (activePrio > 1) {
             p2ActiveCount++;
         } else {
             downCount++;
@@ -616,39 +616,33 @@ function renderRules(rules, runtime) {
         const portStr = String(rule.port || "");
         const protoStr = String(rule.protocol || "both").toLowerCase();
 
-        const d1 = (rule.destinations || []).find(d => d.priority === 1) || {};
-        const d2 = (rule.destinations || []).find(d => d.priority === 2) || {};
-        const d1Target = String(d1.target || "").toLowerCase();
-        const d2Target = String(d2.target || "").toLowerCase();
-        const d1Comment = String(d1.comment || "").toLowerCase();
-        const d2Comment = String(d2.comment || "").toLowerCase();
-
-        // 1. Search Query Check
+        // 1. Search Query Check across all destinations
         if (searchQuery) {
-            const matchesSearch = 
+            const matchesBasic = 
                 portStr.includes(searchQuery) ||
                 ruleId.includes(searchQuery) ||
-                protoStr.includes(searchQuery) ||
-                d1Target.includes(searchQuery) ||
-                d2Target.includes(searchQuery) ||
-                d1Comment.includes(searchQuery) ||
-                d2Comment.includes(searchQuery);
-            if (!matchesSearch) return false;
+                protoStr.includes(searchQuery);
+            const matchesDest = (rule.destinations || []).some(d =>
+                String(d.target || "").toLowerCase().includes(searchQuery) ||
+                String(d.comment || "").toLowerCase().includes(searchQuery) ||
+                String(d.type || "").toLowerCase().includes(searchQuery)
+            );
+            if (!matchesBasic && !matchesDest) return false;
         }
 
         // 2. Active Tab Filter Check
         const rState = rulesState[String(rule.id || `rule-${rule.port}`)] || {};
         const destStats = rState.dest_stats || {};
-        const d1Stat = destStats['prio_1'] || {};
-        const d1Healthy = (d1Stat.status === 'healthy');
         const activePriority = rule.active_priority || 1;
+        const activeStat = destStats[`prio_${activePriority}`] || {};
+        const activeHealthy = (activeStat.status === 'healthy');
 
         if (activeFilter === "p1") {
-            return activePriority === 1 && d1Healthy;
+            return activePriority === 1 && activeHealthy;
         } else if (activeFilter === "p2") {
-            return activePriority === 2;
+            return activePriority > 1;
         } else if (activeFilter === "down") {
-            return !d1Healthy && activePriority === 1;
+            return !activeHealthy;
         }
 
         return true;
@@ -672,24 +666,76 @@ function renderRules(rules, runtime) {
         const activePriority = rule.active_priority || 1;
         const forceOverride = rule.force_override || 0;
 
-        const d1 = (rule.destinations || []).find(d => d.priority === 1) || { type: 'haproxy', target: 'Not configured', port: rule.port };
-        const d2 = (rule.destinations || []).find(d => d.priority === 2) || { type: 'nftables', target: 'Not configured', port: rule.port };
-
-        const d1Stat = destStats['prio_1'] || {};
-        const d2Stat = destStats['prio_2'] || {};
-
-        const d1Healthy = (d1Stat.status === 'healthy');
-        const d2Healthy = (d2Stat.status === 'healthy');
-
-        const d1Target = String(d1.target || '');
-        const d2Target = String(d2.target || '');
-        const d1TargetDisplay = d1Target.includes(':') ? `[${escapeHtml(d1Target)}]` : escapeHtml(d1Target);
-        const d2TargetDisplay = d2Target.includes(':') ? `[${escapeHtml(d2Target)}]` : escapeHtml(d2Target);
-
-        const d1LatencyBadge = formatLatencyBadge(d1Stat);
-        const d2LatencyBadge = formatLatencyBadge(d2Stat);
+        const sortedDests = (rule.destinations && rule.destinations.length > 0)
+            ? [...rule.destinations].sort((a, b) => (a.priority || 1) - (b.priority || 1))
+            : [{ priority: 1, type: 'haproxy', target: 'Not configured', port: rule.port }];
 
         const copyPortSvg = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>`;
+
+        // Build dynamic override dropdown options
+        const overrideOptions = [
+            `<option value="0" ${forceOverride === 0 ? 'selected' : ''}>Mode: Auto Failover</option>`
+        ];
+        sortedDests.forEach(d => {
+            const p = d.priority || 1;
+            const t = escapeHtml(String(d.type || 'haproxy').toUpperCase());
+            const lbl = p === 1 ? `Force: Priority 1 (Primary · ${t})` : `Force: Priority ${p} (Failover · ${t})`;
+            overrideOptions.push(`<option value="${p}" ${forceOverride === p ? 'selected' : ''}>${lbl}</option>`);
+        });
+
+        // Build dynamic paths grid
+        const pathsHtml = sortedDests.map(dest => {
+            const prio = dest.priority || 1;
+            const isPrimary = prio === 1;
+            const isActive = prio === activePriority;
+            const isFailover = isActive && !isPrimary;
+
+            const stat = destStats[`prio_${prio}`] || {};
+            const isHealthy = (stat.status === 'healthy');
+            const isDown = (stat.status === 'failed' || stat.status === 'down');
+
+            let statusLabel = 'STANDBY';
+            let statusClass = 'status-standby';
+            if (isHealthy) {
+                statusLabel = 'HEALTHY';
+                statusClass = 'status-healthy';
+            } else if (isDown) {
+                statusLabel = 'DOWN / TIMEOUT';
+                statusClass = 'status-failed';
+            } else if (stat.status) {
+                statusLabel = String(stat.status).toUpperCase();
+            }
+
+            const rawTarget = String(dest.target || '');
+            const targetDisplay = rawTarget.includes(':') ? `[${escapeHtml(rawTarget)}]` : escapeHtml(rawTarget);
+            const latencyBadge = formatLatencyBadge(stat);
+            const tagClass = getPrioTagClass(prio);
+
+            const ribbonHtml = isActive
+                ? `<span class="active-ribbon" ${isFailover ? 'style="background:var(--accent-amber);"' : ''}>${isFailover ? `FAILOVER P${prio} ACTIVE` : 'ACTIVE ROUTE'}</span>`
+                : '';
+
+            return `
+                <div class="path-box ${isActive ? (isFailover ? 'is-failover' : 'is-active') : ''}">
+                    ${ribbonHtml}
+                    <div class="path-header">
+                        <span class="path-tag ${tagClass}">Priority ${prio} ${isPrimary ? '(Primary)' : '(Failover)'}</span>
+                        <span class="path-status ${statusClass}">
+                            <span class="status-indicator"></span>
+                            ${statusLabel}
+                        </span>
+                    </div>
+                    <div class="path-dest">
+                        <span>${escapeHtml(String(dest.type || 'haproxy').toUpperCase())}: ${targetDisplay}:${escapeHtml(dest.port || rule.port)}</span>
+                        <button class="btn-copy" onclick="copyText('${escapeHtml(rawTarget)}')" title="Copy Destination IP">${copyPortSvg}</button>
+                    </div>
+                    <div class="path-meta">
+                        <span>${escapeHtml(dest.comment || (isPrimary ? 'Primary uplink' : `Failover path ${prio}`))}</span>
+                        ${latencyBadge}
+                    </div>
+                </div>
+            `;
+        }).join('');
 
         return `
             <div class="rule-card">
@@ -701,9 +747,7 @@ function renderRules(rules, runtime) {
                     </div>
                     <div class="rule-actions">
                         <select class="form-control" style="width:auto;padding:6px 12px;font-size:0.8rem;" onchange="handleOverrideChange(decodeURIComponent('${encodedId}'), this.value)">
-                            <option value="0" ${forceOverride === 0 ? 'selected' : ''}>Mode: Auto Failover</option>
-                            <option value="1" ${forceOverride === 1 ? 'selected' : ''}>Force: Priority 1</option>
-                            <option value="2" ${forceOverride === 2 ? 'selected' : ''}>Force: Priority 2</option>
+                            ${overrideOptions.join('')}
                         </select>
                         <button class="btn btn-secondary btn-sm" onclick="editRule(decodeURIComponent('${encodedId}'))" title="Edit Rule">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
@@ -715,45 +759,7 @@ function renderRules(rules, runtime) {
                 </div>
 
                 <div class="paths-grid">
-                    <!-- Priority 1 Path Box -->
-                    <div class="path-box ${activePriority === 1 ? 'is-active' : ''}">
-                        ${activePriority === 1 ? '<span class="active-ribbon">ACTIVE ROUTE</span>' : ''}
-                        <div class="path-header">
-                            <span class="path-tag path-tag-1">Priority 1 (Primary)</span>
-                            <span class="path-status ${d1Healthy ? 'status-healthy' : 'status-failed'}">
-                                <span class="status-indicator"></span>
-                                ${d1Healthy ? 'HEALTHY' : 'DOWN / TIMEOUT'}
-                            </span>
-                        </div>
-                        <div class="path-dest">
-                            <span>${escapeHtml(String(d1.type || 'haproxy').toUpperCase())}: ${d1TargetDisplay}:${escapeHtml(d1.port || rule.port)}</span>
-                            <button class="btn-copy" onclick="copyText('${escapeHtml(d1Target)}')" title="Copy Destination IP">${copyPortSvg}</button>
-                        </div>
-                        <div class="path-meta">
-                            <span>${escapeHtml(d1.comment || 'Primary uplink')}</span>
-                            ${d1LatencyBadge}
-                        </div>
-                    </div>
-
-                    <!-- Priority 2 Path Box -->
-                    <div class="path-box ${activePriority === 2 ? 'is-failover' : ''}">
-                        ${activePriority === 2 ? '<span class="active-ribbon" style="background:var(--accent-amber);">FAILOVER ACTIVE</span>' : ''}
-                        <div class="path-header">
-                            <span class="path-tag path-tag-2">Priority 2 (Failover)</span>
-                            <span class="path-status ${d2Healthy ? 'status-healthy' : 'status-standby'}">
-                                <span class="status-indicator"></span>
-                                ${d2Healthy ? 'HEALTHY' : 'STANDBY'}
-                            </span>
-                        </div>
-                        <div class="path-dest">
-                            <span>${escapeHtml(String(d2.type || 'nftables').toUpperCase())}: ${d2TargetDisplay}:${escapeHtml(d2.port || rule.port)}</span>
-                            <button class="btn-copy" onclick="copyText('${escapeHtml(d2Target)}')" title="Copy Destination IP">${copyPortSvg}</button>
-                        </div>
-                        <div class="path-meta">
-                            <span>${escapeHtml(d2.comment || 'Backup tunnel')}</span>
-                            ${d2LatencyBadge}
-                        </div>
-                    </div>
+                    ${pathsHtml}
                 </div>
             </div>
         `;
@@ -847,43 +853,186 @@ btnManualRefresh.addEventListener("click", () => {
     });
 });
 
+// ── Dynamic Multi-Priority Destination Management ──
+let currentModalDestinations = [];
+
+function getPrioTagClass(prio) {
+    if (prio === 1) return "prio-tag-1";
+    if (prio === 2) return "prio-tag-2";
+    if (prio === 3) return "prio-tag-3";
+    if (prio === 4) return "prio-tag-4";
+    if (prio === 5) return "prio-tag-5";
+    return "prio-tag-n";
+}
+
+function getPrioSubtitle(prio) {
+    if (prio === 1) return "Standard primary path";
+    if (prio === 2) return "1st failover standby path";
+    if (prio === 3) return "2nd failover standby path";
+    return `Priority ${prio} failover standby path`;
+}
+
+function renderDestinationRow(dest, index, totalCount) {
+    const prio = index + 1;
+    const isPrimary = prio === 1;
+    const type = dest.type || (isPrimary ? "haproxy" : "nftables");
+    const target = dest.target || "";
+    const port = dest.port !== undefined && dest.port !== null ? dest.port : "";
+    const comment = dest.comment || "";
+    const canRemove = totalCount > 1;
+
+    const div = document.createElement("div");
+    div.className = `priority-box priority-${prio}`;
+    div.dataset.index = index;
+
+    div.innerHTML = `
+        <div class="priority-header">
+            <div>
+                <span class="prio-tag ${getPrioTagClass(prio)}">Priority ${prio} ${isPrimary ? "(Primary)" : "(Failover)"}</span>
+                <span class="prio-sub">${getPrioSubtitle(prio)}</span>
+            </div>
+            ${canRemove ? `
+            <button type="button" class="btn-remove-prio" title="Remove this priority path" onclick="removeDestinationRow(${index})">
+                &times;
+            </button>` : ""}
+        </div>
+        <div class="form-row">
+            <div class="form-group flex-1">
+                <label>Engine Type</label>
+                <select class="form-control dest-type">
+                    <option value="haproxy" ${type === "haproxy" ? "selected" : ""}>HAProxy (Direct Zero-Tunnel IPv6)</option>
+                    <option value="nginx" ${type === "nginx" ? "selected" : ""}>Nginx (Stream TCP/UDP Proxy)</option>
+                    <option value="nftables" ${type === "nftables" ? "selected" : ""}>NFTables (Kernel Tunnel DNAT)</option>
+                </select>
+            </div>
+            <div class="form-group flex-2">
+                <label>Destination Target IP / Host</label>
+                <input type="text" class="form-control dest-target" placeholder="${isPrimary ? '2001:4ba0:cafe:84e::1' : '10.88.1.2'}" value="${escapeHtml(target)}" required>
+            </div>
+            <div class="form-group flex-1">
+                <label>Target Port</label>
+                <input type="number" class="form-control dest-port" placeholder="Same as listen" min="1" max="65535" value="${escapeHtml(port)}">
+            </div>
+        </div>
+        <div class="form-group" style="margin-bottom:0;">
+            <label>Comment / Label</label>
+            <input type="text" class="form-control dest-comment" placeholder="e.g. ${isPrimary ? 'Foreign Server 1 - Primary IPv6' : 'Backup Tunnel Node ' + prio}" value="${escapeHtml(comment)}">
+        </div>
+    `;
+    return div;
+}
+
+function syncDestinationsFromDom() {
+    const container = document.getElementById("destinationsContainer");
+    if (!container) return;
+    const boxes = container.querySelectorAll(".priority-box");
+    const updated = [];
+    boxes.forEach((box, idx) => {
+        const typeEl = box.querySelector(".dest-type");
+        const targetEl = box.querySelector(".dest-target");
+        const portEl = box.querySelector(".dest-port");
+        const commentEl = box.querySelector(".dest-comment");
+        updated.push({
+            priority: idx + 1,
+            type: typeEl ? typeEl.value : (idx === 0 ? "haproxy" : "nftables"),
+            target: targetEl ? targetEl.value : "",
+            port: portEl ? portEl.value : "",
+            comment: commentEl ? commentEl.value : ""
+        });
+    });
+    if (updated.length > 0) {
+        currentModalDestinations = updated;
+    }
+}
+
+function renderDestinationsList() {
+    const container = document.getElementById("destinationsContainer");
+    if (!container) return;
+    container.innerHTML = "";
+    if (!currentModalDestinations || currentModalDestinations.length === 0) {
+        currentModalDestinations = [
+            { priority: 1, type: "haproxy", target: "", port: "", comment: "Primary Direct IPv6" },
+            { priority: 2, type: "nftables", target: "", port: "", comment: "Backup Tunnel" }
+        ];
+    }
+    currentModalDestinations.forEach((dest, idx) => {
+        container.appendChild(renderDestinationRow(dest, idx, currentModalDestinations.length));
+    });
+}
+
+function addDestinationRow() {
+    syncDestinationsFromDom();
+    const nextPrio = currentModalDestinations.length + 1;
+    const listenPort = document.getElementById("formPort").value.trim();
+    currentModalDestinations.push({
+        priority: nextPrio,
+        type: nextPrio % 2 === 0 ? "nftables" : "haproxy",
+        target: "",
+        port: listenPort || "",
+        comment: `Backup Priority ${nextPrio}`
+    });
+    renderDestinationsList();
+}
+
+function removeDestinationRow(index) {
+    syncDestinationsFromDom();
+    if (currentModalDestinations.length <= 1) {
+        showToast("At least one priority destination is required", "error");
+        return;
+    }
+    currentModalDestinations.splice(index, 1);
+    renderDestinationsList();
+}
+
+const btnAddDestination = document.getElementById("btnAddDestination");
+if (btnAddDestination) {
+    btnAddDestination.addEventListener("click", addDestinationRow);
+}
+
 // Port Auto-Fill in Modal Form
 const formPortInput = document.getElementById("formPort");
 formPortInput.addEventListener("input", () => {
     const val = formPortInput.value.trim();
-    const p1Port = document.getElementById("p1Port");
-    const p2Port = document.getElementById("p2Port");
-    if (!p1Port.value || p1Port.value === previousPortVal) {
-        p1Port.value = val;
-    }
-    if (!p2Port.value || p2Port.value === previousPortVal) {
-        p2Port.value = val;
+    const container = document.getElementById("destinationsContainer");
+    if (container) {
+        const portInputs = container.querySelectorAll(".dest-port");
+        portInputs.forEach(input => {
+            if (!input.value || input.value === previousPortVal) {
+                input.value = val;
+            }
+        });
     }
     previousPortVal = val;
 });
 
 // Modal Preset Scenario Buttons
 document.getElementById("presetHaproxyGre").addEventListener("click", () => {
-    document.getElementById("p1Type").value = "haproxy";
-    document.getElementById("p1Comment").value = "Primary Direct IPv6";
-    document.getElementById("p2Type").value = "nftables";
-    document.getElementById("p2Comment").value = "Backup GRE/FakeTCP Tunnel";
+    const listenPort = document.getElementById("formPort").value.trim();
+    currentModalDestinations = [
+        { priority: 1, type: "haproxy", target: "", port: listenPort, comment: "Primary Direct IPv6" },
+        { priority: 2, type: "nftables", target: "", port: listenPort, comment: "Backup GRE/FakeTCP Tunnel" }
+    ];
+    renderDestinationsList();
     showToast("Preset applied: HAProxy IPv6 + GRE/FakeTCP");
 });
 
 document.getElementById("presetNginxTunnel").addEventListener("click", () => {
-    document.getElementById("p1Type").value = "nginx";
-    document.getElementById("p1Comment").value = "Primary Nginx Stream Proxy";
-    document.getElementById("p2Type").value = "nftables";
-    document.getElementById("p2Comment").value = "Backup Layer 3 Tunnel";
+    const listenPort = document.getElementById("formPort").value.trim();
+    currentModalDestinations = [
+        { priority: 1, type: "nginx", target: "", port: listenPort, comment: "Primary Nginx Stream Proxy" },
+        { priority: 2, type: "nftables", target: "", port: listenPort, comment: "Backup Layer 3 Tunnel" }
+    ];
+    renderDestinationsList();
     showToast("Preset applied: Nginx Proxy + Tunnel");
 });
 
 document.getElementById("presetDualHaproxy").addEventListener("click", () => {
-    document.getElementById("p1Type").value = "haproxy";
-    document.getElementById("p1Comment").value = "Foreign Exit Node 1";
-    document.getElementById("p2Type").value = "haproxy";
-    document.getElementById("p2Comment").value = "Foreign Exit Node 2";
+    const listenPort = document.getElementById("formPort").value.trim();
+    currentModalDestinations = [
+        { priority: 1, type: "haproxy", target: "", port: listenPort, comment: "Foreign Exit Node 1" },
+        { priority: 2, type: "haproxy", target: "", port: listenPort, comment: "Foreign Exit Node 2" }
+    ];
+    renderDestinationsList();
     showToast("Preset applied: Dual Direct IPv6");
 });
 
@@ -894,8 +1043,11 @@ btnOpenAddModal.addEventListener("click", () => {
     previousPortVal = "";
     document.getElementById("editRuleId").value = "";
     document.getElementById("formProto").value = "both";
-    document.getElementById("p1Type").value = "haproxy";
-    document.getElementById("p2Type").value = "nftables";
+    currentModalDestinations = [
+        { priority: 1, type: "haproxy", target: "", port: "", comment: "Primary Direct IPv6" },
+        { priority: 2, type: "nftables", target: "", port: "", comment: "Backup Tunnel" }
+    ];
+    renderDestinationsList();
     ruleModal.classList.add("show");
 });
 
@@ -916,19 +1068,15 @@ function editRule(ruleId) {
     previousPortVal = String(r.port);
     document.getElementById("formProto").value = r.protocol || "both";
 
-    const d1 = (r.destinations || []).find(d => d.priority === 1) || {};
-    const d2 = (r.destinations || []).find(d => d.priority === 2) || {};
-
-    document.getElementById("p1Type").value = d1.type || "haproxy";
-    document.getElementById("p1Target").value = d1.target || "";
-    document.getElementById("p1Port").value = d1.port || r.port;
-    document.getElementById("p1Comment").value = d1.comment || "";
-
-    document.getElementById("p2Type").value = d2.type || "nftables";
-    document.getElementById("p2Target").value = d2.target || "";
-    document.getElementById("p2Port").value = d2.port || r.port;
-    document.getElementById("p2Comment").value = d2.comment || "";
-
+    if (r.destinations && r.destinations.length > 0) {
+        currentModalDestinations = JSON.parse(JSON.stringify(r.destinations)).sort((a, b) => (a.priority || 1) - (b.priority || 1));
+    } else {
+        currentModalDestinations = [
+            { priority: 1, type: "haproxy", target: "", port: r.port, comment: "Primary Uplink" },
+            { priority: 2, type: "nftables", target: "", port: r.port, comment: "Backup Tunnel" }
+        ];
+    }
+    renderDestinationsList();
     ruleModal.classList.add("show");
 }
 
@@ -961,8 +1109,21 @@ ruleForm.addEventListener("submit", async (e) => {
     const proto = document.getElementById("formProto").value;
     const ruleId = document.getElementById("editRuleId").value || `rule-${port}`;
 
-    const p1PortVal = document.getElementById("p1Port").value;
-    const p2PortVal = document.getElementById("p2Port").value;
+    syncDestinationsFromDom();
+
+    if (!currentModalDestinations || currentModalDestinations.length === 0) {
+        showToast("At least one destination path is required", "error");
+        return;
+    }
+
+    // Validate all destinations
+    for (let i = 0; i < currentModalDestinations.length; i++) {
+        const d = currentModalDestinations[i];
+        if (!d.target || !d.target.trim()) {
+            showToast(`Target IP/Host for Priority ${i + 1} is required`, "error");
+            return;
+        }
+    }
 
     const payload = {
         id: ruleId,
@@ -970,22 +1131,13 @@ ruleForm.addEventListener("submit", async (e) => {
         protocol: proto,
         active_priority: 1,
         force_override: 0,
-        destinations: [
-            {
-                priority: 1,
-                type: document.getElementById("p1Type").value,
-                target: document.getElementById("p1Target").value.trim(),
-                port: p1PortVal ? parseInt(p1PortVal) : port,
-                comment: document.getElementById("p1Comment").value.trim()
-            },
-            {
-                priority: 2,
-                type: document.getElementById("p2Type").value,
-                target: document.getElementById("p2Target").value.trim(),
-                port: p2PortVal ? parseInt(p2PortVal) : port,
-                comment: document.getElementById("p2Comment").value.trim()
-            }
-        ]
+        destinations: currentModalDestinations.map((d, idx) => ({
+            priority: idx + 1,
+            type: d.type || (idx === 0 ? "haproxy" : "nftables"),
+            target: d.target.trim(),
+            port: d.port ? parseInt(d.port) : port,
+            comment: (d.comment || "").trim()
+        }))
     };
 
     const btnSaveRule = document.getElementById("btnSaveRule");

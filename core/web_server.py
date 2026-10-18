@@ -339,6 +339,15 @@ def validate_rule(body: dict) -> Tuple[bool, str]:
         except (ValueError, TypeError):
             return False, "Destination port must be a valid integer"
 
+        prio = d.get("priority", 1)
+        try:
+            prio = int(prio)
+            if prio < 1:
+                return False, "Destination priority must be 1 or greater"
+            d["priority"] = prio
+        except (ValueError, TypeError):
+            return False, "Destination priority must be a valid integer"
+
     return True, ""
 
 
@@ -789,8 +798,8 @@ class XForwarderWebHandler(BaseHTTPRequestHandler):
                 self.send_json({"ok": False, "error": "Invalid force_override value"}, 400)
                 return
 
-            if override_prio not in (0, 1, 2):
-                self.send_json({"ok": False, "error": "force_override must be 0, 1, or 2"}, 400)
+            if override_prio < 0:
+                self.send_json({"ok": False, "error": "force_override cannot be negative"}, 400)
                 return
 
             cfg = load_config()
@@ -818,8 +827,8 @@ class XForwarderWebHandler(BaseHTTPRequestHandler):
                 self.send_json({"ok": False, "error": "Invalid force_override value"}, 400)
                 return
 
-            if override_prio not in (0, 1, 2):
-                self.send_json({"ok": False, "error": "force_override must be 0, 1, or 2"}, 400)
+            if override_prio < 0:
+                self.send_json({"ok": False, "error": "force_override cannot be negative"}, 400)
                 return
 
             cfg = load_config()
