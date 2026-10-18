@@ -1,6 +1,6 @@
-# 🌐 Forward Manager (مدیر هوشمند اولویت‌بندی، رله و فورواردینگ تونل‌ها)
+# 🌐 XForwarder (مدیر هوشمند اولویت‌بندی، رله و فورواردینگ تونل‌ها)
 
-**Forward Manager** یک سیستم یکپارچه، سبک و قدرتمند برای مدیریت چندمسیره (Multi-Path Priority)، رله مستقیم IPv4 به IPv6 (HAProxy) و فال‌بک خودکار روی تونل‌های لایه ۳ کرنل (NFTables DNAT) در سرور واسط ایران به همراه **پنل تحت وب ۲۴/۷ آنلاین و محافظت‌شده با نام کاربری و رمز عبور** است.
+**XForwarder** یک سیستم یکپارچه، سبک و قدرتمند برای مدیریت چندمسیره (Multi-Path Priority)، رله مستقیم IPv4 به IPv6 (HAProxy) و فال‌بک خودکار روی تونل‌های لایه ۳ کرنل (NFTables DNAT) در سرور واسط ایران به همراه **پنل تحت وب ۲۴/۷ آنلاین و محافظت‌شده با نام کاربری و رمز عبور** است.
 
 ---
 
@@ -35,24 +35,24 @@
    * امنیت ورود از طریق فرم لاگین زیبا، سشن‌های امن و هشینگ رمز عبور تامین می‌شود.
 2. **مدیریت بدون تداخل پورت‌ها (Zero-Collision Forwarding):**
    * برای هر پورت، در صورتی که مسیر اصلی (`HAProxy`) فعال باشد، فقط HAProxy روی آن پورت گوش می‌دهد و رول‌های NFTables حذف می‌شوند.
-   * به محض قطعی مسیر اصلی، ترافیک آن پورت توسط رول‌های اختصاصی `table ip fwdman_orchestrator` در لایه هسته لینوکس به تونل هدایت می‌شود.
+   * به محض قطعی مسیر اصلی، ترافیک آن پورت توسط رول‌های اختصاصی `table ip xfwd_orchestrator` در لایه هسته لینوکس به تونل هدایت می‌شود.
 3. **پشتیبانی کامل از تمام تونل‌های XManager:**
    * سازگار با [FakeTCP/Phantun](../Tunnels/FakeTCP-Phantun)، [AmneziaWG](../Tunnels/AmneziaWG)، [IPIP](../Tunnels/IPIP-FOU)، [GRE](../Tunnels/GRE-FOU) و [XDP](../Tunnels/XDP-eBPF).
 4. **تغییر آسان رمز عبور از ترمینال:**
-   * در هر زمان می‌توانید با دستور `forward-manager password` نام کاربری یا رمز عبور پنل را تغییر دهید.
+   * در هر زمان می‌توانید با دستور `xforwarder password` (یا `xfwd password`) نام کاربری یا رمز عبور پنل را تغییر دهید.
 
 ---
 
 ## 📦 ۳. راهنمای نصب و راه‌اندازی
 
-فایل‌های این سیستم در مسیر [`Forward-Manager/`](./) قرار دارند.
+فایل‌های این سیستم در مسیر [`XForwarder/`](./) قرار دارند.
 
 ### اجرای اسکریپت نصب:
 روی سرور ایران دستور زیر را اجرا کنید:
 ```bash
-cd Forward-Manager
-chmod +x forward-manager.sh
-sudo ./forward-manager.sh install
+cd XForwarder
+chmod +x xforwarder.sh
+sudo ./xforwarder.sh install
 ```
 
 **در طول نصب، اسکریپت اطلاعات زیر را از شما می‌پرسد:**
@@ -65,16 +65,16 @@ sudo ./forward-manager.sh install
 
 ## 🛠 ۴. دستورات خط فرمان (CLI Commands)
 
-پس از نصب، می‌توانید از هر دو دستور `forward-manager` یا نام کوتاه `fwdman` استفاده کنید:
+پس از نصب، می‌توانید از هر دو دستور `xforwarder` یا نام کوتاه `xfwd` استفاده کنید (همچنین نام‌های قدیمی `forward-manager` و `fwdman` برای سازگاری کامل پشتیبانی می‌شوند):
 
-| دستور | توضیح عملکرد |
-| :--- | :--- |
-| `sudo forward-manager` | باز کردن منوی تعاملی مدیریتی |
-| `sudo forward-manager url` | نمایش آدرس ورود به پنل وب و نام کاربری |
-| `sudo forward-manager status` | نمایش جدول زنده وضعیت پورت‌ها و مسیرهای فعال در ترمینال |
-| `sudo forward-manager password` | تغییر سریع نام‌کاربری و رمز عبور پنل وب |
-| `sudo forward-manager restart` | راه‌اندازی مجدد هر دو سرویس هسته و پنل وب |
-| `sudo forward-manager logs` | مشاهده لاگ زنده بررسی اتصالات و تصمیمات سوئیچینگ |
+| دستور | دستور کوتاه | توضیح عملکرد |
+| :--- | :--- | :--- |
+| `sudo xforwarder` | `sudo xfwd` | باز کردن منوی تعاملی مدیریتی |
+| `sudo xforwarder url` | `sudo xfwd url` | نمایش آدرس ورود به پنل وب و نام کاربری |
+| `sudo xforwarder status` | `sudo xfwd status` | نمایش جدول زنده وضعیت پورت‌ها و مسیرهای فعال در ترمینال |
+| `sudo xforwarder password` | `sudo xfwd password` | تغییر سریع نام‌کاربری و رمز عبور پنل وب |
+| `sudo xforwarder restart` | `sudo xfwd restart` | راه‌اندازی مجدد هر دو سرویس هسته و پنل وب |
+| `sudo xforwarder logs` | `sudo xfwd logs` | مشاهده لاگ زنده بررسی اتصالات و تصمیمات سوئیچینگ |
 
 ---
 

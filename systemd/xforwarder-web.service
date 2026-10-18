@@ -1,0 +1,16 @@
+[Unit]
+Description=XForwarder - Always-Online Web UI Dashboard
+After=network.target xforwarder.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/opt/xforwarder
+ExecStart=/usr/bin/python3 /opt/xforwarder/core/web_server.py
+Restart=always
+RestartSec=3
+LimitNOFILE=65535
+
+[Install]
+WantedBy=multi-user.target

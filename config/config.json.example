@@ -6,7 +6,7 @@
   "web": {
     "bind_host": "0.0.0.0",
     "port": 8090,
-    "secret_path": "fwd-admin",
+    "secret_path": "xfwd-admin",
     "auth": {
       "username": "admin",
       "password_hash": "8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918"
@@ -58,6 +58,30 @@
           "port": 2024,
           "tunnel_iface": "ipip1",
           "comment": "Foreign Server 2 - Backup IPIP Tunnel"
+        }
+      ]
+    },
+    {
+      "id": "rule-2025",
+      "port": 2025,
+      "protocol": "both",
+      "active_priority": 1,
+      "force_override": 0,
+      "destinations": [
+        {
+          "priority": 1,
+          "type": "nginx",
+          "target": "89.163.231.17",
+          "port": 2025,
+          "comment": "Foreign Server 3 - Nginx Stream TCP/UDP"
+        },
+        {
+          "priority": 2,
+          "type": "nftables",
+          "target": "10.88.3.2",
+          "port": 2025,
+          "tunnel_iface": "gre2",
+          "comment": "Foreign Server 3 - Backup Tunnel"
         }
       ]
     }

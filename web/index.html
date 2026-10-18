@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Forward Manager - Multi-Path Tunnel Failover</title>
+    <title>XForwarder - Multi-Path Tunnel Failover</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
@@ -15,7 +15,7 @@
         <div class="login-card">
             <div class="login-header">
                 <div class="logo-orb"></div>
-                <h2>Forward Manager</h2>
+                <h2>XForwarder</h2>
                 <p>Enter your credentials to access the relay dashboard</p>
             </div>
             <form id="loginForm">
@@ -33,7 +33,7 @@
                 </button>
             </form>
             <div class="login-footer">
-                <span>Protected by Kernel Space & HAProxy Sync Engine</span>
+                <span>Protected by Kernel Space & HAProxy Sync Engine · XForwarder</span>
             </div>
         </div>
     </div>
@@ -45,7 +45,7 @@
             <div class="brand">
                 <div class="logo-orb"></div>
                 <div>
-                    <h1>Forward Manager</h1>
+                    <h1>XForwarder</h1>
                     <span class="subtitle">Multi-Path Priority & Zero-Collision Failover</span>
                 </div>
             </div>
@@ -80,7 +80,7 @@
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
                 </div>
                 <div class="stat-content">
-                    <span class="stat-title">Active HAProxy (IPv6)</span>
+                    <span class="stat-title">Active Proxy (HA / Nginx)</span>
                     <span class="stat-number text-emerald" id="statActiveHaproxy">0</span>
                 </div>
             </div>
@@ -161,6 +161,7 @@
                             <label>Engine Type</label>
                             <select id="p1Type" class="form-control">
                                 <option value="haproxy">HAProxy (Direct Zero-Tunnel IPv6)</option>
+                                <option value="nginx">Nginx (Stream TCP/UDP Proxy)</option>
                                 <option value="nftables">NFTables (Kernel Tunnel DNAT)</option>
                             </select>
                         </div>
@@ -189,6 +190,7 @@
                             <label>Engine Type</label>
                             <select id="p2Type" class="form-control">
                                 <option value="nftables" selected>NFTables (Kernel Tunnel DNAT)</option>
+                                <option value="nginx">Nginx (Stream TCP/UDP Proxy)</option>
                                 <option value="haproxy">HAProxy (Alternative IPv6)</option>
                             </select>
                         </div>

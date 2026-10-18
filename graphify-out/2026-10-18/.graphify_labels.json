@@ -1,0 +1,22 @@
+{
+  "0": "web_server.py",
+  "1": "app.js",
+  "2": "XForwarderEngine",
+  "3": "forward-manager.sh",
+  "4": "engine.py",
+  "5": "🌐 XForwarder (مدیر هوشمند اولویت‌بندی، رله و فورواردینگ تونل‌ها)",
+  "6": "xforwarder.sh",
+  "7": "Workflow: Deploy & Update Services",
+  "8": "XForwarder - Agent Development Guide",
+  "9": "Experience 001: Zero-Collision HAProxy and NFTables Failover",
+  "10": ".agents/AGENTS.md",
+  "11": "XForwarder Operations Runbook",
+  "12": "Workflow: Diagnose Failover & Forwarding",
+  "13": "Mandatory Task Completion & Verification Workflow (XForwarder)",
+  "14": "The 8-Point Audit Checklist",
+  "15": "Bash CLI & Deployment Standards (`xforwarder.sh`)",
+  "16": "2. Mandatory Helper Centralization",
+  "17": "Systematic Debugging Skill (XForwarder)",
+  "18": "UI Design & Consistency Standards (`web/`)",
+  "19": "Architecture & Failover Rules (XForwarder)"
+}

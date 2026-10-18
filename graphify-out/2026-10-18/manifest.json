@@ -1,0 +1,254 @@
+{
+  "core/engine.py": {
+    "mtime": 1792350692.0397182,
+    "seen": 1792350981.047374,
+    "ast_hash": "55797df4d8babb1facc8b774bcf178ad",
+    "semantic_hash": ""
+  },
+  "core/web_server.py": {
+    "mtime": 1792350726.0094278,
+    "seen": 1792350981.0473754,
+    "ast_hash": "5e7e7d945a77c0f1012c73db2563a860",
+    "semantic_hash": ""
+  },
+  "forward-manager.sh": {
+    "mtime": 1792347847.7379842,
+    "seen": 1792348157.3854742,
+    "ast_hash": "809b9fe89ee9450421611265fb172585",
+    "semantic_hash": ""
+  },
+  "web/app.js": {
+    "mtime": 1792350824.4220684,
+    "seen": 1792350981.0473769,
+    "ast_hash": "51940bf40da2dfa077fdb1ed4756b024",
+    "semantic_hash": ""
+  },
+  ".agents/rules/01-architecture-and-failover.md": {
+    "mtime": 1792347955.5340915,
+    "seen": 1792348157.3854773,
+    "ast_hash": "9b09f6e8aa760ee4efccb5b4350d4192",
+    "semantic_hash": ""
+  },
+  ".agents/rules/02-python-core-standards.md": {
+    "mtime": 1792347984.8156204,
+    "seen": 1792348157.3854783,
+    "ast_hash": "fee0149b32e7917be666fd1ad3c291df",
+    "semantic_hash": ""
+  },
+  ".agents/rules/03-networking-and-kernel.md": {
+    "mtime": 1792348002.5309405,
+    "seen": 1792348157.385479,
+    "ast_hash": "a37cd15c8bead77f11f43685590cdbbe",
+    "semantic_hash": ""
+  },
+  ".agents/rules/04-web-dashboard-and-security.md": {
+    "mtime": 1792348020.7326992,
+    "seen": 1792348157.3854795,
+    "ast_hash": "e709f5d7effbcd4c98f536a8e7a0ed14",
+    "semantic_hash": ""
+  },
+  ".agents/rules/05-bash-and-deployment.md": {
+    "mtime": 1792348037.2116804,
+    "seen": 1792348157.3854802,
+    "ast_hash": "8123cc0bfab5bdee1fe36b679e731b6b",
+    "semantic_hash": ""
+  },
+  ".agents/skills/fwdman-ops/SKILL.md": {
+    "mtime": 1792348127.2555373,
+    "seen": 1792348157.3854809,
+    "ast_hash": "ee40f8cd37f3196f47c6bf9657fa60ec",
+    "semantic_hash": ""
+  },
+  ".agents/workflows/add-port-rule.md": {
+    "mtime": 1792348055.5331516,
+    "seen": 1792348157.3854825,
+    "ast_hash": "5cd40b04548fc61f1c80382fce0a7e60",
+    "semantic_hash": ""
+  },
+  ".agents/workflows/deploy-update.md": {
+    "mtime": 1792348089.9337482,
+    "seen": 1792348157.3854833,
+    "ast_hash": "d73d9b537816ef4d4093ef021578ccf3",
+    "semantic_hash": ""
+  },
+  ".agents/workflows/diagnose-failover.md": {
+    "mtime": 1792348072.9829156,
+    "seen": 1792348157.385484,
+    "ast_hash": "c9a5c064363f82304fc4424f36ce97f6",
+    "semantic_hash": ""
+  },
+  "AGENTS.md": {
+    "mtime": 1792349325.0376449,
+    "seen": 1792349408.1540382,
+    "ast_hash": "a78ccb51b9f94898802e895333aa3c6c",
+    "semantic_hash": ""
+  },
+  "README.md": {
+    "mtime": 1792347917.0777445,
+    "seen": 1792348157.3854856,
+    "ast_hash": "dc86e5812d501255982e4d9c256c213a",
+    "semantic_hash": ""
+  },
+  "web/index.html": {
+    "mtime": 1792350802.8637445,
+    "seen": 1792350981.0474012,
+    "ast_hash": "49bf5e81527d90cb6905fca41e93532e",
+    "semantic_hash": ""
+  },
+  "xforwarder.sh": {
+    "mtime": 1792350900.0703273,
+    "seen": 1792350981.0473776,
+    "ast_hash": "76d97de721fb84490d80c85fa46dca28",
+    "semantic_hash": ""
+  },
+  ".agents/skills/xfwd-ops/SKILL.md": {
+    "mtime": 1792348109.846702,
+    "seen": 1792348157.3854818,
+    "ast_hash": "e69191f52cace07ea84db973675ab073",
+    "semantic_hash": ""
+  },
+  ".agents/hooks.json": {
+    "mtime": 1792348621.0990813,
+    "seen": 1792349408.153998,
+    "ast_hash": "e9991d2c30a569c43123b20ea205f1f2",
+    "semantic_hash": ""
+  },
+  ".agents/mcp_config.json": {
+    "mtime": 1792348589.1917596,
+    "seen": 1792349408.1540015,
+    "ast_hash": "b0f49174a7c00d2a2fe5b4b35f8f9bec",
+    "semantic_hash": ""
+  },
+  ".agents/scripts/check-anti-patterns.py": {
+    "mtime": 1792348722.8004282,
+    "seen": 1792349408.154003,
+    "ast_hash": "01a54d0f0e663909570d2c4de352d828",
+    "semantic_hash": ""
+  },
+  ".agents/scripts/log-experience.py": {
+    "mtime": 1792348780.7586334,
+    "seen": 1792349408.1540036,
+    "ast_hash": "f73698ce1a5553d5199f878deb42fdcd",
+    "semantic_hash": ""
+  },
+  ".agents/scripts/session-state.py": {
+    "mtime": 1792348694.2259066,
+    "seen": 1792349408.154005,
+    "ast_hash": "c284ba00324c7ec0cf1312824a04cfbf",
+    "semantic_hash": ""
+  },
+  ".agents/scripts/syntax-check.py": {
+    "mtime": 1792348668.6924257,
+    "seen": 1792349408.154006,
+    "ast_hash": "bb7dce37bb6cda4bafe5c54d8d8d85b4",
+    "semantic_hash": ""
+  },
+  ".agents/scripts/verify-all.py": {
+    "mtime": 1792348751.3010542,
+    "seen": 1792349408.1540065,
+    "ast_hash": "0f0213fadccdb817c900233fb7597c81",
+    "semantic_hash": ""
+  },
+  ".agents/session-state.json": {
+    "mtime": 1792349350.0756097,
+    "seen": 1792349408.1540072,
+    "ast_hash": "6f6bb5516ea2cea80edcbf9dee460a29",
+    "semantic_hash": ""
+  },
+  ".agents/AGENTS.md": {
+    "mtime": 1792349272.090695,
+    "seen": 1792349408.1540163,
+    "ast_hash": "fa6c0c3f416fbb066066e031efa961cd",
+    "semantic_hash": ""
+  },
+  ".agents/experiences/001-zero-collision-haproxy-nftables-failover.md": {
+    "mtime": 1792348827.4347548,
+    "seen": 1792349408.154017,
+    "ast_hash": "dc97faf456e180abaf6fe75a4c5b710e",
+    "semantic_hash": ""
+  },
+  ".agents/experiences/002-atomic-file-persistence-and-tmp-renaming.md": {
+    "mtime": 1792348854.868511,
+    "seen": 1792349408.1540182,
+    "ast_hash": "8b2751d37d32d81cd310b83d82b020b0",
+    "semantic_hash": ""
+  },
+  ".agents/experiences/003-native-python-zero-dependency-web-server.md": {
+    "mtime": 1792348880.6073322,
+    "seen": 1792349408.1540186,
+    "ast_hash": "4b8c83b72689c7a32a24006fde0e399f",
+    "semantic_hash": ""
+  },
+  ".agents/experiences/README.md": {
+    "mtime": 1792348917.9482849,
+    "seen": 1792349408.1540194,
+    "ast_hash": "bcb1554dc7f619b911c53bc22bf8cff9",
+    "semantic_hash": ""
+  },
+  ".agents/rules/blast-radius-analysis.md": {
+    "mtime": 1792348979.3641906,
+    "seen": 1792349408.1540246,
+    "ast_hash": "2859b9ac59d05d06ed660d922a5c25c0",
+    "semantic_hash": ""
+  },
+  ".agents/rules/clean-code-dry.md": {
+    "mtime": 1792349061.9817238,
+    "seen": 1792349408.1540256,
+    "ast_hash": "2b8c11c1ffa45b3329c2af137ace9f32",
+    "semantic_hash": ""
+  },
+  ".agents/rules/experience-logging.md": {
+    "mtime": 1792349178.3894684,
+    "seen": 1792349408.154026,
+    "ast_hash": "e3dc50afeb3f4c3efafc0fd1dc2bd310",
+    "semantic_hash": ""
+  },
+  ".agents/rules/large-files-handling.md": {
+    "mtime": 1792349088.6752212,
+    "seen": 1792349408.154027,
+    "ast_hash": "7135f2364b01061693910bce9e42fde9",
+    "semantic_hash": ""
+  },
+  ".agents/rules/mandatory-checklist.md": {
+    "mtime": 1792348949.5603757,
+    "seen": 1792349408.154028,
+    "ast_hash": "414d88d6d8b21525599a3d7eb8faa2ae",
+    "semantic_hash": ""
+  },
+  ".agents/rules/relay-vps-constraints.md": {
+    "mtime": 1792349114.4253712,
+    "seen": 1792349408.154029,
+    "ast_hash": "18a9522468f1aa4095bfaf9c8b5b6dcf",
+    "semantic_hash": ""
+  },
+  ".agents/rules/reverse-prompting.md": {
+    "mtime": 1792349010.6001937,
+    "seen": 1792349408.1540296,
+    "ast_hash": "7a4af4151df611c0772a6cf8e86eb5d8",
+    "semantic_hash": ""
+  },
+  ".agents/rules/session-handoff.md": {
+    "mtime": 1792349036.1291327,
+    "seen": 1792349408.15403,
+    "ast_hash": "9e820773b99c1acb31f736c569646c0e",
+    "semantic_hash": ""
+  },
+  ".agents/rules/ui-design-consistency.md": {
+    "mtime": 1792349141.8408692,
+    "seen": 1792349408.154031,
+    "ast_hash": "0ae22ca31ec9de32fdf81c8369427116",
+    "semantic_hash": ""
+  },
+  ".agents/skills/code-review-audit/SKILL.md": {
+    "mtime": 1792349207.859202,
+    "seen": 1792349408.1540315,
+    "ast_hash": "d0ed182ef2bb576e80879aa6a3d151a9",
+    "semantic_hash": ""
+  },
+  ".agents/skills/systematic-debugging/SKILL.md": {
+    "mtime": 1792349235.260502,
+    "seen": 1792349408.1540334,
+    "ast_hash": "05269c62977ee87325576bef06ae1a53",
+    "semantic_hash": ""
+  }
+}

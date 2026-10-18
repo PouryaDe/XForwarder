@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Forward Manager - Core Engine Daemon
+XForwarder - Core Engine Daemon
 Monitors uplink destinations (IPv6 HAProxy vs IPv4 NFTables tunnels),
 manages automatic failover, and dynamically synchronizes kernel NAT and user-space daemons.
 """
@@ -15,14 +15,17 @@ import threading
 import signal
 from typing import Dict, List, Any, Optional
 
-DEFAULT_CONFIG_PATH = "/etc/forward-manager/config.json"
+DEFAULT_CONFIG_PATH = "/etc/xforwarder/config.json"
+LEGACY_CONFIG_PATH = "/etc/forward-manager/config.json"
 LOCAL_CONFIG_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "config", "config.json")
-STATE_FILE_PATH = "/run/forward-manager/state.json"
+STATE_FILE_PATH = "/run/xforwarder/state.json"
+LEGACY_STATE_FILE_PATH = "/run/forward-manager/state.json"
 HAPROXY_CONF_PATH = "/etc/haproxy/haproxy.cfg"
 UDP_CONF_PATH = "/etc/haproxy/forwarder-udp.conf"
+NGINX_CONF_PATH = "/etc/nginx/nginx.conf"
 
 
-class ForwardManagerEngine:
+class XForwarderEngine:
     def __init__(self, config_path: Optional[str] = None):
         self.config_path = self._resolve_config_path(config_path)
         self.running = False
@@ -34,11 +37,13 @@ class ForwardManagerEngine:
             "wan_interface": "unknown",
             "active_services": {
                 "haproxy": False,
+                "nginx": False,
                 "udp_stream": False,
                 "nftables": False
             },
             "rules_state": {}
         }
+        self._last_applied_rules: Optional[str] = None
         self.load_config()
 
     def _resolve_config_path(self, override_path: Optional[str]) -> str:
@@ -46,6 +51,8 @@ class ForwardManagerEngine:
             return override_path
         if os.path.exists(DEFAULT_CONFIG_PATH):
             return DEFAULT_CONFIG_PATH
+        if os.path.exists(LEGACY_CONFIG_PATH):
+            return LEGACY_CONFIG_PATH
         if os.path.exists(LOCAL_CONFIG_PATH):
             return LOCAL_CONFIG_PATH
         example_path = LOCAL_CONFIG_PATH + ".example"
@@ -68,7 +75,7 @@ class ForwardManagerEngine:
                         "web": {
                             "bind_host": "0.0.0.0",
                             "port": 8090,
-                            "secret_path": "fwd-admin",
+                            "secret_path": "xfwd-admin",
                             "auth": {
                                 "username": "admin",
                                 "password_hash": ""
@@ -100,7 +107,8 @@ class ForwardManagerEngine:
             return configured
 
         try:
-            out = subprocess.check_output("ip -o route show default", shell=True, text=True).strip()
+            cmd = ["ip", "-o", "route", "show", "default"]
+            out = subprocess.check_output(cmd, text=True, stderr=subprocess.DEVNULL).strip()
             parts = out.split()
             if "dev" in parts:
                 idx = parts.index("dev")
@@ -116,10 +124,10 @@ class ForwardManagerEngine:
 
     def check_destination(self, dest: Dict[str, Any]) -> Dict[str, Any]:
         """Perform a low-overhead health check on a target destination."""
-        target = dest.get("target", "")
+        target = str(dest.get("target", "")).strip()
         port = int(dest.get("port", 0))
         dest_type = dest.get("type", "haproxy")
-        start_time = time.time()
+        start_time = time.perf_counter()
         healthy = False
 
         if not target or port <= 0:
@@ -136,12 +144,14 @@ class ForwardManagerEngine:
 
         if not healthy and dest_type == "nftables":
             try:
-                ping_cmd = f"ping -c 1 -W 1 {target} >/dev/null 2>&1"
-                healthy = (subprocess.call(ping_cmd, shell=True) == 0)
+                # Safe ping probe without shell injection
+                if all(c in "0123456789abcdefABCDEF:.-" for c in target):
+                    ping_cmd = ["ping", "-n", "1", "-w", "1000", target] if sys.platform == "win32" else ["ping", "-c", "1", "-W", "1", target]
+                    healthy = (subprocess.call(ping_cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL) == 0)
             except Exception:
                 healthy = False
 
-        latency_ms = round((time.time() - start_time) * 1000, 1)
+        latency_ms = round((time.perf_counter() - start_time) * 1000, 1)
         return {
             "healthy": healthy,
             "latency_ms": latency_ms if healthy else 0.0
@@ -214,16 +224,30 @@ class ForwardManagerEngine:
         rule["active_priority"] = target_active
         return state_changed
 
+    def _get_rules_fingerprint(self) -> str:
+        rules = self.config.get("rules", [])
+        return json.dumps([
+            {
+                "id": r.get("id"),
+                "port": r.get("port"),
+                "protocol": r.get("protocol"),
+                "active_priority": r.get("active_priority"),
+                "force_override": r.get("force_override", 0),
+                "destinations": r.get("destinations")
+            } for r in rules
+        ], sort_keys=True)
+
     def sync_firewall_and_proxies(self) -> None:
         wan_iface = self._detect_wan_interface()
         haproxy_entries = []
         udp_entries = []
+        nginx_entries = []
         nft_dnat_rules = []
 
         rules = self.config.get("rules", [])
         for rule in rules:
             port = rule.get("port")
-            proto = rule.get("protocol", "both").lower()
+            proto = str(rule.get("protocol", "both")).lower()
             active_prio = rule.get("active_priority", 1)
 
             dest = None
@@ -236,46 +260,69 @@ class ForwardManagerEngine:
             if not dest:
                 continue
 
-            target = dest.get("target")
+            target = str(dest.get("target", "")).strip()
             target_port = dest.get("port", port)
             dest_type = dest.get("type", "haproxy")
+            target_str = f"[{target}]:{target_port}" if ":" in target else f"{target}:{target_port}"
+            comment_clean = str(dest.get("comment") or rule.get("id") or f"Port {port}").replace("\n", " ").replace("\r", "")
 
             if dest_type == "haproxy":
                 if proto in ("tcp", "both"):
                     haproxy_entries.append(
                         f"listen fwd_{port}\n"
                         f"    bind *:{port}\n"
-                        f"    server srv_{port} [{target}]:{target_port} send-proxy-v2\n"
+                        f"    server srv_{port} {target_str} send-proxy-v2\n"
                     )
                 if proto in ("udp", "both"):
                     udp_entries.append(
                         f"    server {{\n"
                         f"        listen {port} udp reuseport;\n"
-                        f"        proxy_pass [{target}]:{target_port};\n"
+                        f"        proxy_pass {target_str};\n"
                         f"    }}\n"
                     )
+            elif dest_type == "nginx":
+                # Nginx Stream TCP/UDP Forwarding (XManager Standard)
+                if proto in ("both", ""):
+                    nginx_entries.append(
+                        f"    # [{comment_clean}]\n"
+                        f"    server {{ listen {port} reuseport; listen {port} udp; proxy_pass {target_str}; }}"
+                    )
+                elif proto == "tcp":
+                    nginx_entries.append(
+                        f"    # [{comment_clean}]\n"
+                        f"    server {{ listen {port} reuseport; proxy_pass {target_str}; }}"
+                    )
+                elif proto == "udp":
+                    nginx_entries.append(
+                        f"    # [{comment_clean}]\n"
+                        f"    server {{ listen {port} udp reuseport; proxy_pass {target_str}; }}"
+                    )
             elif dest_type == "nftables":
-                if proto in ("tcp", "both"):
-                    nft_dnat_rules.append(
-                        f'        iifname "{wan_iface}" tcp dport {port} dnat to {target}:{target_port}'
-                    )
-                if proto in ("udp", "both"):
-                    nft_dnat_rules.append(
-                        f'        iifname "{wan_iface}" udp dport {port} dnat to {target}:{target_port}'
-                    )
+                # NFTables DNAT in IPv4 table expects valid IPv4 tunnel target
+                if ":" not in target:
+                    if proto in ("tcp", "both"):
+                        nft_dnat_rules.append(
+                            f'        iifname "{wan_iface}" tcp dport {port} dnat to {target}:{target_port}'
+                        )
+                    if proto in ("udp", "both"):
+                        nft_dnat_rules.append(
+                            f'        iifname "{wan_iface}" udp dport {port} dnat to {target}:{target_port}'
+                        )
 
         self._apply_nftables(nft_dnat_rules)
         self._apply_haproxy(haproxy_entries, udp_entries)
+        self._apply_nginx(nginx_entries)
         self._save_state_file()
+        self._last_applied_rules = self._get_rules_fingerprint()
 
     def _apply_nftables(self, dnat_rules: List[str]) -> None:
         dnat_block = "\n".join(dnat_rules) if dnat_rules else "        # No active NFTables DNAT rules"
         nft_content = f"""#!/usr/sbin/nft -f
-# Generated by Forward-Manager Core Engine
-table ip fwdman_orchestrator
-delete table ip fwdman_orchestrator
+# Generated by XForwarder Core Engine
+table ip xfwd_orchestrator
+delete table ip xfwd_orchestrator
 
-table ip fwdman_orchestrator {{
+table ip xfwd_orchestrator {{
     chain prerouting {{
         type nat hook prerouting priority dstnat; policy accept;
 {dnat_block}
@@ -294,6 +341,9 @@ table ip fwdman_orchestrator {{
 }}
 """
         try:
+            # Clean up legacy table if exists
+            subprocess.run(["nft", "delete", "table", "ip", "fwdman_orchestrator"],
+                           stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False)
             proc = subprocess.Popen(["nft", "-c", "-f", "-"], stdin=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
             out, err = proc.communicate(input=nft_content)
             if proc.returncode == 0:
@@ -306,10 +356,11 @@ table ip fwdman_orchestrator {{
             pass
 
     def _apply_haproxy(self, haproxy_entries: List[str], udp_entries: List[str]) -> None:
-        if not os.path.exists(os.path.dirname(HAPROXY_CONF_PATH)):
+        haproxy_dir = os.path.dirname(HAPROXY_CONF_PATH)
+        if not os.path.exists(haproxy_dir):
             return
 
-        base_haproxy = """# Generated by Forward-Manager
+        base_haproxy = """# Generated by XForwarder
 global
     log /dev/log local0
     log /dev/log local1 notice
@@ -335,16 +386,19 @@ defaults
 """ + "\n".join(haproxy_entries)
 
         try:
-            with open(HAPROXY_CONF_PATH, "w", encoding="utf-8") as f:
+            tmp_haproxy = f"{HAPROXY_CONF_PATH}.tmp.{os.getpid()}"
+            with open(tmp_haproxy, "w", encoding="utf-8") as f:
                 f.write(base_haproxy)
+            os.replace(tmp_haproxy, HAPROXY_CONF_PATH)
 
             subprocess.call("systemctl reload haproxy >/dev/null 2>&1 || systemctl restart haproxy >/dev/null 2>&1", shell=True)
             self.runtime_state["active_services"]["haproxy"] = bool(haproxy_entries)
         except Exception:
             pass
 
-        if udp_entries and os.path.exists(os.path.dirname(UDP_CONF_PATH)):
-            udp_content = f"""# Generated by Forward-Manager UDP Forwarder
+        udp_dir = os.path.dirname(UDP_CONF_PATH)
+        if udp_entries and os.path.exists(udp_dir):
+            udp_content = f"""# Generated by XForwarder UDP Forwarder
 user www-data;
 worker_processes auto;
 worker_rlimit_nofile 1048576;
@@ -364,45 +418,144 @@ stream {{
 }}
 """
             try:
-                with open(UDP_CONF_PATH, "w", encoding="utf-8") as f:
+                tmp_udp = f"{UDP_CONF_PATH}.tmp.{os.getpid()}"
+                with open(tmp_udp, "w", encoding="utf-8") as f:
                     f.write(udp_content)
+                os.replace(tmp_udp, UDP_CONF_PATH)
                 subprocess.call("systemctl reload haproxy-forwarder-udp >/dev/null 2>&1 || systemctl restart haproxy-forwarder-udp >/dev/null 2>&1", shell=True)
                 self.runtime_state["active_services"]["udp_stream"] = True
             except Exception:
                 pass
+        elif not udp_entries:
+            self.runtime_state["active_services"]["udp_stream"] = False
+
+    def _apply_nginx(self, nginx_entries: List[str]) -> None:
+        nginx_dir = os.path.dirname(NGINX_CONF_PATH)
+        if not os.path.exists(nginx_dir):
+            return
+
+        stream_body = "\n".join(nginx_entries) if nginx_entries else "    # No active Nginx stream servers"
+
+        nginx_content = f"""# Generated by XForwarder Engine (XManager Standard)
+user www-data;
+worker_processes auto;
+pid /run/nginx.pid;
+include /etc/nginx/modules-enabled/*.conf;
+
+worker_rlimit_nofile 300000;
+
+events {{
+    worker_connections 65535;
+    use epoll;
+    multi_accept on;
+    accept_mutex off;
+}}
+
+stream {{
+    access_log off;
+    error_log /dev/null crit;
+
+    proxy_connect_timeout 5s;
+    proxy_timeout 10m;
+    proxy_socket_keepalive on;
+    tcp_nodelay on;
+
+    proxy_responses 1;
+
+{stream_body}
+}}
+
+http {{
+    sendfile on;
+    tcp_nopush on;
+    types_hash_max_size 2048;
+    include /etc/nginx/mime.types;
+    default_type application/octet-stream;
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_prefer_server_ciphers on;
+    access_log off;
+    error_log off;
+    gzip on;
+    include /etc/nginx/conf.d/*.conf;
+    include /etc/nginx/sites-enabled/*;
+}}
+"""
+        try:
+            tmp_nginx = f"{NGINX_CONF_PATH}.tmp.{os.getpid()}"
+            with open(tmp_nginx, "w", encoding="utf-8") as f:
+                f.write(nginx_content)
+
+            # Validate Nginx syntax before applying
+            test_res = subprocess.run(
+                ["nginx", "-t", "-c", tmp_nginx],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.PIPE,
+                text=True
+            )
+            if test_res.returncode == 0:
+                os.replace(tmp_nginx, NGINX_CONF_PATH)
+                subprocess.call("systemctl reload nginx >/dev/null 2>&1 || systemctl restart nginx >/dev/null 2>&1", shell=True)
+                self.runtime_state["active_services"]["nginx"] = bool(nginx_entries)
+            else:
+                if os.path.exists(tmp_nginx):
+                    os.remove(tmp_nginx)
+                # If nginx is installed but test with temp file has include issues, fallback to atomic replace
+                if "open() \"/etc/nginx/modules-enabled/" not in test_res.stderr:
+                    os.replace(tmp_nginx if os.path.exists(tmp_nginx) else NGINX_CONF_PATH, NGINX_CONF_PATH)
+                    subprocess.call("systemctl reload nginx >/dev/null 2>&1 || systemctl restart nginx >/dev/null 2>&1", shell=True)
+                    self.runtime_state["active_services"]["nginx"] = bool(nginx_entries)
+                else:
+                    print(f"[WARN] Nginx syntax check warning: {test_res.stderr}", file=sys.stderr)
+        except Exception:
+            pass
 
     def _save_state_file(self) -> None:
         try:
-            os.makedirs(os.path.dirname(STATE_FILE_PATH), exist_ok=True)
-            with open(STATE_FILE_PATH, "w", encoding="utf-8") as f:
-                json.dump({
-                    "config": self.config,
-                    "runtime": self.runtime_state,
-                    "updated_at": time.time()
-                }, f, indent=2, ensure_ascii=False)
+            for s_path in [STATE_FILE_PATH, LEGACY_STATE_FILE_PATH]:
+                s_dir = os.path.dirname(s_path)
+                if s_path == LEGACY_STATE_FILE_PATH and not os.path.exists(s_dir):
+                    continue
+                os.makedirs(s_dir, exist_ok=True)
+                tmp_path = f"{s_path}.tmp.{os.getpid()}"
+                with open(tmp_path, "w", encoding="utf-8") as f:
+                    json.dump({
+                        "config": self.config,
+                        "runtime": self.runtime_state,
+                        "updated_at": time.time()
+                    }, f, indent=2, ensure_ascii=False)
+                os.replace(tmp_path, s_path)
         except Exception:
             pass
 
     def run_loop(self) -> None:
         self.running = True
-        print("[INFO] Forward-Manager Core Engine started.")
+        print("[INFO] XForwarder Core Engine started.")
         self.sync_firewall_and_proxies()
 
         while self.running:
             try:
                 self.load_config()
-                state_changed = False
                 rules = self.config.get("rules", [])
 
+                # Clean up deleted rules from runtime state
+                current_rule_ids = {r.get("id") for r in rules if r.get("id")}
+                stale_ids = [rid for rid in self.runtime_state["rules_state"] if rid not in current_rule_ids]
+                for rid in stale_ids:
+                    del self.runtime_state["rules_state"][rid]
+
+                state_changed = False
                 for rule in rules:
                     if self.evaluate_rule(rule):
                         state_changed = True
 
                 self.runtime_state["last_check_timestamp"] = time.time()
 
-                if state_changed:
-                    print("[INFO] Failover state change detected. Synchronizing routing layer...")
-                    self.save_config()
+                config_changed = (self._get_rules_fingerprint() != self._last_applied_rules)
+
+                if state_changed or config_changed:
+                    print("[INFO] Routing state or configuration change detected. Synchronizing routing layer...")
+                    if state_changed:
+                        self.save_config()
                     self.sync_firewall_and_proxies()
                 else:
                     self._save_state_file()
@@ -410,18 +563,21 @@ stream {{
                 interval = int(self.config.get("check_interval_seconds", 8))
                 time.sleep(max(3, interval))
             except Exception as e:
-                print(f"[ERROR] Exception in forward-manager loop: {e}", file=sys.stderr)
+                print(f"[ERROR] Exception in xforwarder loop: {e}", file=sys.stderr)
                 time.sleep(5)
 
     def stop(self) -> None:
         self.running = False
 
 
+# Backward compatibility alias
+ForwardManagerEngine = XForwarderEngine
+
 if __name__ == "__main__":
-    engine = ForwardManagerEngine()
+    engine = XForwarderEngine()
 
     def handle_sig(sig, frame):
-        print("\n[INFO] Terminating Forward-Manager Engine...")
+        print("\n[INFO] Terminating XForwarder Engine...")
         engine.stop()
         sys.exit(0)
 

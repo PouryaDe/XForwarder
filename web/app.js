@@ -1,4 +1,4 @@
-// Forward Manager - Web Panel Logic (English Only)
+// XForwarder - Web Panel Logic (English Only)
 
 let currentRules = [];
 let pollTimer = null;
@@ -29,13 +29,24 @@ const engineStatusBadge = document.getElementById("engineStatusBadge");
 function showToast(message, type = "info") {
     const container = document.getElementById("toastContainer");
     const toast = document.createElement("div");
-    toast.className = "toast";
+    toast.className = `toast ${type === "error" ? "toast-error" : ""}`;
     toast.innerText = message;
     container.appendChild(toast);
     setTimeout(() => {
         toast.style.opacity = "0";
         setTimeout(() => toast.remove(), 300);
     }, 3500);
+}
+
+// Security: HTML sanitization to prevent Stored XSS
+function escapeHtml(str) {
+    if (str === null || str === undefined) return "";
+    return String(str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
 }
 
 // Check session authentication on initial load
@@ -131,6 +142,7 @@ async function fetchStatus() {
 function renderStats(rules, runtime) {
     statTotalRules.innerText = rules.length;
     let haproxyCount = 0;
+    let nginxCount = 0;
     let nftablesCount = 0;
 
     rules.forEach(r => {
@@ -138,11 +150,12 @@ function renderStats(rules, runtime) {
         const dest = (r.destinations || []).find(d => d.priority === activePrio) || (r.destinations || [])[0];
         if (dest) {
             if (dest.type === "haproxy") haproxyCount++;
+            if (dest.type === "nginx") nginxCount++;
             if (dest.type === "nftables") nftablesCount++;
         }
     });
 
-    statActiveHaproxy.innerText = haproxyCount;
+    statActiveHaproxy.innerText = nginxCount > 0 ? `${haproxyCount + nginxCount} (HA:${haproxyCount} / Ngx:${nginxCount})` : haproxyCount;
     statActiveNftables.innerText = nftablesCount;
 
     if (runtime.active_services) {
@@ -166,7 +179,9 @@ function renderRules(rules, runtime) {
     const rulesState = (runtime && runtime.rules_state) ? runtime.rules_state : {};
 
     rulesContainer.innerHTML = rules.map(rule => {
-        const rState = rulesState[rule.id] || {};
+        const ruleId = String(rule.id || `rule-${rule.port}`);
+        const encodedId = encodeURIComponent(ruleId);
+        const rState = rulesState[ruleId] || {};
         const destStats = rState.dest_stats || {};
         const activePriority = rule.active_priority || 1;
         const forceOverride = rule.force_override || 0;
@@ -180,23 +195,28 @@ function renderRules(rules, runtime) {
         const d1Healthy = (d1Stat.status === 'healthy');
         const d2Healthy = (d2Stat.status === 'healthy');
 
+        const d1Target = String(d1.target || '');
+        const d2Target = String(d2.target || '');
+        const d1TargetDisplay = d1Target.includes(':') ? `[${escapeHtml(d1Target)}]` : escapeHtml(d1Target);
+        const d2TargetDisplay = d2Target.includes(':') ? `[${escapeHtml(d2Target)}]` : escapeHtml(d2Target);
+
         return `
             <div class="rule-card">
                 <div class="rule-top">
                     <div class="port-badge">
-                        <span class="port-num">:${rule.port}</span>
-                        <span class="proto-pill">${rule.protocol.toUpperCase()}</span>
+                        <span class="port-num">:${escapeHtml(rule.port)}</span>
+                        <span class="proto-pill">${escapeHtml(String(rule.protocol || 'both').toUpperCase())}</span>
                     </div>
                     <div class="rule-actions">
-                        <select class="form-control" style="width:auto;padding:4px 10px;font-size:0.8rem;" onchange="handleOverrideChange('${rule.id}', this.value)">
+                        <select class="form-control" style="width:auto;padding:4px 10px;font-size:0.8rem;" onchange="handleOverrideChange(decodeURIComponent('${encodedId}'), this.value)">
                             <option value="0" ${forceOverride === 0 ? 'selected' : ''}>Mode: Auto Failover</option>
                             <option value="1" ${forceOverride === 1 ? 'selected' : ''}>Force: Priority 1</option>
                             <option value="2" ${forceOverride === 2 ? 'selected' : ''}>Force: Priority 2</option>
                         </select>
-                        <button class="btn btn-secondary btn-sm" onclick="editRule('${rule.id}')" title="Edit Rule">
+                        <button class="btn btn-secondary btn-sm" onclick="editRule(decodeURIComponent('${encodedId}'))" title="Edit Rule">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
                         </button>
-                        <button class="btn btn-danger btn-sm" onclick="deleteRule('${rule.id}')" title="Delete Rule">
+                        <button class="btn btn-danger btn-sm" onclick="deleteRule(decodeURIComponent('${encodedId}'))" title="Delete Rule">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
                         </button>
                     </div>
@@ -213,10 +233,10 @@ function renderRules(rules, runtime) {
                                 ${d1Healthy ? 'HEALTHY' : 'DOWN / TIMEOUT'}
                             </span>
                         </div>
-                        <div class="path-dest">${d1.type.toUpperCase()}: [${d1.target}]:${d1.port || rule.port}</div>
+                        <div class="path-dest">${escapeHtml(String(d1.type || 'haproxy').toUpperCase())}: ${d1TargetDisplay}:${escapeHtml(d1.port || rule.port)}</div>
                         <div class="path-meta">
-                            <span>${d1.comment || 'Primary uplink'}</span>
-                            <span>Latency: ${d1Stat.latency_ms ? d1Stat.latency_ms + ' ms' : '--'}</span>
+                            <span>${escapeHtml(d1.comment || 'Primary uplink')}</span>
+                            <span>Latency: ${d1Stat.latency_ms ? escapeHtml(d1Stat.latency_ms) + ' ms' : '--'}</span>
                         </div>
                     </div>
 
@@ -230,10 +250,10 @@ function renderRules(rules, runtime) {
                                 ${d2Healthy ? 'HEALTHY' : 'STANDBY'}
                             </span>
                         </div>
-                        <div class="path-dest">${d2.type.toUpperCase()}: ${d2.target}:${d2.port || rule.port}</div>
+                        <div class="path-dest">${escapeHtml(String(d2.type || 'nftables').toUpperCase())}: ${d2TargetDisplay}:${escapeHtml(d2.port || rule.port)}</div>
                         <div class="path-meta">
-                            <span>${d2.comment || 'Backup tunnel'}</span>
-                            <span>Latency: ${d2Stat.latency_ms ? d2Stat.latency_ms + ' ms' : '--'}</span>
+                            <span>${escapeHtml(d2.comment || 'Backup tunnel')}</span>
+                            <span>Latency: ${d2Stat.latency_ms ? escapeHtml(d2Stat.latency_ms) + ' ms' : '--'}</span>
                         </div>
                     </div>
                 </div>
@@ -253,6 +273,9 @@ async function handleOverrideChange(ruleId, val) {
         if (res.ok) {
             showToast("Routing mode updated successfully");
             fetchStatus();
+        } else {
+            const data = await res.json().catch(() => ({}));
+            showToast(data.error || "Failed to update override", "error");
         }
     } catch (err) {
         showToast("Failed to update override", "error");
@@ -306,10 +329,13 @@ function editRule(ruleId) {
 async function deleteRule(ruleId) {
     if (!confirm(`Are you sure you want to delete rule '${ruleId}'?`)) return;
     try {
-        const res = await fetch(`/api/rule/${ruleId}`, { method: "DELETE" });
+        const res = await fetch(`/api/rule/${encodeURIComponent(ruleId)}`, { method: "DELETE" });
         if (res.ok) {
             showToast("Rule removed");
             fetchStatus();
+        } else {
+            const data = await res.json().catch(() => ({}));
+            showToast(data.error || "Error deleting rule", "error");
         }
     } catch (err) {
         showToast("Error deleting rule", "error");
@@ -361,7 +387,8 @@ ruleForm.addEventListener("submit", async (e) => {
             closeModal();
             fetchStatus();
         } else {
-            showToast("Failed to save rule", "error");
+            const errData = await res.json().catch(() => ({}));
+            showToast(errData.error || "Failed to save rule", "error");
         }
     } catch (err) {
         showToast("Error communicating with server", "error");

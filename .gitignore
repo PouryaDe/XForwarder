@@ -1,5 +1,11 @@
-﻿__pycache__/
+__pycache__/
 *.pyc
 *.pyo
 .DS_Store
 *.tmp.*
+*.bak.*
+*.bak
+config/config.json
+state.json
+*.log
+graphify-out/cache/

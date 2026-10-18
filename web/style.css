@@ -564,6 +564,12 @@ body {
     animation: slideIn 0.3s ease forwards;
 }
 
+.toast.toast-error {
+    border-color: rgba(239, 68, 68, 0.5);
+    background: rgba(30, 15, 20, 0.95);
+    color: var(--accent-rose);
+}
+
 @keyframes slideIn {
     from { transform: translateX(100%); opacity: 0; }
     to { transform: translateX(0); opacity: 1; }

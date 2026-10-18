@@ -1,0 +1,18 @@
+{
+  "python-syntax-checker": {
+    "PreInvocation": [
+      {
+        "type": "command",
+        "command": "python .agents/scripts/syntax-check.py --pre-check",
+        "timeout": 15
+      }
+    ],
+    "Stop": [
+      {
+        "type": "command",
+        "command": "python .agents/scripts/syntax-check.py --stop-check",
+        "timeout": 15
+      }
+    ]
+  }
+}
