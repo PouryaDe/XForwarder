@@ -29,6 +29,16 @@ ACTIVE_SESSIONS: Dict[str, float] = {}
 SESSION_LOCK = threading.Lock()
 SESSION_TTL_HOURS = 24
 
+try:
+    from engine import XForwarderEngine
+    migrate_config = XForwarderEngine.migrate_and_normalize_config
+except ImportError:
+    try:
+        from core.engine import XForwarderEngine
+        migrate_config = XForwarderEngine.migrate_and_normalize_config
+    except ImportError:
+        migrate_config = None
+
 
 def get_config_path() -> str:
     if os.path.exists(CONFIG_PATH):
@@ -42,24 +52,36 @@ def get_config_path() -> str:
 
 def load_config() -> dict:
     path = get_config_path()
+    cfg = None
     if os.path.exists(path):
         try:
             with open(path, "r", encoding="utf-8") as f:
-                return json.load(f)
+                cfg = json.load(f)
         except Exception:
             pass
-    return {
-        "web": {
-            "bind_host": "0.0.0.0",
-            "port": 8090,
-            "secret_path": "xfwd-admin",
-            "auth": {
-                "username": "admin",
-                "password_hash": "8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918" # admin
-            }
-        },
-        "rules": []
-    }
+    if not isinstance(cfg, dict):
+        cfg = {
+            "schema_version": 2,
+            "wan_interface": "auto",
+            "check_interval_seconds": 8,
+            "failure_threshold": 3,
+            "recovery_threshold": 3,
+            "web": {
+                "bind_host": "0.0.0.0",
+                "port": 8090,
+                "secret_path": "xfwd-admin",
+                "auth": {
+                    "username": "admin",
+                    "password_hash": "8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918" # admin
+                }
+            },
+            "rules": []
+        }
+    if migrate_config:
+        cfg, modified = migrate_config(cfg)
+        if modified and os.path.exists(path):
+            save_config(cfg)
+    return cfg
 
 
 def save_config(cfg: dict) -> bool:

@@ -57,6 +57,12 @@ XForwarder/
 5. **Vanilla Frontend**:
    - The web dashboard in `web/` must remain pure Vanilla HTML5/CSS3/JavaScript without Node.js, Webpack, or NPM build tooling.
 
+6. **Backward Compatibility & Automated Schema Migrations (Mandatory)**:
+   - Any update (`xforwarder update` or CLI upgrade) must guarantee 100% backward compatibility with prior versions.
+   - Updates must NEVER drop, overwrite, or corrupt existing port forwarding rules, user credentials, or custom ports.
+   - All migrations must be automated, self-healing (`migrate_and_normalize_config`), idempotent, and preceded by an atomic configuration backup (`config.json.bak.<timestamp>`).
+   - Detailed rule: `.agents/rules/backward-compatibility-and-migrations.md`.
+
 ---
 
 ## 🔍 Codebase Knowledge Graph (graphify)

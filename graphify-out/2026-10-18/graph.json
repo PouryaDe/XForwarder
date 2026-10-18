@@ -14,7 +14,7 @@
       "file_type": "code",
       "norm_label": "xforwarderwebhandler",
       "source_file": "core/web_server.py",
-      "source_location": "L142"
+      "source_location": "L158"
     },
     {
       "id": "core_web_server_xforwarderwebserver",
@@ -27,7 +27,7 @@
       "file_type": "code",
       "norm_label": "xforwarderwebserver",
       "source_file": "core/web_server.py",
-      "source_location": "L383"
+      "source_location": "L407"
     },
     {
       "id": "core_engine_xforwarderengine",
@@ -52,7 +52,7 @@
       "file_type": "code",
       "norm_label": "get_config_path()",
       "source_file": "core/web_server.py",
-      "source_location": "L32"
+      "source_location": "L33"
     },
     {
       "id": "core_web_server_hash_password",
@@ -64,7 +64,19 @@
       "file_type": "code",
       "norm_label": "hash_password()",
       "source_file": "core/web_server.py",
-      "source_location": "L89"
+      "source_location": "L90"
+    },
+    {
+      "id": "core_web_server_is_port_in_use_by_external_service",
+      "label": "is_port_in_use_by_external_service()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 0,
+      "community_name": "web_server.py",
+      "file_type": "code",
+      "norm_label": "is_port_in_use_by_external_service()",
+      "source_file": "core/web_server.py",
+      "source_location": "L143"
     },
     {
       "id": "core_web_server_load_config",
@@ -76,7 +88,7 @@
       "file_type": "code",
       "norm_label": "load_config()",
       "source_file": "core/web_server.py",
-      "source_location": "L42"
+      "source_location": "L43"
     },
     {
       "id": "core_web_server_load_state",
@@ -88,7 +100,7 @@
       "file_type": "code",
       "norm_label": "load_state()",
       "source_file": "core/web_server.py",
-      "source_location": "L78"
+      "source_location": "L79"
     },
     {
       "id": "core_web_server_save_config",
@@ -100,7 +112,7 @@
       "file_type": "code",
       "norm_label": "save_config()",
       "source_file": "core/web_server.py",
-      "source_location": "L64"
+      "source_location": "L65"
     },
     {
       "id": "core_web_server_validate_rule",
@@ -112,7 +124,7 @@
       "file_type": "code",
       "norm_label": "validate_rule()",
       "source_file": "core/web_server.py",
-      "source_location": "L93"
+      "source_location": "L94"
     },
     {
       "id": "core_web_server_xforwarderwebhandler_do_delete",
@@ -124,7 +136,7 @@
       "file_type": "code",
       "norm_label": ".do_delete()",
       "source_file": "core/web_server.py",
-      "source_location": "L363"
+      "source_location": "L387"
     },
     {
       "id": "core_web_server_xforwarderwebhandler_do_get",
@@ -136,7 +148,7 @@
       "file_type": "code",
       "norm_label": ".do_get()",
       "source_file": "core/web_server.py",
-      "source_location": "L205"
+      "source_location": "L221"
     },
     {
       "id": "core_web_server_xforwarderwebhandler_do_post",
@@ -148,7 +160,7 @@
       "file_type": "code",
       "norm_label": ".do_post()",
       "source_file": "core/web_server.py",
-      "source_location": "L254"
+      "source_location": "L270"
     },
     {
       "id": "core_web_server_xforwarderwebhandler_get_session_token",
@@ -160,7 +172,7 @@
       "file_type": "code",
       "norm_label": ".get_session_token()",
       "source_file": "core/web_server.py",
-      "source_location": "L172"
+      "source_location": "L188"
     },
     {
       "id": "core_web_server_xforwarderwebhandler_is_authenticated",
@@ -172,7 +184,7 @@
       "file_type": "code",
       "norm_label": ".is_authenticated()",
       "source_file": "core/web_server.py",
-      "source_location": "L188"
+      "source_location": "L204"
     },
     {
       "id": "core_web_server_xforwarderwebhandler_send_file",
@@ -184,7 +196,7 @@
       "file_type": "code",
       "norm_label": ".send_file()",
       "source_file": "core/web_server.py",
-      "source_location": "L159"
+      "source_location": "L175"
     },
     {
       "id": "core_web_server_xforwarderwebhandler_send_json",
@@ -196,7 +208,7 @@
       "file_type": "code",
       "norm_label": ".send_json()",
       "source_file": "core/web_server.py",
-      "source_location": "L145"
+      "source_location": "L161"
     },
     {
       "id": "core_web_server_xforwarderwebserver_init",
@@ -208,7 +220,7 @@
       "file_type": "code",
       "norm_label": ".__init__()",
       "source_file": "core/web_server.py",
-      "source_location": "L384"
+      "source_location": "L408"
     },
     {
       "id": "core_web_server_xforwarderwebserver_start",
@@ -220,7 +232,7 @@
       "file_type": "code",
       "norm_label": ".start()",
       "source_file": "core/web_server.py",
-      "source_location": "L392"
+      "source_location": "L416"
     },
     {
       "id": "core_web_server_xforwarderwebserver_stop",
@@ -232,7 +244,7 @@
       "file_type": "code",
       "norm_label": ".stop()",
       "source_file": "core/web_server.py",
-      "source_location": "L411"
+      "source_location": "L435"
     },
     {
       "id": "web_app_checkauth",
@@ -783,6 +795,17 @@
       "norm_label": "web_server.py",
       "source_file": "core/web_server.py",
       "source_location": "L1"
+    },
+    {
+      "id": "core_web_server_rationale_144",
+      "label": "Checks if a port is actively bound by an external process not managed by this\u2026",
+      "_origin": "ast",
+      "community": 0,
+      "community_name": "web_server.py",
+      "file_type": "rationale",
+      "norm_label": "checks if a port is actively bound by an external process not managed by this...",
+      "source_file": "core/web_server.py",
+      "source_location": "L144"
     },
     {
       "id": "core_web_server_rationale_2",
@@ -2784,7 +2807,7 @@
       },
       "norm_label": "change_password()",
       "source_file": "xforwarder.sh",
-      "source_location": "L194"
+      "source_location": "L208"
     },
     {
       "id": "xforwarder_check_root",
@@ -2859,7 +2882,7 @@
       },
       "norm_label": "install_xforwarder()",
       "source_file": "xforwarder.sh",
-      "source_location": "L95"
+      "source_location": "L92"
     },
     {
       "id": "xforwarder_msg_err",
@@ -2934,7 +2957,7 @@
       },
       "norm_label": "resolve_active_config()",
       "source_file": "xforwarder.sh",
-      "source_location": "L85"
+      "source_location": "L82"
     },
     {
       "id": "xforwarder_sh__entry",
@@ -2964,7 +2987,7 @@
       },
       "norm_label": "show_menu()",
       "source_file": "xforwarder.sh",
-      "source_location": "L317"
+      "source_location": "L331"
     },
     {
       "id": "xforwarder_show_status",
@@ -2979,7 +3002,7 @@
       },
       "norm_label": "show_status()",
       "source_file": "xforwarder.sh",
-      "source_location": "L263"
+      "source_location": "L277"
     },
     {
       "id": "xforwarder_show_web_access_info",
@@ -2994,7 +3017,7 @@
       },
       "norm_label": "show_web_access_info()",
       "source_file": "xforwarder.sh",
-      "source_location": "L240"
+      "source_location": "L254"
     },
     {
       "id": "agents_workflows_deploy_update",
@@ -3535,6 +3558,18 @@
       "type": "external"
     },
     {
+      "id": "socket",
+      "label": "socket",
+      "_origin": "semantic",
+      "community": 0,
+      "community_name": "web_server.py",
+      "external": true,
+      "file_type": "concept",
+      "norm_label": "socket",
+      "source_file": "",
+      "type": "external"
+    },
+    {
       "id": "urllib_parse",
       "label": "urllib_parse",
       "_origin": "semantic",
@@ -3615,18 +3650,6 @@
       "external": true,
       "file_type": "concept",
       "norm_label": "signal",
-      "source_file": "",
-      "type": "external"
-    },
-    {
-      "id": "socket",
-      "label": "socket",
-      "_origin": "semantic",
-      "community": 4,
-      "community_name": "engine.py",
-      "external": true,
-      "file_type": "concept",
-      "norm_label": "socket",
       "source_file": "",
       "type": "external"
     },
@@ -4253,7 +4276,19 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "core/web_server.py",
-      "source_location": "L90",
+      "source_location": "L91",
+      "weight": 1.0
+    },
+    {
+      "source": "core_web_server_is_port_in_use_by_external_service",
+      "target": "socket",
+      "relation": "calls",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "call",
+      "source_file": "core/web_server.py",
+      "source_location": "L149",
       "weight": 1.0
     },
     {
@@ -4265,7 +4300,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "core/web_server.py",
-      "source_location": "L43",
+      "source_location": "L44",
       "weight": 1.0
     },
     {
@@ -4277,7 +4312,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "core/web_server.py",
-      "source_location": "L47",
+      "source_location": "L48",
       "weight": 1.0
     },
     {
@@ -4289,7 +4324,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "core/web_server.py",
-      "source_location": "L83",
+      "source_location": "L84",
       "weight": 1.0
     },
     {
@@ -4301,7 +4336,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "core/web_server.py",
-      "source_location": "L65",
+      "source_location": "L66",
       "weight": 1.0
     },
     {
@@ -4313,7 +4348,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "core/web_server.py",
-      "source_location": "L67",
+      "source_location": "L68",
       "weight": 1.0
     },
     {
@@ -4325,7 +4360,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "core/web_server.py",
-      "source_location": "L70",
+      "source_location": "L71",
       "weight": 1.0
     },
     {
@@ -4337,7 +4372,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "core/web_server.py",
-      "source_location": "L367",
+      "source_location": "L391",
       "weight": 1.0
     },
     {
@@ -4349,7 +4384,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "core/web_server.py",
-      "source_location": "L368",
+      "source_location": "L392",
       "weight": 1.0
     },
     {
@@ -4361,7 +4396,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "core/web_server.py",
-      "source_location": "L373",
+      "source_location": "L397",
       "weight": 1.0
     },
     {
@@ -4373,7 +4408,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "core/web_server.py",
-      "source_location": "L375",
+      "source_location": "L399",
       "weight": 1.0
     },
     {
@@ -4385,7 +4420,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "core/web_server.py",
-      "source_location": "L219",
+      "source_location": "L235",
       "weight": 1.0
     },
     {
@@ -4397,7 +4432,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "core/web_server.py",
-      "source_location": "L228",
+      "source_location": "L244",
       "weight": 1.0
     },
     {
@@ -4409,7 +4444,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "core/web_server.py",
-      "source_location": "L229",
+      "source_location": "L245",
       "weight": 1.0
     },
     {
@@ -4421,7 +4456,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "core/web_server.py",
-      "source_location": "L231",
+      "source_location": "L247",
       "weight": 1.0
     },
     {
@@ -4433,7 +4468,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "core/web_server.py",
-      "source_location": "L240",
+      "source_location": "L256",
       "weight": 1.0
     },
     {
@@ -4445,7 +4480,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "core/web_server.py",
-      "source_location": "L267",
+      "source_location": "L283",
       "weight": 1.0
     },
     {
@@ -4457,7 +4492,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "core/web_server.py",
-      "source_location": "L275",
+      "source_location": "L291",
       "weight": 1.0
     },
     {
@@ -4469,7 +4504,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "core/web_server.py",
-      "source_location": "L279",
+      "source_location": "L295",
       "weight": 1.0
     },
     {
@@ -4481,7 +4516,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "core/web_server.py",
-      "source_location": "L286",
+      "source_location": "L302",
       "weight": 1.0
     },
     {
@@ -4493,7 +4528,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "core/web_server.py",
-      "source_location": "L294",
+      "source_location": "L310",
       "weight": 1.0
     },
     {
@@ -4505,7 +4540,19 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "core/web_server.py",
-      "source_location": "L299",
+      "source_location": "L315",
+      "weight": 1.0
+    },
+    {
+      "source": "core_web_server_xforwarderwebhandler_do_post",
+      "target": "core_web_server_is_port_in_use_by_external_service",
+      "relation": "calls",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "call",
+      "source_file": "core/web_server.py",
+      "source_location": "L332",
       "weight": 1.0
     },
     {
@@ -4517,7 +4564,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "core/web_server.py",
-      "source_location": "L325",
+      "source_location": "L349",
       "weight": 1.0
     },
     {
@@ -4529,7 +4576,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "core/web_server.py",
-      "source_location": "L189",
+      "source_location": "L205",
       "weight": 1.0
     },
     {
@@ -4541,7 +4588,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "core/web_server.py",
-      "source_location": "L385",
+      "source_location": "L409",
       "weight": 1.0
     },
     {
@@ -4553,7 +4600,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "core/web_server.py",
-      "source_location": "L409",
+      "source_location": "L433",
       "weight": 1.0
     },
     {
@@ -4697,7 +4744,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "xforwarder.sh",
-      "source_location": "L195",
+      "source_location": "L209",
       "weight": 1.0
     },
     {
@@ -4709,7 +4756,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "xforwarder.sh",
-      "source_location": "L197",
+      "source_location": "L211",
       "weight": 1.0
     },
     {
@@ -4721,7 +4768,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "xforwarder.sh",
-      "source_location": "L199",
+      "source_location": "L213",
       "weight": 1.0
     },
     {
@@ -4733,7 +4780,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "xforwarder.sh",
-      "source_location": "L237",
+      "source_location": "L251",
       "weight": 1.0
     },
     {
@@ -4762,14 +4809,14 @@
     },
     {
       "source": "xforwarder_install_xforwarder",
-      "target": "xforwarder_msg_info",
+      "target": "xforwarder_msg_warn",
       "relation": "calls",
       "_origin": "ast",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "xforwarder.sh",
-      "source_location": "L102",
+      "source_location": "L111",
       "weight": 1.0
     },
     {
@@ -4781,19 +4828,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "xforwarder.sh",
-      "source_location": "L123",
-      "weight": 1.0
-    },
-    {
-      "source": "xforwarder_install_xforwarder",
-      "target": "xforwarder_msg_warn",
-      "relation": "calls",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "context": "call",
-      "source_file": "xforwarder.sh",
-      "source_location": "L140",
+      "source_location": "L137",
       "weight": 1.0
     },
     {
@@ -4805,7 +4840,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "xforwarder.sh",
-      "source_location": "L165",
+      "source_location": "L179",
       "weight": 1.0
     },
     {
@@ -4817,7 +4852,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "xforwarder.sh",
-      "source_location": "L191",
+      "source_location": "L205",
       "weight": 1.0
     },
     {
@@ -4829,7 +4864,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "xforwarder.sh",
-      "source_location": "L96",
+      "source_location": "L93",
       "weight": 1.0
     },
     {
@@ -4841,7 +4876,19 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "xforwarder.sh",
-      "source_location": "L97",
+      "source_location": "L94",
+      "weight": 1.0
+    },
+    {
+      "source": "xforwarder_install_xforwarder",
+      "target": "xforwarder_msg_info",
+      "relation": "calls",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "call",
+      "source_file": "xforwarder.sh",
+      "source_location": "L99",
       "weight": 1.0
     },
     {
@@ -4853,7 +4900,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "xforwarder.sh",
-      "source_location": "L349",
+      "source_location": "L363",
       "weight": 1.0
     },
     {
@@ -4865,7 +4912,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "xforwarder.sh",
-      "source_location": "L352",
+      "source_location": "L366",
       "weight": 1.0
     },
     {
@@ -4877,7 +4924,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "xforwarder.sh",
-      "source_location": "L355",
+      "source_location": "L369",
       "weight": 1.0
     },
     {
@@ -4889,7 +4936,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "xforwarder.sh",
-      "source_location": "L358",
+      "source_location": "L372",
       "weight": 1.0
     },
     {
@@ -4901,7 +4948,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "xforwarder.sh",
-      "source_location": "L362",
+      "source_location": "L376",
       "weight": 1.0
     },
     {
@@ -4913,7 +4960,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "xforwarder.sh",
-      "source_location": "L368",
+      "source_location": "L382",
       "weight": 1.0
     },
     {
@@ -4925,7 +4972,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "xforwarder.sh",
-      "source_location": "L335",
+      "source_location": "L349",
       "weight": 1.0
     },
     {
@@ -4937,7 +4984,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "xforwarder.sh",
-      "source_location": "L336",
+      "source_location": "L350",
       "weight": 1.0
     },
     {
@@ -4949,7 +4996,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "xforwarder.sh",
-      "source_location": "L337",
+      "source_location": "L351",
       "weight": 1.0
     },
     {
@@ -4961,7 +5008,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "xforwarder.sh",
-      "source_location": "L338",
+      "source_location": "L352",
       "weight": 1.0
     },
     {
@@ -4973,7 +5020,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "xforwarder.sh",
-      "source_location": "L340",
+      "source_location": "L354",
       "weight": 1.0
     },
     {
@@ -4985,7 +5032,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "xforwarder.sh",
-      "source_location": "L342",
+      "source_location": "L356",
       "weight": 1.0
     },
     {
@@ -4997,7 +5044,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "xforwarder.sh",
-      "source_location": "L264",
+      "source_location": "L278",
       "weight": 1.0
     },
     {
@@ -5009,7 +5056,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "xforwarder.sh",
-      "source_location": "L271",
+      "source_location": "L285",
       "weight": 1.0
     },
     {
@@ -5021,7 +5068,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "xforwarder.sh",
-      "source_location": "L242",
+      "source_location": "L256",
       "weight": 1.0
     },
     {
@@ -5033,7 +5080,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "xforwarder.sh",
-      "source_location": "L244",
+      "source_location": "L258",
       "weight": 1.0
     },
     {
@@ -5045,7 +5092,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "xforwarder.sh",
-      "source_location": "L251",
+      "source_location": "L265",
       "weight": 1.0
     },
     {
@@ -5482,7 +5529,7 @@
     },
     {
       "source": "core_web_server",
-      "target": "threading",
+      "target": "socket",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -5490,6 +5537,18 @@
       "context": "import",
       "source_file": "core/web_server.py",
       "source_location": "L14",
+      "weight": 1.0
+    },
+    {
+      "source": "core_web_server",
+      "target": "threading",
+      "relation": "imports",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "import",
+      "source_file": "core/web_server.py",
+      "source_location": "L15",
       "weight": 1.0
     },
     {
@@ -5597,7 +5656,7 @@
       "confidence_score": 1.0,
       "context": "import",
       "source_file": "core/web_server.py",
-      "source_location": "L15",
+      "source_location": "L16",
       "weight": 1.0
     },
     {
@@ -5609,7 +5668,7 @@
       "confidence_score": 1.0,
       "context": "import",
       "source_file": "core/web_server.py",
-      "source_location": "L16",
+      "source_location": "L17",
       "weight": 1.0
     },
     {
@@ -5621,7 +5680,7 @@
       "confidence_score": 1.0,
       "context": "import",
       "source_file": "core/web_server.py",
-      "source_location": "L17",
+      "source_location": "L18",
       "weight": 1.0
     },
     {
@@ -7232,13 +7291,24 @@
     },
     {
       "source": "core_web_server",
+      "target": "core_web_server_is_port_in_use_by_external_service",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "core/web_server.py",
+      "source_location": "L143",
+      "weight": 1.0
+    },
+    {
+      "source": "core_web_server",
       "target": "core_web_server_xforwarderwebhandler",
       "relation": "contains",
       "_origin": "ast",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "core/web_server.py",
-      "source_location": "L142",
+      "source_location": "L158",
       "weight": 1.0
     },
     {
@@ -7249,7 +7319,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "core/web_server.py",
-      "source_location": "L32",
+      "source_location": "L33",
       "weight": 1.0
     },
     {
@@ -7260,7 +7330,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "core/web_server.py",
-      "source_location": "L383",
+      "source_location": "L407",
       "weight": 1.0
     },
     {
@@ -7271,7 +7341,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "core/web_server.py",
-      "source_location": "L42",
+      "source_location": "L43",
       "weight": 1.0
     },
     {
@@ -7282,7 +7352,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "core/web_server.py",
-      "source_location": "L64",
+      "source_location": "L65",
       "weight": 1.0
     },
     {
@@ -7293,7 +7363,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "core/web_server.py",
-      "source_location": "L78",
+      "source_location": "L79",
       "weight": 1.0
     },
     {
@@ -7304,7 +7374,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "core/web_server.py",
-      "source_location": "L89",
+      "source_location": "L90",
       "weight": 1.0
     },
     {
@@ -7315,7 +7385,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "core/web_server.py",
-      "source_location": "L93",
+      "source_location": "L94",
       "weight": 1.0
     },
     {
@@ -7700,7 +7770,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "xforwarder.sh",
-      "source_location": "L194",
+      "source_location": "L208",
       "weight": 1.0
     },
     {
@@ -7711,7 +7781,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "xforwarder.sh",
-      "source_location": "L240",
+      "source_location": "L254",
       "weight": 1.0
     },
     {
@@ -7722,18 +7792,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "xforwarder.sh",
-      "source_location": "L263",
-      "weight": 1.0
-    },
-    {
-      "source": "xforwarder",
-      "target": "xforwarder_show_menu",
-      "relation": "defines",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "xforwarder.sh",
-      "source_location": "L317",
+      "source_location": "L277",
       "weight": 1.0
     },
     {
@@ -7745,6 +7804,17 @@
       "confidence_score": 1.0,
       "source_file": "xforwarder.sh",
       "source_location": "L33",
+      "weight": 1.0
+    },
+    {
+      "source": "xforwarder",
+      "target": "xforwarder_show_menu",
+      "relation": "defines",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "xforwarder.sh",
+      "source_location": "L331",
       "weight": 1.0
     },
     {
@@ -7832,7 +7902,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "xforwarder.sh",
-      "source_location": "L85",
+      "source_location": "L82",
       "weight": 1.0
     },
     {
@@ -7843,7 +7913,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "xforwarder.sh",
-      "source_location": "L95",
+      "source_location": "L92",
       "weight": 1.0
     },
     {
@@ -7854,7 +7924,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "core/web_server.py",
-      "source_location": "L142",
+      "source_location": "L158",
       "weight": 1.0
     },
     {
@@ -8030,7 +8100,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "core/web_server.py",
-      "source_location": "L145",
+      "source_location": "L161",
       "weight": 1.0
     },
     {
@@ -8041,7 +8111,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "core/web_server.py",
-      "source_location": "L159",
+      "source_location": "L175",
       "weight": 1.0
     },
     {
@@ -8052,7 +8122,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "core/web_server.py",
-      "source_location": "L172",
+      "source_location": "L188",
       "weight": 1.0
     },
     {
@@ -8063,7 +8133,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "core/web_server.py",
-      "source_location": "L188",
+      "source_location": "L204",
       "weight": 1.0
     },
     {
@@ -8074,7 +8144,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "core/web_server.py",
-      "source_location": "L205",
+      "source_location": "L221",
       "weight": 1.0
     },
     {
@@ -8085,7 +8155,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "core/web_server.py",
-      "source_location": "L254",
+      "source_location": "L270",
       "weight": 1.0
     },
     {
@@ -8096,7 +8166,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "core/web_server.py",
-      "source_location": "L363",
+      "source_location": "L387",
       "weight": 1.0
     },
     {
@@ -8107,7 +8177,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "core/web_server.py",
-      "source_location": "L384",
+      "source_location": "L408",
       "weight": 1.0
     },
     {
@@ -8118,7 +8188,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "core/web_server.py",
-      "source_location": "L392",
+      "source_location": "L416",
       "weight": 1.0
     },
     {
@@ -8129,7 +8199,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "core/web_server.py",
-      "source_location": "L411",
+      "source_location": "L435",
       "weight": 1.0
     },
     {
@@ -8207,6 +8277,17 @@
       "confidence_score": 1.0,
       "source_file": "core/engine.py",
       "source_location": "L2",
+      "weight": 1.0
+    },
+    {
+      "source": "core_web_server_rationale_144",
+      "target": "core_web_server_is_port_in_use_by_external_service",
+      "relation": "rationale_for",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "core/web_server.py",
+      "source_location": "L144",
       "weight": 1.0
     },
     {

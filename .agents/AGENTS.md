@@ -25,6 +25,7 @@ Authoritative architectural rules and standard operating procedures for AI agent
 8. **Knowledge Graph First (Graphify):** Before modifying shared components, query Graphify (`graphify query "<component>"`) to trace callers and pinpoint exact line numbers (`loc=Lxx`).
 9. **Zero Polling & Reactive Execution:** Never use `schedule` timers or poll `manage_task(status)`. Await reactive wakeup automatically.
 10. **Clean Code & DRY:** Extract repeated socket, formatting, or parsing logic into centralized, single-responsibility methods.
+11. **Backward Compatibility & Automated Migrations (Mandatory):** All software updates and schema changes must remain 100% backward compatible. Never drop or overwrite existing rules, custom ports, or admin credentials. Always perform atomic pre-update backup and automatic self-healing schema normalization via `migrate_and_normalize_config()`.
 
 ---
 
@@ -40,6 +41,7 @@ Authoritative architectural rules and standard operating procedures for AI agent
 ## 4. Active Workspace Rules (Conditional Disclosure)
 - [`mandatory-checklist.md`](rules/mandatory-checklist.md): Universal task completion and pre-commit verification protocol.
 - [`blast-radius-analysis.md`](rules/blast-radius-analysis.md): Pre-execution blast radius analysis across engine, firewall, and web server.
+- [`backward-compatibility-and-migrations.md`](rules/backward-compatibility-and-migrations.md): Mandatory backward compatibility, atomic backup, and schema migration standards.
 - [`reverse-prompting.md`](rules/reverse-prompting.md): Interactive single-question clarification protocol.
 - [`session-handoff.md`](rules/session-handoff.md): Tracking task context and milestones via `session-state.json`.
 - [`clean-code-dry.md`](rules/clean-code-dry.md): DRY zero-duplication rules.

@@ -1,21 +1,20 @@
 {
-  "last_updated": "2026-10-18T18:49:10.075523+00:00",
-  "active_task": "Build .agents Ecosystem Inspired by XPanel Standard",
+  "last_updated": "2026-10-18T23:21:00.000000+00:00",
+  "active_task": "Interactive Update Option & Backward Compatibility Auto-Migrations",
   "active_spec": null,
   "phase": "Completed",
   "completed_milestones": [
     "Rebranded project from Forward-Manager to XForwarder across engine, web server, and CLI",
     "Generated Graphify knowledge graph and installed Git post-commit hooks",
     "Created core architectural rules and operational skill xfwd-ops",
-    "Configured .agents/mcp_config.json for native Graphify MCP access",
-    "Configured .agents/hooks.json for automated Python syntax validation",
-    "Implemented full .agents architecture with rules, scripts, experiences, hooks, and MCP"
+    "Added Nginx forwarding support alongside HAProxy and NFTables",
+    "Added Option 6 (Update XForwarder) to interactive CLI menu and CLI dispatcher (update|upgrade)",
+    "Implemented automated self-healing schema migration (migrate_and_normalize_config) in engine and web server",
+    "Enforced mandatory pre-update atomic configuration backup in update_xforwarder",
+    "Documented permanent backward compatibility rules in .agents/rules/backward-compatibility-and-migrations.md and experience 004"
   ],
   "next_steps": [
-    "Create Python automation scripts in .agents/scripts/",
-    "Create universal rules in .agents/rules/ (mandatory-checklist, blast-radius, reverse-prompting, etc.)",
-    "Establish architectural experiences repository in .agents/experiences/",
-    "Update master constitution in .agents/AGENTS.md"
+    "Run pre-commit verify-all.py and graphify update"
   ],
-  "notes": "Adopting XPanel's battle-tested .agents framework, tailored specifically for Python 3 native Linux relay server architecture."
+  "notes": "All future changes and script updates must strictly preserve existing user rules, custom ports, and credentials via automated schema migrations."
 }

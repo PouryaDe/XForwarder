@@ -7,7 +7,7 @@
 
 set -Eeuo pipefail
 
-SCRIPT_VERSION="1.2.0"
+SCRIPT_VERSION="1.3.0"
 INSTALL_DIR="/opt/xforwarder"
 CONFIG_DIR="/etc/xforwarder"
 CONFIG_FILE="$CONFIG_DIR/config.json"
@@ -205,6 +205,92 @@ EOF
     show_web_access_info
 }
 
+update_xforwarder() {
+    check_root
+    msg_info "Starting XForwarder update & automatic migration..."
+
+    local script_dir
+    script_dir=$(dirname "$(readlink -f "$0")")
+
+    # If running inside a git repository, pull latest updates if reachable
+    if git -C "$script_dir" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+        msg_info "Checking for remote updates via Git..."
+        if git -C "$script_dir" remote >/dev/null 2>&1; then
+            git -C "$script_dir" pull --rebase >/dev/null 2>&1 || msg_warn "Could not fetch remote updates; proceeding with current local source files."
+        fi
+    fi
+
+    local active_cfg
+    active_cfg=$(resolve_active_config)
+    local timestamp
+    timestamp=$(date +%Y%m%d_%H%M%S)
+
+    # Backup existing configuration to prevent any data loss
+    if [[ -f "$active_cfg" ]]; then
+        local backup_cfg="${active_cfg}.bak.${timestamp}"
+        cp "$active_cfg" "$backup_cfg"
+        msg_ok "Configuration safely backed up to $backup_cfg"
+    fi
+
+    # Ensure required runtime packages
+    ensure_dependencies
+
+    msg_info "Synchronizing core components to $INSTALL_DIR..."
+    mkdir -p "$INSTALL_DIR" "$CONFIG_DIR"
+    cp -r "$script_dir/core" "$INSTALL_DIR/"
+    cp -r "$script_dir/web" "$INSTALL_DIR/"
+    chmod +x "$INSTALL_DIR/core/engine.py" "$INSTALL_DIR/core/web_server.py"
+
+    # Migrate legacy configuration path if applicable
+    if [[ ! -f "$CONFIG_FILE" && -f "$LEGACY_CONFIG_FILE" ]]; then
+        msg_info "Migrating configuration file from $LEGACY_CONFIG_FILE to $CONFIG_FILE..."
+        cp "$LEGACY_CONFIG_FILE" "$CONFIG_FILE"
+        active_cfg="$CONFIG_FILE"
+    fi
+
+    # Unlink default Nginx welcome site to prevent it from holding port 80
+    rm -f /etc/nginx/sites-enabled/default >/dev/null 2>&1 || true
+
+    # Execute automated Python schema migration & normalization
+    if [[ -f "$active_cfg" ]]; then
+        msg_info "Running schema migration on $active_cfg..."
+        python3 "$INSTALL_DIR/core/engine.py" --migrate "$active_cfg"
+    fi
+
+    # Update systemd service units
+    if [[ -d "$script_dir/systemd" ]]; then
+        cp "$script_dir/systemd/xforwarder.service" /etc/systemd/system/ 2>/dev/null || true
+        cp "$script_dir/systemd/xforwarder-web.service" /etc/systemd/system/ 2>/dev/null || true
+        systemctl daemon-reload
+    fi
+
+    # Disable old legacy services if active
+    systemctl stop forward-manager.service forward-manager-web.service >/dev/null 2>&1 || true
+    systemctl disable forward-manager.service forward-manager-web.service >/dev/null 2>&1 || true
+
+    # Refresh CLI symlinks
+    local target_script
+    target_script="$(readlink -f "$0")"
+    ln -sf "$target_script" "$BIN_LINK"
+    ln -sf "$target_script" "$SHORT_LINK"
+    ln -sf "$target_script" "$LEGACY_BIN_LINK"
+    ln -sf "$target_script" "$LEGACY_SHORT_LINK"
+
+    # Restart services cleanly
+    msg_info "Restarting XForwarder services..."
+    systemctl restart "$DAEMON_SERVICE" "$WEB_SERVICE"
+
+    # Verify active status
+    sleep 1
+    if systemctl is-active --quiet "$DAEMON_SERVICE" && systemctl is-active --quiet "$WEB_SERVICE"; then
+        msg_ok "XForwarder updated successfully! All services are active and running."
+    else
+        msg_warn "Services restarted, but status check reported a potential issue. Run: xfwd status"
+    fi
+
+    show_web_access_info
+}
+
 change_password() {
     check_root
     local active_cfg
@@ -340,10 +426,11 @@ show_menu() {
     echo "3) Change Web Admin Username / Password"
     echo "4) Restart XForwarder Services"
     echo "5) View Core Engine Live Logs"
-    echo "6) Re-install / Update Components"
+    echo "6) Update XForwarder (Auto-Migrate & Preserve Rules)"
+    echo "7) Re-install / Full Setup Wizard"
     echo "0) Exit"
     echo
-    read -r -p "Select an option [0-6]: " choice
+    read -r -p "Select an option [0-7]: " choice
 
     case "$choice" in
         1) show_web_access_info ;;
@@ -351,7 +438,8 @@ show_menu() {
         3) change_password ;;
         4) systemctl restart "$DAEMON_SERVICE" "$WEB_SERVICE" && msg_ok "Services restarted." ;;
         5) journalctl -u "$DAEMON_SERVICE" -f ;;
-        6) install_xforwarder ;;
+        6) update_xforwarder ;;
+        7) install_xforwarder ;;
         0) exit 0 ;;
         *) msg_warn "Invalid selection." ;;
     esac
@@ -361,6 +449,9 @@ show_menu() {
 case "${1:-}" in
     install)
         install_xforwarder
+        ;;
+    update|upgrade)
+        update_xforwarder
         ;;
     status)
         show_status
@@ -382,7 +473,7 @@ case "${1:-}" in
         show_menu
         ;;
     *)
-        echo "Usage: xforwarder {install|status|url|password|restart|logs}"
+        echo "Usage: xforwarder {install|update|status|url|password|restart|logs}"
         exit 1
         ;;
 esac

@@ -1,13 +1,13 @@
 # Graph Report - Forward-Manager  (2026-10-18)
 
 ## Corpus Check
-- 41 files · ~15,908 words
+- 41 files · ~16,078 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 8 file(s) not represented in the graph (top: .service 4, (none) 2, .example 1)
 
 ## Summary
-- 297 nodes · 435 edges · 20 communities (19 shown, 1 thin omitted)
-- Extraction: 97% EXTRACTED · 3% INFERRED · 0% AMBIGUOUS · INFERRED: 11 edges (avg confidence: 0.95)
+- 299 nodes · 440 edges · 20 communities (19 shown, 1 thin omitted)
+- Extraction: 98% EXTRACTED · 2% INFERRED · 0% AMBIGUOUS · INFERRED: 11 edges (avg confidence: 0.95)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
@@ -59,8 +59,8 @@
 ## Communities (20 total, 1 thin omitted)
 
 ### Community 0 - "web_server.py"
-Cohesion: 0.14
-Nodes (8): get_config_path(), hash_password(), load_config(), load_state(), save_config(), validate_rule(), XForwarderWebHandler, XForwarderWebServer
+Cohesion: 0.13
+Nodes (9): get_config_path(), hash_password(), is_port_in_use_by_external_service(), load_config(), load_state(), save_config(), validate_rule(), XForwarderWebHandler (+1 more)
 
 ### Community 1 - "app.js"
 Cohesion: 0.09
@@ -71,7 +71,7 @@ Cohesion: 0.13
 Nodes (9): 1. Native Python 3 Standard Library Only, 2. Thread Safety & Atomic File Operations, 3. Network Probing Standards, 4. Signal & Process Lifecycle, Python Core Standards (`core/engine.py` & `core/web_server.py`), 1. High-Risk Core Components, 2. Constitution Check Gate, Pre-Execution Blast Radius & Impact Analysis Rule (XForwarder) (+1 more)
 
 ### Community 4 - "engine.py"
-Cohesion: 0.10
+Cohesion: 0.11
 Nodes (17): check_file(), main(), get_next_number(), main(), slugify(), load_state(), main(), save_state() (+9 more)
 
 ### Community 5 - "🌐 XForwarder (مدیر هوشمند اولویت‌بندی، رله و فورواردینگ تونل‌ها)"
@@ -143,16 +143,16 @@ Nodes (5): 1. System Overview, 2. Zero-Collision Rule (Mandatory), 3. Failover &
 _Questions this graph is uniquely positioned to answer:_
 
 - **Why does `2. Mandatory Helper Centralization` connect `2. Mandatory Helper Centralization` to `web_server.py`, `XForwarderEngine`?**
-  _High betweenness centrality (0.159) - this node is a cross-community bridge._
+  _High betweenness centrality (0.162) - this node is a cross-community bridge._
 - **What connects `forward-manager.sh script`, `currentRules`, `loginScreen` to the rest of the system?**
   _121 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `web_server.py` be split into smaller, more focused modules?**
-  _Cohesion score 0.14461538461538462 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.12807881773399016 - nodes in this community are weakly interconnected._
 - **Why does `hash_password()` connect `web_server.py` to `2. Mandatory Helper Centralization`?**
-  _High betweenness centrality (0.146) - this node is a cross-community bridge._
+  _High betweenness centrality (0.150) - this node is a cross-community bridge._
 - **Should `app.js` be split into smaller, more focused modules?**
   _Cohesion score 0.08817204301075268 - nodes in this community are weakly interconnected._
 - **Should `XForwarderEngine` be split into smaller, more focused modules?**
   _Cohesion score 0.12698412698412698 - nodes in this community are weakly interconnected._
 - **Should `engine.py` be split into smaller, more focused modules?**
-  _Cohesion score 0.10121951219512196 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.10512820512820513 - nodes in this community are weakly interconnected._

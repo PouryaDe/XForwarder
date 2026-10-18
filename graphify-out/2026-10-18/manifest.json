@@ -6,9 +6,9 @@
     "semantic_hash": ""
   },
   "core/web_server.py": {
-    "mtime": 1792350726.0094278,
-    "seen": 1792350981.0473754,
-    "ast_hash": "5e7e7d945a77c0f1012c73db2563a860",
+    "mtime": 1792351426.1595895,
+    "seen": 1792351510.4480612,
+    "ast_hash": "f8681ac21f009370557018a95540dedf",
     "semantic_hash": ""
   },
   "forward-manager.sh": {
@@ -96,9 +96,9 @@
     "semantic_hash": ""
   },
   "xforwarder.sh": {
-    "mtime": 1792350900.0703273,
-    "seen": 1792350981.0473776,
-    "ast_hash": "76d97de721fb84490d80c85fa46dca28",
+    "mtime": 1792351473.5747209,
+    "seen": 1792351510.448064,
+    "ast_hash": "6e61f76b3730b10481fe41d2d49cda0f",
     "semantic_hash": ""
   },
   ".agents/skills/xfwd-ops/SKILL.md": {

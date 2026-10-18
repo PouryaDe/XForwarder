@@ -13,7 +13,7 @@ import socket
 import subprocess
 import threading
 import signal
-from typing import Dict, List, Any, Optional
+from typing import Dict, List, Any, Optional, Tuple
 
 DEFAULT_CONFIG_PATH = "/etc/xforwarder/config.json"
 LEGACY_CONFIG_PATH = "/etc/forward-manager/config.json"
@@ -60,6 +60,172 @@ class XForwarderEngine:
             return example_path
         return DEFAULT_CONFIG_PATH
 
+    @staticmethod
+    def migrate_and_normalize_config(cfg: Dict[str, Any]) -> Tuple[Dict[str, Any], bool]:
+        """Automatically migrates and normalizes legacy configuration schemas for seamless backward compatibility."""
+        if not isinstance(cfg, dict):
+            cfg = {}
+
+        modified = False
+
+        if cfg.get("schema_version") != 2:
+            cfg["schema_version"] = 2
+            modified = True
+
+        defaults = {
+            "wan_interface": "auto",
+            "check_interval_seconds": 8,
+            "failure_threshold": 3,
+            "recovery_threshold": 3
+        }
+        for k, v in defaults.items():
+            if k not in cfg:
+                cfg[k] = v
+                modified = True
+
+        if "web" not in cfg or not isinstance(cfg["web"], dict):
+            cfg["web"] = {}
+            modified = True
+        web = cfg["web"]
+
+        web_defaults = {
+            "bind_host": "0.0.0.0",
+            "port": 8090,
+            "secret_path": "xfwd-admin"
+        }
+        for k, v in web_defaults.items():
+            if k not in web:
+                web[k] = v
+                modified = True
+
+        # Normalize web port
+        try:
+            web_port = int(web.get("port", 8090))
+            if web.get("port") != web_port:
+                web["port"] = web_port
+                modified = True
+        except (ValueError, TypeError):
+            web["port"] = 8090
+            modified = True
+
+        if "auth" not in web or not isinstance(web["auth"], dict):
+            web["auth"] = {}
+            modified = True
+        auth = web["auth"]
+        if "username" not in auth:
+            auth["username"] = "admin"
+            modified = True
+        if "password_hash" not in auth:
+            auth["password_hash"] = ""
+            modified = True
+
+        if "rules" not in cfg or not isinstance(cfg["rules"], list):
+            cfg["rules"] = []
+            modified = True
+
+        for rule in cfg["rules"]:
+            if not isinstance(rule, dict):
+                continue
+            
+            # Normalize port
+            try:
+                port = int(rule.get("port", 0))
+                if rule.get("port") != port:
+                    rule["port"] = port
+                    modified = True
+            except (ValueError, TypeError):
+                port = 0
+
+            if not rule.get("id"):
+                rule["id"] = f"rule-{port}"
+                modified = True
+            
+            proto = str(rule.get("protocol", "both")).lower()
+            if proto not in ("tcp", "udp", "both"):
+                proto = "both"
+            if rule.get("protocol") != proto:
+                rule["protocol"] = proto
+                modified = True
+
+            try:
+                act_prio = int(rule.get("active_priority", 1))
+            except (ValueError, TypeError):
+                act_prio = 1
+            if rule.get("active_priority") != act_prio:
+                rule["active_priority"] = act_prio
+                modified = True
+
+            try:
+                force_ovr = int(rule.get("force_override", 0))
+            except (ValueError, TypeError):
+                force_ovr = 0
+            if rule.get("force_override") != force_ovr:
+                rule["force_override"] = force_ovr
+                modified = True
+
+            dests = rule.get("destinations", [])
+            if not isinstance(dests, list):
+                dests = []
+                rule["destinations"] = dests
+                modified = True
+
+            for d in dests:
+                if not isinstance(d, dict):
+                    continue
+
+                try:
+                    prio = int(d.get("priority", 1))
+                except (ValueError, TypeError):
+                    prio = 1
+                if d.get("priority") != prio:
+                    d["priority"] = prio
+                    modified = True
+
+                try:
+                    d_port = int(d.get("port", port))
+                except (ValueError, TypeError):
+                    d_port = port
+                if d.get("port") != d_port:
+                    d["port"] = d_port
+                    modified = True
+
+                if "comment" not in d:
+                    d["comment"] = ""
+                    modified = True
+
+                dtype = str(d.get("type", "")).lower().strip()
+                if not dtype:
+                    target = str(d.get("target", "")).strip()
+                    if target.startswith("10.") or target.startswith("192.168."):
+                        dtype = "nftables"
+                    else:
+                        dtype = "haproxy"
+                    d["type"] = dtype
+                    modified = True
+                elif d.get("type") != dtype:
+                    d["type"] = dtype
+                    modified = True
+
+                if "target" in d:
+                    clean_target = str(d["target"]).strip()
+                    if d["target"] != clean_target:
+                        d["target"] = clean_target
+                        modified = True
+
+        return cfg, modified
+
+    def _save_config_unlocked(self) -> bool:
+        try:
+            os.makedirs(os.path.dirname(self.config_path), exist_ok=True)
+            tmp_path = f"{self.config_path}.tmp.{os.getpid()}"
+            with open(tmp_path, "w", encoding="utf-8") as f:
+                json.dump(self.config, f, indent=2, ensure_ascii=False)
+            os.replace(tmp_path, self.config_path)
+            return True
+        except Exception as e:
+            print(f"[ERROR] Failed to save config to {self.config_path}: {e}", file=sys.stderr)
+            return False
+
     def load_config(self) -> None:
         with self.lock:
             try:
@@ -68,6 +234,7 @@ class XForwarderEngine:
                         self.config = json.load(f)
                 else:
                     self.config = {
+                        "schema_version": 2,
                         "wan_interface": "auto",
                         "check_interval_seconds": 8,
                         "failure_threshold": 3,
@@ -83,22 +250,16 @@ class XForwarderEngine:
                         },
                         "rules": []
                     }
+                self.config, modified = self.migrate_and_normalize_config(self.config)
                 self._detect_wan_interface()
+                if modified and os.path.exists(self.config_path):
+                    self._save_config_unlocked()
             except Exception as e:
                 print(f"[ERROR] Failed to load config from {self.config_path}: {e}", file=sys.stderr)
 
     def save_config(self) -> bool:
         with self.lock:
-            try:
-                os.makedirs(os.path.dirname(self.config_path), exist_ok=True)
-                tmp_path = f"{self.config_path}.tmp.{os.getpid()}"
-                with open(tmp_path, "w", encoding="utf-8") as f:
-                    json.dump(self.config, f, indent=2, ensure_ascii=False)
-                os.replace(tmp_path, self.config_path)
-                return True
-            except Exception as e:
-                print(f"[ERROR] Failed to save config to {self.config_path}: {e}", file=sys.stderr)
-                return False
+            return self._save_config_unlocked()
 
     def _detect_wan_interface(self) -> str:
         configured = self.config.get("wan_interface", "auto")
@@ -574,6 +735,15 @@ http {{
 ForwardManagerEngine = XForwarderEngine
 
 if __name__ == "__main__":
+    if len(sys.argv) > 1 and sys.argv[1] in ("--migrate", "-m"):
+        cfg_override = sys.argv[2] if len(sys.argv) > 2 else None
+        engine = XForwarderEngine(config_path=cfg_override)
+        rule_count = len(engine.config.get("rules", []))
+        print(f"[OK] Configuration migrated and normalized successfully.")
+        print(f"[OK] Target config: {engine.config_path}")
+        print(f"[OK] Preserved {rule_count} port forwarding rule(s).")
+        sys.exit(0)
+
     engine = XForwarderEngine()
 
     def handle_sig(sig, frame):

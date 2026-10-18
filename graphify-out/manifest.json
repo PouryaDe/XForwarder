@@ -1,14 +1,14 @@
 {
   "core/engine.py": {
-    "mtime": 1792350692.0397182,
-    "seen": 1792350981.047374,
-    "ast_hash": "55797df4d8babb1facc8b774bcf178ad",
+    "mtime": 1792352749.1157126,
+    "seen": 1792353087.6447785,
+    "ast_hash": "c38329cc471c4c3cebe89c97baf0e465",
     "semantic_hash": ""
   },
   "core/web_server.py": {
-    "mtime": 1792351426.1595895,
-    "seen": 1792351510.4480612,
-    "ast_hash": "f8681ac21f009370557018a95540dedf",
+    "mtime": 1792352768.5711396,
+    "seen": 1792353087.6447794,
+    "ast_hash": "c79ef1d84489cc084473787e0349bfa4",
     "semantic_hash": ""
   },
   "forward-manager.sh": {
@@ -78,9 +78,9 @@
     "semantic_hash": ""
   },
   "AGENTS.md": {
-    "mtime": 1792349325.0376449,
-    "seen": 1792349408.1540382,
-    "ast_hash": "a78ccb51b9f94898802e895333aa3c6c",
+    "mtime": 1792352950.9719584,
+    "seen": 1792353087.6448052,
+    "ast_hash": "2310fe8a8ae9305763d770dbcd0353fc",
     "semantic_hash": ""
   },
   "README.md": {
@@ -96,9 +96,9 @@
     "semantic_hash": ""
   },
   "xforwarder.sh": {
-    "mtime": 1792351473.5747209,
-    "seen": 1792351510.448064,
-    "ast_hash": "6e61f76b3730b10481fe41d2d49cda0f",
+    "mtime": 1792352880.7958732,
+    "seen": 1792353087.6447818,
+    "ast_hash": "985d214b7f314995745c2b0be6971912",
     "semantic_hash": ""
   },
   ".agents/skills/xfwd-ops/SKILL.md": {
@@ -150,15 +150,15 @@
     "semantic_hash": ""
   },
   ".agents/session-state.json": {
-    "mtime": 1792349350.0756097,
-    "seen": 1792349408.1540072,
-    "ast_hash": "6f6bb5516ea2cea80edcbf9dee460a29",
+    "mtime": 1792353063.8490798,
+    "seen": 1792353087.6447773,
+    "ast_hash": "b56dc640cc777bcd8ff5b4fd1c89d600",
     "semantic_hash": ""
   },
   ".agents/AGENTS.md": {
-    "mtime": 1792349272.090695,
-    "seen": 1792349408.1540163,
-    "ast_hash": "fa6c0c3f416fbb066066e031efa961cd",
+    "mtime": 1792352979.3681934,
+    "seen": 1792353087.6447823,
+    "ast_hash": "19984300e3c53a7ecbb797417435a003",
     "semantic_hash": ""
   },
   ".agents/experiences/001-zero-collision-haproxy-nftables-failover.md": {
@@ -180,9 +180,9 @@
     "semantic_hash": ""
   },
   ".agents/experiences/README.md": {
-    "mtime": 1792348917.9482849,
-    "seen": 1792349408.1540194,
-    "ast_hash": "bcb1554dc7f619b911c53bc22bf8cff9",
+    "mtime": 1792353039.1835074,
+    "seen": 1792353087.6447875,
+    "ast_hash": "b7154e528f276a7353a69432fbc90a8e",
     "semantic_hash": ""
   },
   ".agents/rules/blast-radius-analysis.md": {
@@ -249,6 +249,18 @@
     "mtime": 1792349235.260502,
     "seen": 1792349408.1540334,
     "ast_hash": "05269c62977ee87325576bef06ae1a53",
+    "semantic_hash": ""
+  },
+  ".agents/experiences/004-backward-compatibility-and-schema-migrations.md": {
+    "mtime": 1792353020.4626994,
+    "seen": 1792353087.644786,
+    "ast_hash": "b2d7916dcc6cfdb4af4f8f0298be3933",
+    "semantic_hash": ""
+  },
+  ".agents/rules/backward-compatibility-and-migrations.md": {
+    "mtime": 1792352929.2644303,
+    "seen": 1792353087.6447918,
+    "ast_hash": "f1682e3f855aa6424d637fde92d87ed3",
     "semantic_hash": ""
   }
 }

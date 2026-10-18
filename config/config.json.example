@@ -1,4 +1,5 @@
 {
+  "schema_version": 2,
   "wan_interface": "auto",
   "check_interval_seconds": 8,
   "failure_threshold": 3,
