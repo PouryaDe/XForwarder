@@ -41,9 +41,11 @@ Use this skill when auditing existing code, reviewing pull requests, or conducti
 
 ### 7. Authentication & API Security
 - **Forbidden:** Unauthenticated endpoints under `/api/*` (except `/api/login`).
-- **Forbidden:** Plaintext password storage. Must use SHA-256 hashes.
-- **Check:** Session cookies enforce `HttpOnly` and `SameSite=Lax` with 24-hour TTL.
-- **Check:** API responses include `Cache-Control: no-store, no-cache`.
+- **Forbidden:** Plaintext password storage. Must use salted PBKDF2-HMAC-SHA256 (100,000 iterations + 16-byte random salt).
+- **Check:** Adaptive rate limiting on `/api/login` (5 failed attempts locks out IP for 15 minutes).
+- **Check:** Session cookies enforce `HttpOnly` and `SameSite=Strict` with 24-hour TTL and 4-hour idle timeout.
+- **Check:** API responses include `Cache-Control: no-store, no-cache` and OWASP security headers (CSP, X-Frame-Options DENY).
+- **Check:** CSRF protection verifies `Origin`/`Referer` headers against Host.
 
 ### 8. Pure Vanilla Frontend
 - **Forbidden:** Introducing npm, Webpack, Vite, or Node.js build steps into `web/`.

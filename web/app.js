@@ -177,6 +177,7 @@ async function checkAuth() {
 
 function showLogin() {
     if (pollTimer) clearInterval(pollTimer);
+    pollTimer = null;
     loginScreen.style.display = "flex";
     dashboardScreen.style.display = "none";
 }

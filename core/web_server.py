@@ -181,7 +181,7 @@ def verify_password(password: str, stored_hash: str) -> Tuple[bool, bool]:
     Returns: (is_valid, needs_rehash)
     Backward compatible with legacy SHA-256 with automatic seamless upgrade to PBKDF2.
     """
-    if not stored_hash:
+    if not stored_hash or not password or not isinstance(password, str):
         return False, False
 
     # Modern salted PBKDF2-HMAC-SHA256 format
@@ -394,6 +394,8 @@ class XForwarderWebHandler(BaseHTTPRequestHandler):
         self.send_response(status)
         self.send_header("Content-Type", "application/json; charset=utf-8")
         self.send_header("Content-Length", str(len(body)))
+        if status == 429 and isinstance(data, dict) and "remaining_seconds" in data:
+            self.send_header("Retry-After", str(data["remaining_seconds"]))
         self.apply_security_headers(cookie_token=cookie_token)
         self.end_headers()
         self.wfile.write(body)
@@ -423,7 +425,7 @@ class XForwarderWebHandler(BaseHTTPRequestHandler):
 
     def check_origin(self) -> bool:
         """Validates Origin/Referer headers against Host to prevent CSRF."""
-        origin = self.headers.get("Origin")
+        origin = self.headers.get("Origin") or self.headers.get("Referer")
         host = self.headers.get("Host")
         if origin and host:
             parsed = urlparse(origin)
@@ -693,6 +695,11 @@ class XForwarderWebHandler(BaseHTTPRequestHandler):
                     self.send_json({"ok": False, "error": "Username must be at least 3 characters"}, 400)
                     return
                 auth_cfg["username"] = new_user
+                token = self.get_session_token()
+                if token:
+                    with SESSION_LOCK:
+                        if token in ACTIVE_SESSIONS:
+                            ACTIVE_SESSIONS[token]["username"] = new_user
 
             if new_pwd:
                 if len(new_pwd) < 8:

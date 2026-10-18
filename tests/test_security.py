@@ -142,6 +142,50 @@ class TestXForwarderSecurity(unittest.TestCase):
         self.assertFalse(valid)
         self.assertIn("invalid", msg.lower())
 
+    def test_verify_password_corrupt_and_empty_inputs(self):
+        """Verifies that verify_password handles malformed, empty, or None inputs gracefully without exceptions."""
+        # Empty and None values
+        self.assertEqual(verify_password("", "valid_hash"), (False, False))
+        self.assertEqual(verify_password("valid_pwd", ""), (False, False))
+        self.assertEqual(verify_password(None, "valid_hash"), (False, False))
+        self.assertEqual(verify_password("valid_pwd", None), (False, False))
+
+        # Malformed PBKDF2 strings
+        corrupt_hashes = [
+            "pbkdf2:sha256:notanumber$salt$hex",
+            "pbkdf2:sha256:100000$salt",  # missing hex
+            "pbkdf2:sha256:100000$salt$hex$extra",  # too many parts
+            "pbkdf2:sha256:100000$nothexsalt$hex",
+            "unknown_algo:sha256:100000$salt$hex"
+        ]
+        for ch in corrupt_hashes:
+            valid, needs_rehash = verify_password("Password123!", ch)
+            self.assertFalse(valid, f"Corrupt hash should not validate: {ch}")
+            self.assertFalse(needs_rehash)
+
+    def test_validate_rule_port_boundary_edge_cases(self):
+        """Verifies boundary port constraints (1-65535) and protocol validation."""
+        # Port below minimum (0, -1)
+        self.assertFalse(validate_rule({"port": 0, "protocol": "both", "destinations": [{"target": "1.1.1.1"}]})[0])
+        self.assertFalse(validate_rule({"port": -5, "protocol": "both", "destinations": [{"target": "1.1.1.1"}]})[0])
+
+        # Port above maximum (65536, 99999)
+        self.assertFalse(validate_rule({"port": 65536, "protocol": "both", "destinations": [{"target": "1.1.1.1"}]})[0])
+        self.assertFalse(validate_rule({"port": 99999, "protocol": "both", "destinations": [{"target": "1.1.1.1"}]})[0])
+
+        # Non-integer port
+        self.assertFalse(validate_rule({"port": "http", "protocol": "both", "destinations": [{"target": "1.1.1.1"}]})[0])
+
+        # Invalid protocol
+        self.assertFalse(validate_rule({"port": 443, "protocol": "sctp", "destinations": [{"target": "1.1.1.1"}]})[0])
+
+        # Empty destinations list
+        self.assertFalse(validate_rule({"port": 443, "protocol": "both", "destinations": []})[0])
+
+        # Valid boundaries (port 1 and port 65535)
+        self.assertTrue(validate_rule({"port": 1, "protocol": "tcp", "destinations": [{"target": "1.1.1.1", "port": 1}]})[0])
+        self.assertTrue(validate_rule({"port": 65535, "protocol": "udp", "destinations": [{"target": "1.1.1.1", "port": 65535}]})[0])
+
 
 if __name__ == "__main__":
     unittest.main()

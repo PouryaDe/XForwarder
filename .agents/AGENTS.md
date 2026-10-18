@@ -11,7 +11,7 @@ Authoritative architectural rules and standard operating procedures for AI agent
 - **Core Engine Daemon:** `core/engine.py` (running 24/7 as `xforwarder.service`).
 - **Web UI Dashboard:** `core/web_server.py` + `web/` (running 24/7 as `xforwarder-web.service`).
 - **CLI Controller:** `xforwarder.sh` (aliased to `xforwarder` and `xfwd`).
-- **Test Suite:** `tests/test_migration.py` (Native Python unittest covering backward compatibility & schema migrations).
+- **Test Suite:** `tests/test_migration.py` & `tests/test_security.py` (Native Python unittest covering migrations, security, PBKDF2 auth, and edge cases).
 
 ---
 
@@ -27,6 +27,7 @@ Authoritative architectural rules and standard operating procedures for AI agent
 9. **Zero Polling & Reactive Execution:** Never use `schedule` timers or poll `manage_task(status)`. Await reactive wakeup automatically.
 10. **Clean Code & DRY:** Extract repeated socket, formatting, or parsing logic into centralized, single-responsibility methods.
 11. **Backward Compatibility & Automated Migrations (Mandatory):** All software updates and schema changes must remain 100% backward compatible. Never drop or overwrite existing rules, custom ports, or admin credentials. Always perform atomic pre-update backup and automatic self-healing schema normalization via `migrate_and_normalize_config()`.
+12. **Multi-Layer Web Security & PBKDF2 Auth (Mandatory):** Admin credentials must use salted PBKDF2-HMAC-SHA256 (100,000 iterations + 16-byte random salt). All mutating endpoints verify origin. Login endpoints enforce adaptive rate limiting (5 attempts in 5 minutes triggers 15-minute lockout). All responses enforce OWASP security headers (CSP, X-Frame-Options DENY, SameSite=Strict cookies).
 
 ---
 

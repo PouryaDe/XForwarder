@@ -16,10 +16,18 @@ description: Web dashboard UI aesthetics, Vanilla stack constraints, session aut
 - **Language**: English interface for universal usability.
 
 ## 3. Authentication & Security Model
-- **Password Protection**: Admin password is stored as a SHA-256 hash (`password_hash`) in `config.json`.
-- **Session Tokens**:
-  - Secure random tokens generated via `secrets.token_hex(24)`.
-  - Stored in memory with 24-hour TTL (`SESSION_TTL_HOURS = 24`).
-  - Delivered via `Set-Cookie: xfwd_session=<token>; Path=/; HttpOnly; SameSite=Lax` (with backward compatibility for `fwdman_session`).
+- **Password Protection**: Admin password is encrypted via PBKDF2-HMAC-SHA256 (100,000 iterations + 16-byte cryptographic salt) with backward-compatible auto-upgrade for legacy SHA-256 hashes.
+- **Session Tokens & Timeouts**:
+  - Secure 256-bit random tokens generated via `secrets.token_hex(32)`.
+  - Stored in memory with 24-hour absolute TTL and 4-hour inactivity timeout (`SESSION_IDLE_TIMEOUT_SECONDS = 14400`).
+  - Delivered via `Set-Cookie: xfwd_session=<token>; Path=/; HttpOnly; SameSite=Strict` (with `; Secure` when over HTTPS).
+- **Brute-Force & Rate Limiting**:
+  - 5 failed login attempts in 5 minutes triggers a 15-minute client IP lockout (HTTP 429 Too Many Requests with `Retry-After` header).
+  - Failed logins incur an intentional 400-700ms timing jitter delay to defeat automated credential stuffing.
+- **OWASP Defense in Depth**:
+  - Enforce `Content-Security-Policy`, `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, and `Referrer-Policy: strict-origin-when-cross-origin`.
+  - Mask server identity header (`Server: XForwarder-Shield/2.0`).
+  - Strict payload size limit of 64KB (`MAX_PAYLOAD = 65536`).
+  - CSRF protection via `Origin`/`Referer` header verification on mutating endpoints (POST, DELETE).
 - **API Guard**: Every endpoint under `/api/*` (except `/api/login`) must verify session validity using `check_auth(handler)` and return `401 Unauthorized` if unauthenticated.
 - **Cache Control**: All JSON API responses must specify `Cache-Control: no-store, no-cache, must-revalidate`.

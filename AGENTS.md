@@ -22,7 +22,8 @@ XForwarder/
 ├── xforwarder.sh          # Root installer and interactive CLI controller (xforwarder / xfwd)
 ├── forward-manager.sh     # Backward compatibility wrapper for xforwarder.sh
 ├── tests/
-│   └── test_migration.py  # Native Python unittest suite (schema migrations & edge cases)
+│   ├── test_migration.py  # Native Python unittest suite (schema migrations & edge cases)
+│   └── test_security.py   # Native Python unittest suite (PBKDF2 auth, rate limiting & input sanitization)
 ├── .agents/               # Antigravity agent configuration (constitution, rules, workflows, skills, scripts)
 │   ├── AGENTS.md          # Master architecture constitution
 │   ├── hooks.json         # Antigravity lifecycle hooks (pre-invocation and stop syntax checks)
@@ -64,6 +65,11 @@ XForwarder/
    - Updates must NEVER drop, overwrite, or corrupt existing port forwarding rules, user credentials, or custom ports.
    - All migrations must be automated, self-healing (`migrate_and_normalize_config`), idempotent, and preceded by an atomic configuration backup (`config.json.bak.<timestamp>`).
    - Detailed rule: `.agents/rules/backward-compatibility-and-migrations.md`.
+
+7. **Multi-Layer Web Security & PBKDF2 Auth (Mandatory)**:
+   - Admin credentials must use salted PBKDF2-HMAC-SHA256 (100,000 iterations + 16-byte random salt) with self-healing legacy SHA-256 upgrade.
+   - Adaptive brute-force protection: 5 failed attempts in 5 minutes triggers a 15-minute IP lockout (HTTP 429).
+   - OWASP defense in depth: enforce CSP, X-Frame-Options DENY, SameSite=Strict HttpOnly cookies, and CSRF origin validation.
 
 ---
 
