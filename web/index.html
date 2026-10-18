@@ -14,26 +14,68 @@
     <div class="login-wrapper" id="loginScreen">
         <div class="login-card">
             <div class="login-header">
-                <div class="logo-orb"></div>
-                <h2>XForwarder</h2>
-                <p>Enter your credentials to access the relay dashboard</p>
+                <div class="security-orb">
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                </div>
+                <h2>XForwarder Shield</h2>
+                <p>Authenticated access to the multi-path relay engine</p>
             </div>
+
+            <!-- Lockout Alert Banner -->
+            <div id="lockoutAlert" class="lockout-alert" style="display:none;">
+                <div class="lockout-header">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                    <span>Security Lockout Active</span>
+                </div>
+                <p id="lockoutText">Too many failed login attempts.</p>
+                <div class="lockout-timer" id="lockoutTimer">15:00</div>
+            </div>
+
             <form id="loginForm">
                 <div class="form-group">
                     <label for="loginUsername">Username</label>
-                    <input type="text" id="loginUsername" class="form-control" placeholder="admin" required autocomplete="username">
+                    <div class="input-with-icon">
+                        <svg class="input-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                        <input type="text" id="loginUsername" class="form-control" placeholder="admin" required autocomplete="username">
+                    </div>
                 </div>
+
                 <div class="form-group">
                     <label for="loginPassword">Password</label>
-                    <input type="password" id="loginPassword" class="form-control" placeholder="••••••••" required autocomplete="current-password">
+                    <div class="input-with-icon">
+                        <svg class="input-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                        <input type="password" id="loginPassword" class="form-control" placeholder="••••••••" required autocomplete="current-password">
+                        <button type="button" class="btn-toggle-pwd" id="btnToggleLoginPwd" title="Show/Hide Password" tabindex="-1">
+                            <svg id="eyeIconLogin" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                        </button>
+                    </div>
+                    <div id="capsLockWarning" class="caps-warning" style="display:none;">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                        Caps Lock is ON
+                    </div>
                 </div>
+
                 <div id="loginError" class="login-error" style="display:none;"></div>
+
                 <button type="submit" class="btn btn-primary btn-block" id="btnLogin">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
                     <span>Sign In to Dashboard</span>
                 </button>
             </form>
-            <div class="login-footer">
-                <span>Protected by Kernel Space & HAProxy Sync Engine · XForwarder</span>
+
+            <div class="login-security-badge">
+                <div class="badge-item">
+                    <span class="badge-dot"></span>
+                    <span>PBKDF2-HMAC-SHA256 (100k iters)</span>
+                </div>
+                <div class="badge-item">
+                    <span class="badge-dot"></span>
+                    <span>Adaptive Brute-Force & Lockout Shield</span>
+                </div>
+                <div class="badge-item">
+                    <span class="badge-dot"></span>
+                    <span>Kernel L3 Isolated Forwarding</span>
+                </div>
             </div>
         </div>
     </div>
@@ -71,6 +113,11 @@
 
                 <button class="btn btn-secondary btn-icon" id="btnManualRefresh" title="Refresh Now">
                     <svg id="refreshIcon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+                </button>
+
+                <button class="btn btn-secondary btn-sm" id="btnOpenSecurityModal" title="Security & Credentials">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                    Security
                 </button>
 
                 <button class="btn btn-secondary btn-sm" id="btnLogout" title="Sign out">
@@ -264,6 +311,67 @@
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" id="btnCancelModal">Cancel</button>
                     <button type="submit" class="btn btn-primary" id="btnSaveRule">Save & Apply Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Security & Credentials Management Modal -->
+    <div class="modal-backdrop" id="securityModal">
+        <div class="modal-card">
+            <div class="modal-header">
+                <div>
+                    <h3>Security & Credentials</h3>
+                    <p class="modal-subtitle">Update administrator username and cryptographic password</p>
+                </div>
+                <button type="button" class="modal-close" id="btnCloseSecurityModal">&times;</button>
+            </div>
+            <form id="securityForm">
+                <div class="form-group">
+                    <label for="secCurrentPwd">Current Admin Password <span class="required">*</span></label>
+                    <div class="input-with-icon">
+                        <svg class="input-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                        <input type="password" id="secCurrentPwd" class="form-control" placeholder="Current password" required autocomplete="current-password">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="secNewUser">New Username (optional)</label>
+                    <div class="input-with-icon">
+                        <svg class="input-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                        <input type="text" id="secNewUser" class="form-control" placeholder="Leave empty to keep current" autocomplete="off">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="secNewPwd">New Password (optional)</label>
+                    <div class="input-with-icon">
+                        <svg class="input-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 2l-2 2m-1.5 1.5L16 7l-4 4-2-2-4 4 2 2-4 4 2 2 4-4 2 2 4-4 1.5-1.5L22 4l-1-2z"/></svg>
+                        <input type="password" id="secNewPwd" class="form-control" placeholder="Leave empty to keep current (min 8 chars)" autocomplete="new-password">
+                        <button type="button" class="btn-toggle-pwd" id="btnToggleSecPwd" title="Show/Hide Password" tabindex="-1">
+                            <svg id="eyeIconSec" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                        </button>
+                    </div>
+                    <!-- Password Strength Meter -->
+                    <div class="pwd-strength-container" id="pwdStrengthContainer" style="display:none;">
+                        <div class="pwd-strength-bar"><div class="pwd-strength-fill" id="pwdStrengthFill"></div></div>
+                        <span class="pwd-strength-label" id="pwdStrengthLabel">Strength: --</span>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="secConfirmPwd">Confirm New Password</label>
+                    <div class="input-with-icon">
+                        <svg class="input-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+                        <input type="password" id="secConfirmPwd" class="form-control" placeholder="Repeat new password" autocomplete="new-password">
+                    </div>
+                </div>
+
+                <div id="securityError" class="login-error" style="display:none;"></div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" id="btnCancelSecurity">Cancel</button>
+                    <button type="submit" class="btn btn-primary" id="btnSaveSecurity">Update Credentials</button>
                 </div>
             </form>
         </div>

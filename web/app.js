@@ -51,6 +51,37 @@ const btnManualRefresh = document.getElementById("btnManualRefresh");
 const refreshIcon = document.getElementById("refreshIcon");
 const pulseDot = document.getElementById("pulseDot");
 
+// Security & Credentials Elements
+const btnToggleLoginPwd = document.getElementById("btnToggleLoginPwd");
+const loginPasswordInput = document.getElementById("loginPassword");
+const eyeIconLogin = document.getElementById("eyeIconLogin");
+const capsLockWarning = document.getElementById("capsLockWarning");
+const lockoutAlert = document.getElementById("lockoutAlert");
+const lockoutText = document.getElementById("lockoutText");
+const lockoutTimer = document.getElementById("lockoutTimer");
+const btnLogin = document.getElementById("btnLogin");
+const loginUsernameInput = document.getElementById("loginUsername");
+
+const securityModal = document.getElementById("securityModal");
+const securityForm = document.getElementById("securityForm");
+const btnOpenSecurityModal = document.getElementById("btnOpenSecurityModal");
+const btnCloseSecurityModal = document.getElementById("btnCloseSecurityModal");
+const btnCancelSecurity = document.getElementById("btnCancelSecurity");
+const secCurrentPwd = document.getElementById("secCurrentPwd");
+const secNewUser = document.getElementById("secNewUser");
+const secNewPwd = document.getElementById("secNewPwd");
+const secConfirmPwd = document.getElementById("secConfirmPwd");
+const btnToggleSecPwd = document.getElementById("btnToggleSecPwd");
+const eyeIconSec = document.getElementById("eyeIconSec");
+const pwdStrengthContainer = document.getElementById("pwdStrengthContainer");
+const pwdStrengthFill = document.getElementById("pwdStrengthFill");
+const pwdStrengthLabel = document.getElementById("pwdStrengthLabel");
+const securityError = document.getElementById("securityError");
+
+let lockoutCountdownTimer = null;
+const EYE_OPEN_SVG = `<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>`;
+const EYE_OFF_SVG = `<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/>`;
+
 // Toast helper
 function showToast(message, type = "info") {
     const container = document.getElementById("toastContainer");
@@ -160,7 +191,167 @@ function showDashboard(username) {
     }
 }
 
-// Login Form Submit
+// ── Password Visibility Toggles ──
+function setupPasswordToggle(button, input, icon) {
+    if (!button || !input || !icon) return;
+    button.addEventListener("click", () => {
+        const isPwd = input.getAttribute("type") === "password";
+        input.setAttribute("type", isPwd ? "text" : "password");
+        icon.innerHTML = isPwd ? EYE_OFF_SVG : EYE_OPEN_SVG;
+    });
+}
+setupPasswordToggle(btnToggleLoginPwd, loginPasswordInput, eyeIconLogin);
+setupPasswordToggle(btnToggleSecPwd, secNewPwd, eyeIconSec);
+
+// ── Caps Lock Detection ──
+function setupCapsLockDetection(input, warningEl) {
+    if (!input || !warningEl) return;
+    const checkCaps = (e) => {
+        if (e.getModifierState && e.getModifierState("CapsLock")) {
+            warningEl.style.display = "flex";
+        } else {
+            warningEl.style.display = "none";
+        }
+    };
+    input.addEventListener("keyup", checkCaps);
+    input.addEventListener("keydown", checkCaps);
+}
+setupCapsLockDetection(loginPasswordInput, capsLockWarning);
+
+// ── Lockout Countdown Timer ──
+function startLockoutTimer(remainingSeconds) {
+    if (lockoutCountdownTimer) clearInterval(lockoutCountdownTimer);
+    let secondsLeft = remainingSeconds;
+
+    loginUsernameInput.disabled = true;
+    loginPasswordInput.disabled = true;
+    btnLogin.disabled = true;
+    lockoutAlert.style.display = "block";
+
+    const updateDisplay = () => {
+        const m = Math.floor(secondsLeft / 60);
+        const s = secondsLeft % 60;
+        lockoutTimer.innerText = `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+    };
+
+    updateDisplay();
+    lockoutCountdownTimer = setInterval(() => {
+        secondsLeft--;
+        if (secondsLeft <= 0) {
+            clearInterval(lockoutCountdownTimer);
+            lockoutCountdownTimer = null;
+            lockoutAlert.style.display = "none";
+            loginUsernameInput.disabled = false;
+            loginPasswordInput.disabled = false;
+            btnLogin.disabled = false;
+            loginError.style.display = "none";
+            showToast("Temporary lockout lifted. You may now attempt to log in.");
+        } else {
+            updateDisplay();
+        }
+    }, 1000);
+}
+
+// ── Password Strength Evaluator ──
+function evaluatePasswordStrength(pwd) {
+    if (!pwd) return { score: 0, text: "--", labelClass: "" };
+    let score = 0;
+    if (pwd.length >= 8) score++;
+    if (pwd.length >= 12) score++;
+    if (/[a-z]/.test(pwd) && /[A-Z]/.test(pwd)) score++;
+    if (/\d/.test(pwd)) score++;
+    if (/[^a-zA-Z0-9]/.test(pwd)) score++;
+
+    if (score <= 2) {
+        return { score: 1, text: "Weak", fillClass: "strength-weak", labelClass: "label-weak" };
+    } else if (score <= 4) {
+        return { score: 2, text: "Medium", fillClass: "strength-medium", labelClass: "label-medium" };
+    } else {
+        return { score: 3, text: "Strong", fillClass: "strength-strong", labelClass: "label-strong" };
+    }
+}
+
+// ── Security Credentials Modal ──
+btnOpenSecurityModal.addEventListener("click", () => {
+    securityForm.reset();
+    securityError.style.display = "none";
+    pwdStrengthContainer.style.display = "none";
+    secNewUser.value = currentUsernameEl.innerText || "";
+    securityModal.classList.add("show");
+});
+
+function closeSecurityModal() {
+    securityModal.classList.remove("show");
+    securityForm.reset();
+    securityError.style.display = "none";
+}
+
+btnCloseSecurityModal.addEventListener("click", closeSecurityModal);
+btnCancelSecurity.addEventListener("click", closeSecurityModal);
+
+secNewPwd.addEventListener("input", () => {
+    const val = secNewPwd.value;
+    if (!val) {
+        pwdStrengthContainer.style.display = "none";
+        return;
+    }
+    pwdStrengthContainer.style.display = "flex";
+    const res = evaluatePasswordStrength(val);
+    pwdStrengthFill.className = `pwd-strength-fill ${res.fillClass}`;
+    pwdStrengthLabel.className = `pwd-strength-label ${res.labelClass}`;
+    pwdStrengthLabel.innerText = `Strength: ${res.text}`;
+});
+
+securityForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    securityError.style.display = "none";
+
+    const current_password = secCurrentPwd.value;
+    const new_username = secNewUser.value.trim();
+    const new_password = secNewPwd.value;
+    const confirm_password = secConfirmPwd.value;
+
+    if (new_password) {
+        if (new_password.length < 8) {
+            securityError.innerText = "New password must be at least 8 characters long";
+            securityError.style.display = "block";
+            return;
+        }
+        if (new_password !== confirm_password) {
+            securityError.innerText = "New password and confirmation do not match";
+            securityError.style.display = "block";
+            return;
+        }
+    }
+
+    try {
+        const res = await fetch(`${API_BASE}/security/credentials`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                current_password,
+                new_username,
+                new_password
+            })
+        });
+        const data = await res.json().catch(() => ({}));
+        if (res.ok && data.ok) {
+            if (data.username) {
+                currentUsernameEl.innerText = data.username;
+            }
+            showToast("Security credentials updated successfully!");
+            closeSecurityModal();
+        } else {
+            securityError.innerText = data.error || "Failed to update security credentials";
+            securityError.style.display = "block";
+        }
+    } catch (err) {
+        securityError.innerText = "Network error. Please try again.";
+        securityError.style.display = "block";
+    }
+});
+
+// Login Form Submit (Hardened with Lockout & Rate-Limit Shield)
 loginForm.addEventListener("submit", async (e) => {
     e.preventDefault();
     loginError.style.display = "none";
@@ -173,10 +364,20 @@ loginForm.addEventListener("submit", async (e) => {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ username, password })
         });
-        const data = await res.json();
+        const data = await res.json().catch(() => ({}));
         if (res.ok && data.ok) {
+            if (lockoutCountdownTimer) {
+                clearInterval(lockoutCountdownTimer);
+                lockoutCountdownTimer = null;
+            }
+            lockoutAlert.style.display = "none";
             showDashboard(data.username);
-            showToast(`Welcome back, ${data.username}!`);
+            showToast(`Authenticated securely · Welcome, ${data.username}!`);
+        } else if (res.status === 429) {
+            const remaining = data.remaining_seconds || 900;
+            startLockoutTimer(remaining);
+            loginError.innerText = data.error || "Too many failed attempts. Temporary lockout active.";
+            loginError.style.display = "block";
         } else {
             loginError.innerText = data.error || "Invalid username or password";
             loginError.style.display = "block";

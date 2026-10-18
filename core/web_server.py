@@ -13,6 +13,8 @@ import hmac
 import secrets
 import socket
 import threading
+import ipaddress
+import re
 from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
 from urllib.parse import urlparse
 from typing import Optional, Dict, Tuple
@@ -31,9 +33,18 @@ LOCAL_CONFIG_PATH = os.path.join(BASE_DIR, "config", "config.json")
 STATE_FILE_PATH = "/run/xforwarder/state.json"
 LEGACY_STATE_FILE_PATH = "/run/forward-manager/state.json"
 
-ACTIVE_SESSIONS: Dict[str, float] = {}
+ACTIVE_SESSIONS: Dict[str, dict] = {}
 SESSION_LOCK = threading.Lock()
 SESSION_TTL_HOURS = 24
+SESSION_IDLE_TIMEOUT_SECONDS = 14400  # 4 hours idle limit
+MAX_ACTIVE_SESSIONS = 50
+
+# Rate Limiting & Brute-Force Shield State
+FAILED_LOGIN_ATTEMPTS: Dict[str, dict] = {}
+RATE_LIMIT_LOCK = threading.Lock()
+MAX_FAILED_ATTEMPTS = 5
+LOCKOUT_DURATION = 900  # 15 minutes lockout
+WINDOW_DURATION = 300   # 5 minutes failure evaluation window
 
 try:
     from engine import XForwarderEngine
@@ -152,8 +163,129 @@ def get_system_stats() -> dict:
     return stats
 
 
-def hash_password(password: str) -> str:
-    return hashlib.sha256(password.encode("utf-8")).hexdigest()
+PBKDF2_ITERATIONS = 100000
+
+
+def hash_password(password: str, salt_hex: Optional[str] = None) -> str:
+    """Generates a secure PBKDF2-HMAC-SHA256 salted password hash."""
+    if not salt_hex:
+        salt_hex = secrets.token_hex(16)
+    salt_bytes = bytes.fromhex(salt_hex)
+    derived = hashlib.pbkdf2_hmac("sha256", password.encode("utf-8"), salt_bytes, PBKDF2_ITERATIONS)
+    return f"pbkdf2:sha256:{PBKDF2_ITERATIONS}${salt_hex}${derived.hex()}"
+
+
+def verify_password(password: str, stored_hash: str) -> Tuple[bool, bool]:
+    """
+    Verifies password against stored hash using constant-time comparison.
+    Returns: (is_valid, needs_rehash)
+    Backward compatible with legacy SHA-256 with automatic seamless upgrade to PBKDF2.
+    """
+    if not stored_hash:
+        return False, False
+
+    # Modern salted PBKDF2-HMAC-SHA256 format
+    if stored_hash.startswith("pbkdf2:sha256:"):
+        try:
+            parts = stored_hash.split("$")
+            if len(parts) == 3:
+                header, salt_hex, expected_hex = parts
+                iters = int(header.split(":")[-1])
+                salt_bytes = bytes.fromhex(salt_hex)
+                derived = hashlib.pbkdf2_hmac("sha256", password.encode("utf-8"), salt_bytes, iters)
+                return hmac.compare_digest(derived.hex(), expected_hex), False
+        except Exception:
+            return False, False
+
+    # Legacy plain SHA-256 hash (64 hex characters)
+    legacy_test = hashlib.sha256(password.encode("utf-8")).hexdigest()
+    if hmac.compare_digest(legacy_test, stored_hash):
+        return True, True  # Valid, but triggers self-healing upgrade to salted PBKDF2!
+
+    return False, False
+
+
+def check_rate_limit(client_ip: str) -> Tuple[bool, int, int]:
+    """Checks if client IP is currently rate-limited. Returns (is_locked, remaining_seconds, fail_count)."""
+    now = time.time()
+    with RATE_LIMIT_LOCK:
+        record = FAILED_LOGIN_ATTEMPTS.get(client_ip)
+        if not record:
+            return False, 0, 0
+
+        lockout_until = record.get("lockout_until", 0)
+        if now < lockout_until:
+            remaining = int(lockout_until - now)
+            return True, remaining, record.get("count", 0)
+
+        # If evaluation window expired and not locked out, clear record
+        if now > record.get("first_attempt", 0) + WINDOW_DURATION:
+            FAILED_LOGIN_ATTEMPTS.pop(client_ip, None)
+            return False, 0, 0
+
+        return False, 0, record.get("count", 0)
+
+
+def record_failed_login(client_ip: str) -> Tuple[bool, int, int]:
+    """Records a failed login attempt and calculates lockout status."""
+    now = time.time()
+    with RATE_LIMIT_LOCK:
+        record = FAILED_LOGIN_ATTEMPTS.get(client_ip)
+        if not record or now > record.get("first_attempt", 0) + WINDOW_DURATION:
+            record = {"count": 1, "first_attempt": now, "lockout_until": 0}
+        else:
+            record["count"] += 1
+
+        is_locked = False
+        remaining = 0
+        if record["count"] >= MAX_FAILED_ATTEMPTS:
+            record["lockout_until"] = now + LOCKOUT_DURATION
+            is_locked = True
+            remaining = LOCKOUT_DURATION
+
+        FAILED_LOGIN_ATTEMPTS[client_ip] = record
+
+        # Prune expired entries if dict is growing
+        if len(FAILED_LOGIN_ATTEMPTS) > 100:
+            stale = [k for k, v in FAILED_LOGIN_ATTEMPTS.items() if now > v.get("lockout_until", 0) and now > v.get("first_attempt", 0) + WINDOW_DURATION]
+            for k in stale:
+                FAILED_LOGIN_ATTEMPTS.pop(k, None)
+
+        return is_locked, remaining, record["count"]
+
+
+def reset_rate_limit(client_ip: str):
+    """Clears failed login counter on successful authentication."""
+    with RATE_LIMIT_LOCK:
+        FAILED_LOGIN_ATTEMPTS.pop(client_ip, None)
+
+
+HOSTNAME_REGEX = re.compile(r"^[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$")
+
+
+def is_valid_target(target: str) -> bool:
+    """Strictly validates if a destination target is a valid IPv4, IPv6, or RFC hostname."""
+    clean = target.strip().strip("[]")
+    if not clean:
+        return False
+    # Check IPv4 or IPv6
+    try:
+        ipaddress.ip_address(clean)
+        return True
+    except ValueError:
+        pass
+
+    # If it is an all-numeric dotted quad that failed IP validation, it is invalid
+    parts = clean.split(".")
+    if all(p.isdigit() for p in parts):
+        return False
+
+    # Check RFC hostname (TLD cannot be purely numeric per RFC 3696)
+    if HOSTNAME_REGEX.match(clean):
+        if len(parts) > 1 and parts[-1].isdigit():
+            return False
+        return True
+    return False
 
 
 def validate_rule(body: dict) -> Tuple[bool, str]:
@@ -184,9 +316,13 @@ def validate_rule(body: dict) -> Tuple[bool, str]:
         target = str(d.get("target", "")).strip()
         if not target:
             return False, "Destination target cannot be empty"
+
         # Disallow control characters or shell injection hazards
         if any(c in target for c in ";&|`$ \t\n\r<>\"'"):
             return False, "Destination target contains invalid characters"
+
+        if not is_valid_target(target):
+            return False, f"Invalid destination target '{target}'. Must be a valid IPv4, IPv6, or hostname"
 
         d_type = str(d.get("type", "haproxy")).lower()
         if d_type not in ("haproxy", "nftables", "nginx"):
@@ -222,18 +358,43 @@ def is_port_in_use_by_external_service(port: int, current_rule_id: str, existing
 
 class XForwarderWebHandler(BaseHTTPRequestHandler):
     server_instance: 'XForwarderWebServer'
+    server_version = "XForwarder-Shield/2.0"
+    sys_version = ""
+
+    def apply_security_headers(self, cookie_token: Optional[str] = None):
+        """Applies comprehensive OWASP recommended security headers."""
+        self.send_header("X-Content-Type-Options", "nosniff")
+        self.send_header("X-Frame-Options", "DENY")
+        self.send_header("X-XSS-Protection", "1; mode=block")
+        self.send_header("Referrer-Policy", "strict-origin-when-cross-origin")
+        self.send_header("Permissions-Policy", "geolocation=(), camera=(), microphone=(), payment=()")
+        self.send_header("Cross-Origin-Opener-Policy", "same-origin")
+        self.send_header("Cross-Origin-Resource-Policy", "same-origin")
+        self.send_header(
+            "Content-Security-Policy",
+            "default-src 'self'; script-src 'self' 'unsafe-inline'; "
+            "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+            "font-src 'self' https://fonts.gstatic.com; "
+            "img-src 'self' data:; connect-src 'self'; "
+            "frame-ancestors 'none'; form-action 'self'; base-uri 'self'"
+        )
+        self.send_header("Cache-Control", "no-store, no-cache, must-revalidate")
+
+        is_https = self.headers.get("X-Forwarded-Proto") == "https"
+        secure_flag = "; Secure" if is_https else ""
+
+        if cookie_token:
+            self.send_header("Set-Cookie", f"xfwd_session={cookie_token}; Path=/; HttpOnly; SameSite=Strict{secure_flag}")
+        elif cookie_token == "":
+            self.send_header("Set-Cookie", f"xfwd_session=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT; HttpOnly; SameSite=Strict{secure_flag}")
+            self.send_header("Set-Cookie", f"fwdman_session=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT; HttpOnly; SameSite=Strict{secure_flag}")
 
     def send_json(self, data: dict, status: int = 200, cookie_token: Optional[str] = None):
         body = json.dumps(data).encode("utf-8")
         self.send_response(status)
         self.send_header("Content-Type", "application/json; charset=utf-8")
         self.send_header("Content-Length", str(len(body)))
-        self.send_header("Cache-Control", "no-store, no-cache, must-revalidate")
-        if cookie_token:
-            self.send_header("Set-Cookie", f"xfwd_session={cookie_token}; Path=/; HttpOnly; SameSite=Lax")
-        elif cookie_token == "":
-            self.send_header("Set-Cookie", "xfwd_session=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT")
-            self.send_header("Set-Cookie", "fwdman_session=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT")
+        self.apply_security_headers(cookie_token=cookie_token)
         self.end_headers()
         self.wfile.write(body)
 
@@ -246,9 +407,29 @@ class XForwarderWebHandler(BaseHTTPRequestHandler):
         self.send_response(200)
         self.send_header("Content-Type", content_type)
         self.send_header("Content-Length", str(len(content)))
-        self.send_header("Cache-Control", "no-store, no-cache, must-revalidate")
+        self.apply_security_headers()
         self.end_headers()
         self.wfile.write(content)
+
+    def get_client_ip(self) -> str:
+        """Extracts remote client IP with reverse-proxy support."""
+        cf_ip = self.headers.get("CF-Connecting-IP")
+        if cf_ip:
+            return cf_ip.strip()
+        xfwd = self.headers.get("X-Forwarded-For")
+        if xfwd:
+            return xfwd.split(",")[0].strip()
+        return self.client_address[0]
+
+    def check_origin(self) -> bool:
+        """Validates Origin/Referer headers against Host to prevent CSRF."""
+        origin = self.headers.get("Origin")
+        host = self.headers.get("Host")
+        if origin and host:
+            parsed = urlparse(origin)
+            if parsed.netloc and parsed.netloc.lower() != host.lower():
+                return False
+        return True
 
     def get_session_token(self) -> Optional[str]:
         # Check custom header first
@@ -272,15 +453,23 @@ class XForwarderWebHandler(BaseHTTPRequestHandler):
             return False
         now = time.time()
         with SESSION_LOCK:
-            expiry = ACTIVE_SESSIONS.get(token)
-            if not expiry or now > expiry:
+            session = ACTIVE_SESSIONS.get(token)
+            if not session:
+                return False
+
+            # Check absolute expiry or idle timeout
+            if now > session.get("expires_at", 0) or (now - session.get("last_active", 0)) > SESSION_IDLE_TIMEOUT_SECONDS:
                 ACTIVE_SESSIONS.pop(token, None)
                 return False
+
+            # Slide activity window
+            session["last_active"] = now
+
             # Bound session table size
-            if len(ACTIVE_SESSIONS) > 50:
-                stale = [k for k, v in ACTIVE_SESSIONS.items() if now > v]
+            if len(ACTIVE_SESSIONS) > MAX_ACTIVE_SESSIONS:
+                stale = [k for k, v in ACTIVE_SESSIONS.items() if now > v.get("expires_at", 0) or (now - v.get("last_active", 0)) > SESSION_IDLE_TIMEOUT_SECONDS]
                 for k in stale:
-                    del ACTIVE_SESSIONS[k]
+                    ACTIVE_SESSIONS.pop(k, None)
         return True
 
     def resolve_path(self) -> Tuple[bool, str, Optional[str]]:
@@ -327,6 +516,7 @@ class XForwarderWebHandler(BaseHTTPRequestHandler):
         if redirect_url:
             self.send_response(302)
             self.send_header("Location", redirect_url)
+            self.apply_security_headers()
             self.end_headers()
             return
 
@@ -337,6 +527,7 @@ class XForwarderWebHandler(BaseHTTPRequestHandler):
         # Favicon optimization
         if subpath == "/favicon.ico":
             self.send_response(204)
+            self.apply_security_headers()
             self.end_headers()
             return
 
@@ -384,15 +575,39 @@ class XForwarderWebHandler(BaseHTTPRequestHandler):
             self.send_error(404, "Not Found")
             return
 
+        # CSRF Protection: Verify Origin matches Host
+        if not self.check_origin():
+            self.send_json({"ok": False, "error": "Cross-origin request rejected"}, 403)
+            return
+
+        # DoS Protection: Limit payload size to 64KB
+        MAX_PAYLOAD = 65536
         length = int(self.headers.get("Content-Length", 0))
+        if length > MAX_PAYLOAD:
+            self.send_json({"ok": False, "error": "Payload exceeds 64KB limit"}, 413)
+            return
+
         body_bytes = self.rfile.read(length) if length > 0 else b"{}"
         try:
             body = json.loads(body_bytes.decode("utf-8")) if body_bytes else {}
         except Exception:
             body = {}
 
-        # 1. Login endpoint
+        # 1. Login endpoint (Protected with Adaptive Rate Limiting & PBKDF2)
         if subpath == "/api/login":
+            client_ip = self.get_client_ip()
+
+            # Check rate limiting / lockout
+            is_locked, remaining, fail_count = check_rate_limit(client_ip)
+            if is_locked:
+                self.send_json({
+                    "ok": False,
+                    "error": f"Too many failed login attempts. Temporary lockout active. Try again in {remaining} seconds.",
+                    "lockout": True,
+                    "remaining_seconds": remaining
+                }, 429)
+                return
+
             cfg = load_config()
             auth_cfg = cfg.get("web", {}).get("auth", {})
             expected_user = auth_cfg.get("username", "admin")
@@ -401,13 +616,47 @@ class XForwarderWebHandler(BaseHTTPRequestHandler):
             user = body.get("username", "").strip()
             pwd = body.get("password", "")
 
-            if user == expected_user and hmac.compare_digest(hash_password(pwd), expected_hash):
-                token = secrets.token_hex(24)
+            user_matches = hmac.compare_digest(user, expected_user)
+            pwd_valid, needs_rehash = verify_password(pwd, expected_hash)
+
+            if user_matches and pwd_valid:
+                reset_rate_limit(client_ip)
+
+                # Automatic self-healing upgrade of legacy SHA-256 hashes to salted PBKDF2
+                if needs_rehash:
+                    new_salted_hash = hash_password(pwd)
+                    cfg["web"]["auth"]["password_hash"] = new_salted_hash
+                    save_config(cfg)
+
+                token = secrets.token_hex(32)
+                now = time.time()
                 with SESSION_LOCK:
-                    ACTIVE_SESSIONS[token] = time.time() + (SESSION_TTL_HOURS * 3600)
+                    ACTIVE_SESSIONS[token] = {
+                        "username": user,
+                        "created_at": now,
+                        "last_active": now,
+                        "expires_at": now + (SESSION_TTL_HOURS * 3600),
+                        "ip": client_ip
+                    }
                 self.send_json({"ok": True, "token": token, "username": user}, 200, cookie_token=token)
             else:
-                self.send_json({"ok": False, "error": "Invalid username or password"}, 401)
+                is_locked_now, lock_remaining, count = record_failed_login(client_ip)
+                # Intentional timing jitter delay to defeat automated credential stuffing
+                time.sleep(0.4 + (secrets.randbelow(300) / 1000.0))
+                attempts_left = max(0, MAX_FAILED_ATTEMPTS - count)
+                if is_locked_now:
+                    self.send_json({
+                        "ok": False,
+                        "error": f"Maximum failed attempts exceeded. Access locked for {LOCKOUT_DURATION // 60} minutes.",
+                        "lockout": True,
+                        "remaining_seconds": lock_remaining
+                    }, 429)
+                else:
+                    self.send_json({
+                        "ok": False,
+                        "error": f"Invalid username or password. {attempts_left} attempt(s) remaining before temporary lockout.",
+                        "attempts_left": attempts_left
+                    }, 401)
             return
 
         # 2. Logout endpoint
@@ -424,7 +673,41 @@ class XForwarderWebHandler(BaseHTTPRequestHandler):
             self.send_json({"error": "Unauthorized"}, 401)
             return
 
-        if subpath == "/api/rule":
+        # 3. Security Credentials Management (Change Username / Password)
+        if subpath == "/api/security/credentials":
+            current_pwd = body.get("current_password", "")
+            new_user = body.get("new_username", "").strip()
+            new_pwd = body.get("new_password", "")
+
+            cfg = load_config()
+            auth_cfg = cfg.get("web", {}).get("auth", {})
+            expected_hash = auth_cfg.get("password_hash", "")
+
+            pwd_valid, _ = verify_password(current_pwd, expected_hash)
+            if not pwd_valid:
+                self.send_json({"ok": False, "error": "Current password verification failed"}, 403)
+                return
+
+            if new_user:
+                if len(new_user) < 3:
+                    self.send_json({"ok": False, "error": "Username must be at least 3 characters"}, 400)
+                    return
+                auth_cfg["username"] = new_user
+
+            if new_pwd:
+                if len(new_pwd) < 8:
+                    self.send_json({"ok": False, "error": "New password must be at least 8 characters"}, 400)
+                    return
+                auth_cfg["password_hash"] = hash_password(new_pwd)
+
+            cfg["web"]["auth"] = auth_cfg
+            if save_config(cfg):
+                self.send_json({"ok": True, "username": auth_cfg["username"]})
+            else:
+                self.send_json({"ok": False, "error": "Failed to save configuration"}, 500)
+            return
+
+        elif subpath == "/api/rule":
             valid, err_msg = validate_rule(body)
             if not valid:
                 self.send_json({"ok": False, "error": err_msg}, 400)
@@ -524,6 +807,10 @@ class XForwarderWebHandler(BaseHTTPRequestHandler):
         allowed, subpath, _ = self.resolve_path()
         if not allowed:
             self.send_error(404, "Not Found")
+            return
+
+        if not self.check_origin():
+            self.send_json({"ok": False, "error": "Cross-origin request rejected"}, 403)
             return
 
         if not self.is_authenticated():

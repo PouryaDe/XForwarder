@@ -174,7 +174,7 @@ install_xforwarder() {
         user_secret="${user_secret:-xfwd-admin}"
 
         local pass_hash
-        pass_hash=$(python3 -c "import sys, hashlib; print(hashlib.sha256(sys.argv[1].encode('utf-8')).hexdigest())" "$user_pass")
+        pass_hash=$(python3 -c "import sys, hashlib, secrets; salt = secrets.token_hex(16); derived = hashlib.pbkdf2_hmac('sha256', sys.argv[1].encode('utf-8'), bytes.fromhex(salt), 100000).hex(); print(f'pbkdf2:sha256:100000\${salt}\${derived}')" "$user_pass")
 
         cat <<EOF > "$CONFIG_FILE"
 {
@@ -435,7 +435,7 @@ change_web_password() {
     done
 
     python3 - "$active_cfg" "$new_pass" << 'PYEOF'
-import sys, json, hashlib, os
+import sys, json, hashlib, secrets, os
 
 cfg_path = sys.argv[1]
 password = sys.argv[2]
@@ -447,7 +447,10 @@ if 'web' not in cfg:
     cfg['web'] = {}
 if 'auth' not in cfg['web']:
     cfg['web']['auth'] = {}
-cfg['web']['auth']['password_hash'] = hashlib.sha256(password.encode('utf-8')).hexdigest()
+
+salt = secrets.token_hex(16)
+derived = hashlib.pbkdf2_hmac('sha256', password.encode('utf-8'), bytes.fromhex(salt), 100000).hex()
+cfg['web']['auth']['password_hash'] = f"pbkdf2:sha256:100000${salt}${derived}"
 
 tmp_path = f"{cfg_path}.tmp.{os.getpid()}"
 with open(tmp_path, 'w', encoding='utf-8') as f:
@@ -548,7 +551,7 @@ change_all_web_settings() {
     new_secret="${new_secret:-xfwd-admin}"
 
     python3 - "$active_cfg" "$new_port" "$new_user" "$new_pass" "$new_secret" << 'PYEOF'
-import sys, json, hashlib, os
+import sys, json, hashlib, secrets, os
 
 cfg_path = sys.argv[1]
 port = int(sys.argv[2])
@@ -566,7 +569,10 @@ cfg['web']['secret_path'] = secret
 if 'auth' not in cfg['web']:
     cfg['web']['auth'] = {}
 cfg['web']['auth']['username'] = user
-cfg['web']['auth']['password_hash'] = hashlib.sha256(password.encode('utf-8')).hexdigest()
+
+salt = secrets.token_hex(16)
+derived = hashlib.pbkdf2_hmac('sha256', password.encode('utf-8'), bytes.fromhex(salt), 100000).hex()
+cfg['web']['auth']['password_hash'] = f"pbkdf2:sha256:100000${salt}${derived}"
 
 tmp_path = f"{cfg_path}.tmp.{os.getpid()}"
 with open(tmp_path, 'w', encoding='utf-8') as f:

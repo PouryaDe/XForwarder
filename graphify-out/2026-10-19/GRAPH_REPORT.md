@@ -1,17 +1,17 @@
 # Graph Report - Forward-Manager  (2026-10-19)
 
 ## Corpus Check
-- 43 files · ~20,173 words
+- 43 files · ~21,705 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 8 file(s) not represented in the graph (top: .service 4, (none) 2, .example 1)
 
 ## Summary
-- 352 nodes · 573 edges · 25 communities (24 shown, 1 thin omitted)
+- 373 nodes · 602 edges · 25 communities (24 shown, 1 thin omitted)
 - Extraction: 97% EXTRACTED · 3% INFERRED · 0% AMBIGUOUS · INFERRED: 18 edges (avg confidence: 0.95)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `cfd2a779`
+- Built from commit: `fc60e4ae`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -19,7 +19,7 @@
 - web_server.py
 - app.js
 - XForwarderEngine
-- Python Core Standards (`core/engine.py` & `core/web_server.py`)
+- XForwarder Master Architecture Constitution
 - engine.py
 - 🌐 XForwarder
 - xforwarder.sh
@@ -66,20 +66,20 @@
 ## Communities (25 total, 1 thin omitted)
 
 ### Community 0 - "web_server.py"
-Cohesion: 0.13
-Nodes (9): get_config_path(), hash_password(), is_port_in_use_by_external_service(), load_config(), load_state(), save_config(), validate_rule(), XForwarderWebHandler (+1 more)
+Cohesion: 0.12
+Nodes (10): get_config_path(), get_system_stats(), hash_password(), is_port_in_use_by_external_service(), load_config(), load_state(), save_config(), validate_rule() (+2 more)
 
 ### Community 1 - "app.js"
-Cohesion: 0.08
-Nodes (29): basePath, btnCancelModal, btnCloseModal, btnLogout, btnOpenAddModal, checkAuth(), currentRules, currentUsernameEl (+21 more)
+Cohesion: 0.05
+Nodes (49): askConfirm(), basePath, batchSelect, btnCancelModal, btnClearSearch, btnCloseModal, btnLogout, btnManualRefresh (+41 more)
 
 ### Community 2 - "XForwarderEngine"
-Cohesion: 0.09
-Nodes (13): 3. Network Probing Standards, 1. High-Risk Core Components, 2. Constitution Check Gate, Pre-Execution Blast Radius & Impact Analysis Rule (XForwarder), 1. Absolute Prohibition of Duplicated Logic, 2. Mandatory Helper Centralization, Clean Code & DRY (Don't Repeat Yourself) Rule, Configuration Schema (`/etc/xforwarder/config.json`) (+5 more)
+Cohesion: 0.08
+Nodes (17): 1. Native Python 3 Standard Library Only, 2. Thread Safety & Atomic File Operations, 3. Network Probing Standards, 4. Signal & Process Lifecycle, Python Core Standards (`core/engine.py` & `core/web_server.py`), 1. High-Risk Core Components, 2. Constitution Check Gate, Pre-Execution Blast Radius & Impact Analysis Rule (XForwarder) (+9 more)
 
-### Community 3 - "Python Core Standards (`core/engine.py` & `core/web_server.py`)"
-Cohesion: 0.40
-Nodes (4): 1. Native Python 3 Standard Library Only, 2. Thread Safety & Atomic File Operations, 4. Signal & Process Lifecycle, Python Core Standards (`core/engine.py` & `core/web_server.py`)
+### Community 3 - "XForwarder Master Architecture Constitution"
+Cohesion: 0.29
+Nodes (7): 1. Project Overview & Terminology, 2. Non-Negotiable Architectural Constraints, 3. Specialized Skills Index (Progressive Disclosure), 4. Active Workspace Rules (Conditional Disclosure), 5. Workflows & Automation Scripts, 6. Experiences Catalog, XForwarder Master Architecture Constitution
 
 ### Community 4 - "engine.py"
 Cohesion: 0.10
@@ -98,8 +98,8 @@ Cohesion: 0.29
 Nodes (6): Step 1: Backup Configuration, Step 2: Copy Updated Files to Installation Directory, Step 3: Syntax Verification, Step 4: Restart Daemons, Step 5: Post-Deployment Health Check, Workflow: Deploy & Update Services
 
 ### Community 8 - ".migrate_and_normalize_config"
-Cohesion: 0.05
-Nodes (25): 1. Project Overview & Terminology, 2. Non-Negotiable Architectural Constraints, 3. Specialized Skills Index (Progressive Disclosure), 4. Active Workspace Rules (Conditional Disclosure), 5. Workflows & Automation Scripts, 6. Experiences Catalog, XForwarder Master Architecture Constitution, 🔍 Codebase Knowledge Graph (graphify) (+17 more)
+Cohesion: 0.07
+Nodes (18): 🔍 Codebase Knowledge Graph (graphify), ⚡ Core Rules & Constraints, 1. Context & Motivation, 2. Root Cause / Core Dynamics, 3. Architecture & Solution Implemented, 4. Invariants & Rules for AI Agents, 5. Verification & Testing, Experience 004: Backward Compatibility and Automated Schema Migrations (+10 more)
 
 ### Community 9 - "experiences/README.md"
 Cohesion: 0.07
@@ -162,24 +162,24 @@ Cohesion: 0.50
 Nodes (3): 1. Structure & Storage, 2. Managing Session State via CLI, Session State & Task Handoff Rule (XForwarder)
 
 ## Knowledge Gaps
-- **130 isolated node(s):** `basePath`, `currentRules`, `loginScreen`, `dashboardScreen`, `loginForm` (+125 more)
-  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 165 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
+- **145 isolated node(s):** `basePath`, `currentRules`, `lastRuntime`, `loginScreen`, `dashboardScreen` (+140 more)
+  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 180 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
 - **1 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
 - **Why does `XForwarderEngine` connect `XForwarderEngine` to `.migrate_and_normalize_config`, `web_server.py`, `engine.py`?**
-  _High betweenness centrality (0.209) - this node is a cross-community bridge._
-- **What connects `basePath`, `currentRules`, `loginScreen` to the rest of the system?**
-  _130 weakly-connected nodes found - possible documentation gaps or missing edges._
+  _High betweenness centrality (0.188) - this node is a cross-community bridge._
+- **What connects `basePath`, `currentRules`, `lastRuntime` to the rest of the system?**
+  _145 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `web_server.py` be split into smaller, more focused modules?**
-  _Cohesion score 0.12903225806451613 - nodes in this community are weakly interconnected._
-- **Why does `XForwarder Master Architecture Constitution` connect `.migrate_and_normalize_config` to `.agents/AGENTS.md`?**
-  _High betweenness centrality (0.161) - this node is a cross-community bridge._
+  _Cohesion score 0.125 - nodes in this community are weakly interconnected._
+- **Why does `XForwarder Master Architecture Constitution` connect `XForwarder Master Architecture Constitution` to `.agents/AGENTS.md`?**
+  _High betweenness centrality (0.144) - this node is a cross-community bridge._
 - **Should `app.js` be split into smaller, more focused modules?**
-  _Cohesion score 0.0846774193548387 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.05128205128205128 - nodes in this community are weakly interconnected._
+- **Why does `2. Non-Negotiable Architectural Constraints` connect `XForwarder Master Architecture Constitution` to `.migrate_and_normalize_config`?**
+  _High betweenness centrality (0.133) - this node is a cross-community bridge._
 - **Should `XForwarderEngine` be split into smaller, more focused modules?**
-  _Cohesion score 0.09206349206349207 - nodes in this community are weakly interconnected._
-- **Should `engine.py` be split into smaller, more focused modules?**
-  _Cohesion score 0.09513742071881606 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.07682926829268293 - nodes in this community are weakly interconnected._

@@ -6,15 +6,15 @@
     "semantic_hash": ""
   },
   "core/web_server.py": {
-    "mtime": 1792357633.3491807,
-    "seen": 1792358333.9114218,
-    "ast_hash": "40d7513e188ae2a40fb52a7d3041ce67",
+    "mtime": 1792358753.8091235,
+    "seen": 1792359289.9899454,
+    "ast_hash": "ec93d615281e73db6cfc4a6d6763c80e",
     "semantic_hash": ""
   },
   "web/app.js": {
-    "mtime": 1792357705.081959,
-    "seen": 1792358333.9114232,
-    "ast_hash": "4d90fa83447bf0e41fbc944c295c571b",
+    "mtime": 1792359149.148794,
+    "seen": 1792359289.9899473,
+    "ast_hash": "8f16c624e87baf2e50f001493ed59273",
     "semantic_hash": ""
   },
   ".agents/rules/01-architecture-and-failover.md": {
@@ -84,9 +84,9 @@
     "semantic_hash": ""
   },
   "web/index.html": {
-    "mtime": 1792350802.8637445,
-    "seen": 1792350981.0474012,
-    "ast_hash": "49bf5e81527d90cb6905fca41e93532e",
+    "mtime": 1792358868.7076569,
+    "seen": 1792359289.9899735,
+    "ast_hash": "558e53419ab74a21ff1a556a606d2992",
     "semantic_hash": ""
   },
   "xforwarder.sh": {

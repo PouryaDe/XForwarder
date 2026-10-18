@@ -914,3 +914,186 @@ body {
     .rule-actions select { flex: 1; }
     .btn-sm { min-height: 38px; min-width: 38px; }
 }
+
+/* ── Enhanced Security Elements ── */
+.security-orb {
+    width: 60px;
+    height: 60px;
+    margin: 0 auto 16px auto;
+    border-radius: 18px;
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.25) 0%, rgba(16, 185, 129, 0.25) 100%);
+    border: 1px solid rgba(99, 102, 241, 0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--accent-primary);
+    box-shadow: 0 0 25px rgba(99, 102, 241, 0.35);
+    transition: all 0.3s ease;
+}
+
+.security-orb:hover {
+    transform: scale(1.05);
+    border-color: var(--accent-emerald);
+    color: var(--accent-emerald);
+    box-shadow: 0 0 30px rgba(16, 185, 129, 0.4);
+}
+
+.input-with-icon {
+    position: relative;
+    display: flex;
+    align-items: center;
+    width: 100%;
+}
+
+.input-with-icon .input-icon {
+    position: absolute;
+    left: 12px;
+    color: var(--text-muted);
+    pointer-events: none;
+    transition: color 0.2s ease;
+}
+
+.input-with-icon input {
+    padding-left: 38px;
+    padding-right: 40px;
+    width: 100%;
+}
+
+.input-with-icon input:focus ~ .input-icon {
+    color: var(--accent-primary);
+}
+
+.btn-toggle-pwd {
+    position: absolute;
+    right: 10px;
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+}
+
+.btn-toggle-pwd:hover {
+    color: #FFF;
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.caps-warning {
+    margin-top: 6px;
+    font-size: 0.75rem;
+    color: var(--accent-amber);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-weight: 500;
+}
+
+/* ── Lockout Alert Banner ── */
+.lockout-alert {
+    background: rgba(239, 68, 68, 0.12);
+    border: 1px solid rgba(239, 68, 68, 0.35);
+    border-radius: 12px;
+    padding: 14px 16px;
+    margin-bottom: 20px;
+    text-align: center;
+    animation: pulseLockout 2s infinite ease-in-out;
+}
+
+@keyframes pulseLockout {
+    0%, 100% { border-color: rgba(239, 68, 68, 0.35); box-shadow: 0 0 10px rgba(239, 68, 68, 0.1); }
+    50% { border-color: rgba(239, 68, 68, 0.65); box-shadow: 0 0 18px rgba(239, 68, 68, 0.25); }
+}
+
+.lockout-header {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    color: var(--accent-rose);
+    font-weight: 600;
+    font-size: 0.9rem;
+    margin-bottom: 4px;
+}
+
+.lockout-alert p {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    margin-bottom: 8px;
+}
+
+.lockout-timer {
+    font-family: var(--font-mono);
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--accent-rose);
+    letter-spacing: 0.08em;
+}
+
+/* ── Login Security Badges ── */
+.login-security-badge {
+    margin-top: 24px;
+    padding-top: 18px;
+    border-top: 1px dashed var(--border-color);
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.login-security-badge .badge-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.74rem;
+    color: var(--text-muted);
+}
+
+.login-security-badge .badge-dot {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: var(--accent-emerald);
+    box-shadow: 0 0 5px rgba(16, 185, 129, 0.6);
+}
+
+/* ── Password Strength Meter ── */
+.pwd-strength-container {
+    margin-top: 8px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.pwd-strength-bar {
+    flex: 1;
+    height: 5px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.pwd-strength-fill {
+    height: 100%;
+    width: 0%;
+    border-radius: 4px;
+    transition: width 0.3s ease, background 0.3s ease;
+}
+
+.strength-weak { width: 33%; background: var(--accent-rose); }
+.strength-medium { width: 66%; background: var(--accent-amber); }
+.strength-strong { width: 100%; background: var(--accent-emerald); }
+
+.pwd-strength-label {
+    font-size: 0.74rem;
+    font-weight: 600;
+    font-family: var(--font-mono);
+    min-width: 60px;
+}
+.label-weak { color: var(--accent-rose); }
+.label-medium { color: var(--accent-amber); }
+.label-strong { color: var(--accent-emerald); }
+
