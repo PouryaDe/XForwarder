@@ -211,6 +211,16 @@ install_xforwarder() {
 }
 EOF
         msg_ok "Configuration initialized at $CONFIG_FILE"
+
+        # Auto-discover and import pre-existing HAProxy port rules if available
+        python3 -c "
+import sys
+sys.path.insert(0, '$INSTALL_DIR')
+from core.haproxy_parser import import_haproxy_rules_into_config
+count, ports = import_haproxy_rules_into_config('$CONFIG_FILE')
+if count > 0:
+    print(f'\033[0;32m[OK] Auto-imported {count} pre-existing HAProxy port rules: {ports}\033[0m')
+" 2>/dev/null || true
     fi
 
     # Install systemd service units
@@ -735,6 +745,26 @@ except Exception as e:
 "
 }
 
+import_haproxy_rules() {
+    check_root
+    local active_cfg
+    active_cfg=$(resolve_active_config)
+    msg_info "Scanning for pre-existing HAProxy configurations (/etc/haproxy/haproxy.cfg and backups)..."
+    python3 -c "
+import sys
+sys.path.insert(0, '$INSTALL_DIR')
+from core.haproxy_parser import import_haproxy_rules_into_config
+count, ports = import_haproxy_rules_into_config('$active_cfg')
+if count > 0:
+    print(f'\033[0;32m[OK] Successfully imported {count} HAProxy port rules into XForwarder: {ports}\033[0m')
+else:
+    print('\033[1;33m[INFO] No new unimported HAProxy rules found in /etc/haproxy/.\033[0m')
+"
+    systemctl restart "$DAEMON_SERVICE" "$WEB_SERVICE" >/dev/null 2>&1 || true
+    msg_ok "XForwarder services synced with imported rules."
+    show_status
+}
+
 show_menu() {
     clear
     printf "%b=======================================================%b\n" "$CYAN" "$NC"
@@ -749,9 +779,10 @@ show_menu() {
     echo "5) View Core Engine Live Logs"
     echo "6) Update XForwarder (Auto-Migrate & Preserve Rules)"
     echo "7) Re-install / Full Setup Wizard"
+    echo "8) Import Pre-existing HAProxy Rules (/etc/haproxy/)"
     echo "0) Exit"
     echo
-    read -r -p "Select an option [0-7]: " choice
+    read -r -p "Select an option [0-8]: " choice
 
     case "$choice" in
         1) show_web_access_info ;;
@@ -761,6 +792,7 @@ show_menu() {
         5) journalctl -u "$DAEMON_SERVICE" -f ;;
         6) update_xforwarder ;;
         7) install_xforwarder ;;
+        8) import_haproxy_rules ;;
         0) exit 0 ;;
         *) msg_warn "Invalid selection." ;;
     esac
@@ -770,6 +802,9 @@ show_menu() {
 case "${1:-}" in
     install)
         install_xforwarder
+        ;;
+    import|import-haproxy)
+        import_haproxy_rules
         ;;
     update|upgrade)
         if ! is_installed; then

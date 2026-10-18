@@ -12,6 +12,7 @@ import hashlib
 import hmac
 import secrets
 import socket
+import subprocess
 import threading
 import ipaddress
 import re
@@ -341,8 +342,19 @@ def validate_rule(body: dict) -> Tuple[bool, str]:
     return True, ""
 
 
+def is_haproxy_listening(port: int) -> bool:
+    """Returns True if the process currently listening on port is HAProxy (which XForwarder manages)."""
+    try:
+        res = subprocess.run(["ss", "-tlpn", f"sport = :{port}"], capture_output=True, text=True, timeout=1.0)
+        if "haproxy" in res.stdout.lower():
+            return True
+    except Exception:
+        pass
+    return False
+
+
 def is_port_in_use_by_external_service(port: int, current_rule_id: str, existing_rules: list) -> bool:
-    """Checks if a port is actively bound by an external process not managed by this rule."""
+    """Checks if a port is actively bound by an external non-HAProxy process not managed by this rule."""
     for r in existing_rules:
         if r.get("id") == current_rule_id and r.get("port") == port:
             return False
@@ -350,6 +362,9 @@ def is_port_in_use_by_external_service(port: int, current_rule_id: str, existing
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             s.settimeout(0.2)
             if s.connect_ex(("127.0.0.1", port)) == 0:
+                # If connected, check if it's HAProxy (which XForwarder will orchestrate and reload)
+                if is_haproxy_listening(port):
+                    return False
                 return True
     except Exception:
         pass
@@ -562,6 +577,18 @@ class XForwarderWebHandler(BaseHTTPRequestHandler):
                     "runtime": state.get("runtime", {}),
                     "system": get_system_stats(),
                     "server_time": time.time()
+                })
+                return
+            elif subpath == "/api/import/discover":
+                cfg = load_config()
+                existing_rules = cfg.get("rules", [])
+                from core.haproxy_parser import discover_importable_rules
+                importable = discover_importable_rules(existing_rules)
+                self.send_json({
+                    "available": bool(importable),
+                    "count": len(importable),
+                    "ports": [r["port"] for r in importable],
+                    "rules": importable
                 })
                 return
             else:
@@ -806,6 +833,16 @@ class XForwarderWebHandler(BaseHTTPRequestHandler):
                 self.send_json({"ok": True, "count": len(rules), "force_override": override_prio})
             else:
                 self.send_json({"ok": False, "error": "Save failed"}, 500)
+
+        elif subpath == "/api/import/haproxy":
+            from core.haproxy_parser import import_haproxy_rules_into_config
+            cfg_path = get_config_path()
+            count, ports = import_haproxy_rules_into_config(cfg_path)
+            self.send_json({
+                "ok": True,
+                "imported_count": count,
+                "imported_ports": ports
+            })
 
         else:
             self.send_error(404, "Not Found")

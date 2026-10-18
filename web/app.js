@@ -187,9 +187,67 @@ function showDashboard(username) {
     dashboardScreen.style.display = "block";
     if (username) currentUsernameEl.innerText = username;
     fetchStatus();
+    checkImportableRules();
     if (!pollTimer) {
         pollTimer = setInterval(fetchStatus, 3000);
     }
+}
+
+// ── Pre-existing HAProxy Rules Discovery & 1-Click Import ──
+async function checkImportableRules() {
+    try {
+        const res = await fetch(`${API_BASE}/import/discover`);
+        if (!res.ok) return;
+        const data = await res.json();
+        const banner = document.getElementById("importBanner");
+        if (!banner) return;
+        if (data.available && data.count > 0) {
+            const portsStr = data.ports.map(p => `:${p}`).join(", ");
+            const bannerText = document.getElementById("importBannerText");
+            if (bannerText) {
+                bannerText.innerText = `Discovered ${data.count} existing HAProxy forwarding port(s) on this server (${portsStr}). Import them to manage failover in the dashboard.`;
+            }
+            banner.style.display = "flex";
+        } else {
+            banner.style.display = "none";
+        }
+    } catch (e) {}
+}
+
+const btnImportHaproxy = document.getElementById("btnImportHaproxy");
+if (btnImportHaproxy) {
+    btnImportHaproxy.addEventListener("click", async () => {
+        btnImportHaproxy.disabled = true;
+        btnImportHaproxy.innerHTML = '<span class="btn-spinner"></span> <span>Importing...</span>';
+        try {
+            const res = await fetch(`${API_BASE}/import/haproxy`, { method: "POST" });
+            const data = await res.json().catch(() => ({}));
+            if (res.ok && data.ok) {
+                showToast(`Successfully imported ${data.imported_count} HAProxy port rules!`);
+                const banner = document.getElementById("importBanner");
+                if (banner) banner.style.display = "none";
+                fetchStatus();
+            } else {
+                showToast(data.error || "Failed to import rules", "error");
+            }
+        } catch (e) {
+            showToast("Error communicating with server", "error");
+        } finally {
+            btnImportHaproxy.disabled = false;
+            btnImportHaproxy.innerHTML = `
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+                <span>Import All Rules</span>
+            `;
+        }
+    });
+}
+
+const btnDismissImportBanner = document.getElementById("btnDismissImportBanner");
+if (btnDismissImportBanner) {
+    btnDismissImportBanner.addEventListener("click", () => {
+        const banner = document.getElementById("importBanner");
+        if (banner) banner.style.display = "none";
+    });
 }
 
 // ── Password Visibility Toggles ──
