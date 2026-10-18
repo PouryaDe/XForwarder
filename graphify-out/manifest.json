@@ -84,9 +84,9 @@
     "semantic_hash": ""
   },
   "README.md": {
-    "mtime": 1792347917.0777445,
-    "seen": 1792348157.3854856,
-    "ast_hash": "dc86e5812d501255982e4d9c256c213a",
+    "mtime": 1792356915.9879732,
+    "seen": 1792356938.7314024,
+    "ast_hash": "d05b6a707ee3cb8454df684201b7c71d",
     "semantic_hash": ""
   },
   "web/index.html": {
@@ -96,9 +96,9 @@
     "semantic_hash": ""
   },
   "xforwarder.sh": {
-    "mtime": 1792353494.2778027,
-    "seen": 1792353891.2094076,
-    "ast_hash": "f11d6debea4354c73255d8ede4eefbc3",
+    "mtime": 1792356842.693159,
+    "seen": 1792356938.7313783,
+    "ast_hash": "8644067482806efdb5f382a29b2f64f2",
     "semantic_hash": ""
   },
   ".agents/skills/xfwd-ops/SKILL.md": {

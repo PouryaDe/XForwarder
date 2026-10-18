@@ -4,7 +4,7 @@
   "2": "XForwarderEngine",
   "3": "forward-manager.sh",
   "4": "engine.py",
-  "5": "🌐 XForwarder (مدیر هوشمند اولویت‌بندی، رله و فورواردینگ تونل‌ها)",
+  "5": "🌐 XForwarder",
   "6": "xforwarder.sh",
   "7": "Workflow: Deploy & Update Services",
   "8": ".migrate_and_normalize_config",
@@ -22,7 +22,6 @@
   "20": "Web Dashboard & Security Standards (`web/` & `core/web_server.py`)",
   "21": "Bash CLI & Deployment Standards (`xforwarder.sh`)",
   "22": "Intermediate Relay VPS Constraints Rule (XForwarder)",
-  "23": "XForwarder Operations Runbook",
   "24": "2. Mandatory Helper Centralization",
   "25": "Interactive Requirements Clarification (Reverse Prompt Engineering)",
   "26": "Session State & Task Handoff Rule (XForwarder)"

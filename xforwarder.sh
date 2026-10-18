@@ -96,13 +96,24 @@ install_xforwarder() {
 
     local script_dir
     script_dir=$(dirname "$(readlink -f "$0")")
+    local cleanup_tmp=""
+
+    if [[ ! -d "$script_dir/core" || ! -d "$script_dir/web" ]]; then
+        msg_info "Remote installation detected. Fetching latest XForwarder repository..."
+        local tmp_clone
+        tmp_clone=$(mktemp -d /tmp/xfwd_install.XXXXXX)
+        git clone --depth 1 https://github.com/PouryaDe/XForwarder.git "$tmp_clone"
+        script_dir="$tmp_clone"
+        cleanup_tmp="$tmp_clone"
+    fi
 
     msg_info "Installing XForwarder into $INSTALL_DIR..."
     mkdir -p "$INSTALL_DIR" "$CONFIG_DIR"
 
     cp -r "$script_dir/core" "$INSTALL_DIR/"
     cp -r "$script_dir/web" "$INSTALL_DIR/"
-    chmod +x "$INSTALL_DIR/core/engine.py" "$INSTALL_DIR/core/web_server.py"
+    cp "$script_dir/xforwarder.sh" "$INSTALL_DIR/xforwarder.sh"
+    chmod +x "$INSTALL_DIR/xforwarder.sh" "$INSTALL_DIR/core/engine.py" "$INSTALL_DIR/core/web_server.py"
 
     # Backup pre-existing configurations to avoid data loss
     local timestamp
@@ -195,12 +206,14 @@ EOF
     msg_ok "XForwarder Engine & 24/7 Web Server started."
 
     # Symlink CLI (both xforwarder/xfwd and legacy forward-manager/fwdman)
-    local target_script
-    target_script="$(readlink -f "$0")"
-    ln -sf "$target_script" "$BIN_LINK"
-    ln -sf "$target_script" "$SHORT_LINK"
-    ln -sf "$target_script" "$LEGACY_BIN_LINK"
-    ln -sf "$target_script" "$LEGACY_SHORT_LINK"
+    ln -sf "$INSTALL_DIR/xforwarder.sh" "$BIN_LINK"
+    ln -sf "$INSTALL_DIR/xforwarder.sh" "$SHORT_LINK"
+    ln -sf "$INSTALL_DIR/xforwarder.sh" "$LEGACY_BIN_LINK"
+    ln -sf "$INSTALL_DIR/xforwarder.sh" "$LEGACY_SHORT_LINK"
+
+    if [[ -n "$cleanup_tmp" && -d "$cleanup_tmp" ]]; then
+        rm -rf "$cleanup_tmp"
+    fi
 
     msg_ok "CLI commands installed: xforwarder and xfwd (aliases: forward-manager, fwdman)"
     show_web_access_info
@@ -212,9 +225,16 @@ update_xforwarder() {
 
     local script_dir
     script_dir=$(dirname "$(readlink -f "$0")")
+    local cleanup_tmp=""
 
-    # If running inside a git repository, pull latest updates if reachable
-    if command -v git >/dev/null 2>&1 && git -C "$script_dir" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+    if [[ ! -d "$script_dir/core" || ! -d "$script_dir/web" ]]; then
+        msg_info "Remote execution detected. Fetching latest XForwarder repository..."
+        local tmp_clone
+        tmp_clone=$(mktemp -d /tmp/xfwd_update.XXXXXX)
+        git clone --depth 1 https://github.com/PouryaDe/XForwarder.git "$tmp_clone"
+        script_dir="$tmp_clone"
+        cleanup_tmp="$tmp_clone"
+    elif command -v git >/dev/null 2>&1 && git -C "$script_dir" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
         msg_info "Checking for remote updates via Git..."
         if git -C "$script_dir" remote >/dev/null 2>&1; then
             git -C "$script_dir" pull --rebase >/dev/null 2>&1 || msg_warn "Could not fetch remote updates; proceeding with current local source files."
@@ -240,7 +260,8 @@ update_xforwarder() {
     mkdir -p "$INSTALL_DIR" "$CONFIG_DIR"
     cp -r "$script_dir/core" "$INSTALL_DIR/"
     cp -r "$script_dir/web" "$INSTALL_DIR/"
-    chmod +x "$INSTALL_DIR/core/engine.py" "$INSTALL_DIR/core/web_server.py"
+    cp "$script_dir/xforwarder.sh" "$INSTALL_DIR/xforwarder.sh"
+    chmod +x "$INSTALL_DIR/xforwarder.sh" "$INSTALL_DIR/core/engine.py" "$INSTALL_DIR/core/web_server.py"
 
     # Migrate legacy configuration path if applicable
     if [[ ! -f "$CONFIG_FILE" && -f "$LEGACY_CONFIG_FILE" ]]; then
@@ -274,12 +295,14 @@ update_xforwarder() {
     systemctl disable forward-manager.service forward-manager-web.service >/dev/null 2>&1 || true
 
     # Refresh CLI symlinks
-    local target_script
-    target_script="$(readlink -f "$0")"
-    ln -sf "$target_script" "$BIN_LINK"
-    ln -sf "$target_script" "$SHORT_LINK"
-    ln -sf "$target_script" "$LEGACY_BIN_LINK"
-    ln -sf "$target_script" "$LEGACY_SHORT_LINK"
+    ln -sf "$INSTALL_DIR/xforwarder.sh" "$BIN_LINK"
+    ln -sf "$INSTALL_DIR/xforwarder.sh" "$SHORT_LINK"
+    ln -sf "$INSTALL_DIR/xforwarder.sh" "$LEGACY_BIN_LINK"
+    ln -sf "$INSTALL_DIR/xforwarder.sh" "$LEGACY_SHORT_LINK"
+
+    if [[ -n "$cleanup_tmp" && -d "$cleanup_tmp" ]]; then
+        rm -rf "$cleanup_tmp"
+    fi
 
     # Restart services cleanly
     msg_info "Restarting XForwarder services..."
