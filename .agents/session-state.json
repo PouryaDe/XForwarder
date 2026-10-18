@@ -11,10 +11,9 @@
     "Added Option 6 (Update XForwarder) to interactive CLI menu and CLI dispatcher (update|upgrade)",
     "Implemented automated self-healing schema migration (migrate_and_normalize_config) in engine and web server",
     "Enforced mandatory pre-update atomic configuration backup in update_xforwarder",
-    "Documented permanent backward compatibility rules in .agents/rules/backward-compatibility-and-migrations.md and experience 004"
+    "Documented permanent backward compatibility rules in .agents/rules/backward-compatibility-and-migrations.md and experience 004",
+    "Implemented automatic installation detection and auto-triggering setup wizard on fresh executions"
   ],
-  "next_steps": [
-    "Run pre-commit verify-all.py and graphify update"
-  ],
+  "next_steps": [],
   "notes": "All future changes and script updates must strictly preserve existing user rules, custom ports, and credentials via automated schema migrations."
 }
