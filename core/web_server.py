@@ -248,29 +248,74 @@ class XForwarderWebHandler(BaseHTTPRequestHandler):
                     del ACTIVE_SESSIONS[k]
         return True
 
-    def do_GET(self):
+    def resolve_path(self) -> Tuple[bool, str, Optional[str]]:
+        """
+        Resolves the requested path against configured secret_path.
+        Returns: (is_allowed, normalized_subpath, redirect_url)
+        """
         parsed = urlparse(self.path)
-        path = parsed.path.rstrip("/")
-        if not path:
-            path = "/"
+        raw_path = parsed.path
+        cfg = load_config()
+        secret = cfg.get("web", {}).get("secret_path", "")
+        secret = str(secret or "").strip().strip("/")
 
         # Favicon optimization
-        if path == "/favicon.ico":
+        if raw_path == "/favicon.ico":
+            return True, "/favicon.ico", None
+
+        # Case 1: No secret path configured -> direct root access allowed
+        if not secret:
+            clean = raw_path.rstrip("/") or "/"
+            return True, clean, None
+
+        secret_prefix = f"/{secret}"
+
+        # Exact match without trailing slash -> redirect to /{secret}/
+        if raw_path == secret_prefix:
+            return True, "/", f"{secret_prefix}/"
+
+        # Request under /{secret}/
+        if raw_path.startswith(f"{secret_prefix}/"):
+            subpath = raw_path[len(secret_prefix):]
+            clean = subpath.rstrip("/") or "/"
+            return True, clean, None
+
+        # Allow authenticated requests to /api/ if user already has a valid session token
+        if raw_path.startswith("/api/") and self.is_authenticated():
+            clean = raw_path.rstrip("/") or "/"
+            return True, clean, None
+
+        return False, raw_path, None
+
+    def do_GET(self):
+        allowed, subpath, redirect_url = self.resolve_path()
+        if redirect_url:
+            self.send_response(302)
+            self.send_header("Location", redirect_url)
+            self.end_headers()
+            return
+
+        if not allowed:
+            self.send_error(404, "Not Found")
+            return
+
+        # Favicon optimization
+        if subpath == "/favicon.ico":
             self.send_response(204)
             self.end_headers()
             return
 
         # Static assets
-        if path == "/style.css":
+        if subpath == "/style.css":
             self.send_file(os.path.join(WEB_DIR, "style.css"), "text/css; charset=utf-8")
             return
-        elif path == "/app.js":
+        elif subpath == "/app.js":
             self.send_file(os.path.join(WEB_DIR, "app.js"), "application/javascript; charset=utf-8")
             return
 
         # Check authentication for API
-        if path.startswith("/api/"):
-            if path == "/api/me":
+        if subpath.startswith("/api/"):
+            if subpath == "/api/me":
                 auth_ok = self.is_authenticated()
                 cfg = load_config()
                 username = cfg.get("web", {}).get("auth", {}).get("username", "admin")
@@ -281,7 +326,7 @@ class XForwarderWebHandler(BaseHTTPRequestHandler):
                 self.send_json({"error": "Unauthorized"}, 401)
                 return
 
-            if path == "/api/status":
+            if subpath == "/api/status":
                 cfg = load_config()
                 state = load_state()
                 self.send_json({
@@ -294,12 +339,14 @@ class XForwarderWebHandler(BaseHTTPRequestHandler):
                 self.send_error(404, "API endpoint not found")
                 return
 
-        # Serve SPA index.html for all other routes
+        # Serve SPA index.html for all UI subpaths under secret_path
         self.send_file(os.path.join(WEB_DIR, "index.html"), "text/html; charset=utf-8")
 
     def do_POST(self):
-        parsed = urlparse(self.path)
-        path = parsed.path.rstrip("/")
+        allowed, subpath, _ = self.resolve_path()
+        if not allowed:
+            self.send_error(404, "Not Found")
+            return
 
         length = int(self.headers.get("Content-Length", 0))
         body_bytes = self.rfile.read(length) if length > 0 else b"{}"
@@ -309,7 +356,7 @@ class XForwarderWebHandler(BaseHTTPRequestHandler):
             body = {}
 
         # 1. Login endpoint
-        if path == "/api/login":
+        if subpath == "/api/login":
             cfg = load_config()
             auth_cfg = cfg.get("web", {}).get("auth", {})
             expected_user = auth_cfg.get("username", "admin")
@@ -328,7 +375,7 @@ class XForwarderWebHandler(BaseHTTPRequestHandler):
             return
 
         # 2. Logout endpoint
-        if path == "/api/logout":
+        if subpath == "/api/logout":
             token = self.get_session_token()
             if token:
                 with SESSION_LOCK:
@@ -341,7 +388,7 @@ class XForwarderWebHandler(BaseHTTPRequestHandler):
             self.send_json({"error": "Unauthorized"}, 401)
             return
 
-        if path == "/api/rule":
+        if subpath == "/api/rule":
             valid, err_msg = validate_rule(body)
             if not valid:
                 self.send_json({"ok": False, "error": err_msg}, 400)
@@ -381,7 +428,7 @@ class XForwarderWebHandler(BaseHTTPRequestHandler):
             else:
                 self.send_json({"ok": False, "error": "Save failed"}, 500)
 
-        elif path == "/api/override":
+        elif subpath == "/api/override":
             rule_id = str(body.get("rule_id", ""))
             try:
                 override_prio = int(body.get("force_override", 0))
@@ -415,15 +462,17 @@ class XForwarderWebHandler(BaseHTTPRequestHandler):
             self.send_error(404, "Not Found")
 
     def do_DELETE(self):
-        parsed = urlparse(self.path)
-        path = parsed.path
+        allowed, subpath, _ = self.resolve_path()
+        if not allowed:
+            self.send_error(404, "Not Found")
+            return
 
         if not self.is_authenticated():
             self.send_json({"error": "Unauthorized"}, 401)
             return
 
-        if path.startswith("/api/rule/"):
-            rule_id = path.split("/api/rule/")[1].strip()
+        if subpath.startswith("/api/rule/"):
+            rule_id = subpath.split("/api/rule/")[1].strip()
             cfg = load_config()
             cfg["rules"] = [r for r in cfg.get("rules", []) if r.get("id") != rule_id]
             if save_config(cfg):

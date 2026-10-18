@@ -33,10 +33,11 @@ bash <(curl -fsSL https://raw.githubusercontent.com/PouryaDe/XForwarder/main/xfo
 
 > [!TIP]
 > **مراحل ویزارد نصب:**  
-> اسکریپت به‌صورت خودکار کارت شبکه اصلی (`WAN`)، پکیج‌های مورد نیاز (`haproxy`, `nftables`, `nginx`, `python3`) و فورواردینگ کرنل (`net.ipv4.ip_forward = 1`) را آماده کرده و تنها موارد زیر را از شما می‌پرسد:
+> اسکریپت به‌صورت خودکار کارت شبکه اصلی (`WAN`)، پکیج‌های مورد نیاز (`haproxy`, `nftables`, `nginx`, `python3`) و فورواردینگ کرنل (`net.ipv4.ip_forward = 1`) را آماده کرده و موارد زیر را از شما می‌پرسد:
 > 1. پورت پنل وب (پیش‌فرض: `8090`)
 > 2. نام کاربری ادمین (پیش‌فرض: `admin`)
 > 3. رمز عبور ورود به پنل وب
+> 4. مسیر امنیتی اختصاصی پنل / Security Path (پیش‌فرض: `xfwd-admin`)
 
 ---
 
@@ -116,9 +117,13 @@ bash <(curl -fsSL https://raw.githubusercontent.com/PouryaDe/XForwarder/main/xfo
 | دستور | دستور کوتاه | عملکرد |
 | :--- | :--- | :--- |
 | `sudo xforwarder` | `sudo xfwd` | باز کردن منوی تعاملی مدیریتی |
-| `sudo xforwarder url` | `sudo xfwd url` | نمایش آدرس ورود به پنل تحت وب، پورت و نام کاربری |
+| `sudo xforwarder url` | `sudo xfwd url` | نمایش آدرس ورود کامل به همراه مسیر امنیتی و اطلاعات دسترسی |
 | `sudo xforwarder status` | `sudo xfwd status` | نمایش جدول زنده وضعیت پورت‌ها، تاخیر (Latency) و اولویت فعال |
-| `sudo xforwarder password` | `sudo xfwd password` | تغییر سریع نام‌کاربری و رمز عبور ادمین وب |
+| `sudo xforwarder settings` | `sudo xfwd settings` | منوی جامع تنظیمات وب (پورت، یوزرنیم، پسورد و مسیر امنیتی) |
+| `sudo xforwarder port` | `sudo xfwd port` | تغییر سریع پورت پنل وب |
+| `sudo xforwarder username` | `sudo xfwd username` | تغییر سریع نام‌کاربری ادمین |
+| `sudo xforwarder password` | `sudo xfwd password` | تغییر سریع رمز عبور ادمین |
+| `sudo xforwarder path` | `sudo xfwd path` | تغییر سریع مسیر امنیتی (Security Secret Slug) |
 | `sudo xforwarder restart` | `sudo xfwd restart` | راه‌اندازی مجدد سرویس هسته و سرویس وب |
 | `sudo xforwarder logs` | `sudo xfwd logs` | مشاهده لاگ لحظه‌ای پایش سلامت و تصمیمات سوئیچینگ |
 | `sudo xforwarder update` | `sudo xfwd update` | دریافت آخرین آپدیت با حفظ قوانین و مایگریشن خودکار |
@@ -130,8 +135,8 @@ bash <(curl -fsSL https://raw.githubusercontent.com/PouryaDe/XForwarder/main/xfo
 
 ## 🖥 ۶. راهنمای استفاده از داشبورد وب (Web UI Guide)
 
-1. در مرورگر آدرس سرور را به همراه پورت وارد کنید:  
-   `http://YOUR_SERVER_IP:8090/`
+1. در مرورگر آدرس سرور را به همراه پورت و مسیر امنیتی وارد کنید:  
+   `http://YOUR_SERVER_IP:8090/xfwd-admin/`
 2. نام کاربری و رمز عبور تعیین‌شده در مرحله نصب را وارد کنید.
 3. **تعریف قانون پورت جدید (Add Forwarding Rule):**
    - **Port:** شماره پورت ورودی (مثلاً `443` یا `2083`).

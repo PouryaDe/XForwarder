@@ -172,6 +172,22 @@ class TestXForwarderMigration(unittest.TestCase):
             self.assertEqual(upgraded["schema_version"], 2)
             self.assertEqual(upgraded["rules"][0]["port"], 5000)
 
+    def test_secret_path_normalization(self):
+        """Verifies that secret_path with leading/trailing slashes is cleaned properly."""
+        cfg_with_slashes = {
+            "web": {
+                "secret_path": "/custom-secret-slug/"
+            }
+        }
+        migrated, modified = XForwarderEngine.migrate_and_normalize_config(cfg_with_slashes)
+        self.assertTrue(modified)
+        self.assertEqual(migrated["web"]["secret_path"], "custom-secret-slug")
+
+        # Test default secret path when omitted
+        cfg_empty = {}
+        migrated2, _ = XForwarderEngine.migrate_and_normalize_config(cfg_empty)
+        self.assertEqual(migrated2["web"]["secret_path"], "xfwd-admin")
+
 
 if __name__ == "__main__":
     unittest.main()

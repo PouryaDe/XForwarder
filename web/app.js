@@ -1,5 +1,9 @@
 // XForwarder - Web Panel Logic (English Only)
 
+// Dynamically compute base API prefix (supports custom security secret paths)
+const basePath = window.location.pathname.replace(/\/+$/, "");
+const API_BASE = basePath ? `${basePath}/api` : "/api";
+
 let currentRules = [];
 let pollTimer = null;
 
@@ -52,7 +56,7 @@ function escapeHtml(str) {
 // Check session authentication on initial load
 async function checkAuth() {
     try {
-        const res = await fetch("/api/me");
+        const res = await fetch(`${API_BASE}/me`);
         if (res.ok) {
             const data = await res.json();
             if (data.authenticated) {
@@ -88,7 +92,7 @@ loginForm.addEventListener("submit", async (e) => {
     const password = document.getElementById("loginPassword").value;
 
     try {
-        const res = await fetch("/api/login", {
+        const res = await fetch(`${API_BASE}/login`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ username, password })
@@ -110,7 +114,7 @@ loginForm.addEventListener("submit", async (e) => {
 // Logout
 btnLogout.addEventListener("click", async () => {
     try {
-        await fetch("/api/logout", { method: "POST" });
+        await fetch(`${API_BASE}/logout`, { method: "POST" });
     } catch (e) {}
     showLogin();
     showToast("Signed out successfully");
@@ -119,7 +123,7 @@ btnLogout.addEventListener("click", async () => {
 // Fetch system status from API
 async function fetchStatus() {
     try {
-        const res = await fetch("/api/status");
+        const res = await fetch(`${API_BASE}/status`);
         if (res.status === 401) {
             showLogin();
             return;
@@ -265,7 +269,7 @@ function renderRules(rules, runtime) {
 // Override change handler
 async function handleOverrideChange(ruleId, val) {
     try {
-        const res = await fetch("/api/override", {
+        const res = await fetch(`${API_BASE}/override`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ rule_id: ruleId, force_override: parseInt(val) })
@@ -329,7 +333,7 @@ function editRule(ruleId) {
 async function deleteRule(ruleId) {
     if (!confirm(`Are you sure you want to delete rule '${ruleId}'?`)) return;
     try {
-        const res = await fetch(`/api/rule/${encodeURIComponent(ruleId)}`, { method: "DELETE" });
+        const res = await fetch(`${API_BASE}/rule/${encodeURIComponent(ruleId)}`, { method: "DELETE" });
         if (res.ok) {
             showToast("Rule removed");
             fetchStatus();
@@ -377,7 +381,7 @@ ruleForm.addEventListener("submit", async (e) => {
     };
 
     try {
-        const res = await fetch("/api/rule", {
+        const res = await fetch(`${API_BASE}/rule`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(payload)

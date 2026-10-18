@@ -98,6 +98,12 @@ class XForwarderEngine:
                 web[k] = v
                 modified = True
 
+        # Normalize secret path (strip leading/trailing slashes and whitespace)
+        clean_secret = str(web.get("secret_path", "xfwd-admin") or "").strip().strip("/")
+        if web.get("secret_path") != clean_secret:
+            web["secret_path"] = clean_secret
+            modified = True
+
         # Normalize web port
         try:
             web_port = int(web.get("port", 8090))

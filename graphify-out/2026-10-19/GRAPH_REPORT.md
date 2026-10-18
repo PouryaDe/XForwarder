@@ -1,17 +1,17 @@
 # Graph Report - Forward-Manager  (2026-10-19)
 
 ## Corpus Check
-- 44 files · ~18,883 words
+- 43 files · ~18,862 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 8 file(s) not represented in the graph (top: .service 4, (none) 2, .example 1)
 
 ## Summary
-- 343 nodes · 521 edges · 26 communities (24 shown, 2 thin omitted)
+- 341 nodes · 520 edges · 25 communities
 - Extraction: 97% EXTRACTED · 3% INFERRED · 0% AMBIGUOUS · INFERRED: 18 edges (avg confidence: 0.95)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `6dfbf244`
+- Built from commit: `12399e46`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -19,8 +19,8 @@
 - web_server.py
 - app.js
 - XForwarderEngine
-- forward-manager.sh
-- engine.py
+- Python Core Standards (`core/engine.py` & `core/web_server.py`)
+- os
 - 🌐 XForwarder
 - xforwarder.sh
 - Workflow: Deploy & Update Services
@@ -39,7 +39,6 @@
 - Web Dashboard & Security Standards (`web/` & `core/web_server.py`)
 - Bash CLI & Deployment Standards (`xforwarder.sh`)
 - Intermediate Relay VPS Constraints Rule (XForwarder)
-- 2. Mandatory Helper Centralization
 - Interactive Requirements Clarification (Reverse Prompt Engineering)
 - Session State & Task Handoff Rule (XForwarder)
 
@@ -64,23 +63,27 @@
 ## Import Cycles
 - None detected.
 
-## Communities (26 total, 2 thin omitted)
+## Communities (25 total, 0 thin omitted)
 
 ### Community 0 - "web_server.py"
-Cohesion: 0.13
-Nodes (9): get_config_path(), hash_password(), is_port_in_use_by_external_service(), load_config(), load_state(), save_config(), validate_rule(), XForwarderWebHandler (+1 more)
+Cohesion: 0.08
+Nodes (13): 1. Absolute Prohibition of Duplicated Logic, 2. Mandatory Helper Centralization, Clean Code & DRY (Don't Repeat Yourself) Rule, handle_sig(), get_config_path(), hash_password(), is_port_in_use_by_external_service(), load_config() (+5 more)
 
 ### Community 1 - "app.js"
 Cohesion: 0.09
 Nodes (28): btnCancelModal, btnCloseModal, btnLogout, btnOpenAddModal, checkAuth(), currentRules, currentUsernameEl, dashboardScreen (+20 more)
 
 ### Community 2 - "XForwarderEngine"
-Cohesion: 0.09
-Nodes (14): 1. Native Python 3 Standard Library Only, 2. Thread Safety & Atomic File Operations, 3. Network Probing Standards, 4. Signal & Process Lifecycle, Python Core Standards (`core/engine.py` & `core/web_server.py`), 1. High-Risk Core Components, 2. Constitution Check Gate, Pre-Execution Blast Radius & Impact Analysis Rule (XForwarder) (+6 more)
+Cohesion: 0.13
+Nodes (8): 3. Network Probing Standards, 1. High-Risk Core Components, Configuration Schema (`/etc/xforwarder/config.json`), Health Check Simulation, Quick CLI Command Reference, XForwarder Operations Runbook, Zero-Collision Invariant Checks, XForwarderEngine
 
-### Community 4 - "engine.py"
-Cohesion: 0.10
-Nodes (17): check_file(), main(), get_next_number(), main(), slugify(), load_state(), main(), save_state() (+9 more)
+### Community 3 - "Python Core Standards (`core/engine.py` & `core/web_server.py`)"
+Cohesion: 0.40
+Nodes (4): 1. Native Python 3 Standard Library Only, 2. Thread Safety & Atomic File Operations, 4. Signal & Process Lifecycle, Python Core Standards (`core/engine.py` & `core/web_server.py`)
+
+### Community 4 - "os"
+Cohesion: 0.13
+Nodes (16): check_file(), main(), get_next_number(), main(), slugify(), load_state(), main(), save_state() (+8 more)
 
 ### Community 5 - "🌐 XForwarder"
 Cohesion: 0.14
@@ -138,6 +141,10 @@ Nodes (5): Phase 1: Evidence Gathering & Observation, Phase 2: Path Isolation & 
 Cohesion: 0.40
 Nodes (4): 1. Visual Aesthetics & Theme Guidelines, 2. Typography Standard, 3. Technology Stack & Runtime, UI Design & Consistency Standards (`web/`)
 
+### Community 19 - ".agents/AGENTS.md"
+Cohesion: 0.29
+Nodes (4): 2. Constitution Check Gate, Pre-Execution Blast Radius & Impact Analysis Rule (XForwarder), Quick CLI Command Reference, XForwarder Operations Runbook (Legacy Alias: fwdman-ops)
+
 ### Community 20 - "Web Dashboard & Security Standards (`web/` & `core/web_server.py`)"
 Cohesion: 0.40
 Nodes (4): 1. Frontend Technology Stack, 2. Aesthetics & Design Guidelines, 3. Authentication & Security Model, Web Dashboard & Security Standards (`web/` & `core/web_server.py`)
@@ -150,10 +157,6 @@ Nodes (4): 1. Shell Scripting Conventions, 2. Directory & Path Hierarchy, 3. Ser
 Cohesion: 0.40
 Nodes (4): 1. Strict Resource Ceilings, 2. Non-Blocking Probing & Socket Safety, 3. Kernel Isolation, Intermediate Relay VPS Constraints Rule (XForwarder)
 
-### Community 24 - "2. Mandatory Helper Centralization"
-Cohesion: 0.50
-Nodes (3): 1. Absolute Prohibition of Duplicated Logic, 2. Mandatory Helper Centralization, Clean Code & DRY (Don't Repeat Yourself) Rule
-
 ### Community 25 - "Interactive Requirements Clarification (Reverse Prompt Engineering)"
 Cohesion: 0.50
 Nodes (3): 1. Zero-Assumption Policy & Triggers, 2. Rules of Engagement, Interactive Requirements Clarification (Reverse Prompt Engineering)
@@ -163,24 +166,23 @@ Cohesion: 0.50
 Nodes (3): 1. Structure & Storage, 2. Managing Session State via CLI, Session State & Task Handoff Rule (XForwarder)
 
 ## Knowledge Gaps
-- **130 isolated node(s):** `forward-manager.sh script`, `currentRules`, `loginScreen`, `dashboardScreen`, `loginForm` (+125 more)
-  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 164 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
-- **2 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **129 isolated node(s):** `currentRules`, `loginScreen`, `dashboardScreen`, `loginForm`, `loginError` (+124 more)
+  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 162 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `XForwarderEngine` connect `XForwarderEngine` to `.migrate_and_normalize_config`, `web_server.py`, `engine.py`?**
-  _High betweenness centrality (0.218) - this node is a cross-community bridge._
-- **What connects `forward-manager.sh script`, `currentRules`, `loginScreen` to the rest of the system?**
-  _130 weakly-connected nodes found - possible documentation gaps or missing edges._
+- **Why does `XForwarderEngine` connect `XForwarderEngine` to `web_server.py`, `.migrate_and_normalize_config`?**
+  _High betweenness centrality (0.220) - this node is a cross-community bridge._
+- **What connects `currentRules`, `loginScreen`, `dashboardScreen` to the rest of the system?**
+  _129 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `web_server.py` be split into smaller, more focused modules?**
-  _Cohesion score 0.13054187192118227 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.080338266384778 - nodes in this community are weakly interconnected._
 - **Why does `XForwarder Master Architecture Constitution` connect `.migrate_and_normalize_config` to `.agents/AGENTS.md`?**
-  _High betweenness centrality (0.166) - this node is a cross-community bridge._
+  _High betweenness centrality (0.168) - this node is a cross-community bridge._
 - **Should `app.js` be split into smaller, more focused modules?**
   _Cohesion score 0.08817204301075268 - nodes in this community are weakly interconnected._
 - **Should `XForwarderEngine` be split into smaller, more focused modules?**
-  _Cohesion score 0.08858858858858859 - nodes in this community are weakly interconnected._
-- **Should `engine.py` be split into smaller, more focused modules?**
-  _Cohesion score 0.09513742071881606 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.12561576354679804 - nodes in this community are weakly interconnected._
+- **Should `os` be split into smaller, more focused modules?**
+  _Cohesion score 0.13068181818181818 - nodes in this community are weakly interconnected._

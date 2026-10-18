@@ -2,8 +2,8 @@
   "0": "web_server.py",
   "1": "app.js",
   "2": "XForwarderEngine",
-  "3": "forward-manager.sh",
-  "4": "engine.py",
+  "3": "Python Core Standards (`core/engine.py` & `core/web_server.py`)",
+  "4": "os",
   "5": "🌐 XForwarder",
   "6": "xforwarder.sh",
   "7": "Workflow: Deploy & Update Services",
@@ -22,7 +22,6 @@
   "20": "Web Dashboard & Security Standards (`web/` & `core/web_server.py`)",
   "21": "Bash CLI & Deployment Standards (`xforwarder.sh`)",
   "22": "Intermediate Relay VPS Constraints Rule (XForwarder)",
-  "24": "2. Mandatory Helper Centralization",
   "25": "Interactive Requirements Clarification (Reverse Prompt Engineering)",
   "26": "Session State & Task Handoff Rule (XForwarder)"
 }
