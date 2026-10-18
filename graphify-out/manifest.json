@@ -1,14 +1,14 @@
 {
   "core/engine.py": {
-    "mtime": 1792352749.1157126,
-    "seen": 1792353087.6447785,
-    "ast_hash": "c38329cc471c4c3cebe89c97baf0e465",
+    "mtime": 1792353824.8802981,
+    "seen": 1792353891.2094026,
+    "ast_hash": "1215689ee357f7f11715d337138f634e",
     "semantic_hash": ""
   },
   "core/web_server.py": {
-    "mtime": 1792352768.5711396,
-    "seen": 1792353087.6447794,
-    "ast_hash": "c79ef1d84489cc084473787e0349bfa4",
+    "mtime": 1792353407.3290415,
+    "seen": 1792353891.2094038,
+    "ast_hash": "483c358493ada83e9a627d70253c31a8",
     "semantic_hash": ""
   },
   "forward-manager.sh": {
@@ -78,9 +78,9 @@
     "semantic_hash": ""
   },
   "AGENTS.md": {
-    "mtime": 1792352950.9719584,
-    "seen": 1792353087.6448052,
-    "ast_hash": "2310fe8a8ae9305763d770dbcd0353fc",
+    "mtime": 1792353677.8207166,
+    "seen": 1792353891.2094326,
+    "ast_hash": "b67d0ae3d5ef2d9136dc1a8206e9b1c2",
     "semantic_hash": ""
   },
   "README.md": {
@@ -96,9 +96,9 @@
     "semantic_hash": ""
   },
   "xforwarder.sh": {
-    "mtime": 1792352880.7958732,
-    "seen": 1792353087.6447818,
-    "ast_hash": "985d214b7f314995745c2b0be6971912",
+    "mtime": 1792353494.2778027,
+    "seen": 1792353891.2094076,
+    "ast_hash": "f11d6debea4354c73255d8ede4eefbc3",
     "semantic_hash": ""
   },
   ".agents/skills/xfwd-ops/SKILL.md": {
@@ -144,9 +144,9 @@
     "semantic_hash": ""
   },
   ".agents/scripts/verify-all.py": {
-    "mtime": 1792348751.3010542,
-    "seen": 1792349408.1540065,
-    "ast_hash": "0f0213fadccdb817c900233fb7597c81",
+    "mtime": 1792353613.3296344,
+    "seen": 1792353891.2094007,
+    "ast_hash": "14ed79d5d05b81d64950996d677e4244",
     "semantic_hash": ""
   },
   ".agents/session-state.json": {
@@ -156,9 +156,9 @@
     "semantic_hash": ""
   },
   ".agents/AGENTS.md": {
-    "mtime": 1792352979.3681934,
-    "seen": 1792353087.6447823,
-    "ast_hash": "19984300e3c53a7ecbb797417435a003",
+    "mtime": 1792353749.1808007,
+    "seen": 1792353891.2094085,
+    "ast_hash": "1fa814bd1f8fd9d92daa6a8f184b0351",
     "semantic_hash": ""
   },
   ".agents/experiences/001-zero-collision-haproxy-nftables-failover.md": {
@@ -261,6 +261,12 @@
     "mtime": 1792352929.2644303,
     "seen": 1792353087.6447918,
     "ast_hash": "f1682e3f855aa6424d637fde92d87ed3",
+    "semantic_hash": ""
+  },
+  "tests/test_migration.py": {
+    "mtime": 1792353572.6831195,
+    "seen": 1792353891.2094057,
+    "ast_hash": "2cf95a1b742ac80ac28f831e8e68970f",
     "semantic_hash": ""
   }
 }

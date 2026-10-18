@@ -18,6 +18,12 @@ from urllib.parse import urlparse
 from typing import Optional, Dict, Tuple
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+CORE_DIR = os.path.dirname(os.path.abspath(__file__))
+if CORE_DIR not in sys.path:
+    sys.path.insert(0, CORE_DIR)
+if BASE_DIR not in sys.path:
+    sys.path.insert(0, BASE_DIR)
+
 WEB_DIR = os.path.join(BASE_DIR, "web")
 CONFIG_PATH = "/etc/xforwarder/config.json"
 LEGACY_CONFIG_PATH = "/etc/forward-manager/config.json"
@@ -87,7 +93,9 @@ def load_config() -> dict:
 def save_config(cfg: dict) -> bool:
     path = get_config_path()
     try:
-        os.makedirs(os.path.dirname(path), exist_ok=True)
+        dir_name = os.path.dirname(path)
+        if dir_name:
+            os.makedirs(dir_name, exist_ok=True)
         tmp = f"{path}.tmp.{os.getpid()}"
         with open(tmp, "w", encoding="utf-8") as f:
             json.dump(cfg, f, indent=2, ensure_ascii=False)

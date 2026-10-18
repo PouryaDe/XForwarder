@@ -65,6 +65,7 @@ ensure_dependencies() {
     command -v nginx >/dev/null 2>&1 || pkgs+=(nginx)
     command -v nft >/dev/null 2>&1 || pkgs+=(nftables)
     command -v curl >/dev/null 2>&1 || pkgs+=(curl)
+    command -v git >/dev/null 2>&1 || pkgs+=(git)
 
     if [[ ${#pkgs[@]} -gt 0 ]]; then
         msg_info "Installing missing packages: ${pkgs[*]}..."
@@ -213,7 +214,7 @@ update_xforwarder() {
     script_dir=$(dirname "$(readlink -f "$0")")
 
     # If running inside a git repository, pull latest updates if reachable
-    if git -C "$script_dir" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+    if command -v git >/dev/null 2>&1 && git -C "$script_dir" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
         msg_info "Checking for remote updates via Git..."
         if git -C "$script_dir" remote >/dev/null 2>&1; then
             git -C "$script_dir" pull --rebase >/dev/null 2>&1 || msg_warn "Could not fetch remote updates; proceeding with current local source files."
@@ -255,6 +256,10 @@ update_xforwarder() {
     if [[ -f "$active_cfg" ]]; then
         msg_info "Running schema migration on $active_cfg..."
         python3 "$INSTALL_DIR/core/engine.py" --migrate "$active_cfg"
+    else
+        msg_info "Initializing configuration at $CONFIG_FILE..."
+        python3 "$INSTALL_DIR/core/engine.py" --migrate "$CONFIG_FILE"
+        active_cfg="$CONFIG_FILE"
     fi
 
     # Update systemd service units

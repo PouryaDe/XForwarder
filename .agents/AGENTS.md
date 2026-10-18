@@ -11,6 +11,7 @@ Authoritative architectural rules and standard operating procedures for AI agent
 - **Core Engine Daemon:** `core/engine.py` (running 24/7 as `xforwarder.service`).
 - **Web UI Dashboard:** `core/web_server.py` + `web/` (running 24/7 as `xforwarder-web.service`).
 - **CLI Controller:** `xforwarder.sh` (aliased to `xforwarder` and `xfwd`).
+- **Test Suite:** `tests/test_migration.py` (Native Python unittest covering backward compatibility & schema migrations).
 
 ---
 
@@ -62,6 +63,7 @@ Authoritative architectural rules and standard operating procedures for AI agent
 - **Workflows:** [`add-port-rule.md`](workflows/add-port-rule.md) | [`diagnose-failover.md`](workflows/diagnose-failover.md) | [`deploy-update.md`](workflows/deploy-update.md) | [`graphify.md`](workflows/graphify.md)
 - **Automation Scripts:**
   - `python .agents/scripts/syntax-check.py`: Automatic Python syntax verification.
+  - `python -m unittest discover -s tests`: Run native unit test suite (schema migrations, regression).
   - `python .agents/scripts/session-state.py --show`: Inspect active task state and milestones.
   - `python .agents/scripts/verify-all.py`: Full pre-commit test & verification pipeline.
   - `python .agents/scripts/check-anti-patterns.py`: Scan for forbidden imports and unsafe operations.

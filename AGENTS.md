@@ -21,6 +21,8 @@ XForwarder/
 │   └── xforwarder-web.service # Systemd unit for web server
 ├── xforwarder.sh          # Root installer and interactive CLI controller (xforwarder / xfwd)
 ├── forward-manager.sh     # Backward compatibility wrapper for xforwarder.sh
+├── tests/
+│   └── test_migration.py  # Native Python unittest suite (schema migrations & edge cases)
 ├── .agents/               # Antigravity agent configuration (constitution, rules, workflows, skills, scripts)
 │   ├── AGENTS.md          # Master architecture constitution
 │   ├── hooks.json         # Antigravity lifecycle hooks (pre-invocation and stop syntax checks)

@@ -7,16 +7,15 @@
   "5": "🌐 XForwarder (مدیر هوشمند اولویت‌بندی، رله و فورواردینگ تونل‌ها)",
   "6": "xforwarder.sh",
   "7": "Workflow: Deploy & Update Services",
-  "8": "XForwarder - Agent Development Guide",
-  "9": "Experience 001: Zero-Collision HAProxy and NFTables Failover",
+  "8": ".migrate_and_normalize_config",
+  "9": "experiences/README.md",
   "10": ".agents/AGENTS.md",
-  "11": "XForwarder Operations Runbook",
+  "11": "Workflow: Add Port Rule",
   "12": "Workflow: Diagnose Failover & Forwarding",
-  "13": "Mandatory Task Completion & Verification Workflow (XForwarder)",
+  "13": "Python Core Standards (`core/engine.py` & `core/web_server.py`)",
   "14": "The 8-Point Audit Checklist",
-  "15": "Bash CLI & Deployment Standards (`xforwarder.sh`)",
-  "16": "2. Mandatory Helper Centralization",
+  "15": "Networking & Kernel Standards (XForwarder)",
+  "16": "Large Files Inspection & Surgical Editing Rule",
   "17": "Systematic Debugging Skill (XForwarder)",
-  "18": "UI Design & Consistency Standards (`web/`)",
-  "19": "Architecture & Failover Rules (XForwarder)"
+  "18": "UI Design & Consistency Standards (`web/`)"
 }

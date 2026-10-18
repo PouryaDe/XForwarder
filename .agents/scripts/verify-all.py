@@ -77,7 +77,12 @@ def main():
     if not run_step("Anti-Pattern & Architectural Rules", [sys.executable, os.path.join(SCRIPT_DIR, "check-anti-patterns.py")]):
         success = False
 
-    # Step 3: JSON file validation
+    # Step 3: Unit Tests & Regression Verification
+    if os.path.isdir(os.path.join(REPO_ROOT, "tests")):
+        if not run_step("Unit Tests & Regression Verification", [sys.executable, "-m", "unittest", "discover", "-s", "tests"]):
+            success = False
+
+    # Step 4: JSON file validation
     if not validate_json_files():
         success = False
 

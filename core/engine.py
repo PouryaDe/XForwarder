@@ -47,7 +47,7 @@ class XForwarderEngine:
         self.load_config()
 
     def _resolve_config_path(self, override_path: Optional[str]) -> str:
-        if override_path and os.path.exists(override_path):
+        if override_path:
             return override_path
         if os.path.exists(DEFAULT_CONFIG_PATH):
             return DEFAULT_CONFIG_PATH
@@ -215,8 +215,11 @@ class XForwarderEngine:
         return cfg, modified
 
     def _save_config_unlocked(self) -> bool:
+        """Atomically writes current configuration to disk using a temporary file and os.replace."""
         try:
-            os.makedirs(os.path.dirname(self.config_path), exist_ok=True)
+            dir_name = os.path.dirname(self.config_path)
+            if dir_name:
+                os.makedirs(dir_name, exist_ok=True)
             tmp_path = f"{self.config_path}.tmp.{os.getpid()}"
             with open(tmp_path, "w", encoding="utf-8") as f:
                 json.dump(self.config, f, indent=2, ensure_ascii=False)
@@ -227,6 +230,7 @@ class XForwarderEngine:
             return False
 
     def load_config(self) -> None:
+        """Loads and self-heals configuration, applying schema migrations when legacy keys are detected."""
         with self.lock:
             try:
                 if os.path.exists(self.config_path):
@@ -258,6 +262,7 @@ class XForwarderEngine:
                 print(f"[ERROR] Failed to load config from {self.config_path}: {e}", file=sys.stderr)
 
     def save_config(self) -> bool:
+        """Thread-safe wrapper to persist the configuration atomically."""
         with self.lock:
             return self._save_config_unlocked()
 
@@ -738,6 +743,7 @@ if __name__ == "__main__":
     if len(sys.argv) > 1 and sys.argv[1] in ("--migrate", "-m"):
         cfg_override = sys.argv[2] if len(sys.argv) > 2 else None
         engine = XForwarderEngine(config_path=cfg_override)
+        engine.save_config()
         rule_count = len(engine.config.get("rules", []))
         print(f"[OK] Configuration migrated and normalized successfully.")
         print(f"[OK] Target config: {engine.config_path}")
