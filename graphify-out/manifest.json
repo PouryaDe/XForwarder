@@ -11,12 +11,6 @@
     "ast_hash": "483c358493ada83e9a627d70253c31a8",
     "semantic_hash": ""
   },
-  "forward-manager.sh": {
-    "mtime": 1792347847.7379842,
-    "seen": 1792348157.3854742,
-    "ast_hash": "809b9fe89ee9450421611265fb172585",
-    "semantic_hash": ""
-  },
   "web/app.js": {
     "mtime": 1792350824.4220684,
     "seen": 1792350981.0473769,
@@ -120,9 +114,9 @@
     "semantic_hash": ""
   },
   ".agents/scripts/check-anti-patterns.py": {
-    "mtime": 1792348722.8004282,
-    "seen": 1792349408.154003,
-    "ast_hash": "01a54d0f0e663909570d2c4de352d828",
+    "mtime": 1792357096.529227,
+    "seen": 1792357128.4746182,
+    "ast_hash": "c3ad345ab5a7da2b101b9e4a56efe45d",
     "semantic_hash": ""
   },
   ".agents/scripts/log-experience.py": {

@@ -72,7 +72,7 @@ def main():
                         all_violations.append(f"{rel}:{line_num} -> {msg}")
 
     # Check root shell scripts
-    for f in ["xforwarder.sh", "forward-manager.sh"]:
+    for f in ["xforwarder.sh"]:
         f_path = os.path.join(REPO_ROOT, f)
         if os.path.exists(f_path):
             violations = check_file(f_path)
