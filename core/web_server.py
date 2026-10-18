@@ -117,6 +117,41 @@ def load_state() -> dict:
     return {}
 
 
+def get_system_stats() -> dict:
+    stats = {
+        "ram_used_mb": 0,
+        "ram_total_mb": 0,
+        "ram_percent": 0,
+        "cpu_percent": 0
+    }
+    if os.path.exists("/proc/meminfo"):
+        try:
+            mem = {}
+            with open("/proc/meminfo", "r", encoding="utf-8") as f:
+                for line in f:
+                    parts = line.split(":")
+                    if len(parts) == 2:
+                        mem[parts[0].strip()] = parts[1].strip().split()[0]
+            total_kb = float(mem.get("MemTotal", 0))
+            avail_kb = float(mem.get("MemAvailable", mem.get("MemFree", 0)))
+            used_kb = max(0.0, total_kb - avail_kb)
+            if total_kb > 0:
+                stats["ram_total_mb"] = int(round(total_kb / 1024))
+                stats["ram_used_mb"] = int(round(used_kb / 1024))
+                stats["ram_percent"] = round((used_kb / total_kb) * 100, 1)
+        except Exception:
+            pass
+    if os.path.exists("/proc/loadavg"):
+        try:
+            with open("/proc/loadavg", "r", encoding="utf-8") as f:
+                load = float(f.read().split()[0])
+                cpu_count = os.cpu_count() or 1
+                stats["cpu_percent"] = min(100.0, round((load / cpu_count) * 100, 1))
+        except Exception:
+            pass
+    return stats
+
+
 def hash_password(password: str) -> str:
     return hashlib.sha256(password.encode("utf-8")).hexdigest()
 
@@ -332,6 +367,7 @@ class XForwarderWebHandler(BaseHTTPRequestHandler):
                 self.send_json({
                     "config": cfg,
                     "runtime": state.get("runtime", {}),
+                    "system": get_system_stats(),
                     "server_time": time.time()
                 })
                 return
@@ -455,6 +491,29 @@ class XForwarderWebHandler(BaseHTTPRequestHandler):
 
             if save_config(cfg):
                 self.send_json({"ok": True})
+            else:
+                self.send_json({"ok": False, "error": "Save failed"}, 500)
+
+        elif subpath == "/api/override/batch":
+            try:
+                override_prio = int(body.get("force_override", 0))
+            except (ValueError, TypeError):
+                self.send_json({"ok": False, "error": "Invalid force_override value"}, 400)
+                return
+
+            if override_prio not in (0, 1, 2):
+                self.send_json({"ok": False, "error": "force_override must be 0, 1, or 2"}, 400)
+                return
+
+            cfg = load_config()
+            rules = cfg.get("rules", [])
+            for r in rules:
+                r["force_override"] = override_prio
+                if override_prio > 0:
+                    r["active_priority"] = override_prio
+
+            if save_config(cfg):
+                self.send_json({"ok": True, "count": len(rules), "force_override": override_prio})
             else:
                 self.send_json({"ok": False, "error": "Save failed"}, 500)
 

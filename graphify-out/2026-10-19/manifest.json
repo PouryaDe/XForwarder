@@ -1,20 +1,20 @@
 {
   "core/engine.py": {
-    "mtime": 1792353824.8802981,
-    "seen": 1792353891.2094026,
-    "ast_hash": "1215689ee357f7f11715d337138f634e",
+    "mtime": 1792357550.6799414,
+    "seen": 1792358333.9114203,
+    "ast_hash": "8aa23fb6de4c886f935a1b744bff19c4",
     "semantic_hash": ""
   },
   "core/web_server.py": {
-    "mtime": 1792353407.3290415,
-    "seen": 1792353891.2094038,
-    "ast_hash": "483c358493ada83e9a627d70253c31a8",
+    "mtime": 1792357633.3491807,
+    "seen": 1792358333.9114218,
+    "ast_hash": "40d7513e188ae2a40fb52a7d3041ce67",
     "semantic_hash": ""
   },
   "web/app.js": {
-    "mtime": 1792350824.4220684,
-    "seen": 1792350981.0473769,
-    "ast_hash": "51940bf40da2dfa077fdb1ed4756b024",
+    "mtime": 1792357705.081959,
+    "seen": 1792358333.9114232,
+    "ast_hash": "4d90fa83447bf0e41fbc944c295c571b",
     "semantic_hash": ""
   },
   ".agents/rules/01-architecture-and-failover.md": {
@@ -78,9 +78,9 @@
     "semantic_hash": ""
   },
   "README.md": {
-    "mtime": 1792356915.9879732,
-    "seen": 1792356938.7314024,
-    "ast_hash": "d05b6a707ee3cb8454df684201b7c71d",
+    "mtime": 1792358298.7294097,
+    "seen": 1792358333.9114478,
+    "ast_hash": "9b73689d7fc47733efe867022a3618b2",
     "semantic_hash": ""
   },
   "web/index.html": {
@@ -90,9 +90,9 @@
     "semantic_hash": ""
   },
   "xforwarder.sh": {
-    "mtime": 1792356842.693159,
-    "seen": 1792356938.7313783,
-    "ast_hash": "8644067482806efdb5f382a29b2f64f2",
+    "mtime": 1792358064.1868014,
+    "seen": 1792358333.911424,
+    "ast_hash": "f575fbbe4bc00ce3a44c8310c81c4ee5",
     "semantic_hash": ""
   },
   ".agents/skills/xfwd-ops/SKILL.md": {
@@ -258,9 +258,9 @@
     "semantic_hash": ""
   },
   "tests/test_migration.py": {
-    "mtime": 1792353572.6831195,
-    "seen": 1792353891.2094057,
-    "ast_hash": "2cf95a1b742ac80ac28f831e8e68970f",
+    "mtime": 1792358170.5751095,
+    "seen": 1792358333.9114225,
+    "ast_hash": "9729ce89713e136cbdf0e3483f605ae6",
     "semantic_hash": ""
   }
 }

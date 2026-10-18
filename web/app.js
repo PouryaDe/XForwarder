@@ -5,7 +5,12 @@ const basePath = window.location.pathname.replace(/\/+$/, "");
 const API_BASE = basePath ? `${basePath}/api` : "/api";
 
 let currentRules = [];
+let lastRuntime = {};
 let pollTimer = null;
+let searchQuery = "";
+let activeFilter = "all";
+let previousPortVal = "";
+let confirmResolve = null;
 
 // DOM Elements
 const loginScreen = document.getElementById("loginScreen");
@@ -29,6 +34,23 @@ const statActiveHaproxy = document.getElementById("statActiveHaproxy");
 const statActiveNftables = document.getElementById("statActiveNftables");
 const engineStatusBadge = document.getElementById("engineStatusBadge");
 
+// Toolbar Elements
+const searchInput = document.getElementById("searchInput");
+const btnClearSearch = document.getElementById("btnClearSearch");
+const filterTabs = document.querySelectorAll(".filter-tab");
+const filterCountAll = document.getElementById("filterCountAll");
+const filterCountP1 = document.getElementById("filterCountP1");
+const filterCountP2 = document.getElementById("filterCountP2");
+const filterCountDown = document.getElementById("filterCountDown");
+const batchSelect = document.getElementById("batchOverrideSelect");
+
+// Header System Resource Elements
+const ramText = document.getElementById("ramText");
+const cpuText = document.getElementById("cpuText");
+const btnManualRefresh = document.getElementById("btnManualRefresh");
+const refreshIcon = document.getElementById("refreshIcon");
+const pulseDot = document.getElementById("pulseDot");
+
 // Toast helper
 function showToast(message, type = "info") {
     const container = document.getElementById("toastContainer");
@@ -42,6 +64,40 @@ function showToast(message, type = "info") {
     }, 3500);
 }
 
+// 1-Click Clipboard Copy
+function copyText(text) {
+    if (!text) return;
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(() => {
+            showToast(`Copied to clipboard: ${text}`);
+        }).catch(() => fallbackCopy(text));
+    } else {
+        fallbackCopy(text);
+    }
+}
+
+function fallbackCopy(text) {
+    const el = document.createElement("textarea");
+    el.value = text;
+    document.body.appendChild(el);
+    el.select();
+    document.execCommand("copy");
+    document.body.removeChild(el);
+    showToast(`Copied: ${text}`);
+}
+
+// Latency Badge Formatter
+function formatLatencyBadge(stat) {
+    if (!stat || stat.latency_ms === undefined || stat.latency_ms === null) {
+        return '<span class="latency-pill latency-none">Latency: --</span>';
+    }
+    const ms = stat.latency_ms;
+    let cls = "latency-good";
+    if (ms > 150) cls = "latency-bad";
+    else if (ms > 70) cls = "latency-medium";
+    return `<span class="latency-pill ${cls}"><span class="latency-dot"></span>${ms} ms</span>`;
+}
+
 // Security: HTML sanitization to prevent Stored XSS
 function escapeHtml(str) {
     if (str === null || str === undefined) return "";
@@ -52,6 +108,26 @@ function escapeHtml(str) {
         .replace(/"/g, "&quot;")
         .replace(/'/g, "&#039;");
 }
+
+// Custom Glass Confirmation Modal
+function askConfirm(title, message) {
+    document.getElementById("confirmTitle").innerText = title;
+    document.getElementById("confirmMessage").innerText = message;
+    document.getElementById("confirmModal").classList.add("show");
+    return new Promise((resolve) => {
+        confirmResolve = resolve;
+    });
+}
+
+document.getElementById("btnCancelConfirm").onclick = () => {
+    document.getElementById("confirmModal").classList.remove("show");
+    if (confirmResolve) confirmResolve(false);
+};
+
+document.getElementById("btnProceedConfirm").onclick = () => {
+    document.getElementById("confirmModal").classList.remove("show");
+    if (confirmResolve) confirmResolve(true);
+};
 
 // Check session authentication on initial load
 async function checkAuth() {
@@ -132,11 +208,12 @@ async function fetchStatus() {
         const data = await res.json();
 
         const cfg = data.config || {};
-        const runtime = data.runtime || {};
+        lastRuntime = data.runtime || {};
         currentRules = cfg.rules || [];
 
-        renderStats(currentRules, runtime);
-        renderRules(currentRules, runtime);
+        renderStats(currentRules, lastRuntime);
+        renderSystemStats(data.system);
+        renderRules(currentRules, lastRuntime);
     } catch (err) {
         console.warn("Polling error:", err);
     }
@@ -149,6 +226,12 @@ function renderStats(rules, runtime) {
     let nginxCount = 0;
     let nftablesCount = 0;
 
+    let p1ActiveCount = 0;
+    let p2ActiveCount = 0;
+    let downCount = 0;
+
+    const rulesState = (runtime && runtime.rules_state) ? runtime.rules_state : {};
+
     rules.forEach(r => {
         const activePrio = r.active_priority || 1;
         const dest = (r.destinations || []).find(d => d.priority === activePrio) || (r.destinations || [])[0];
@@ -157,10 +240,30 @@ function renderStats(rules, runtime) {
             if (dest.type === "nginx") nginxCount++;
             if (dest.type === "nftables") nftablesCount++;
         }
+
+        const rId = String(r.id || `rule-${r.port}`);
+        const rState = rulesState[rId] || {};
+        const destStats = rState.dest_stats || {};
+        const d1Stat = destStats['prio_1'] || {};
+        const d1Healthy = (d1Stat.status === 'healthy');
+
+        if (activePrio === 1 && d1Healthy) {
+            p1ActiveCount++;
+        } else if (activePrio === 2) {
+            p2ActiveCount++;
+        } else {
+            downCount++;
+        }
     });
 
     statActiveHaproxy.innerText = nginxCount > 0 ? `${haproxyCount + nginxCount} (HA:${haproxyCount} / Ngx:${nginxCount})` : haproxyCount;
     statActiveNftables.innerText = nftablesCount;
+
+    // Update filter badge counts
+    filterCountAll.innerText = rules.length;
+    filterCountP1.innerText = p1ActiveCount;
+    filterCountP2.innerText = p2ActiveCount;
+    filterCountDown.innerText = downCount;
 
     if (runtime.active_services) {
         engineStatusBadge.innerText = "SYNCED";
@@ -168,7 +271,18 @@ function renderStats(rules, runtime) {
     }
 }
 
-// Render Rule Cards
+// Render Host System Metrics (RAM & CPU)
+function renderSystemStats(sys) {
+    if (!sys) return;
+    if (sys.ram_total_mb > 0) {
+        ramText.innerText = `RAM: ${sys.ram_used_mb}MB / ${sys.ram_total_mb}MB (${sys.ram_percent}%)`;
+    }
+    if (sys.cpu_percent !== undefined) {
+        cpuText.innerText = `CPU: ${sys.cpu_percent}%`;
+    }
+}
+
+// Render Rule Cards with Filtering and Search
 function renderRules(rules, runtime) {
     if (!rules || rules.length === 0) {
         rulesContainer.innerHTML = `
@@ -182,7 +296,61 @@ function renderRules(rules, runtime) {
 
     const rulesState = (runtime && runtime.rules_state) ? runtime.rules_state : {};
 
-    rulesContainer.innerHTML = rules.map(rule => {
+    // Filter rules
+    const filtered = rules.filter(rule => {
+        const ruleId = String(rule.id || `rule-${rule.port}`).toLowerCase();
+        const portStr = String(rule.port || "");
+        const protoStr = String(rule.protocol || "both").toLowerCase();
+
+        const d1 = (rule.destinations || []).find(d => d.priority === 1) || {};
+        const d2 = (rule.destinations || []).find(d => d.priority === 2) || {};
+        const d1Target = String(d1.target || "").toLowerCase();
+        const d2Target = String(d2.target || "").toLowerCase();
+        const d1Comment = String(d1.comment || "").toLowerCase();
+        const d2Comment = String(d2.comment || "").toLowerCase();
+
+        // 1. Search Query Check
+        if (searchQuery) {
+            const matchesSearch = 
+                portStr.includes(searchQuery) ||
+                ruleId.includes(searchQuery) ||
+                protoStr.includes(searchQuery) ||
+                d1Target.includes(searchQuery) ||
+                d2Target.includes(searchQuery) ||
+                d1Comment.includes(searchQuery) ||
+                d2Comment.includes(searchQuery);
+            if (!matchesSearch) return false;
+        }
+
+        // 2. Active Tab Filter Check
+        const rState = rulesState[String(rule.id || `rule-${rule.port}`)] || {};
+        const destStats = rState.dest_stats || {};
+        const d1Stat = destStats['prio_1'] || {};
+        const d1Healthy = (d1Stat.status === 'healthy');
+        const activePriority = rule.active_priority || 1;
+
+        if (activeFilter === "p1") {
+            return activePriority === 1 && d1Healthy;
+        } else if (activeFilter === "p2") {
+            return activePriority === 2;
+        } else if (activeFilter === "down") {
+            return !d1Healthy && activePriority === 1;
+        }
+
+        return true;
+    });
+
+    if (filtered.length === 0) {
+        rulesContainer.innerHTML = `
+            <div style="text-align:center;padding:40px 20px;color:var(--text-secondary);border:1px dashed var(--border-color);border-radius:14px;">
+                <p style="font-size:1rem;margin-bottom:6px;">No rules matching your search or active filter.</p>
+                <p style="font-size:0.8rem;color:var(--text-muted);">Try clearing the search input or switching filter tabs.</p>
+            </div>
+        `;
+        return;
+    }
+
+    rulesContainer.innerHTML = filtered.map(rule => {
         const ruleId = String(rule.id || `rule-${rule.port}`);
         const encodedId = encodeURIComponent(ruleId);
         const rState = rulesState[ruleId] || {};
@@ -204,15 +372,21 @@ function renderRules(rules, runtime) {
         const d1TargetDisplay = d1Target.includes(':') ? `[${escapeHtml(d1Target)}]` : escapeHtml(d1Target);
         const d2TargetDisplay = d2Target.includes(':') ? `[${escapeHtml(d2Target)}]` : escapeHtml(d2Target);
 
+        const d1LatencyBadge = formatLatencyBadge(d1Stat);
+        const d2LatencyBadge = formatLatencyBadge(d2Stat);
+
+        const copyPortSvg = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>`;
+
         return `
             <div class="rule-card">
                 <div class="rule-top">
                     <div class="port-badge">
                         <span class="port-num">:${escapeHtml(rule.port)}</span>
+                        <button class="btn-copy" onclick="copyText('${escapeHtml(rule.port)}')" title="Copy Port Number">${copyPortSvg}</button>
                         <span class="proto-pill">${escapeHtml(String(rule.protocol || 'both').toUpperCase())}</span>
                     </div>
                     <div class="rule-actions">
-                        <select class="form-control" style="width:auto;padding:4px 10px;font-size:0.8rem;" onchange="handleOverrideChange(decodeURIComponent('${encodedId}'), this.value)">
+                        <select class="form-control" style="width:auto;padding:6px 12px;font-size:0.8rem;" onchange="handleOverrideChange(decodeURIComponent('${encodedId}'), this.value)">
                             <option value="0" ${forceOverride === 0 ? 'selected' : ''}>Mode: Auto Failover</option>
                             <option value="1" ${forceOverride === 1 ? 'selected' : ''}>Force: Priority 1</option>
                             <option value="2" ${forceOverride === 2 ? 'selected' : ''}>Force: Priority 2</option>
@@ -237,10 +411,13 @@ function renderRules(rules, runtime) {
                                 ${d1Healthy ? 'HEALTHY' : 'DOWN / TIMEOUT'}
                             </span>
                         </div>
-                        <div class="path-dest">${escapeHtml(String(d1.type || 'haproxy').toUpperCase())}: ${d1TargetDisplay}:${escapeHtml(d1.port || rule.port)}</div>
+                        <div class="path-dest">
+                            <span>${escapeHtml(String(d1.type || 'haproxy').toUpperCase())}: ${d1TargetDisplay}:${escapeHtml(d1.port || rule.port)}</span>
+                            <button class="btn-copy" onclick="copyText('${escapeHtml(d1Target)}')" title="Copy Destination IP">${copyPortSvg}</button>
+                        </div>
                         <div class="path-meta">
                             <span>${escapeHtml(d1.comment || 'Primary uplink')}</span>
-                            <span>Latency: ${d1Stat.latency_ms ? escapeHtml(d1Stat.latency_ms) + ' ms' : '--'}</span>
+                            ${d1LatencyBadge}
                         </div>
                     </div>
 
@@ -254,10 +431,13 @@ function renderRules(rules, runtime) {
                                 ${d2Healthy ? 'HEALTHY' : 'STANDBY'}
                             </span>
                         </div>
-                        <div class="path-dest">${escapeHtml(String(d2.type || 'nftables').toUpperCase())}: ${d2TargetDisplay}:${escapeHtml(d2.port || rule.port)}</div>
+                        <div class="path-dest">
+                            <span>${escapeHtml(String(d2.type || 'nftables').toUpperCase())}: ${d2TargetDisplay}:${escapeHtml(d2.port || rule.port)}</span>
+                            <button class="btn-copy" onclick="copyText('${escapeHtml(d2Target)}')" title="Copy Destination IP">${copyPortSvg}</button>
+                        </div>
                         <div class="path-meta">
                             <span>${escapeHtml(d2.comment || 'Backup tunnel')}</span>
-                            <span>Latency: ${d2Stat.latency_ms ? escapeHtml(d2Stat.latency_ms) + ' ms' : '--'}</span>
+                            ${d2LatencyBadge}
                         </div>
                     </div>
                 </div>
@@ -286,10 +466,118 @@ async function handleOverrideChange(ruleId, val) {
     }
 }
 
+// Emergency Batch Override Action
+batchSelect.addEventListener("change", async () => {
+    const val = batchSelect.value;
+    if (val === "") return;
+    const modeLabels = {
+        "0": "Restore All to Auto Failover",
+        "1": "Force All to Priority 1 (Primary)",
+        "2": "Force All to Priority 2 (Backup Tunnel)"
+    };
+    const confirmed = await askConfirm(
+        "Apply Emergency Batch Action?",
+        `Are you sure you want to execute '${modeLabels[val]}' across ALL forwarding rules?`
+    );
+    if (!confirmed) {
+        batchSelect.value = "";
+        return;
+    }
+    try {
+        const res = await fetch(`${API_BASE}/override/batch`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ force_override: parseInt(val) })
+        });
+        const data = await res.json().catch(() => ({}));
+        if (res.ok && data.ok) {
+            showToast(`Applied ${modeLabels[val]} to ${data.count} rule(s)`);
+            fetchStatus();
+        } else {
+            showToast(data.error || "Batch action failed", "error");
+        }
+    } catch (e) {
+        showToast("Connection error during batch action", "error");
+    }
+    batchSelect.value = "";
+});
+
+// Search and Filter Listeners
+searchInput.addEventListener("input", () => {
+    searchQuery = searchInput.value.trim().toLowerCase();
+    btnClearSearch.style.display = searchQuery ? "block" : "none";
+    renderRules(currentRules, lastRuntime);
+});
+
+btnClearSearch.addEventListener("click", () => {
+    searchInput.value = "";
+    searchQuery = "";
+    btnClearSearch.style.display = "none";
+    renderRules(currentRules, lastRuntime);
+});
+
+filterTabs.forEach(tab => {
+    tab.addEventListener("click", () => {
+        filterTabs.forEach(t => t.classList.remove("active"));
+        tab.classList.add("active");
+        activeFilter = tab.getAttribute("data-filter") || "all";
+        renderRules(currentRules, lastRuntime);
+    });
+});
+
+// Manual Refresh with Rotation Animation
+btnManualRefresh.addEventListener("click", () => {
+    refreshIcon.classList.add("spinning");
+    fetchStatus().finally(() => {
+        setTimeout(() => refreshIcon.classList.remove("spinning"), 600);
+    });
+});
+
+// Port Auto-Fill in Modal Form
+const formPortInput = document.getElementById("formPort");
+formPortInput.addEventListener("input", () => {
+    const val = formPortInput.value.trim();
+    const p1Port = document.getElementById("p1Port");
+    const p2Port = document.getElementById("p2Port");
+    if (!p1Port.value || p1Port.value === previousPortVal) {
+        p1Port.value = val;
+    }
+    if (!p2Port.value || p2Port.value === previousPortVal) {
+        p2Port.value = val;
+    }
+    previousPortVal = val;
+});
+
+// Modal Preset Scenario Buttons
+document.getElementById("presetHaproxyGre").addEventListener("click", () => {
+    document.getElementById("p1Type").value = "haproxy";
+    document.getElementById("p1Comment").value = "Primary Direct IPv6";
+    document.getElementById("p2Type").value = "nftables";
+    document.getElementById("p2Comment").value = "Backup GRE/FakeTCP Tunnel";
+    showToast("Preset applied: HAProxy IPv6 + GRE/FakeTCP");
+});
+
+document.getElementById("presetNginxTunnel").addEventListener("click", () => {
+    document.getElementById("p1Type").value = "nginx";
+    document.getElementById("p1Comment").value = "Primary Nginx Stream Proxy";
+    document.getElementById("p2Type").value = "nftables";
+    document.getElementById("p2Comment").value = "Backup Layer 3 Tunnel";
+    showToast("Preset applied: Nginx Proxy + Tunnel");
+});
+
+document.getElementById("presetDualHaproxy").addEventListener("click", () => {
+    document.getElementById("p1Type").value = "haproxy";
+    document.getElementById("p1Comment").value = "Foreign Exit Node 1";
+    document.getElementById("p2Type").value = "haproxy";
+    document.getElementById("p2Comment").value = "Foreign Exit Node 2";
+    showToast("Preset applied: Dual Direct IPv6");
+});
+
 // Modal open/close
 btnOpenAddModal.addEventListener("click", () => {
     modalTitle.innerText = "Add New Port Forwarding Rule";
     ruleForm.reset();
+    previousPortVal = "";
     document.getElementById("editRuleId").value = "";
     document.getElementById("formProto").value = "both";
     document.getElementById("p1Type").value = "haproxy";
@@ -311,6 +599,7 @@ function editRule(ruleId) {
     modalTitle.innerText = `Edit Port Rule :${r.port}`;
     document.getElementById("editRuleId").value = r.id;
     document.getElementById("formPort").value = r.port;
+    previousPortVal = String(r.port);
     document.getElementById("formProto").value = r.protocol || "both";
 
     const d1 = (r.destinations || []).find(d => d.priority === 1) || {};
@@ -329,13 +618,18 @@ function editRule(ruleId) {
     ruleModal.classList.add("show");
 }
 
-// Delete Rule
+// Delete Rule with Custom Glass Confirm Modal
 async function deleteRule(ruleId) {
-    if (!confirm(`Are you sure you want to delete rule '${ruleId}'?`)) return;
+    const confirmed = await askConfirm(
+        "Delete Port Forwarding Rule?",
+        `Are you sure you want to delete forwarding rule '${ruleId}'? Routing on this port will stop immediately.`
+    );
+    if (!confirmed) return;
+
     try {
         const res = await fetch(`${API_BASE}/rule/${encodeURIComponent(ruleId)}`, { method: "DELETE" });
         if (res.ok) {
-            showToast("Rule removed");
+            showToast(`Rule '${ruleId}' removed`);
             fetchStatus();
         } else {
             const data = await res.json().catch(() => ({}));
