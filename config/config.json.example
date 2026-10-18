@@ -1,0 +1,65 @@
+{
+  "wan_interface": "auto",
+  "check_interval_seconds": 8,
+  "failure_threshold": 3,
+  "recovery_threshold": 3,
+  "web": {
+    "bind_host": "0.0.0.0",
+    "port": 8090,
+    "secret_path": "fwd-admin",
+    "auth": {
+      "username": "admin",
+      "password_hash": "8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918"
+    }
+  },
+  "rules": [
+    {
+      "id": "rule-2023",
+      "port": 2023,
+      "protocol": "both",
+      "active_priority": 1,
+      "force_override": 0,
+      "destinations": [
+        {
+          "priority": 1,
+          "type": "haproxy",
+          "target": "2001:4ba0:cafe:84e::1",
+          "port": 2023,
+          "comment": "Foreign Server 1 - Primary IPv6 Relay"
+        },
+        {
+          "priority": 2,
+          "type": "nftables",
+          "target": "10.88.1.2",
+          "port": 2023,
+          "tunnel_iface": "gre1",
+          "comment": "Foreign Server 1 - Backup GRE/FakeTCP Tunnel"
+        }
+      ]
+    },
+    {
+      "id": "rule-2024",
+      "port": 2024,
+      "protocol": "both",
+      "active_priority": 1,
+      "force_override": 0,
+      "destinations": [
+        {
+          "priority": 1,
+          "type": "haproxy",
+          "target": "2001:4ba0:cafe:573::1",
+          "port": 2024,
+          "comment": "Foreign Server 2 - Primary IPv6 Relay"
+        },
+        {
+          "priority": 2,
+          "type": "nftables",
+          "target": "10.88.2.2",
+          "port": 2024,
+          "tunnel_iface": "ipip1",
+          "comment": "Foreign Server 2 - Backup IPIP Tunnel"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,16 @@
+[Unit]
+Description=Forward Manager - Always-Online Web UI Dashboard
+After=network.target forward-manager.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/opt/forward-manager
+ExecStart=/usr/bin/python3 /opt/forward-manager/core/web_server.py
+Restart=always
+RestartSec=3
+LimitNOFILE=65535
+
+[Install]
+WantedBy=multi-user.target

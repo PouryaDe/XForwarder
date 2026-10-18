@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Forward Manager - Multi-Path Tunnel Failover</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Login Screen (Displayed when unauthenticated) -->
+    <div class="login-wrapper" id="loginScreen">
+        <div class="login-card">
+            <div class="login-header">
+                <div class="logo-orb"></div>
+                <h2>Forward Manager</h2>
+                <p>Enter your credentials to access the relay dashboard</p>
+            </div>
+            <form id="loginForm">
+                <div class="form-group">
+                    <label for="loginUsername">Username</label>
+                    <input type="text" id="loginUsername" class="form-control" placeholder="admin" required autocomplete="username">
+                </div>
+                <div class="form-group">
+                    <label for="loginPassword">Password</label>
+                    <input type="password" id="loginPassword" class="form-control" placeholder="••••••••" required autocomplete="current-password">
+                </div>
+                <div id="loginError" class="login-error" style="display:none;"></div>
+                <button type="submit" class="btn btn-primary btn-block" id="btnLogin">
+                    <span>Sign In to Dashboard</span>
+                </button>
+            </form>
+            <div class="login-footer">
+                <span>Protected by Kernel Space & HAProxy Sync Engine</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Dashboard (Displayed when authenticated) -->
+    <div class="dashboard-wrapper" id="dashboardScreen" style="display:none;">
+        <!-- Top Navigation Bar -->
+        <header class="topbar">
+            <div class="brand">
+                <div class="logo-orb"></div>
+                <div>
+                    <h1>Forward Manager</h1>
+                    <span class="subtitle">Multi-Path Priority & Zero-Collision Failover</span>
+                </div>
+            </div>
+
+            <div class="session-controls">
+                <div class="user-pill">
+                    <span class="pulse-dot"></span>
+                    <span class="user-label">Logged in as:</span>
+                    <span class="user-name" id="currentUsername">admin</span>
+                </div>
+                <button class="btn btn-secondary btn-sm" id="btnLogout" title="Sign out">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                    Logout
+                </button>
+            </div>
+        </header>
+
+        <!-- Stats Overview Cards -->
+        <section class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon icon-cyan">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+                </div>
+                <div class="stat-content">
+                    <span class="stat-title">Forwarded Ports</span>
+                    <span class="stat-number" id="statTotalRules">0</span>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-icon icon-emerald">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                </div>
+                <div class="stat-content">
+                    <span class="stat-title">Active HAProxy (IPv6)</span>
+                    <span class="stat-number text-emerald" id="statActiveHaproxy">0</span>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-icon icon-amber">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"/><rect x="2" y="14" width="20" height="8" rx="2" ry="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg>
+                </div>
+                <div class="stat-content">
+                    <span class="stat-title">Active NFTables (Tunnel)</span>
+                    <span class="stat-number text-amber" id="statActiveNftables">0</span>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-icon icon-indigo">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                </div>
+                <div class="stat-content">
+                    <span class="stat-title">Kernel Engine</span>
+                    <span class="stat-badge badge-active" id="engineStatusBadge">SYNCED</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Main Content Area -->
+        <main class="main-panel">
+            <div class="panel-header">
+                <div>
+                    <h2>Port Routing & Multi-Path Matrix</h2>
+                    <p class="section-desc">Each port routes user traffic through Priority 1 and automatically falls back to Priority 2 on packet loss.</p>
+                </div>
+                <button class="btn btn-primary" id="btnOpenAddModal">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                    Add Port Rule
+                </button>
+            </div>
+
+            <!-- Rules Grid -->
+            <div class="rules-container" id="rulesContainer">
+                <!-- Dynamically loaded via app.js -->
+            </div>
+        </main>
+    </div>
+
+    <!-- Add/Edit Rule Modal -->
+    <div class="modal-backdrop" id="ruleModal">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3 id="modalTitle">Configure Port Rule</h3>
+                <button class="modal-close" id="btnCloseModal">&times;</button>
+            </div>
+            <form id="ruleForm">
+                <input type="hidden" id="editRuleId" value="">
+
+                <div class="form-row">
+                    <div class="form-group flex-1">
+                        <label for="formPort">Inbound Listening Port</label>
+                        <input type="number" id="formPort" class="form-control" placeholder="e.g. 2023" required min="1" max="65535">
+                    </div>
+                    <div class="form-group flex-1">
+                        <label for="formProto">Transport Protocol</label>
+                        <select id="formProto" class="form-control">
+                            <option value="both">TCP + UDP (Recommended)</option>
+                            <option value="tcp">TCP Only</option>
+                            <option value="udp">UDP Only</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="priority-box priority-1">
+                    <div class="priority-header">
+                        <span class="prio-tag prio-tag-1">Priority 1 (Primary Uplink)</span>
+                        <span class="prio-sub">Standard operating path</span>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group flex-1">
+                            <label>Engine Type</label>
+                            <select id="p1Type" class="form-control">
+                                <option value="haproxy">HAProxy (Direct Zero-Tunnel IPv6)</option>
+                                <option value="nftables">NFTables (Kernel Tunnel DNAT)</option>
+                            </select>
+                        </div>
+                        <div class="form-group flex-2">
+                            <label>Destination Target IP / Host</label>
+                            <input type="text" id="p1Target" class="form-control" placeholder="2001:4ba0:cafe:84e::1" required>
+                        </div>
+                        <div class="form-group flex-1">
+                            <label>Target Port</label>
+                            <input type="number" id="p1Port" class="form-control" placeholder="Same as listen" min="1" max="65535">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Comment / Label</label>
+                        <input type="text" id="p1Comment" class="form-control" placeholder="e.g. Foreign Server 1 - Primary IPv6">
+                    </div>
+                </div>
+
+                <div class="priority-box priority-2">
+                    <div class="priority-header">
+                        <span class="prio-tag prio-tag-2">Priority 2 (Failover Uplink)</span>
+                        <span class="prio-sub">Automatic standby path</span>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group flex-1">
+                            <label>Engine Type</label>
+                            <select id="p2Type" class="form-control">
+                                <option value="nftables" selected>NFTables (Kernel Tunnel DNAT)</option>
+                                <option value="haproxy">HAProxy (Alternative IPv6)</option>
+                            </select>
+                        </div>
+                        <div class="form-group flex-2">
+                            <label>Destination Target IP / Host</label>
+                            <input type="text" id="p2Target" class="form-control" placeholder="10.88.1.2" required>
+                        </div>
+                        <div class="form-group flex-1">
+                            <label>Target Port</label>
+                            <input type="number" id="p2Port" class="form-control" placeholder="Same as listen" min="1" max="65535">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Comment / Label</label>
+                        <input type="text" id="p2Comment" class="form-control" placeholder="e.g. Backup FakeTCP/GRE Tunnel 10.88.1.2">
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" id="btnCancelModal">Cancel</button>
+                    <button type="submit" class="btn btn-primary" id="btnSaveRule">Save & Apply Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Notification Toast Container -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <script src="app.js"></script>
+</body>
+</html>
