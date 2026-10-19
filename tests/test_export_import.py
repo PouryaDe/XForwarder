@@ -164,7 +164,112 @@ class TestExportImport(unittest.TestCase):
         self.assertFalse(ok)
         self.assertIn("Duplicate port", err)
 
+    def test_import_reserved_web_port_rejected(self):
+        # Attempting to import rule on web dashboard port (8090) must be rejected
+        payload = {
+            "rules": [
+                {"port": 8090, "destinations": [{"priority": 1, "target": "1.1.1.1", "port": 8090}]}
+            ]
+        }
+        ok, err, _ = import_config_data(payload)
+        self.assertFalse(ok)
+        self.assertIn("reserved for the XForwarder Web Dashboard", err)
+
+    def test_import_raw_rules_list(self):
+        # Top-level array of rules should be accepted seamlessly
+        raw_list = [
+            {
+                "port": 3000,
+                "protocol": "tcp",
+                "destinations": [{"priority": 1, "target": "1.2.3.4", "port": 3000}]
+            }
+        ]
+        ok, err, info = import_config_data(raw_list, mode="merge")
+        self.assertTrue(ok)
+        self.assertEqual(info["imported_count"], 1)
+
+        reloaded = load_config()
+        ports = [r["port"] for r in reloaded["rules"]]
+        self.assertIn(3000, ports)
+
+    def test_missing_id_and_priority_auto_assigned(self):
+        # Rules missing 'id' or 'active_priority' should be normalized
+        payload = {
+            "rules": [
+                {
+                    "port": 9090,
+                    "destinations": [{"priority": 1, "target": "1.2.3.4", "port": 9090}]
+                }
+            ]
+        }
+        ok, err, info = import_config_data(payload, mode="merge")
+        self.assertTrue(ok)
+
+        reloaded = load_config()
+        rule = next(r for r in reloaded["rules"] if r["port"] == 9090)
+        self.assertEqual(rule["id"], "rule-9090")
+        self.assertEqual(rule["active_priority"], 1)
+
+    def test_atomic_backup_integrity(self):
+        # Verify pre-import backup file is created atomically and is valid JSON
+        payload = {
+            "rules": [
+                {"port": 5000, "destinations": [{"priority": 1, "target": "1.2.3.4", "port": 5000}]}
+            ]
+        }
+        ok, _, info = import_config_data(payload, mode="merge")
+        self.assertTrue(ok)
+
+        backup_filename = info["backup"]
+        backup_path = os.path.join(self.temp_dir, backup_filename)
+        self.assertTrue(os.path.exists(backup_path))
+
+        with open(backup_path, "r", encoding="utf-8") as f:
+            backup_data = json.load(f)
+        self.assertIn("rules", backup_data)
+        # Pre-import state only had port 1080
+        self.assertEqual([r["port"] for r in backup_data["rules"]], [1080])
+
+    def test_http_export_endpoint(self):
+        # End-to-end HTTP test ensuring do_GET /api/config/export applies headers and returns valid JSON
+        import threading
+        import urllib.request
+        from http.server import HTTPServer
+        from core.web_server import XForwarderWebHandler, ACTIVE_SESSIONS, SESSION_LOCK
+
+        server = HTTPServer(("127.0.0.1", 0), XForwarderWebHandler)
+        port = server.server_port
+        t = threading.Thread(target=server.handle_request, daemon=True)
+        t.start()
+
+        token = "test_e2e_export_token"
+        with SESSION_LOCK:
+            ACTIVE_SESSIONS[token] = {
+                "username": "admin",
+                "created_at": time.time(),
+                "last_active": time.time(),
+                "expires_at": time.time() + 3600
+            }
+
+        try:
+            req = urllib.request.Request(f"http://127.0.0.1:{port}/api/config/export")
+            req.add_header("Cookie", f"xfwd_session={token}")
+            with urllib.request.urlopen(req, timeout=3.0) as resp:
+                self.assertEqual(resp.status, 200)
+                disp = resp.headers.get("Content-Disposition", "")
+                self.assertTrue("attachment;" in disp and "xforwarder-backup-" in disp)
+                # Verify OWASP headers applied cleanly
+                self.assertEqual(resp.headers.get("X-Frame-Options"), "DENY")
+                self.assertEqual(resp.headers.get("X-Content-Type-Options"), "nosniff")
+                body = json.loads(resp.read().decode("utf-8"))
+                self.assertEqual(body["wan_interface"], "eth0")
+                self.assertEqual(body["rules"][0]["port"], 1080)
+                self.assertNotIn("web", body)
+        finally:
+            server.server_close()
+
 
 if __name__ == "__main__":
     unittest.main()
+
 

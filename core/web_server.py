@@ -138,15 +138,18 @@ def export_config_data(cfg: dict = None) -> dict:
     }
 
 
-def import_config_data(imported_raw: dict, mode: str = "merge") -> tuple:
-    """Validates, migrates, backs up, and applies an imported configuration dictionary.
+def import_config_data(imported_raw, mode: str = "merge") -> tuple:
+    """Validates, migrates, backs up, and applies an imported configuration dictionary or rules list.
     Returns (success: bool, error_msg: str, info_dict: dict).
     """
     if mode not in ("merge", "replace"):
         mode = "merge"
 
-    if not isinstance(imported_raw, dict):
-        return False, "Invalid configuration payload. Must be a JSON object.", {}
+    # Support raw rules array as valid import payload
+    if isinstance(imported_raw, list):
+        imported_raw = {"rules": imported_raw}
+    elif not isinstance(imported_raw, dict):
+        return False, "Invalid configuration payload. Must be a JSON object or rules array.", {}
 
     if migrate_config:
         imported_cfg, _ = migrate_config(imported_raw)
@@ -156,6 +159,9 @@ def import_config_data(imported_raw: dict, mode: str = "merge") -> tuple:
     imported_rules = imported_cfg.get("rules", [])
     if not isinstance(imported_rules, list):
         return False, "'rules' property must be a list", {}
+
+    current_cfg = load_config()
+    web_port = current_cfg.get("web", {}).get("port", 8090)
 
     validated_rules = []
     seen_ports = set()
@@ -168,9 +174,18 @@ def import_config_data(imported_raw: dict, mode: str = "merge") -> tuple:
             continue
         if port <= 0 or port > 65535:
             return False, f"Invalid port number: {port}", {}
+        if port == web_port:
+            return False, f"Port {port} is reserved for the XForwarder Web Dashboard", {}
         if port in seen_ports:
             return False, f"Duplicate port {port} found in imported rules", {}
         seen_ports.add(port)
+
+        # Ensure consistent rule ID and initial priority
+        if not r.get("id"):
+            r["id"] = f"rule-{port}"
+        if "active_priority" not in r:
+            r["active_priority"] = 1
+
         valid, err = validate_rule(r)
         if not valid:
             return False, f"Rule for port {port} is invalid: {err}", {}
@@ -178,11 +193,12 @@ def import_config_data(imported_raw: dict, mode: str = "merge") -> tuple:
 
     # Atomic Pre-Update Backup
     cfg_path = get_config_path()
-    current_cfg = load_config()
     bak_path = f"{cfg_path}.bak.{int(time.time())}"
     try:
-        with open(bak_path, "w", encoding="utf-8") as bf:
+        bak_tmp = f"{bak_path}.tmp.{os.getpid()}"
+        with open(bak_tmp, "w", encoding="utf-8") as bf:
             json.dump(current_cfg, bf, indent=2, ensure_ascii=False)
+        os.replace(bak_tmp, bak_path)
     except Exception as e:
         print(f"[WARN] Failed to write pre-import backup {bak_path}: {e}", file=sys.stderr)
 
@@ -964,11 +980,11 @@ class XForwarderWebHandler(BaseHTTPRequestHandler):
                 self.send_header("Content-Type", "application/json; charset=utf-8")
                 self.send_header("Content-Disposition", f'attachment; filename="xforwarder-backup-{now_str}.json"')
                 self.send_header("Content-Length", str(len(body)))
-                self.send_header("Cache-Control", "no-store, no-cache, must-revalidate")
-                self.send_security_headers()
+                self.apply_security_headers()
                 self.end_headers()
                 self.wfile.write(body)
                 return
+
 
             else:
                 self.send_error(404, "API endpoint not found")

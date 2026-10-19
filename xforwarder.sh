@@ -982,21 +982,24 @@ export_config_cli() {
     msg_info "Exporting configuration from $active_cfg..."
     python3 -c "
 import sys, json, os
+target_path = sys.argv[1]
 sys.path.insert(0, '$INSTALL_DIR')
 from core.web_server import export_config_data
 try:
     data = export_config_data()
-    out_dir = os.path.dirname(os.path.abspath('$target_path'))
+    out_dir = os.path.dirname(os.path.abspath(target_path))
     if out_dir:
         os.makedirs(out_dir, exist_ok=True)
-    with open('$target_path', 'w', encoding='utf-8') as f:
+    tmp_path = f'{target_path}.tmp.{os.getpid()}'
+    with open(tmp_path, 'w', encoding='utf-8') as f:
         json.dump(data, f, indent=2, ensure_ascii=False)
+    os.replace(tmp_path, target_path)
     rule_count = len(data.get('rules', []))
-    print(f'\033[0;32m[OK] Successfully exported configuration ({rule_count} rules) to $target_path\033[0m')
+    print(f'\033[0;32m[OK] Successfully exported configuration ({rule_count} rules) to {target_path}\033[0m')
 except Exception as e:
     print(f'\033[0;31m[ERROR] Failed to export configuration: {e}\033[0m', file=sys.stderr)
     sys.exit(1)
-"
+" "$target_path"
 }
 
 import_config_cli() {
@@ -1027,17 +1030,19 @@ import_config_cli() {
     msg_info "Importing configuration from $file_path (mode: $clean_mode)..."
     python3 -c "
 import sys, json
+file_path = sys.argv[1]
+import_mode = sys.argv[2]
 sys.path.insert(0, '$INSTALL_DIR')
 from core.web_server import import_config_data
 
 try:
-    with open('$file_path', 'r', encoding='utf-8') as f:
+    with open(file_path, 'r', encoding='utf-8') as f:
         payload = json.load(f)
 except Exception as e:
     print(f'\033[0;31m[ERROR] Failed to read JSON file: {e}\033[0m', file=sys.stderr)
     sys.exit(1)
 
-ok, err, info = import_config_data(payload, mode='$clean_mode')
+ok, err, info = import_config_data(payload, mode=import_mode)
 if ok:
     imported_cnt = info.get('imported_count', 0)
     total_cnt = info.get('count', 0)
@@ -1049,7 +1054,7 @@ if ok:
 else:
     print(f'\033[0;31m[ERROR] Import failed: {err}\033[0m', file=sys.stderr)
     sys.exit(1)
-" || return 1
+" "$file_path" "$clean_mode" || return 1
 
     systemctl restart "$DAEMON_SERVICE" "$WEB_SERVICE" >/dev/null 2>&1 || true
     msg_ok "XForwarder services restarted and synced with imported rules."

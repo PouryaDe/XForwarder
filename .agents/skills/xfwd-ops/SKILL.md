@@ -12,6 +12,8 @@ This skill guides the agent through operating, maintaining, configuring, and ver
 - Display Web Dashboard URL and credentials: `sudo xforwarder url`
 - Display live terminal status table: `sudo xforwarder status`
 - Change admin username or password: `sudo xforwarder password`
+- Export configuration to backup JSON: `sudo xforwarder export [file.json]`
+- Import configuration from backup JSON: `sudo xforwarder import-config <file.json> [--merge|--replace]`
 - Restart all services: `sudo xforwarder restart`
 - Tail live engine logs: `sudo xforwarder logs`
 - Backward compatible aliases: `fwdman` and `forward-manager` also work interchangeably.

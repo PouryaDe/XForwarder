@@ -25,6 +25,7 @@ XForwarder/
 │   ├── test_migration.py  # Native Python unittest suite (schema migrations & edge cases)
 │   ├── test_security.py   # Native Python unittest suite (PBKDF2 auth, rate limiting & input sanitization)
 │   ├── test_haproxy_parser.py # Native Python unittest suite (HAProxy config parser & importer)
+│   ├── test_export_import.py  # Native Python unittest suite (sanitized config export & merge/replace restore)
 │   └── test_ui_and_api_edge_cases.py # Native Python unittest suite (UI, API edge cases & static asset integrity)
 ├── .agents/               # Antigravity agent configuration (constitution, rules, workflows, skills, scripts)
 │   ├── AGENTS.md          # Master architecture constitution
