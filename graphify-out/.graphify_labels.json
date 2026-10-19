@@ -23,10 +23,9 @@
   "21": "Bash CLI & Deployment Standards (`xforwarder.sh`)",
   "22": "Intermediate Relay VPS Constraints Rule (XForwarder)",
   "23": "showToast",
-  "24": "Python Core Standards (`core/engine.py` & `core/web_server.py`)",
+  "24": "XForwarderWebServer",
   "25": "escapeHtml",
   "26": "get_network_interfaces_info",
-  "27": "Interactive Requirements Clarification (Reverse Prompt Engineering)",
   "35": "Session State & Task Handoff Rule (XForwarder)",
   "36": "web_server.py"
 }

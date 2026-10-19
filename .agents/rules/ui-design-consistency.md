@@ -88,3 +88,15 @@ Authoritative visual guidelines, design tokens, and aesthetic rules for **all** 
 - **Debounced Live Polling:** 3-second auto-refresh cycles must debounce to prevent request stacking.
 - **Mobile Responsive:** Breakpoints at `900px` (drawer sidebar) and `768px` (stacked grids, toolbar, and mobile login padding).
 
+---
+
+## 8. Rule Matrix & Card Layout Architecture
+- **2-Column Port Cards Grid (`.rules-container`):** Port rule cards are arranged in a clean, balanced 2-column layout on desktops (`grid-template-columns: repeat(2, minmax(0, 1fr))`) and single-column on mobile viewports (`@media (max-width: 992px)`).
+- **Vertical Path Stacking (`.paths-grid`):** Inside each port card, forwarding priorities MUST be stacked strictly in vertical order (Priority 1 on top, Priority 2 directly underneath, Priority 3 below). Never use horizontal wrapping grids for priority paths.
+- **Manual Forwarding Mode & Test Controller (`.rule-test-bar`):**
+  - Every port card features a prominent segmented test controller:
+    - `⚡ Auto Failover`: Activates automatic priority failover (`force_override: 0`).
+    - `Force P1`, `Force P2`, ...: Instantly forces traffic onto that specific forwarding method for testing.
+  - Path boxes contain individual 1-click test actions (`Force Test P{N}` and `Forced Active (Reset Auto)`).
+
+

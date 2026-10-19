@@ -1204,15 +1204,29 @@ body {
 }
 
 /* ── Rules Matrix & Cards ── */
-.rules-container { display: flex; flex-direction: column; gap: 14px; }
+.rules-container {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 18px;
+    align-items: start;
+}
+
+@media (max-width: 992px) {
+    .rules-container {
+        grid-template-columns: 1fr;
+        gap: 14px;
+    }
+}
 
 .rule-card {
     background: var(--bg-surface);
     border: 1px solid var(--border-color);
     border-radius: 14px;
-    padding: 20px;
+    padding: 18px;
     transition: all 0.2s ease;
     box-shadow: var(--card-shadow);
+    display: flex;
+    flex-direction: column;
 }
 
 .rule-card:hover {
@@ -1224,10 +1238,10 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 16px;
+    margin-bottom: 12px;
 }
 
-.port-badge { display: flex; align-items: center; gap: 10px; }
+.port-badge { display: flex; align-items: center; gap: 8px; }
 .port-num { font-family: var(--font-mono); font-size: 1.25rem; font-weight: 700; color: var(--text-primary); }
 
 .proto-pill {
@@ -1243,27 +1257,14 @@ body {
 .rule-actions {
     display: flex;
     align-items: center;
-    gap: 8px;
-}
-
-.rule-actions select.form-control,
-.rule-actions select {
-    width: auto;
-    height: 34px;
-    min-height: 34px;
-    box-sizing: border-box;
-    padding: 0 32px 0 10px !important;
-    font-size: 0.8rem;
-    border-radius: 8px;
-    background-position: calc(100% - 10px) center !important;
-    background-size: 14px 14px !important;
+    gap: 6px;
 }
 
 .rule-actions .btn-sm {
-    width: 34px;
-    height: 34px;
-    min-width: 34px;
-    min-height: 34px;
+    width: 32px;
+    height: 32px;
+    min-width: 32px;
+    min-height: 32px;
     padding: 0;
     display: inline-flex;
     align-items: center;
@@ -1271,18 +1272,105 @@ body {
     border-radius: 8px;
 }
 
-/* Paths Grid */
+/* Forwarding & Testing Mode Bar */
+.rule-test-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 6px 10px;
+    margin-bottom: 12px;
+    border-radius: 10px;
+    background: rgba(15, 23, 42, 0.45);
+    border: 1px solid var(--border-color);
+    flex-wrap: wrap;
+}
+
+[data-theme="light"] .rule-test-bar {
+    background: rgba(241, 245, 249, 0.7);
+    border-color: rgba(226, 232, 240, 0.9);
+}
+
+.test-bar-label {
+    font-size: 0.74rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.mode-btn-group {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: var(--bg-card);
+    padding: 2px;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    flex-wrap: wrap;
+}
+
+.btn-mode-pill {
+    border: 1px solid transparent;
+    background: transparent;
+    color: var(--text-secondary);
+    font-size: 0.74rem;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    transition: all 0.18s ease;
+    white-space: nowrap;
+}
+
+.btn-mode-pill:hover {
+    color: var(--text-primary);
+    background: rgba(255, 255, 255, 0.05);
+}
+
+[data-theme="light"] .btn-mode-pill:hover {
+    background: rgba(0, 0, 0, 0.04);
+}
+
+.btn-mode-pill.is-active.auto {
+    background: rgba(16, 185, 129, 0.16);
+    color: var(--accent-emerald);
+    border-color: rgba(16, 185, 129, 0.35);
+    box-shadow: 0 1px 4px rgba(16, 185, 129, 0.15);
+}
+
+.btn-mode-pill.is-active.forced {
+    background: rgba(245, 158, 11, 0.16);
+    color: var(--accent-amber);
+    border-color: rgba(245, 158, 11, 0.35);
+    box-shadow: 0 1px 4px rgba(245, 158, 11, 0.15);
+}
+
+.btn-mode-pill .pill-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+}
+
+/* Paths List - Stacked Vertically by Priority */
 .paths-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    gap: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
 }
 
 .path-box {
     background: var(--bg-card);
     border: 1px solid var(--border-color);
     border-radius: 12px;
-    padding: 14px;
+    padding: 12px 14px;
     position: relative;
     transition: all 0.2s ease;
 }
@@ -1304,6 +1392,82 @@ body {
     justify-content: space-between;
     align-items: center;
     margin-bottom: 8px;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.path-header-left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.path-header-right {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.btn-path-test {
+    border: 1px solid var(--border-color);
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--text-secondary);
+    font-size: 0.72rem;
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.18s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.btn-path-test:hover {
+    color: var(--accent-cyan);
+    border-color: var(--accent-cyan);
+    background: rgba(6, 182, 212, 0.08);
+}
+
+.btn-path-test.is-forced {
+    background: rgba(245, 158, 11, 0.16);
+    border-color: rgba(245, 158, 11, 0.45);
+    color: var(--accent-amber);
+    box-shadow: 0 0 10px -2px rgba(245, 158, 11, 0.3);
+}
+
+.btn-path-test.is-forced:hover {
+    background: rgba(239, 68, 68, 0.15);
+    border-color: rgba(239, 68, 68, 0.4);
+    color: var(--accent-rose);
+}
+
+.badge-route-active {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--accent-emerald);
+    background: rgba(16, 185, 129, 0.12);
+    border: 1px solid rgba(16, 185, 129, 0.25);
+    padding: 2px 7px;
+    border-radius: 5px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.active-ribbon.is-manual {
+    background: var(--accent-amber);
+    color: #1e1b4b;
+    font-weight: 800;
+}
+
+.active-ribbon.is-failover {
+    background: var(--accent-amber);
+}
+
+.active-ribbon.is-primary {
+    background: var(--accent-emerald);
 }
 
 .path-tag {

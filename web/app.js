@@ -871,18 +871,27 @@ function renderRules(rules, runtime) {
 
         const copyPortSvg = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>`;
 
-        // Build dynamic override dropdown options
-        const overrideOptions = [
-            `<option value="0" ${forceOverride === 0 ? 'selected' : ''}>Mode: Auto Failover</option>`
+        // Build dynamic mode buttons for testing (Auto Failover vs Force Priority)
+        const modeButtonsHtml = [
+            `<button type="button" class="btn-mode-pill ${forceOverride === 0 ? 'is-active auto' : ''}" onclick="handleOverrideChange(decodeURIComponent('${encodedId}'), 0)" title="Automatic Multi-Path Failover (Routes in order of healthy priorities)">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+                <span>Auto Failover</span>
+            </button>`
         ];
+
         sortedDests.forEach(d => {
             const p = d.priority || 1;
-            const t = escapeHtml(String(d.type || 'haproxy').toUpperCase());
-            const lbl = p === 1 ? `Force: Priority 1 (Primary · ${t})` : `Force: Priority ${p} (Failover · ${t})`;
-            overrideOptions.push(`<option value="${p}" ${forceOverride === p ? 'selected' : ''}>${lbl}</option>`);
+            const isForcedThis = (forceOverride === p);
+            const dType = escapeHtml(String(d.type || 'haproxy').toUpperCase());
+            modeButtonsHtml.push(`
+                <button type="button" class="btn-mode-pill ${isForcedThis ? 'is-active forced' : ''}" onclick="handleOverrideChange(decodeURIComponent('${encodedId}'), ${p})" title="Manually force Priority ${p} (${dType}) for testing">
+                    <span class="pill-dot"></span>
+                    <span>Force P${p}</span>
+                </button>
+            `);
         });
 
-        // Build dynamic paths grid
+        // Build dynamic paths list (stacked vertically by priority order)
         const pathsHtml = sortedDests.map(dest => {
             const prio = dest.priority || 1;
             const isPrimary = prio === 1;
@@ -910,19 +919,57 @@ function renderRules(rules, runtime) {
             const latencyBadge = formatLatencyBadge(stat);
             const tagClass = getPrioTagClass(prio);
 
-            const ribbonHtml = isActive
-                ? `<span class="active-ribbon" ${isFailover ? 'style="background:var(--accent-amber);"' : ''}>${isFailover ? `FAILOVER P${prio} ACTIVE` : 'ACTIVE ROUTE'}</span>`
-                : '';
+            // Ribbon badge
+            let ribbonHtml = '';
+            if (isActive) {
+                if (forceOverride === prio) {
+                    ribbonHtml = `<span class="active-ribbon is-manual">MANUAL TEST · P${prio} ACTIVE</span>`;
+                } else if (isFailover) {
+                    ribbonHtml = `<span class="active-ribbon is-failover">AUTO FAILOVER · P${prio} ACTIVE</span>`;
+                } else {
+                    ribbonHtml = `<span class="active-ribbon is-primary">PRIMARY ACTIVE · P1</span>`;
+                }
+            }
+
+            // Quick path action button
+            let pathActionHtml = '';
+            if (forceOverride === prio) {
+                pathActionHtml = `
+                    <button type="button" class="btn-path-test is-forced" onclick="handleOverrideChange(decodeURIComponent('${encodedId}'), 0)" title="Currently forced manually. Click to return to Automatic Failover.">
+                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 14 14"/></svg>
+                        <span>Forced (Reset Auto)</span>
+                    </button>
+                `;
+            } else if (isActive && forceOverride === 0) {
+                pathActionHtml = `
+                    <span class="badge-route-active" title="Currently selected automatically in priority order">
+                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                        <span>Active (Auto)</span>
+                    </span>
+                `;
+            } else {
+                pathActionHtml = `
+                    <button type="button" class="btn-path-test" onclick="handleOverrideChange(decodeURIComponent('${encodedId}'), ${prio})" title="Click to manually activate Priority ${prio} for testing">
+                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+                        <span>Force Test P${prio}</span>
+                    </button>
+                `;
+            }
 
             return `
                 <div class="path-box ${isActive ? (isFailover ? 'is-failover' : 'is-active') : ''}">
                     ${ribbonHtml}
                     <div class="path-header">
-                        <span class="path-tag ${tagClass}">Priority ${prio} ${isPrimary ? '(Primary)' : '(Failover)'}</span>
-                        <span class="path-status ${statusClass}">
-                            <span class="status-indicator"></span>
-                            ${statusLabel}
-                        </span>
+                        <div class="path-header-left">
+                            <span class="path-tag ${tagClass}">Priority ${prio} ${isPrimary ? '(Primary)' : '(Failover)'}</span>
+                            <span class="path-status ${statusClass}">
+                                <span class="status-indicator"></span>
+                                ${statusLabel}
+                            </span>
+                        </div>
+                        <div class="path-header-right">
+                            ${pathActionHtml}
+                        </div>
                     </div>
                     <div class="path-dest">
                         <span>${escapeHtml(String(dest.type || 'haproxy').toUpperCase())}: ${targetDisplay}:${escapeHtml(dest.port || rule.port)}</span>
@@ -945,15 +992,22 @@ function renderRules(rules, runtime) {
                         <span class="proto-pill">${escapeHtml(String(rule.protocol || 'both').toUpperCase())}</span>
                     </div>
                     <div class="rule-actions">
-                        <select class="form-control override-select" onchange="handleOverrideChange(decodeURIComponent('${encodedId}'), this.value)">
-                            ${overrideOptions.join('')}
-                        </select>
                         <button class="btn btn-secondary btn-sm" onclick="editRule(decodeURIComponent('${encodedId}'))" title="Edit Rule">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
                         </button>
                         <button class="btn btn-danger btn-sm" onclick="deleteRule(decodeURIComponent('${encodedId}'))" title="Delete Rule">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
                         </button>
+                    </div>
+                </div>
+
+                <div class="rule-test-bar">
+                    <div class="test-bar-label">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+                        <span>Forwarding:</span>
+                    </div>
+                    <div class="mode-btn-group">
+                        ${modeButtonsHtml.join('')}
                     </div>
                 </div>
 
@@ -965,23 +1019,28 @@ function renderRules(rules, runtime) {
     }).join("");
 }
 
-// Override change handler
+// Override change handler (Auto Failover vs Manual Test Priority)
 async function handleOverrideChange(ruleId, val) {
+    const prioVal = parseInt(val);
     try {
         const res = await fetch(`${API_BASE}/override`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ rule_id: ruleId, force_override: parseInt(val) })
+            body: JSON.stringify({ rule_id: ruleId, force_override: prioVal })
         });
         if (res.ok) {
-            showToast("Routing mode updated successfully");
+            if (prioVal === 0) {
+                showToast("Automatic priority failover enabled", "success");
+            } else {
+                showToast(`Manual Test: Forced Priority ${prioVal} enabled`, "info");
+            }
             fetchStatus();
         } else {
             const data = await res.json().catch(() => ({}));
-            showToast(data.error || "Failed to update override", "error");
+            showToast(data.error || "Failed to update forwarding mode", "error");
         }
     } catch (err) {
-        showToast("Failed to update override", "error");
+        showToast("Failed to update forwarding mode", "error");
     }
 }
 

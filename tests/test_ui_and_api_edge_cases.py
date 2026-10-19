@@ -174,6 +174,21 @@ class TestUIAndAPIEdgeCases(unittest.TestCase):
         self.assertIn('.login-logo', style_content)
         self.assertIn('[data-theme="light"] .login-card', style_content)
 
+        # 8. Verify 2-column rules layout and vertical paths stacking
+        self.assertIn('grid-template-columns: repeat(2', style_content)
+        self.assertIn('.paths-grid', style_content)
+        self.assertIn('flex-direction: column', style_content)
+        self.assertIn('.rule-test-bar', style_content)
+        self.assertIn('.btn-mode-pill', style_content)
+        self.assertIn('.btn-path-test', style_content)
+
+        # 9. Verify testing controls and mode switcher in app.js
+        with open(os.path.join(REPO_ROOT, "web", "app.js"), "r", encoding="utf-8") as f:
+            app_content = f.read()
+        self.assertIn('Auto Failover', app_content)
+        self.assertIn('Force P', app_content)
+        self.assertIn('btn-mode-pill', app_content)
+        self.assertIn('btn-path-test', app_content)
 
 
 if __name__ == "__main__":
