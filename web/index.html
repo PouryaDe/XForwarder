@@ -1,9 +1,22 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>XForwarder - Multi-Path Tunnel Failover</title>
+    <title>XForwarder - Multi-Path Relay Dashboard</title>
+    <!-- Prevent Theme Flicker Pre-Hydration -->
+    <script>
+        (function() {
+            try {
+                var saved = localStorage.getItem("xfwd_theme");
+                if (saved === "light" || (!saved && window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches)) {
+                    document.documentElement.setAttribute("data-theme", "light");
+                } else {
+                    document.documentElement.setAttribute("data-theme", "dark");
+                }
+            } catch (e) {}
+        })();
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
@@ -80,159 +93,630 @@
         </div>
     </div>
 
-    <!-- Main Dashboard (Displayed when authenticated) -->
-    <div class="dashboard-wrapper" id="dashboardScreen" style="display:none;">
-        <!-- Top Navigation Bar -->
-        <header class="topbar">
-            <div class="brand">
-                <div class="logo-orb"></div>
-                <div>
-                    <h1>XForwarder</h1>
-                    <span class="subtitle">Multi-Path Priority & Zero-Collision Failover</span>
-                </div>
-            </div>
+    <!-- Main Panel Dashboard Layout (Displayed when authenticated) -->
+    <div class="app-layout" id="dashboardScreen" style="display:none;">
+        <!-- Mobile Sidebar Backdrop Overlay -->
+        <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
 
-            <div class="session-controls">
-                <!-- System Resource Stats -->
-                <div class="sys-metrics" id="sysMetrics">
-                    <div class="sys-pill" id="ramPill" title="Server Memory Usage">
-                        <span class="pill-dot dot-emerald"></span>
-                        <span id="ramText">RAM: --</span>
-                    </div>
-                    <div class="sys-pill" id="cpuPill" title="Server CPU Load">
-                        <span class="pill-dot dot-cyan"></span>
-                        <span id="cpuText">CPU: --</span>
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="brand">
+                    <div class="logo-orb"></div>
+                    <div class="brand-text">
+                        <span class="brand-title">XForwarder</span>
+                        <span class="brand-badge">PRO</span>
                     </div>
                 </div>
-
-                <div class="user-pill">
-                    <span class="pulse-dot" id="pulseDot" title="Live Polling Active"></span>
-                    <span class="user-label">Logged in:</span>
-                    <span class="user-name" id="currentUsername">admin</span>
-                </div>
-
-                <button class="btn btn-secondary btn-icon" id="btnManualRefresh" title="Refresh Now">
-                    <svg id="refreshIcon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
-                </button>
-
-                <button class="btn btn-secondary btn-sm" id="btnOpenSecurityModal" title="Security & Credentials">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-                    Security
-                </button>
-
-                <button class="btn btn-secondary btn-sm" id="btnLogout" title="Sign out">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-                    Logout
-                </button>
-            </div>
-        </header>
-
-        <!-- Stats Overview Cards -->
-        <section class="stats-grid">
-            <div class="stat-card">
-                <div class="stat-icon icon-cyan">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
-                </div>
-                <div class="stat-content">
-                    <span class="stat-title">Forwarded Ports</span>
-                    <span class="stat-number" id="statTotalRules">0</span>
-                </div>
-            </div>
-
-            <div class="stat-card">
-                <div class="stat-icon icon-emerald">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-                </div>
-                <div class="stat-content">
-                    <span class="stat-title">Active Proxy (HA / Nginx)</span>
-                    <span class="stat-number text-emerald" id="statActiveHaproxy">0</span>
-                </div>
-            </div>
-
-            <div class="stat-card">
-                <div class="stat-icon icon-amber">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"/><rect x="2" y="14" width="20" height="8" rx="2" ry="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg>
-                </div>
-                <div class="stat-content">
-                    <span class="stat-title">Active NFTables (Tunnel)</span>
-                    <span class="stat-number text-amber" id="statActiveNftables">0</span>
-                </div>
-            </div>
-
-            <div class="stat-card">
-                <div class="stat-icon icon-indigo">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-                </div>
-                <div class="stat-content">
-                    <span class="stat-title">Kernel Engine</span>
-                    <span class="stat-badge badge-active" id="engineStatusBadge">SYNCED</span>
-                </div>
-            </div>
-        </section>
-
-        <!-- Main Content Area -->
-        <main class="main-panel">
-            <div class="panel-header">
-                <div>
-                    <h2>Port Routing & Multi-Path Matrix</h2>
-                    <p class="section-desc">Each port routes user traffic through Priority 1 and automatically falls back to Priority 2 on packet loss.</p>
-                </div>
-                <button class="btn btn-primary" id="btnOpenAddModal">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                    Add Port Rule
+                <button class="btn-sidebar-close" id="btnCloseSidebar" title="Close Menu">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                 </button>
             </div>
 
-            <!-- Pre-existing HAProxy Discovered Alert Banner -->
-            <div id="importBanner" class="import-banner" style="display:none;">
-                <div class="import-banner-content">
-                    <div class="import-icon-orb">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+            <!-- Navigation Menu -->
+            <nav class="sidebar-nav">
+                <div class="nav-section-label">MAIN NAVIGATION</div>
+
+                <button class="nav-item active" data-section="rules" id="navItemRules">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"/><rect x="2" y="14" width="20" height="8" rx="2" ry="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg>
+                    <span>Port Matrix</span>
+                    <span class="nav-badge" id="navRulesCount">0</span>
+                </button>
+
+                <button class="nav-item" data-section="overview" id="navItemOverview">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+                    <span>Overview & Health</span>
+                </button>
+
+                <button class="nav-item" data-section="services" id="navItemServices">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+                    <span>Relay Services</span>
+                    <span class="nav-badge nav-badge-ok" id="navServicesBadge">SYNCED</span>
+                </button>
+
+                <button class="nav-item" data-section="security" id="navItemSecurity">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                    <span>Security & Access</span>
+                </button>
+
+                <button class="nav-item" data-section="logs" id="navItemLogs">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+                    <span>Logs & Probes</span>
+                </button>
+            </nav>
+
+            <!-- Sidebar Footer: Theme Toggle & Session Info -->
+            <div class="sidebar-footer">
+                <!-- Theme Toggle Button -->
+                <button class="theme-toggle-btn" id="btnThemeToggle" title="Toggle Light / Dark Theme">
+                    <div class="theme-toggle-icon">
+                        <svg class="sun-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+                        <svg class="moon-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
                     </div>
-                    <div>
-                        <span class="import-title">Pre-existing HAProxy Forwarding Detected</span>
-                        <p id="importBannerText" class="import-desc">Discovered existing port forwarding rules on this server.</p>
+                    <span class="theme-toggle-label" id="themeToggleLabel">Light Mode</span>
+                </button>
+
+                <!-- Sidebar User Card -->
+                <div class="sidebar-user">
+                    <div class="user-avatar">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
                     </div>
-                </div>
-                <div class="import-banner-actions">
-                    <button class="btn btn-primary btn-sm" id="btnImportHaproxy">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
-                        <span>Import All Rules</span>
+                    <div class="user-meta">
+                        <span class="user-name" id="sidebarUsername">admin</span>
+                        <span class="user-role">Administrator</span>
+                    </div>
+                    <button class="btn-sidebar-logout" id="btnSidebarLogout" title="Sign out">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
                     </button>
-                    <button class="btn btn-secondary btn-sm" id="btnDismissImportBanner">Dismiss</button>
                 </div>
             </div>
+        </aside>
 
-            <!-- Search, Filters & Emergency Actions Toolbar -->
-            <div class="toolbar">
-                <div class="search-box">
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-                    <input type="text" id="searchInput" placeholder="Search ports, IPs, or comments (e.g. 2023, gre, ipv6)..." autocomplete="off">
-                    <button class="clear-btn" id="btnClearSearch" style="display:none;" title="Clear search">&times;</button>
+        <!-- Main Content Wrapper -->
+        <div class="main-wrapper">
+            <!-- Topbar Header -->
+            <header class="topbar">
+                <div class="topbar-left">
+                    <button class="btn-hamburger" id="btnToggleSidebar" title="Toggle Navigation Menu">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+                    </button>
+                    <div class="breadcrumb-container">
+                        <span class="breadcrumb-root">Dashboard</span>
+                        <span class="breadcrumb-sep">/</span>
+                        <span class="breadcrumb-current" id="breadcrumbSection">Port Matrix</span>
+                    </div>
                 </div>
 
-                <div class="filter-group">
-                    <button type="button" class="filter-tab active" data-filter="all">All <span class="tab-badge" id="filterCountAll">0</span></button>
-                    <button type="button" class="filter-tab" data-filter="p1">Primary P1 <span class="tab-badge" id="filterCountP1">0</span></button>
-                    <button type="button" class="filter-tab" data-filter="p2">Failover P2 <span class="tab-badge" id="filterCountP2">0</span></button>
-                    <button type="button" class="filter-tab" data-filter="down">Down / Standby <span class="tab-badge" id="filterCountDown">0</span></button>
+                <div class="session-controls">
+                    <!-- System Resource Stats -->
+                    <div class="sys-metrics" id="sysMetrics">
+                        <div class="sys-pill" id="ramPill" title="Server Memory Usage">
+                            <span class="pill-dot dot-emerald"></span>
+                            <span id="ramText">RAM: --</span>
+                        </div>
+                        <div class="sys-pill" id="cpuPill" title="Server CPU Load">
+                            <span class="pill-dot dot-cyan"></span>
+                            <span id="cpuText">CPU: --</span>
+                        </div>
+                    </div>
+
+                    <div class="user-pill">
+                        <span class="pulse-dot" id="pulseDot" title="Live Polling Active"></span>
+                        <span class="user-label">Logged in:</span>
+                        <span class="user-name" id="currentUsername">admin</span>
+                    </div>
+
+                    <button class="btn btn-secondary btn-icon" id="btnHeaderThemeToggle" title="Toggle Light / Dark Theme">
+                        <svg class="sun-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+                        <svg class="moon-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+                    </button>
+
+                    <button class="btn btn-secondary btn-icon" id="btnManualRefresh" title="Refresh Now">
+                        <svg id="refreshIcon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+                    </button>
+
+                    <button class="btn btn-secondary btn-sm" id="btnOpenSecurityModal" title="Security & Credentials">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                        <span>Security</span>
+                    </button>
+
+                    <button class="btn btn-secondary btn-sm" id="btnLogout" title="Sign out">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                        <span>Logout</span>
+                    </button>
+                </div>
+            </header>
+
+            <!-- Stats Overview Cards (Always visible as quick summary) -->
+            <section class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon icon-cyan">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+                    </div>
+                    <div class="stat-content">
+                        <span class="stat-title">Forwarded Ports</span>
+                        <span class="stat-number" id="statTotalRules">0</span>
+                    </div>
                 </div>
 
-                <div class="batch-actions">
-                    <select id="batchOverrideSelect" class="form-control batch-select">
-                        <option value="" disabled selected>⚡ Emergency Batch Actions</option>
-                        <option value="0">Restore All to Auto Failover</option>
-                        <option value="1">Force All to Priority 1 (Primary)</option>
-                        <option value="2">Force All to Priority 2 (Backup Tunnel)</option>
-                    </select>
+                <div class="stat-card">
+                    <div class="stat-icon icon-emerald">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                    </div>
+                    <div class="stat-content">
+                        <span class="stat-title">Active Proxy (HA / Nginx)</span>
+                        <span class="stat-number text-emerald" id="statActiveHaproxy">0</span>
+                    </div>
                 </div>
-            </div>
 
-            <!-- Rules Grid -->
-            <div class="rules-container" id="rulesContainer">
-                <!-- Dynamically loaded via app.js -->
-            </div>
-        </main>
+                <div class="stat-card">
+                    <div class="stat-icon icon-amber">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"/><rect x="2" y="14" width="20" height="8" rx="2" ry="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg>
+                    </div>
+                    <div class="stat-content">
+                        <span class="stat-title">Active NFTables (Tunnel)</span>
+                        <span class="stat-number text-amber" id="statActiveNftables">0</span>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon icon-indigo">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                    </div>
+                    <div class="stat-content">
+                        <span class="stat-title">Kernel Engine</span>
+                        <span class="stat-badge badge-active" id="engineStatusBadge">SYNCED</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SECTION 1: Port Routing & Multi-Path Matrix -->
+            <section class="dashboard-section active" id="sectionRules">
+                <main class="main-panel">
+                    <div class="panel-header">
+                        <div>
+                            <h2>Port Routing & Multi-Path Matrix</h2>
+                            <p class="section-desc">Each port routes user traffic through Priority 1 and automatically cascades to backup priorities on packet loss.</p>
+                        </div>
+                        <button class="btn btn-primary" id="btnOpenAddModal">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                            <span>Add Port Rule</span>
+                        </button>
+                    </div>
+
+                    <!-- Pre-existing HAProxy Discovered Alert Banner -->
+                    <div id="importBanner" class="import-banner" style="display:none;">
+                        <div class="import-banner-content">
+                            <div class="import-icon-orb">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+                            </div>
+                            <div>
+                                <span class="import-title">Pre-existing HAProxy Forwarding Detected</span>
+                                <p id="importBannerText" class="import-desc">Discovered existing port forwarding rules on this server.</p>
+                            </div>
+                        </div>
+                        <div class="import-banner-actions">
+                            <button class="btn btn-primary btn-sm" id="btnImportHaproxy">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+                                <span>Import All Rules</span>
+                            </button>
+                            <button class="btn btn-secondary btn-sm" id="btnDismissImportBanner">Dismiss</button>
+                        </div>
+                    </div>
+
+                    <!-- Search, Filters & Emergency Actions Toolbar -->
+                    <div class="toolbar">
+                        <div class="search-box">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                            <input type="text" id="searchInput" placeholder="Search ports, IPs, or comments (e.g. 2023, gre, ipv6)..." autocomplete="off">
+                            <button class="clear-btn" id="btnClearSearch" style="display:none;" title="Clear search">&times;</button>
+                        </div>
+
+                        <div class="filter-group">
+                            <button type="button" class="filter-tab active" data-filter="all">All <span class="tab-badge" id="filterCountAll">0</span></button>
+                            <button type="button" class="filter-tab" data-filter="p1">Primary P1 <span class="tab-badge" id="filterCountP1">0</span></button>
+                            <button type="button" class="filter-tab" data-filter="p2">Failover P2+ <span class="tab-badge" id="filterCountP2">0</span></button>
+                            <button type="button" class="filter-tab" data-filter="down">Down / Standby <span class="tab-badge" id="filterCountDown">0</span></button>
+                        </div>
+
+                        <div class="batch-actions">
+                            <select id="batchOverrideSelect" class="form-control batch-select">
+                                <option value="" disabled selected>⚡ Emergency Batch Actions</option>
+                                <option value="0">Restore All to Auto Failover</option>
+                                <option value="1">Force All to Priority 1 (Primary)</option>
+                                <option value="2">Force All to Priority 2 (Backup Tunnel)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Rules Grid -->
+                    <div class="rules-container" id="rulesContainer">
+                        <!-- Dynamically loaded via app.js -->
+                    </div>
+                </main>
+            </section>
+
+            <!-- SECTION 2: System Overview & Health -->
+            <section class="dashboard-section" id="sectionOverview" style="display:none;">
+                <div class="overview-grid">
+                    <!-- Host Resources Card -->
+                    <div class="overview-card">
+                        <div class="overview-card-header">
+                            <div class="overview-card-title">
+                                <div class="stat-icon icon-cyan" style="width:34px;height:34px;">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"/><rect x="2" y="14" width="20" height="8" rx="2" ry="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg>
+                                </div>
+                                <div>
+                                    <h3>Server Host Health</h3>
+                                    <span class="overview-card-sub">Real-time Linux memory and processor metrics</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="overview-card-body">
+                            <!-- RAM Bar -->
+                            <div class="metric-progress-group">
+                                <div class="metric-progress-header">
+                                    <span class="metric-label">Memory (RAM) Usage</span>
+                                    <span class="metric-val" id="ovRamText">-- / -- MB (--%)</span>
+                                </div>
+                                <div class="progress-track">
+                                    <div class="progress-fill fill-emerald" id="ovRamBar" style="width: 0%;"></div>
+                                </div>
+                            </div>
+                            <!-- CPU Bar -->
+                            <div class="metric-progress-group" style="margin-top: 18px;">
+                                <div class="metric-progress-header">
+                                    <span class="metric-label">Processor (CPU) Load</span>
+                                    <span class="metric-val" id="ovCpuText">--%</span>
+                                </div>
+                                <div class="progress-track">
+                                    <div class="progress-fill fill-cyan" id="ovCpuBar" style="width: 0%;"></div>
+                                </div>
+                            </div>
+                            <div class="overview-info-list" style="margin-top: 20px;">
+                                <div class="info-item">
+                                    <span class="info-label">Idle Engine Overhead</span>
+                                    <span class="info-value text-emerald">&lt; 15 MB RAM (Zero pip deps)</span>
+                                </div>
+                                <div class="info-item">
+                                    <span class="info-label">Kernel IP Forwarding</span>
+                                    <span class="info-value text-emerald">net.ipv4.ip_forward = 1</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Failover Engine State Card -->
+                    <div class="overview-card">
+                        <div class="overview-card-header">
+                            <div class="overview-card-title">
+                                <div class="stat-icon icon-indigo" style="width:34px;height:34px;">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                                </div>
+                                <div>
+                                    <h3>Failover Engine Parameters</h3>
+                                    <span class="overview-card-sub">Automatic packet loss detector daemon (24/7)</span>
+                                </div>
+                            </div>
+                            <span class="stat-badge badge-active">RUNNING</span>
+                        </div>
+                        <div class="overview-card-body">
+                            <div class="overview-info-list">
+                                <div class="info-item">
+                                    <span class="info-label">Check Interval</span>
+                                    <span class="info-value">8 seconds</span>
+                                </div>
+                                <div class="info-item">
+                                    <span class="info-label">Failure Threshold</span>
+                                    <span class="info-value">3 consecutive failed probes</span>
+                                </div>
+                                <div class="info-item">
+                                    <span class="info-label">Recovery Threshold</span>
+                                    <span class="info-value">3 consecutive healthy probes</span>
+                                </div>
+                                <div class="info-item">
+                                    <span class="info-label">Socket Timeout</span>
+                                    <span class="info-value">2.0 seconds bounded</span>
+                                </div>
+                                <div class="info-item">
+                                    <span class="info-label">Failover Architecture</span>
+                                    <span class="info-value text-indigo">Zero-Collision Cascading (P1 &rarr; PN)</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Quick Relay Status Card -->
+                    <div class="overview-card">
+                        <div class="overview-card-header">
+                            <div class="overview-card-title">
+                                <div class="stat-icon icon-emerald" style="width:34px;height:34px;">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                                </div>
+                                <div>
+                                    <h3>Traffic Distribution</h3>
+                                    <span class="overview-card-sub">Inbound relay port state breakdown</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="overview-card-body">
+                            <div class="overview-info-list">
+                                <div class="info-item">
+                                    <span class="info-label">Primary Route (HAProxy IPv6)</span>
+                                    <span class="info-value text-emerald" id="ovHaproxyCount">0 rules</span>
+                                </div>
+                                <div class="info-item">
+                                    <span class="info-label">Backup Route (NFTables Tunnel)</span>
+                                    <span class="info-value text-amber" id="ovNftablesCount">0 rules</span>
+                                </div>
+                                <div class="info-item">
+                                    <span class="info-label">Configuration Storage</span>
+                                    <span class="info-value font-mono">/etc/xforwarder/config.json</span>
+                                </div>
+                                <div class="info-item">
+                                    <span class="info-label">Runtime Ephemeral State</span>
+                                    <span class="info-value font-mono">/run/xforwarder/state.json</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Quick Actions Card -->
+                    <div class="overview-card">
+                        <div class="overview-card-header">
+                            <div class="overview-card-title">
+                                <div class="stat-icon icon-amber" style="width:34px;height:34px;">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+                                </div>
+                                <div>
+                                    <h3>Quick Control</h3>
+                                    <span class="overview-card-sub">Fast operational commands</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="overview-card-body">
+                            <div class="quick-btn-grid">
+                                <button class="btn btn-primary" id="btnOvAddRule">
+                                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                                    <span>New Forwarding Rule</span>
+                                </button>
+                                <button class="btn btn-secondary" id="btnOvGotoServices">
+                                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+                                    <span>View Relay Services</span>
+                                </button>
+                                <button class="btn btn-secondary" id="btnOvGotoSecurity">
+                                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                                    <span>Security Settings</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SECTION 3: Relay Services -->
+            <section class="dashboard-section" id="sectionServices" style="display:none;">
+                <div class="overview-grid">
+                    <!-- HAProxy Service Card -->
+                    <div class="overview-card">
+                        <div class="overview-card-header">
+                            <div class="overview-card-title">
+                                <div class="stat-icon icon-emerald" style="width:36px;height:36px;">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                                </div>
+                                <div>
+                                    <h3>HAProxy Zero-Tunnel Engine</h3>
+                                    <span class="overview-card-sub">User-space Layer-4 TCP/UDP IPv6 Relay</span>
+                                </div>
+                            </div>
+                            <span class="stat-badge badge-active">MANAGED</span>
+                        </div>
+                        <div class="overview-card-body">
+                            <p class="section-desc" style="margin-bottom:14px;">Direct IPv6 user-space relay without any encapsulation overhead. Non-disruptive reload on priority change.</p>
+                            <div class="overview-info-list">
+                                <div class="info-item">
+                                    <span class="info-label">Config Location</span>
+                                    <span class="info-value font-mono">/etc/haproxy/haproxy.cfg</span>
+                                </div>
+                                <div class="info-item">
+                                    <span class="info-label">Reload Mechanism</span>
+                                    <span class="info-value font-mono">systemctl reload haproxy</span>
+                                </div>
+                                <div class="info-item">
+                                    <span class="info-label">Proxy Protocol</span>
+                                    <span class="info-value">send-proxy-v2 supported</span>
+                                </div>
+                                <div class="info-item">
+                                    <span class="info-label">Active Bindings</span>
+                                    <span class="info-value text-emerald" id="svcHaproxyBinds">0 ports</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- NFTables DNAT Card -->
+                    <div class="overview-card">
+                        <div class="overview-card-header">
+                            <div class="overview-card-title">
+                                <div class="stat-icon icon-amber" style="width:36px;height:36px;">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"/><rect x="2" y="14" width="20" height="8" rx="2" ry="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg>
+                                </div>
+                                <div>
+                                    <h3>NFTables Kernel DNAT</h3>
+                                    <span class="overview-card-sub">Layer-3 Kernel Tunnel Forwarding</span>
+                                </div>
+                            </div>
+                            <span class="stat-badge badge-active">ISOLATED</span>
+                        </div>
+                        <div class="overview-card-body">
+                            <p class="section-desc" style="margin-bottom:14px;">High-speed kernel DNAT over GRE, IPIP, FakeTCP, or AmneziaWG tunnels. Zero interference with system firewall.</p>
+                            <div class="overview-info-list">
+                                <div class="info-item">
+                                    <span class="info-label">Isolated Table</span>
+                                    <span class="info-value font-mono">table ip xfwd_orchestrator</span>
+                                </div>
+                                <div class="info-item">
+                                    <span class="info-label">Masquerade Interfaces</span>
+                                    <span class="info-value font-mono">gre*, ipip*, ftcp*, awg*, gnv*</span>
+                                </div>
+                                <div class="info-item">
+                                    <span class="info-label">Flush Safety</span>
+                                    <span class="info-value text-emerald">Never executes flush ruleset</span>
+                                </div>
+                                <div class="info-item">
+                                    <span class="info-label">Active Forwardings</span>
+                                    <span class="info-value text-amber" id="svcNftablesBinds">0 ports</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Discovery & Import Tool Card -->
+                    <div class="overview-card" style="grid-column: 1 / -1;">
+                        <div class="overview-card-header">
+                            <div class="overview-card-title">
+                                <div class="stat-icon icon-cyan" style="width:36px;height:36px;">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+                                </div>
+                                <div>
+                                    <h3>Legacy HAProxy Forwarding Discovery</h3>
+                                    <span class="overview-card-sub">Import pre-existing port forwarding configurations into XForwarder</span>
+                                </div>
+                            </div>
+                            <button class="btn btn-secondary btn-sm" id="btnScanHaproxy">Scan Server</button>
+                        </div>
+                        <div class="overview-card-body">
+                            <p class="section-desc">If this server was previously configured with HAProxy forwarding ports, XForwarder can automatically detect the listen blocks, extract inbound ports, backends, and protocols, and import them as managed multi-priority rules with zero downtime.</p>
+                            <div id="serviceDiscoveryResult" style="margin-top:14px; font-size: 0.88rem; color: var(--text-secondary);">
+                                Click "Scan Server" to check for unmanaged HAProxy ports.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SECTION 4: Security & Access -->
+            <section class="dashboard-section" id="sectionSecurity" style="display:none;">
+                <div class="overview-grid">
+                    <!-- Administrator Credentials Card -->
+                    <div class="overview-card">
+                        <div class="overview-card-header">
+                            <div class="overview-card-title">
+                                <div class="stat-icon icon-indigo" style="width:36px;height:36px;">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                                </div>
+                                <div>
+                                    <h3>Admin Credentials</h3>
+                                    <span class="overview-card-sub">Change web dashboard administrator username and password</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="overview-card-body">
+                            <form id="inlineSecurityForm">
+                                <div class="form-group">
+                                    <label for="secInlineCurrentPwd">Current Admin Password <span class="required">*</span></label>
+                                    <input type="password" id="secInlineCurrentPwd" class="form-control" placeholder="Current password" required autocomplete="current-password">
+                                </div>
+                                <div class="form-group">
+                                    <label for="secInlineNewUser">New Username (optional)</label>
+                                    <input type="text" id="secInlineNewUser" class="form-control" placeholder="Leave empty to keep current" autocomplete="off">
+                                </div>
+                                <div class="form-group">
+                                    <label for="secInlineNewPwd">New Password (optional)</label>
+                                    <input type="password" id="secInlineNewPwd" class="form-control" placeholder="Minimum 8 characters" autocomplete="new-password">
+                                </div>
+                                <div class="form-group">
+                                    <label for="secInlineConfirmPwd">Confirm New Password</label>
+                                    <input type="password" id="secInlineConfirmPwd" class="form-control" placeholder="Repeat new password" autocomplete="new-password">
+                                </div>
+                                <div id="secInlineError" class="login-error" style="display:none;"></div>
+                                <button type="submit" class="btn btn-primary" id="btnSaveSecurityInline">Update Credentials</button>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- Cryptographic & Lockout Specs Card -->
+                    <div class="overview-card">
+                        <div class="overview-card-header">
+                            <div class="overview-card-title">
+                                <div class="stat-icon icon-emerald" style="width:36px;height:36px;">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                                </div>
+                                <div>
+                                    <h3>Cryptographic Shielding</h3>
+                                    <span class="overview-card-sub">Defense-in-depth protection parameters</span>
+                                </div>
+                            </div>
+                            <span class="stat-badge badge-active">ENFORCED</span>
+                        </div>
+                        <div class="overview-card-body">
+                            <div class="overview-info-list">
+                                <div class="info-item">
+                                    <span class="info-label">Password Hashing</span>
+                                    <span class="info-value text-emerald">PBKDF2-HMAC-SHA256</span>
+                                </div>
+                                <div class="info-item">
+                                    <span class="info-label">Salt & Iterations</span>
+                                    <span class="info-value">16-byte random salt, 100,000 iters</span>
+                                </div>
+                                <div class="info-item">
+                                    <span class="info-label">Brute-Force Lockout</span>
+                                    <span class="info-value text-rose">5 failed attempts &rarr; 15 min lock</span>
+                                </div>
+                                <div class="info-item">
+                                    <span class="info-label">Session Idle Timeout</span>
+                                    <span class="info-value">4 hours inactivity limit</span>
+                                </div>
+                                <div class="info-item">
+                                    <span class="info-label">Session Security</span>
+                                    <span class="info-value">SameSite=Strict, HttpOnly</span>
+                                </div>
+                                <div class="info-item">
+                                    <span class="info-label">Timing Attack Defense</span>
+                                    <span class="info-value">400-700ms adaptive jitter</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SECTION 5: Logs & Probes -->
+            <section class="dashboard-section" id="sectionLogs" style="display:none;">
+                <main class="main-panel">
+                    <div class="panel-header">
+                        <div>
+                            <h2>Real-time Failover & Probe Logs</h2>
+                            <p class="section-desc">Live timeline of socket health checks, priority transitions, and failover triggers.</p>
+                        </div>
+                        <div style="display:flex; gap:10px;">
+                            <button class="btn btn-secondary btn-sm" id="btnClearLogs">Clear Log</button>
+                            <button class="btn btn-primary btn-sm" id="btnToggleLogFeed">
+                                <span class="pulse-dot" style="display:inline-block;"></span>
+                                <span id="logFeedText">Live Feed Active</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Log Filter Toolbar -->
+                    <div class="toolbar" style="margin-bottom: 14px;">
+                        <div class="search-box" style="max-width: 400px;">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                            <input type="text" id="logSearchInput" placeholder="Filter logs by port, IP, or event..." autocomplete="off">
+                        </div>
+                    </div>
+
+                    <!-- Log Output Stream -->
+                    <div class="log-console" id="logConsole">
+                        <div class="log-entry log-entry-info">
+                            <span class="log-time">[System]</span>
+                            <span class="log-badge badge-info">INFO</span>
+                            <span class="log-msg">Dashboard connected to failover engine. Monitoring multi-path probes.</span>
+                        </div>
+                    </div>
+                </main>
+            </section>
+        </div>
     </div>
 
     <!-- Add/Edit Rule Modal -->

@@ -184,8 +184,16 @@ function showLogin() {
 
 function showDashboard(username) {
     loginScreen.style.display = "none";
-    dashboardScreen.style.display = "block";
-    if (username) currentUsernameEl.innerText = username;
+    dashboardScreen.style.display = "flex";
+    if (username) {
+        currentUsernameEl.innerText = username;
+        const sidebarUsername = document.getElementById("sidebarUsername");
+        if (sidebarUsername) sidebarUsername.innerText = username;
+    }
+    const hash = window.location.hash.replace(/^#/, "");
+    if (hash && typeof switchSection === "function") {
+        switchSection(hash);
+    }
     fetchStatus();
     checkImportableRules();
     if (!pollTimer) {
@@ -579,6 +587,22 @@ function renderStats(rules, runtime) {
     filterCountP2.innerText = p2ActiveCount;
     filterCountDown.innerText = downCount;
 
+    // Update nav and overview counts
+    const navRulesCount = document.getElementById("navRulesCount");
+    if (navRulesCount) navRulesCount.innerText = rules.length;
+
+    const ovHaproxyCount = document.getElementById("ovHaproxyCount");
+    if (ovHaproxyCount) ovHaproxyCount.innerText = `${haproxyCount} rules`;
+
+    const ovNftablesCount = document.getElementById("ovNftablesCount");
+    if (ovNftablesCount) ovNftablesCount.innerText = `${nftablesCount} rules`;
+
+    const svcHaproxyBinds = document.getElementById("svcHaproxyBinds");
+    if (svcHaproxyBinds) svcHaproxyBinds.innerText = `${haproxyCount} ports`;
+
+    const svcNftablesBinds = document.getElementById("svcNftablesBinds");
+    if (svcNftablesBinds) svcNftablesBinds.innerText = `${nftablesCount} ports`;
+
     if (runtime.active_services) {
         engineStatusBadge.innerText = "SYNCED";
         engineStatusBadge.className = "stat-badge badge-active";
@@ -590,9 +614,17 @@ function renderSystemStats(sys) {
     if (!sys) return;
     if (sys.ram_total_mb > 0) {
         ramText.innerText = `RAM: ${sys.ram_used_mb}MB / ${sys.ram_total_mb}MB (${sys.ram_percent}%)`;
+        const ovRamText = document.getElementById("ovRamText");
+        const ovRamBar = document.getElementById("ovRamBar");
+        if (ovRamText) ovRamText.innerText = `${sys.ram_used_mb} / ${sys.ram_total_mb} MB (${sys.ram_percent}%)`;
+        if (ovRamBar) ovRamBar.style.width = `${Math.min(100, Math.max(0, sys.ram_percent))}%`;
     }
     if (sys.cpu_percent !== undefined) {
         cpuText.innerText = `CPU: ${sys.cpu_percent}%`;
+        const ovCpuText = document.getElementById("ovCpuText");
+        const ovCpuBar = document.getElementById("ovCpuBar");
+        if (ovCpuText) ovCpuText.innerText = `${sys.cpu_percent}%`;
+        if (ovCpuBar) ovCpuBar.style.width = `${Math.min(100, Math.max(0, sys.cpu_percent))}%`;
     }
 }
 
@@ -1171,5 +1203,320 @@ ruleForm.addEventListener("submit", async (e) => {
     }
 });
 
+// ── Theme Manager (Light & Dark Mode) ──
+function initTheme() {
+    const saved = localStorage.getItem("xfwd_theme") || "dark";
+    applyTheme(saved);
+}
+
+function applyTheme(theme) {
+    document.documentElement.setAttribute("data-theme", theme);
+    try {
+        localStorage.setItem("xfwd_theme", theme);
+    } catch (e) {}
+    const label = document.getElementById("themeToggleLabel");
+    if (label) {
+        label.innerText = (theme === "light") ? "Dark Mode" : "Light Mode";
+    }
+}
+
+function toggleTheme() {
+    const current = document.documentElement.getAttribute("data-theme") || "dark";
+    const next = (current === "light") ? "dark" : "light";
+    applyTheme(next);
+    showToast(`Switched to ${next === "light" ? "Light" : "Dark"} theme`);
+}
+
+const btnThemeToggle = document.getElementById("btnThemeToggle");
+if (btnThemeToggle) btnThemeToggle.addEventListener("click", toggleTheme);
+
+const btnHeaderThemeToggle = document.getElementById("btnHeaderThemeToggle");
+if (btnHeaderThemeToggle) btnHeaderThemeToggle.addEventListener("click", toggleTheme);
+
+// ── Panel Navigation & Section Switcher ──
+const SECTIONS = ["rules", "overview", "services", "security", "logs"];
+
+function switchSection(sectionId) {
+    if (!SECTIONS.includes(sectionId)) sectionId = "rules";
+
+    // Update active nav item
+    document.querySelectorAll(".sidebar-nav .nav-item").forEach(item => {
+        if (item.getAttribute("data-section") === sectionId) {
+            item.classList.add("active");
+        } else {
+            item.classList.remove("active");
+        }
+    });
+
+    // Update visible section
+    SECTIONS.forEach(s => {
+        const el = document.getElementById(`section${s.charAt(0).toUpperCase() + s.slice(1)}`);
+        if (el) {
+            el.style.display = (s === sectionId) ? "block" : "none";
+            if (s === sectionId) el.classList.add("active");
+            else el.classList.remove("active");
+        }
+    });
+
+    // Update breadcrumb
+    const breadcrumb = document.getElementById("breadcrumbSection");
+    if (breadcrumb) {
+        const titles = {
+            rules: "Port Matrix",
+            overview: "Overview & Health",
+            services: "Relay Services",
+            security: "Security & Access",
+            logs: "Logs & Probes"
+        };
+        breadcrumb.innerText = titles[sectionId] || "Dashboard";
+    }
+
+    // Sync URL hash
+    if (window.location.hash !== `#${sectionId}`) {
+        history.replaceState(null, "", `#${sectionId}`);
+    }
+
+    closeMobileSidebar();
+}
+
+// Mobile sidebar drawer
+const sidebar = document.getElementById("sidebar");
+const sidebarBackdrop = document.getElementById("sidebarBackdrop");
+const btnToggleSidebar = document.getElementById("btnToggleSidebar");
+const btnCloseSidebar = document.getElementById("btnCloseSidebar");
+
+function openMobileSidebar() {
+    if (sidebar) sidebar.classList.add("open");
+    if (sidebarBackdrop) sidebarBackdrop.classList.add("show");
+}
+
+function closeMobileSidebar() {
+    if (sidebar) sidebar.classList.remove("open");
+    if (sidebarBackdrop) sidebarBackdrop.classList.remove("show");
+}
+
+if (btnToggleSidebar) btnToggleSidebar.addEventListener("click", openMobileSidebar);
+if (btnCloseSidebar) btnCloseSidebar.addEventListener("click", closeMobileSidebar);
+if (sidebarBackdrop) sidebarBackdrop.addEventListener("click", closeMobileSidebar);
+
+// Nav items click handler
+document.querySelectorAll(".sidebar-nav .nav-item").forEach(item => {
+    item.addEventListener("click", () => {
+        const sec = item.getAttribute("data-section");
+        if (sec) switchSection(sec);
+    });
+});
+
+window.addEventListener("hashchange", () => {
+    const hash = window.location.hash.replace(/^#/, "");
+    if (hash && SECTIONS.includes(hash)) {
+        switchSection(hash);
+    }
+});
+
+// Sidebar quick actions & logout
+const btnSidebarLogout = document.getElementById("btnSidebarLogout");
+if (btnSidebarLogout) {
+    btnSidebarLogout.addEventListener("click", () => {
+        if (btnLogout) btnLogout.click();
+    });
+}
+
+// Overview quick action shortcuts
+const btnOvAddRule = document.getElementById("btnOvAddRule");
+if (btnOvAddRule) {
+    btnOvAddRule.addEventListener("click", () => {
+        switchSection("rules");
+        if (btnOpenAddModal) btnOpenAddModal.click();
+    });
+}
+
+const btnOvGotoServices = document.getElementById("btnOvGotoServices");
+if (btnOvGotoServices) {
+    btnOvGotoServices.addEventListener("click", () => switchSection("services"));
+}
+
+const btnOvGotoSecurity = document.getElementById("btnOvGotoSecurity");
+if (btnOvGotoSecurity) {
+    btnOvGotoSecurity.addEventListener("click", () => switchSection("security"));
+}
+
+// ── Relay Services Scanner & Importer ──
+const btnScanHaproxy = document.getElementById("btnScanHaproxy");
+if (btnScanHaproxy) {
+    btnScanHaproxy.addEventListener("click", async () => {
+        btnScanHaproxy.disabled = true;
+        btnScanHaproxy.innerHTML = '<span class="btn-spinner"></span> <span>Scanning...</span>';
+        const resultEl = document.getElementById("serviceDiscoveryResult");
+        try {
+            const res = await fetch(`${API_BASE}/import/discover`);
+            if (res.ok) {
+                const data = await res.json();
+                if (data.available && data.count > 0) {
+                    const portsStr = data.ports.map(p => `:${p}`).join(", ");
+                    resultEl.innerHTML = `
+                        <div style="color:var(--accent-emerald); font-weight:600; margin-bottom:8px;">
+                            Discovered ${data.count} existing HAProxy forwarding rule(s) (${portsStr})
+                        </div>
+                        <button class="btn btn-primary btn-sm" id="btnServiceImport">Import All Discovered Rules</button>
+                    `;
+                    const sImport = document.getElementById("btnServiceImport");
+                    if (sImport) {
+                        sImport.addEventListener("click", () => {
+                            if (btnImportHaproxy) btnImportHaproxy.click();
+                        });
+                    }
+                } else {
+                    resultEl.innerHTML = `<span style="color:var(--accent-emerald);">All existing HAProxy forwarding rules on this server are already managed by XForwarder.</span>`;
+                }
+            } else {
+                resultEl.innerText = "Failed to scan server.";
+            }
+        } catch (e) {
+            resultEl.innerText = "Error scanning server.";
+        } finally {
+            btnScanHaproxy.disabled = false;
+            btnScanHaproxy.innerHTML = "Scan Server";
+        }
+    });
+}
+
+// ── Inline Security Credentials Form ──
+const inlineSecurityForm = document.getElementById("inlineSecurityForm");
+if (inlineSecurityForm) {
+    inlineSecurityForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const currentPwd = document.getElementById("secInlineCurrentPwd").value;
+        const newUser = document.getElementById("secInlineNewUser").value.trim();
+        const newPwd = document.getElementById("secInlineNewPwd").value;
+        const confirmPwd = document.getElementById("secInlineConfirmPwd").value;
+        const errorEl = document.getElementById("secInlineError");
+        const submitBtn = document.getElementById("btnSaveSecurityInline");
+
+        errorEl.style.display = "none";
+
+        if (newPwd && newPwd.length < 8) {
+            errorEl.innerText = "New password must be at least 8 characters long";
+            errorEl.style.display = "block";
+            return;
+        }
+
+        if (newPwd && newPwd !== confirmPwd) {
+            errorEl.innerText = "New passwords do not match";
+            errorEl.style.display = "block";
+            return;
+        }
+
+        if (!newUser && !newPwd) {
+            errorEl.innerText = "Please specify a new username or new password to update";
+            errorEl.style.display = "block";
+            return;
+        }
+
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<span class="btn-spinner"></span> <span>Updating...</span>';
+
+        try {
+            const res = await fetch(`${API_BASE}/security`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    current_password: currentPwd,
+                    new_username: newUser || undefined,
+                    new_password: newPwd || undefined
+                })
+            });
+            const data = await res.json().catch(() => ({}));
+            if (res.ok && data.ok) {
+                showToast("Credentials updated successfully! Please sign in again.");
+                setTimeout(() => {
+                    showLogin();
+                    inlineSecurityForm.reset();
+                }, 1200);
+            } else {
+                errorEl.innerText = data.error || "Failed to update credentials";
+                errorEl.style.display = "block";
+            }
+        } catch (err) {
+            errorEl.innerText = "Network error communicating with server";
+            errorEl.style.display = "block";
+        } finally {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = "Update Credentials";
+        }
+    });
+}
+
+// ── Real-time Failover & Probe Logs Stream ──
+let logFeedActive = true;
+const logConsole = document.getElementById("logConsole");
+const logSearchInput = document.getElementById("logSearchInput");
+const btnClearLogs = document.getElementById("btnClearLogs");
+const btnToggleLogFeed = document.getElementById("btnToggleLogFeed");
+const logFeedText = document.getElementById("logFeedText");
+
+function addLogEntry(type, message) {
+    if (!logConsole || !logFeedActive) return;
+
+    const timeStr = new Date().toLocaleTimeString();
+    const entry = document.createElement("div");
+    entry.className = `log-entry log-entry-${type}`;
+
+    let badgeClass = "badge-info";
+    let badgeText = "INFO";
+    if (type === "probe") { badgeClass = "badge-probe"; badgeText = "PROBE"; }
+    else if (type === "fail") { badgeClass = "badge-fail"; badgeText = "FAILOVER"; }
+    else if (type === "warn") { badgeClass = "badge-warn"; badgeText = "WARN"; }
+
+    entry.innerHTML = `
+        <span class="log-time">[${timeStr}]</span>
+        <span class="log-badge ${badgeClass}">${badgeText}</span>
+        <span class="log-msg">${escapeHtml(message)}</span>
+    `;
+
+    logConsole.prepend(entry);
+
+    while (logConsole.children.length > 150) {
+        logConsole.removeChild(logConsole.lastChild);
+    }
+}
+
+if (btnClearLogs) {
+    btnClearLogs.addEventListener("click", () => {
+        if (logConsole) {
+            logConsole.innerHTML = `
+                <div class="log-entry log-entry-info">
+                    <span class="log-time">[System]</span>
+                    <span class="log-badge badge-info">INFO</span>
+                    <span class="log-msg">Logs cleared. Monitoring continues.</span>
+                </div>
+            `;
+        }
+    });
+}
+
+if (btnToggleLogFeed) {
+    btnToggleLogFeed.addEventListener("click", () => {
+        logFeedActive = !logFeedActive;
+        if (logFeedText) {
+            logFeedText.innerText = logFeedActive ? "Live Feed Active" : "Feed Paused";
+        }
+        btnToggleLogFeed.className = `btn btn-sm ${logFeedActive ? "btn-primary" : "btn-secondary"}`;
+    });
+}
+
+if (logSearchInput) {
+    logSearchInput.addEventListener("input", (e) => {
+        const query = e.target.value.toLowerCase().trim();
+        if (!logConsole) return;
+        const entries = logConsole.querySelectorAll(".log-entry");
+        entries.forEach(entry => {
+            const text = entry.innerText.toLowerCase();
+            entry.style.display = (!query || text.includes(query)) ? "flex" : "none";
+        });
+    });
+}
+
 // Initialize on page load
+initTheme();
 checkAuth();
