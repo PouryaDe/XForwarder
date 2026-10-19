@@ -1,6 +1,6 @@
 {
-  "last_updated": "2026-10-18T23:21:00.000000+00:00",
-  "active_task": "Interactive Update Option & Backward Compatibility Auto-Migrations",
+  "last_updated": "2026-10-19T18:45:00.000000+00:00",
+  "active_task": "Host Subsystem Inspection, Dynamic Rule Sync, and Drag-and-Drop Priorities",
   "active_spec": null,
   "phase": "Completed",
   "completed_milestones": [
@@ -12,8 +12,14 @@
     "Implemented automated self-healing schema migration (migrate_and_normalize_config) in engine and web server",
     "Enforced mandatory pre-update atomic configuration backup in update_xforwarder",
     "Documented permanent backward compatibility rules in .agents/rules/backward-compatibility-and-migrations.md and experience 004",
-    "Implemented automatic installation detection and auto-triggering setup wizard on fresh executions"
+    "Implemented automatic installation detection and auto-triggering setup wizard on fresh executions",
+    "Implemented host forwarding subsystem inspection (get_services_status) for NFTables, HAProxy, and Nginx with 6s caching",
+    "Implemented dynamic rule synchronizer (sync_system_rules) with automatic retry and error diagnostics across API endpoints",
+    "Added top Relay Engines Health Bar and missing packages alert banner in Web UI",
+    "Implemented HTML5 Drag-and-Drop priority reordering on rule cards with optimistic UI and backend persistence",
+    "Added cross-distro package dependency manager (apt, dnf, yum, pacman, apk), option 10, and check-deps command in xforwarder.sh",
+    "Added comprehensive unit tests for services inspection API, DOM element bindings, and probe latency dynamics"
   ],
   "next_steps": [],
-  "notes": "All future changes and script updates must strictly preserve existing user rules, custom ports, and credentials via automated schema migrations."
+  "notes": "All changes are fully verified with 47 unit tests passing, zero anti-patterns, and Graphify updated."
 }

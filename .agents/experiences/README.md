@@ -9,3 +9,4 @@ Records of architectural decisions, critical invariants, and lessons learned dur
 | `003` | [Native Python Zero-Dependency Web Server](003-native-python-zero-dependency-web-server.md) | `Architecture & Footprint` | 2026-10-18 |
 | `004` | [Backward Compatibility and Automated Schema Migrations](004-backward-compatibility-and-schema-migrations.md) | `Reliability & Upgrades` | 2026-10-18 |
 | `005` | [PBKDF2 Salted Auth and Adaptive Rate Limiting](005-pbkdf2-salted-auth-and-adaptive-rate-limiting.md) | `security` | 2026-10-18 |
+| `006` | [Host Subsystem Inspection and Drag-Drop Priority Reordering](006-host-subsystem-inspection-and-drag-drop-priorities.md) | `Networking & UI` | 2026-10-19 |

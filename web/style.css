@@ -784,6 +784,199 @@ body {
     border: 1px solid rgba(16, 185, 129, 0.3);
 }
 
+.stat-badge.badge-warn {
+    background: rgba(245, 158, 11, 0.15);
+    color: var(--accent-amber);
+    border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.stat-badge.badge-fail {
+    background: rgba(239, 68, 68, 0.15);
+    color: var(--accent-rose);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+/* ── Host Services & Relay Engines Status Bar ── */
+.services-status-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+    background: var(--bg-card);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 10px 18px;
+    margin-bottom: 20px;
+    box-shadow: var(--card-shadow);
+    transition: all 0.2s ease;
+}
+
+.services-status-bar:hover {
+    border-color: var(--border-active);
+}
+
+.svc-bar-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-secondary);
+}
+
+.svc-bar-header svg {
+    color: var(--accent-primary);
+}
+
+.svc-status-pills {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.svc-status-pill {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--border-color);
+    border-radius: 20px;
+    padding: 5px 12px;
+    font-size: 0.8rem;
+    transition: all 0.2s ease;
+}
+
+[data-theme="light"] .svc-status-pill {
+    background: rgba(15, 23, 42, 0.04);
+}
+
+.svc-status-pill:hover {
+    background: rgba(255, 255, 255, 0.06);
+    border-color: rgba(255, 255, 255, 0.15);
+}
+
+[data-theme="light"] .svc-status-pill:hover {
+    background: rgba(15, 23, 42, 0.08);
+}
+
+.svc-pill-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    display: inline-block;
+    flex-shrink: 0;
+}
+
+.svc-pill-dot.dot-emerald {
+    background: var(--accent-emerald);
+    box-shadow: 0 0 8px rgba(16, 185, 129, 0.6);
+}
+
+.svc-pill-dot.dot-amber {
+    background: var(--accent-amber);
+    box-shadow: 0 0 8px rgba(245, 158, 11, 0.5);
+}
+
+.svc-pill-dot.dot-rose {
+    background: var(--accent-rose);
+    box-shadow: 0 0 8px rgba(239, 68, 68, 0.6);
+}
+
+.svc-pill-dot.dot-checking {
+    background: var(--text-muted);
+}
+
+.svc-pill-label {
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+
+.svc-pill-val {
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+/* ── Missing Services Warning Banner ── */
+.services-warning-banner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+    background: rgba(245, 158, 11, 0.1);
+    border: 1px solid rgba(245, 158, 11, 0.3);
+    border-radius: 12px;
+    padding: 12px 18px;
+    margin-bottom: 20px;
+    animation: fadeInSection 0.25s ease-out;
+}
+
+.warning-banner-content {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.warning-banner-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: rgba(245, 158, 11, 0.18);
+    color: var(--accent-amber);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.warning-banner-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.warning-banner-title {
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: var(--accent-amber);
+}
+
+.warning-banner-text p {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    margin: 0;
+}
+
+.warning-banner-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.terminal-cmd-hint {
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 6px;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid var(--border-color);
+    color: var(--accent-emerald);
+}
+
+[data-theme="light"] .terminal-cmd-hint {
+    background: #0F172A;
+    color: #34D399;
+}
+
 /* ── Dashboard Sections Transition ── */
 .dashboard-section {
     display: none;
@@ -1223,15 +1416,9 @@ body {
     border: 1px solid var(--border-color);
     border-radius: 14px;
     padding: 18px;
-    transition: all 0.2s ease;
     box-shadow: var(--card-shadow);
     display: flex;
     flex-direction: column;
-}
-
-.rule-card:hover {
-    border-color: var(--border-active);
-    background: var(--bg-card-hover);
 }
 
 .rule-top {
@@ -1516,6 +1703,82 @@ body {
     margin-top: 8px;
     font-size: 0.75rem;
     color: var(--text-secondary);
+}
+
+/* ── Drag & Drop Priority Reordering ── */
+.drag-handle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-muted);
+    cursor: grab;
+    padding: 2px 4px;
+    border-radius: 4px;
+    transition: all 0.18s ease;
+    user-select: none;
+    opacity: 0.6;
+}
+
+.drag-handle:hover {
+    opacity: 1;
+    color: var(--accent-cyan);
+    background: rgba(6, 182, 212, 0.1);
+}
+
+.drag-handle:active {
+    cursor: grabbing;
+}
+
+.path-box.is-dragging {
+    opacity: 0.35;
+    border-style: dashed;
+    border-color: var(--accent-primary);
+}
+
+.path-box.drag-over {
+    border-color: var(--accent-cyan) !important;
+    background: rgba(6, 182, 212, 0.08) !important;
+    box-shadow: 0 0 16px -2px rgba(6, 182, 212, 0.3) !important;
+    transform: scale(1.01);
+}
+
+/* ── Latency Indicator Pill ── */
+.latency-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-family: var(--font-mono);
+    font-size: 0.74rem;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 6px;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.latency-pill .latency-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+}
+
+.latency-good {
+    background: rgba(16, 185, 129, 0.12);
+    color: var(--accent-emerald);
+    border: 1px solid rgba(16, 185, 129, 0.25);
+}
+
+.latency-medium {
+    background: rgba(245, 158, 11, 0.12);
+    color: var(--accent-amber);
+    border: 1px solid rgba(245, 158, 11, 0.25);
+}
+
+.latency-bad {
+    background: rgba(239, 68, 68, 0.12);
+    color: var(--accent-rose);
+    border: 1px solid rgba(239, 68, 68, 0.25);
 }
 
 .active-ribbon {

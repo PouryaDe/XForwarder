@@ -11,8 +11,8 @@
   <img src="https://img.shields.io/badge/Python-3.8%2B%20Native-blue.svg" alt="Python 3 Native">
   <img src="https://img.shields.io/badge/RAM-%3C15MB-brightgreen.svg" alt="RAM Usage">
   <img src="https://img.shields.io/badge/OS-Debian%20%7C%20Ubuntu-orange.svg" alt="OS Compatibility">
-  <img src="https://img.shields.io/badge/Forwarding-HAProxy%20%7C%20NFTables%20DNAT-purple.svg" alt="Forwarding Engine">
-  <img src="https://img.shields.io/badge/Version-1.3.0-success.svg" alt="Version">
+  <img src="https://img.shields.io/badge/Forwarding-HAProxy%20%7C%20NFTables%20DNAT%20%7C%20Nginx-purple.svg" alt="Forwarding Engine">
+  <img src="https://img.shields.io/badge/Version-1.4.0-success.svg" alt="Version">
 </p>
 
 ---
@@ -101,6 +101,8 @@ bash <(curl -fsSL https://raw.githubusercontent.com/PouryaDe/XForwarder/main/xfo
 
 - **سبک و فوق‌العاده کم‌مصرف:** نوشته‌شده کاملاً با کتابخانه‌های استاندارد پایتون ۳ (بدون نیاز به کتابخانه‌های سنگین خارجی، نودجی‌اس یا داکر). مصرف رم کل سیستم کمتر از **۱۵ مگابایت**.
 - **داشبورد وب ۲۴/۷ پایدار:** کنترل‌پنل مدرن به زبان انگلیسی با طراحی تاریک (Glassmorphism)، احراز هویت امن بر پایه توکن، و اجرا به عنوان سرویس مستقل در Systemd.
+- **تغییر اولویت با Drag & Drop:** قابلیت تغییر ترتیب اولویت مسیرها مستقیماً از روی کارت‌های پورت با کشیدن و رها کردن (Drag and Drop) و ذخیره‌سازی خودکار.
+- **پایش لحظه‌ای موتورهای رله (Relay Engines Health Bar):** نوار وضعیت زنده سلامت و در دسترس بودن NFTables (کرنل)، HAProxy و Nginx به همراه اعلام هشدار پکیج‌های مفقود.
 - **تغییر حالت هوشمند (Per-Port Mode Selector):**
   - `Auto Failover`: پایش ۲۴ ساعته پینگ و سوئیچ خودکار بر اساس سلامت سرور مقصد.
   - `Force: Priority 1`: قفل ترافیک روی مسیر اول (HAProxy).
@@ -118,7 +120,8 @@ bash <(curl -fsSL https://raw.githubusercontent.com/PouryaDe/XForwarder/main/xfo
 | :--- | :--- | :--- |
 | `sudo xforwarder` | `sudo xfwd` | باز کردن منوی تعاملی مدیریتی |
 | `sudo xforwarder url` | `sudo xfwd url` | نمایش آدرس ورود کامل به همراه مسیر امنیتی و اطلاعات دسترسی |
-| `sudo xforwarder status` | `sudo xfwd status` | نمایش جدول زنده وضعیت پورت‌ها، تاخیر (Latency) و اولویت فعال |
+| `sudo xforwarder status` | `sudo xfwd status` | نمایش جدول زنده وضعیت پورت‌ها، تاخیر (Latency)، سرویس‌های رله و اولویت فعال |
+| `sudo xforwarder check-deps` | `sudo xfwd deps` | بررسی و نصب خودکار پکیج‌های رله (NFTables, HAProxy, Nginx) |
 | `sudo xforwarder settings` | `sudo xfwd settings` | منوی جامع تنظیمات وب (پورت، یوزرنیم، پسورد و مسیر امنیتی) |
 | `sudo xforwarder port` | `sudo xfwd port` | تغییر سریع پورت پنل وب |
 | `sudo xforwarder username` | `sudo xfwd username` | تغییر سریع نام‌کاربری ادمین |

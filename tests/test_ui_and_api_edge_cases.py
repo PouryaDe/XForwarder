@@ -20,7 +20,8 @@ from core.web_server import (
     validate_rule,
     is_valid_target,
     XForwarderWebServer,
-    load_config
+    load_config,
+    get_services_status
 )
 from core.engine import XForwarderEngine
 
@@ -189,6 +190,50 @@ class TestUIAndAPIEdgeCases(unittest.TestCase):
         self.assertIn('Force P', app_content)
         self.assertIn('btn-mode-pill', app_content)
         self.assertIn('btn-path-test', app_content)
+
+    def test_services_status_api_and_dom(self):
+        """Verifies get_services_status API structure and DOM presence for NFTables, HAProxy, and Nginx."""
+        services = get_services_status()
+        self.assertIsInstance(services, dict)
+        for svc in ("nftables", "haproxy", "nginx"):
+            self.assertIn(svc, services)
+            item = services[svc]
+            self.assertIn("installed", item)
+            self.assertIn("active", item)
+            self.assertIn("version", item)
+            self.assertIn("details", item)
+            self.assertIsInstance(item["installed"], bool)
+            self.assertIsInstance(item["active"], bool)
+
+        web_dir = os.path.join(REPO_ROOT, "web")
+        with open(os.path.join(web_dir, "index.html"), "r", encoding="utf-8") as f:
+            index_content = f.read()
+        with open(os.path.join(web_dir, "app.js"), "r", encoding="utf-8") as f:
+            app_content = f.read()
+        with open(os.path.join(web_dir, "style.css"), "r", encoding="utf-8") as f:
+            style_content = f.read()
+
+        # Check DOM element IDs
+        for expected_id in (
+            "servicesStatusBar",
+            "svcPillNft", "svcValNft", "svcDotNft",
+            "svcPillHaproxy", "svcValHaproxy", "svcDotHaproxy",
+            "svcPillNginx", "svcValNginx", "svcDotNginx",
+            "servicesWarningBanner",
+            "badgeHaproxyStatus", "badgeNftablesStatus", "badgeNginxStatus"
+        ):
+            self.assertIn(f'id="{expected_id}"', index_content, f"Missing services DOM ID: {expected_id}")
+
+        # Check app.js function and services rendering
+        self.assertIn("renderServicesStatus", app_content)
+        self.assertIn("svcDotNft", app_content)
+        self.assertIn("svcDotHaproxy", app_content)
+        self.assertIn("svcDotNginx", app_content)
+
+        # Check style.css classes
+        self.assertIn(".services-status-bar", style_content)
+        self.assertIn(".services-warning-banner", style_content)
+        self.assertIn(".svc-pill-dot", style_content)
 
 
 if __name__ == "__main__":

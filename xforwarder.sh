@@ -63,7 +63,7 @@ detect_wan_iface() {
 }
 
 ensure_dependencies() {
-    msg_info "Checking system dependencies..."
+    msg_info "Checking system dependencies (NFTables, HAProxy, Nginx, Python3)..."
     local pkgs=()
     command -v python3 >/dev/null 2>&1 || pkgs+=(python3)
     command -v haproxy >/dev/null 2>&1 || pkgs+=(haproxy)
@@ -73,15 +73,52 @@ ensure_dependencies() {
     command -v git >/dev/null 2>&1 || pkgs+=(git)
 
     if [[ ${#pkgs[@]} -gt 0 ]]; then
-        msg_info "Installing missing packages: ${pkgs[*]}..."
-        apt-get update -q
-        DEBIAN_FRONTEND=noninteractive apt-get install -y -q "${pkgs[@]}"
+        msg_info "Installing missing dependencies: ${pkgs[*]}..."
+        if command -v apt-get >/dev/null 2>&1; then
+            apt-get update -q || true
+            DEBIAN_FRONTEND=noninteractive apt-get install -y -q "${pkgs[@]}"
+        elif command -v dnf >/dev/null 2>&1; then
+            dnf install -y -q "${pkgs[@]}"
+        elif command -v yum >/dev/null 2>&1; then
+            yum install -y -q "${pkgs[@]}"
+        elif command -v pacman >/dev/null 2>&1; then
+            pacman -Sy --noconfirm "${pkgs[@]}"
+        elif command -v apk >/dev/null 2>&1; then
+            apk add --no-cache "${pkgs[@]}"
+        else
+            msg_warn "Could not auto-detect package manager. Please install manually: ${pkgs[*]}"
+        fi
     fi
 
     # Ensure IP forward is permanently active in kernel
     sysctl -w net.ipv4.ip_forward=1 >/dev/null 2>&1 || true
     if ! grep -q "net.ipv4.ip_forward = 1" /etc/sysctl.conf 2>/dev/null; then
         echo "net.ipv4.ip_forward = 1" >> /etc/sysctl.conf
+    fi
+
+    # Disable system nftables service to prevent boot-time flush conflicts with XForwarder
+    systemctl disable --now nftables >/dev/null 2>&1 || true
+
+    # Unlink default Nginx welcome site to prevent it from holding port 80
+    rm -f /etc/nginx/sites-enabled/default >/dev/null 2>&1 || true
+
+    # Verification of Core Relay Dependencies
+    if command -v nft >/dev/null 2>&1; then
+        msg_ok "NFTables is installed and available."
+    else
+        msg_warn "NFTables is NOT installed. Kernel DNAT tunnel forwarding may not work."
+    fi
+
+    if command -v haproxy >/dev/null 2>&1; then
+        msg_ok "HAProxy is installed and available."
+    else
+        msg_warn "HAProxy is NOT installed. Direct IPv6 user-space relay may not work."
+    fi
+
+    if command -v nginx >/dev/null 2>&1; then
+        msg_ok "Nginx is installed and available."
+    else
+        msg_warn "Nginx is NOT installed. Stream proxy forwarding may not work."
     fi
 }
 
@@ -920,6 +957,14 @@ try:
     print('--------------------------------------------------------------')
     print(f' WAN Interface:    {rt.get("wan_interface", "unknown")}')
     print(f' Active Services:  HAProxy: {rt.get("active_services", {}).get("haproxy")} | Nginx: {rt.get("active_services", {}).get("nginx")} | NFTables: {rt.get("active_services", {}).get("nftables")}')
+    try:
+        import shutil, subprocess
+        nft_ok = 'Active' if (shutil.which('nft') and subprocess.run(['nft', 'list', 'tables'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode == 0) else ('Installed' if shutil.which('nft') else 'Not Installed')
+        ha_ok = 'Running' if (shutil.which('haproxy') and subprocess.run(['systemctl', 'is-active', 'haproxy'], stdout=subprocess.PIPE, text=True).stdout.strip() == 'active') else ('Installed' if shutil.which('haproxy') else 'Not Installed')
+        ngx_ok = 'Running' if (shutil.which('nginx') and subprocess.run(['systemctl', 'is-active', 'nginx'], stdout=subprocess.PIPE, text=True).stdout.strip() == 'active') else ('Installed' if shutil.which('nginx') else 'Not Installed')
+        print(f' System Engines:   NFTables: {nft_ok} | HAProxy: {ha_ok} | Nginx: {ngx_ok}')
+    except Exception:
+        pass
     print(f' Rules Configured: {len(rules)}')
     print('--------------------------------------------------------------')
 
@@ -1131,9 +1176,10 @@ show_menu() {
     echo "7) Re-install / Full Setup Wizard"
     echo "8) Import Pre-existing HAProxy Rules (/etc/haproxy/)"
     echo "9) Backup & Restore (Export / Import Settings JSON)"
+    echo "10) Check & Install System Dependencies (NFTables, HAProxy, Nginx)"
     echo "0) Exit"
     echo
-    read -r -p "Select an option [0-9]: " choice
+    read -r -p "Select an option [0-10]: " choice
 
     case "$choice" in
         1) show_web_access_info ;;
@@ -1145,6 +1191,7 @@ show_menu() {
         7) install_xforwarder ;;
         8) import_haproxy_rules ;;
         9) backup_restore_menu ;;
+        10) check_root; ensure_dependencies ;;
         0) exit 0 ;;
         *) msg_warn "Invalid selection." ;;
     esac
@@ -1250,6 +1297,10 @@ case "${1:-}" in
         shift
         import_config_cli "$@"
         ;;
+    check-deps|install-deps|deps)
+        check_root
+        ensure_dependencies
+        ;;
     "")
         if ! is_installed; then
             echo
@@ -1263,7 +1314,7 @@ case "${1:-}" in
         fi
         ;;
     *)
-        echo "Usage: xforwarder {install|update|status|url|port|username|password|path|settings|export|import-config|restart|logs}"
+        echo "Usage: xforwarder {install|update|check-deps|status|url|port|username|password|path|settings|export|import-config|restart|logs}"
         exit 1
         ;;
 esac

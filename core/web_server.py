@@ -17,6 +17,7 @@ import subprocess
 import threading
 import ipaddress
 import re
+import shutil
 from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
 from urllib.parse import urlparse
 from typing import Optional, Dict, Tuple, Any, List
@@ -275,6 +276,164 @@ def get_system_stats() -> dict:
         except Exception:
             pass
     return stats
+
+
+_SERVICES_CACHE: Dict[str, Any] = {"data": None, "expires": 0}
+_SERVICES_LOCK = threading.Lock()
+
+
+def get_services_status() -> Dict[str, Any]:
+    """
+    Inspects whether NFTables, HAProxy, and Nginx are installed and active on the host system.
+    Cached for 6.0 seconds to prevent unnecessary subprocess spawning on low-resource relay servers.
+    """
+    now = time.time()
+    with _SERVICES_LOCK:
+        if _SERVICES_CACHE["data"] and now < _SERVICES_CACHE["expires"]:
+            return _SERVICES_CACHE["data"]
+
+    status = {
+        "nftables": {
+            "installed": False,
+            "active": False,
+            "table_active": False,
+            "version": None,
+            "details": "Not Installed"
+        },
+        "haproxy": {
+            "installed": False,
+            "active": False,
+            "version": None,
+            "details": "Not Installed"
+        },
+        "nginx": {
+            "installed": False,
+            "active": False,
+            "version": None,
+            "details": "Not Installed"
+        }
+    }
+
+    # 1. NFTables Check
+    nft_bin = shutil.which("nft")
+    if not nft_bin:
+        for p in ("/usr/sbin/nft", "/sbin/nft", "/usr/bin/nft"):
+            if os.path.exists(p) and os.access(p, os.X_OK):
+                nft_bin = p
+                break
+
+    if nft_bin:
+        status["nftables"]["installed"] = True
+        try:
+            res_v = subprocess.run([nft_bin, "--version"], capture_output=True, text=True, timeout=1.0)
+            if res_v.returncode == 0:
+                v_line = res_v.stdout.strip().split("\n")[0]
+                status["nftables"]["version"] = v_line.replace("nftables", "").strip().split()[0]
+        except Exception:
+            pass
+
+        try:
+            res_t = subprocess.run([nft_bin, "list", "tables"], capture_output=True, text=True, timeout=1.0)
+            if res_t.returncode == 0:
+                status["nftables"]["active"] = True
+                if "xfwd_orchestrator" in res_t.stdout or "fwdman_orchestrator" in res_t.stdout:
+                    status["nftables"]["table_active"] = True
+                    status["nftables"]["details"] = "Active (table ip xfwd_orchestrator loaded)"
+                else:
+                    status["nftables"]["details"] = "Kernel Ready (No active ruleset yet)"
+            else:
+                status["nftables"]["details"] = "Installed (Kernel module inactive or permission denied)"
+        except Exception:
+            status["nftables"]["details"] = "Installed (Check error)"
+    else:
+        status["nftables"]["details"] = "Not Installed"
+
+    # 2. HAProxy Check
+    haproxy_bin = shutil.which("haproxy")
+    if not haproxy_bin:
+        for p in ("/usr/sbin/haproxy", "/usr/bin/haproxy"):
+            if os.path.exists(p) and os.access(p, os.X_OK):
+                haproxy_bin = p
+                break
+
+    if haproxy_bin:
+        status["haproxy"]["installed"] = True
+        try:
+            res_v = subprocess.run([haproxy_bin, "-v"], capture_output=True, text=True, timeout=1.0)
+            if res_v.returncode == 0:
+                line = res_v.stdout.strip().split("\n")[0]
+                if "version" in line:
+                    status["haproxy"]["version"] = line.split("version")[1].strip().split()[0]
+        except Exception:
+            pass
+
+        is_active = False
+        try:
+            res_s = subprocess.run(["systemctl", "is-active", "haproxy"], capture_output=True, text=True, timeout=1.0)
+            if res_s.returncode == 0 and res_s.stdout.strip() == "active":
+                is_active = True
+        except Exception:
+            pass
+
+        if not is_active:
+            try:
+                res_p = subprocess.run(["pgrep", "-x", "haproxy"], capture_output=True, text=True, timeout=1.0)
+                if res_p.returncode == 0 and res_p.stdout.strip():
+                    is_active = True
+            except Exception:
+                pass
+
+        status["haproxy"]["active"] = is_active
+        ver_str = f" ({status['haproxy']['version']})" if status["haproxy"]["version"] else ""
+        status["haproxy"]["details"] = f"Active & Running{ver_str}" if is_active else f"Installed (Stopped / Standby){ver_str}"
+    else:
+        status["haproxy"]["details"] = "Not Installed"
+
+    # 3. Nginx Check
+    nginx_bin = shutil.which("nginx")
+    if not nginx_bin:
+        for p in ("/usr/sbin/nginx", "/usr/bin/nginx"):
+            if os.path.exists(p) and os.access(p, os.X_OK):
+                nginx_bin = p
+                break
+
+    if nginx_bin:
+        status["nginx"]["installed"] = True
+        try:
+            res_v = subprocess.run([nginx_bin, "-v"], capture_output=True, text=True, timeout=1.0)
+            v_text = (res_v.stderr or res_v.stdout or "").strip()
+            if "nginx/" in v_text:
+                status["nginx"]["version"] = v_text.split("nginx/")[1].strip().split()[0]
+        except Exception:
+            pass
+
+        is_active = False
+        try:
+            res_s = subprocess.run(["systemctl", "is-active", "nginx"], capture_output=True, text=True, timeout=1.0)
+            if res_s.returncode == 0 and res_s.stdout.strip() == "active":
+                is_active = True
+        except Exception:
+            pass
+
+        if not is_active:
+            try:
+                res_p = subprocess.run(["pgrep", "-x", "nginx"], capture_output=True, text=True, timeout=1.0)
+                if res_p.returncode == 0 and res_p.stdout.strip():
+                    is_active = True
+            except Exception:
+                pass
+
+        status["nginx"]["active"] = is_active
+        ver_str = f" ({status['nginx']['version']})" if status["nginx"]["version"] else ""
+        status["nginx"]["details"] = f"Active & Running{ver_str}" if is_active else f"Installed (Stopped / Standby){ver_str}"
+    else:
+        status["nginx"]["details"] = "Not Installed"
+
+    with _SERVICES_LOCK:
+        _SERVICES_CACHE["data"] = status
+        _SERVICES_CACHE["expires"] = now + 6.0
+
+    return status
 
 
 _NET_CACHE: Dict[str, Any] = {"data": None, "expires": 0}
@@ -982,9 +1141,13 @@ class XForwarderWebHandler(BaseHTTPRequestHandler):
                     "config": cfg,
                     "runtime": state.get("runtime", {}),
                     "system": get_system_stats(),
+                    "services": get_services_status(),
                     "network": get_network_interfaces_info(),
                     "server_time": time.time()
                 })
+                return
+            elif subpath == "/api/services/status":
+                self.send_json(get_services_status())
                 return
             elif subpath == "/api/network/interfaces":
                 self.send_json(get_network_interfaces_info())
@@ -1200,7 +1363,14 @@ class XForwarderWebHandler(BaseHTTPRequestHandler):
 
             cfg["rules"] = rules
             if save_config(cfg):
-                self.send_json({"ok": True, "rule": body})
+                from core.engine import sync_system_rules
+                sync_ok, sync_errors = sync_system_rules(max_retries=2)
+                self.send_json({
+                    "ok": True,
+                    "rule": body,
+                    "sync_ok": sync_ok,
+                    "sync_errors": sync_errors
+                })
             else:
                 self.send_json({"ok": False, "error": "Save failed"}, 500)
 
@@ -1223,6 +1393,20 @@ class XForwarderWebHandler(BaseHTTPRequestHandler):
                     r["force_override"] = override_prio
                     if override_prio > 0:
                         r["active_priority"] = override_prio
+                    else:
+                        # Auto Failover: immediately recalculate active_priority from healthy states
+                        state = load_state()
+                        r_state = state.get("runtime", {}).get("rules_state", {}).get(rule_id, {})
+                        dest_stats = r_state.get("dest_stats", {})
+                        chosen = None
+                        dests = sorted(r.get("destinations", []), key=lambda d: d.get("priority", 99))
+                        for d in dests:
+                            p = d.get("priority", 1)
+                            st = dest_stats.get(f"prio_{p}", {})
+                            if st.get("status") == "healthy":
+                                chosen = p
+                                break
+                        r["active_priority"] = chosen if chosen is not None else (dests[0].get("priority", 1) if dests else 1)
                     found = True
                     break
             if not found:
@@ -1230,7 +1414,13 @@ class XForwarderWebHandler(BaseHTTPRequestHandler):
                 return
 
             if save_config(cfg):
-                self.send_json({"ok": True})
+                from core.engine import sync_system_rules
+                sync_ok, sync_errors = sync_system_rules(max_retries=2)
+                self.send_json({
+                    "ok": True,
+                    "sync_ok": sync_ok,
+                    "sync_errors": sync_errors
+                })
             else:
                 self.send_json({"ok": False, "error": "Save failed"}, 500)
 
@@ -1247,24 +1437,60 @@ class XForwarderWebHandler(BaseHTTPRequestHandler):
 
             cfg = load_config()
             rules = cfg.get("rules", [])
+            state = load_state()
+            rules_state = state.get("runtime", {}).get("rules_state", {})
             for r in rules:
                 r["force_override"] = override_prio
                 if override_prio > 0:
                     r["active_priority"] = override_prio
+                else:
+                    r_id = r.get("id")
+                    r_state = rules_state.get(r_id, {})
+                    dest_stats = r_state.get("dest_stats", {})
+                    chosen = None
+                    dests = sorted(r.get("destinations", []), key=lambda d: d.get("priority", 99))
+                    for d in dests:
+                        p = d.get("priority", 1)
+                        st = dest_stats.get(f"prio_{p}", {})
+                        if st.get("status") == "healthy":
+                            chosen = p
+                            break
+                    r["active_priority"] = chosen if chosen is not None else (dests[0].get("priority", 1) if dests else 1)
 
             if save_config(cfg):
-                self.send_json({"ok": True, "count": len(rules), "force_override": override_prio})
+                from core.engine import sync_system_rules
+                sync_ok, sync_errors = sync_system_rules(max_retries=2)
+                self.send_json({
+                    "ok": True,
+                    "count": len(rules),
+                    "force_override": override_prio,
+                    "sync_ok": sync_ok,
+                    "sync_errors": sync_errors
+                })
             else:
                 self.send_json({"ok": False, "error": "Save failed"}, 500)
+
+        elif subpath == "/api/sync":
+            from core.engine import sync_system_rules
+            sync_ok, sync_errors = sync_system_rules(max_retries=2)
+            self.send_json({
+                "ok": sync_ok,
+                "sync_ok": sync_ok,
+                "sync_errors": sync_errors
+            }, 200 if sync_ok else 500)
 
         elif subpath == "/api/import/haproxy":
             from core.haproxy_parser import import_haproxy_rules_into_config
             cfg_path = get_config_path()
             count, ports = import_haproxy_rules_into_config(cfg_path)
+            from core.engine import sync_system_rules
+            sync_ok, sync_errors = sync_system_rules(max_retries=2)
             self.send_json({
                 "ok": True,
                 "imported_count": count,
-                "imported_ports": ports
+                "imported_ports": ports,
+                "sync_ok": sync_ok,
+                "sync_errors": sync_errors
             })
 
         elif subpath == "/api/config/import":
@@ -1272,11 +1498,12 @@ class XForwarderWebHandler(BaseHTTPRequestHandler):
             mode = body.get("mode", "merge") if isinstance(body, dict) else "merge"
             ok, err, info = import_config_data(imported_raw, mode=mode)
             if ok:
-                self.send_json({"ok": True, **info})
+                from core.engine import sync_system_rules
+                sync_ok, sync_errors = sync_system_rules(max_retries=2)
+                self.send_json({"ok": True, "sync_ok": sync_ok, "sync_errors": sync_errors, **info})
             else:
                 self.send_json({"ok": False, "error": err}, 400)
             return
-
 
         else:
             self.send_error(404, "Not Found")
@@ -1300,7 +1527,14 @@ class XForwarderWebHandler(BaseHTTPRequestHandler):
             cfg = load_config()
             cfg["rules"] = [r for r in cfg.get("rules", []) if r.get("id") != rule_id]
             if save_config(cfg):
-                self.send_json({"ok": True, "deleted": rule_id})
+                from core.engine import sync_system_rules
+                sync_ok, sync_errors = sync_system_rules(max_retries=2)
+                self.send_json({
+                    "ok": True,
+                    "deleted": rule_id,
+                    "sync_ok": sync_ok,
+                    "sync_errors": sync_errors
+                })
             else:
                 self.send_json({"ok": False, "error": "Save failed"}, 500)
         else:

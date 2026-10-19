@@ -60,7 +60,7 @@ class TestEngineProbes(unittest.TestCase):
         with patch.object(self.engine, "_is_interface_up", return_value=False):
             res = self.engine.check_destination(dest)
             self.assertFalse(res["healthy"])
-            self.assertEqual(res["latency_ms"], 0.0)
+            self.assertIsNone(res["latency_ms"])
             self.assertIn("missing or down", res.get("reason", ""))
 
     def test_check_destination_private_target_routed_via_wan(self):
@@ -75,9 +75,8 @@ class TestEngineProbes(unittest.TestCase):
              patch.object(self.engine, "_get_route_interface", return_value="eth0"):
             res = self.engine.check_destination(dest)
             self.assertFalse(res["healthy"])
-            self.assertEqual(res["latency_ms"], 0.0)
-            self.assertIn("routes via WAN (eth0)", res.get("reason", ""))
-            self.assertIn("tunnel interface is not defined", res.get("reason", ""))
+            self.assertIsNone(res["latency_ms"])
+            self.assertIn("WAN leak via eth0", res.get("reason", ""))
 
     def test_check_destination_private_target_no_route(self):
         dest = {
@@ -90,7 +89,7 @@ class TestEngineProbes(unittest.TestCase):
              patch.object(self.engine, "_get_route_interface", return_value=""):
             res = self.engine.check_destination(dest)
             self.assertFalse(res["healthy"])
-            self.assertEqual(res["latency_ms"], 0.0)
+            self.assertIsNone(res["latency_ms"])
             self.assertIn("No route to destination", res.get("reason", ""))
 
     def test_check_destination_fallback_device_rejected(self):
@@ -104,7 +103,7 @@ class TestEngineProbes(unittest.TestCase):
              patch.object(self.engine, "_get_route_interface", return_value="gre0"):
             res = self.engine.check_destination(dest)
             self.assertFalse(res["healthy"])
-            self.assertEqual(res["latency_ms"], 0.0)
+            self.assertIsNone(res["latency_ms"])
             self.assertIn("fallback device", res.get("reason", ""))
 
     def test_check_destination_valid_tunnel_probe(self):

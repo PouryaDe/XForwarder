@@ -292,6 +292,53 @@
                 </div>
             </section>
 
+            <!-- Host Services & Subsystems Health Bar -->
+            <div class="services-status-bar" id="servicesStatusBar">
+                <div class="svc-bar-header">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+                    <span>Relay Engines:</span>
+                </div>
+                <div class="svc-status-pills">
+                    <!-- NFTables Pill -->
+                    <div class="svc-status-pill" id="svcPillNft" title="NFTables Kernel Forwarding Subsystem">
+                        <span class="svc-pill-dot dot-checking" id="svcDotNft"></span>
+                        <span class="svc-pill-label">NFTables:</span>
+                        <span class="svc-pill-val" id="svcValNft">Checking...</span>
+                    </div>
+
+                    <!-- HAProxy Pill -->
+                    <div class="svc-status-pill" id="svcPillHaproxy" title="HAProxy Layer-4 Relay Engine">
+                        <span class="svc-pill-dot dot-checking" id="svcDotHaproxy"></span>
+                        <span class="svc-pill-label">HAProxy:</span>
+                        <span class="svc-pill-val" id="svcValHaproxy">Checking...</span>
+                    </div>
+
+                    <!-- Nginx Pill -->
+                    <div class="svc-status-pill" id="svcPillNginx" title="Nginx Stream Proxy Engine">
+                        <span class="svc-pill-dot dot-checking" id="svcDotNginx"></span>
+                        <span class="svc-pill-label">Nginx:</span>
+                        <span class="svc-pill-val" id="svcValNginx">Checking...</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Missing Dependencies Warning Alert Banner -->
+            <div id="servicesWarningBanner" class="services-warning-banner" style="display: none;">
+                <div class="warning-banner-content">
+                    <div class="warning-banner-icon">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                    </div>
+                    <div class="warning-banner-text">
+                        <span class="warning-banner-title">Core Relay Packages Missing</span>
+                        <p id="servicesWarningText">One or more core forwarding services are not installed on this server.</p>
+                    </div>
+                </div>
+                <div class="warning-banner-actions">
+                    <span class="terminal-cmd-hint" title="Command to install dependencies in Linux terminal">xfwd</span>
+                    <button type="button" class="btn btn-secondary btn-sm" id="btnDismissServicesWarning">Dismiss</button>
+                </div>
+            </div>
+
             <!-- SECTION 1: Port Routing & Multi-Path Matrix -->
             <section class="dashboard-section active" id="sectionRules">
                 <!-- Server Network & Tunnel Topology Card -->
@@ -528,6 +575,42 @@
                         </div>
                     </div>
 
+                    <!-- Server Relay Engines Status Card -->
+                    <div class="overview-card">
+                        <div class="overview-card-header">
+                            <div class="overview-card-title">
+                                <div class="stat-icon icon-cyan" style="width:34px;height:34px;">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+                                </div>
+                                <div>
+                                    <h3>Server Relay Engines</h3>
+                                    <span class="overview-card-sub">NFTables kernel, HAProxy, and Nginx availability</span>
+                                </div>
+                            </div>
+                            <span class="stat-badge badge-active" id="ovEnginesSummaryBadge">READY</span>
+                        </div>
+                        <div class="overview-card-body">
+                            <div class="overview-info-list">
+                                <div class="info-item">
+                                    <span class="info-label">NFTables (Kernel L3 NAT)</span>
+                                    <span class="info-value font-mono" id="ovNftStatus">Detecting...</span>
+                                </div>
+                                <div class="info-item">
+                                    <span class="info-label">HAProxy (Layer-4 TCP/UDP)</span>
+                                    <span class="info-value font-mono" id="ovHaproxyStatus">Detecting...</span>
+                                </div>
+                                <div class="info-item">
+                                    <span class="info-label">Nginx (Stream TCP/UDP)</span>
+                                    <span class="info-value font-mono" id="ovNginxStatus">Detecting...</span>
+                                </div>
+                                <div class="info-item">
+                                    <span class="info-label">Automatic Installation</span>
+                                    <span class="info-value text-emerald">Enabled via xfwd installer</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Quick Actions Card -->
                     <div class="overview-card">
                         <div class="overview-card-header">
@@ -576,7 +659,7 @@
                                     <span class="overview-card-sub">User-space Layer-4 TCP/UDP IPv6 Relay</span>
                                 </div>
                             </div>
-                            <span class="stat-badge badge-active">MANAGED</span>
+                            <span class="stat-badge badge-active" id="badgeHaproxyStatus">CHECKING</span>
                         </div>
                         <div class="overview-card-body">
                             <p class="section-desc" style="margin-bottom:14px;">Direct IPv6 user-space relay without any encapsulation overhead. Non-disruptive reload on priority change.</p>
@@ -586,12 +669,20 @@
                                     <span class="info-value font-mono">/etc/haproxy/haproxy.cfg</span>
                                 </div>
                                 <div class="info-item">
-                                    <span class="info-label">Reload Mechanism</span>
-                                    <span class="info-value font-mono">systemctl reload haproxy</span>
+                                    <span class="info-label">Installation</span>
+                                    <span class="info-value font-mono" id="svcHaproxyInstalled">Checking...</span>
                                 </div>
                                 <div class="info-item">
-                                    <span class="info-label">Proxy Protocol</span>
-                                    <span class="info-value">send-proxy-v2 supported</span>
+                                    <span class="info-label">Service Status</span>
+                                    <span class="info-value text-emerald font-mono" id="svcHaproxyState">Checking...</span>
+                                </div>
+                                <div class="info-item">
+                                    <span class="info-label">Binary Version</span>
+                                    <span class="info-value font-mono" id="svcHaproxyVersion">--</span>
+                                </div>
+                                <div class="info-item">
+                                    <span class="info-label">Reload Mechanism</span>
+                                    <span class="info-value font-mono">systemctl reload haproxy</span>
                                 </div>
                                 <div class="info-item">
                                     <span class="info-label">Active Bindings</span>
@@ -613,7 +704,7 @@
                                     <span class="overview-card-sub">Layer-3 Kernel Tunnel Forwarding</span>
                                 </div>
                             </div>
-                            <span class="stat-badge badge-active">ISOLATED</span>
+                            <span class="stat-badge badge-active" id="badgeNftablesStatus">CHECKING</span>
                         </div>
                         <div class="overview-card-body">
                             <p class="section-desc" style="margin-bottom:14px;">High-speed kernel DNAT over GRE, IPIP, FakeTCP, or AmneziaWG tunnels. Zero interference with system firewall.</p>
@@ -623,8 +714,16 @@
                                     <span class="info-value font-mono">table ip xfwd_orchestrator</span>
                                 </div>
                                 <div class="info-item">
-                                    <span class="info-label">Masquerade Interfaces</span>
-                                    <span class="info-value font-mono">gre*, ipip*, ftcp*, awg*, gnv*</span>
+                                    <span class="info-label">Installation</span>
+                                    <span class="info-value font-mono" id="svcNftablesInstalled">Checking...</span>
+                                </div>
+                                <div class="info-item">
+                                    <span class="info-label">Kernel Status</span>
+                                    <span class="info-value text-emerald font-mono" id="svcNftablesKernel">Checking...</span>
+                                </div>
+                                <div class="info-item">
+                                    <span class="info-label">Binary Version</span>
+                                    <span class="info-value font-mono" id="svcNftablesVersion">--</span>
                                 </div>
                                 <div class="info-item">
                                     <span class="info-label">Flush Safety</span>
@@ -633,6 +732,47 @@
                                 <div class="info-item">
                                     <span class="info-label">Active Forwardings</span>
                                     <span class="info-value text-amber" id="svcNftablesBinds">0 ports</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Nginx Service Card -->
+                    <div class="overview-card">
+                        <div class="overview-card-header">
+                            <div class="overview-card-title">
+                                <div class="stat-icon icon-cyan" style="width:36px;height:36px;">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
+                                </div>
+                                <div>
+                                    <h3>Nginx Stream Proxy Engine</h3>
+                                    <span class="overview-card-sub">Layer-4 High-Throughput Stream Forwarder</span>
+                                </div>
+                            </div>
+                            <span class="stat-badge badge-active" id="badgeNginxStatus">CHECKING</span>
+                        </div>
+                        <div class="overview-card-body">
+                            <p class="section-desc" style="margin-bottom:14px;">High-concurrency stream TCP/UDP proxy with epoll multi-accept architecture. Managed dynamically by XForwarder.</p>
+                            <div class="overview-info-list">
+                                <div class="info-item">
+                                    <span class="info-label">Config Location</span>
+                                    <span class="info-value font-mono">/etc/nginx/nginx.conf</span>
+                                </div>
+                                <div class="info-item">
+                                    <span class="info-label">Installation</span>
+                                    <span class="info-value font-mono" id="svcNginxInstalled">Checking...</span>
+                                </div>
+                                <div class="info-item">
+                                    <span class="info-label">Service Status</span>
+                                    <span class="info-value font-mono" id="svcNginxState">Checking...</span>
+                                </div>
+                                <div class="info-item">
+                                    <span class="info-label">Binary Version</span>
+                                    <span class="info-value font-mono" id="svcNginxVersion">--</span>
+                                </div>
+                                <div class="info-item">
+                                    <span class="info-label">Active Bindings</span>
+                                    <span class="info-value text-cyan" id="svcNginxBinds">0 ports</span>
                                 </div>
                             </div>
                         </div>
@@ -938,6 +1078,25 @@
             <div class="modal-footer confirm-footer">
                 <button type="button" class="btn btn-secondary" id="btnCancelConfirm">Cancel</button>
                 <button type="button" class="btn btn-danger" id="btnProceedConfirm">Delete Rule</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Server Sync Error / Diagnostics Modal -->
+    <div class="modal-backdrop" id="syncErrorModal">
+        <div class="modal-card modal-confirm" style="max-width: 540px;">
+            <div class="confirm-icon" style="background: rgba(245, 158, 11, 0.15); color: var(--accent-amber);">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            </div>
+            <h3>Server Synchronization Notice</h3>
+            <p id="syncErrorMessage" style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:12px;">Configuration was saved, but one or more server commands reported an issue:</p>
+            <div id="syncErrorList" class="font-mono" style="text-align:left; max-height:180px; overflow-y:auto; background:var(--bg-card); border:1px solid var(--border-color); border-radius:8px; padding:10px 12px; font-size:0.78rem; color:var(--accent-rose); line-height:1.45; margin-bottom:16px;"></div>
+            <div class="modal-footer confirm-footer">
+                <button type="button" class="btn btn-secondary" id="btnDismissSyncError">Dismiss</button>
+                <button type="button" class="btn btn-primary" id="btnRetrySyncModal">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+                    <span>Retry Server Sync</span>
+                </button>
             </div>
         </div>
     </div>

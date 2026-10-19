@@ -119,8 +119,8 @@ function fallbackCopy(text) {
 
 // Latency Badge Formatter
 function formatLatencyBadge(stat) {
-    if (!stat || stat.latency_ms === undefined || stat.latency_ms === null) {
-        return '<span class="latency-pill latency-none">Latency: --</span>';
+    if (!stat || stat.status !== 'healthy' || stat.latency_ms === undefined || stat.latency_ms === null || stat.latency_ms <= 0) {
+        return '';
     }
     const ms = stat.latency_ms;
     let cls = "latency-good";
@@ -254,6 +254,15 @@ const btnDismissImportBanner = document.getElementById("btnDismissImportBanner")
 if (btnDismissImportBanner) {
     btnDismissImportBanner.addEventListener("click", () => {
         const banner = document.getElementById("importBanner");
+        if (banner) banner.style.display = "none";
+    });
+}
+
+const btnDismissServicesWarning = document.getElementById("btnDismissServicesWarning");
+if (btnDismissServicesWarning) {
+    btnDismissServicesWarning.addEventListener("click", () => {
+        sessionStorage.setItem("xfwd_dismiss_services_warning", "1");
+        const banner = document.getElementById("servicesWarningBanner");
         if (banner) banner.style.display = "none";
     });
 }
@@ -535,6 +544,7 @@ async function fetchStatus() {
 
         renderStats(currentRules, lastRuntime);
         renderSystemStats(data.system);
+        renderServicesStatus(data.services);
         renderNetworkTopology(data.network);
         renderRules(currentRules, lastRuntime);
         trackFailoverEvents(currentRules, lastRuntime);
@@ -631,6 +641,9 @@ function renderStats(rules, runtime) {
     const svcNftablesBinds = document.getElementById("svcNftablesBinds");
     if (svcNftablesBinds) svcNftablesBinds.innerText = `${nftablesCount} ports`;
 
+    const svcNginxBinds = document.getElementById("svcNginxBinds");
+    if (svcNginxBinds) svcNginxBinds.innerText = `${nginxCount} ports`;
+
     if (runtime.active_services) {
         engineStatusBadge.innerText = "SYNCED";
         engineStatusBadge.className = "stat-badge badge-active";
@@ -653,6 +666,215 @@ function renderSystemStats(sys) {
         const ovCpuBar = document.getElementById("ovCpuBar");
         if (ovCpuText) ovCpuText.innerText = `${sys.cpu_percent}%`;
         if (ovCpuBar) ovCpuBar.style.width = `${Math.min(100, Math.max(0, sys.cpu_percent))}%`;
+    }
+}
+
+// Render Relay Services & Subsystems (NFTables, HAProxy, Nginx)
+function renderServicesStatus(services) {
+    if (!services) return;
+
+    const nft = services.nftables || {};
+    const ha = services.haproxy || {};
+    const ngx = services.nginx || {};
+
+    // 1. Top status pills
+    const dotNft = document.getElementById("svcDotNft");
+    const valNft = document.getElementById("svcValNft");
+    if (dotNft && valNft) {
+        if (!nft.installed) {
+            dotNft.className = "svc-pill-dot dot-rose";
+            valNft.innerText = "Not Installed";
+            valNft.className = "svc-pill-val text-rose";
+        } else if (nft.active) {
+            dotNft.className = "svc-pill-dot dot-emerald";
+            const verStr = nft.version ? ` (${nft.version})` : "";
+            valNft.innerText = nft.table_active ? `Active & Synced${verStr}` : `Active${verStr}`;
+            valNft.className = "svc-pill-val text-emerald";
+        } else {
+            dotNft.className = "svc-pill-dot dot-amber";
+            valNft.innerText = "Inactive";
+            valNft.className = "svc-pill-val text-amber";
+        }
+    }
+
+    const dotHa = document.getElementById("svcDotHaproxy");
+    const valHa = document.getElementById("svcValHaproxy");
+    if (dotHa && valHa) {
+        if (!ha.installed) {
+            dotHa.className = "svc-pill-dot dot-rose";
+            valHa.innerText = "Not Installed";
+            valHa.className = "svc-pill-val text-rose";
+        } else if (ha.active) {
+            dotHa.className = "svc-pill-dot dot-emerald";
+            valHa.innerText = ha.version ? `Running (${ha.version})` : "Running";
+            valHa.className = "svc-pill-val text-emerald";
+        } else {
+            dotHa.className = "svc-pill-dot dot-amber";
+            valHa.innerText = ha.version ? `Standby (${ha.version})` : "Standby";
+            valHa.className = "svc-pill-val text-amber";
+        }
+    }
+
+    const dotNgx = document.getElementById("svcDotNginx");
+    const valNgx = document.getElementById("svcValNginx");
+    if (dotNgx && valNgx) {
+        if (!ngx.installed) {
+            dotNgx.className = "svc-pill-dot dot-rose";
+            valNgx.innerText = "Not Installed";
+            valNgx.className = "svc-pill-val text-rose";
+        } else if (ngx.active) {
+            dotNgx.className = "svc-pill-dot dot-emerald";
+            valNgx.innerText = ngx.version ? `Running (${ngx.version})` : "Running";
+            valNgx.className = "svc-pill-val text-emerald";
+        } else {
+            dotNgx.className = "svc-pill-dot dot-amber";
+            valNgx.innerText = ngx.version ? `Standby (${ngx.version})` : "Standby";
+            valNgx.className = "svc-pill-val text-amber";
+        }
+    }
+
+    // 2. Missing Services Warning Banner
+    const warningBanner = document.getElementById("servicesWarningBanner");
+    const warningText = document.getElementById("servicesWarningText");
+    const missing = [];
+    if (!nft.installed) missing.push("NFTables");
+    if (!ha.installed) missing.push("HAProxy");
+    if (!ngx.installed) missing.push("Nginx");
+
+    if (warningBanner && warningText) {
+        if (missing.length > 0 && !sessionStorage.getItem("xfwd_dismiss_services_warning")) {
+            warningText.innerText = `The following core packages are missing on this server: ${missing.join(", ")}. Run 'xfwd' in your server terminal or reinstall to auto-configure them.`;
+            warningBanner.style.display = "flex";
+        } else {
+            warningBanner.style.display = "none";
+        }
+    }
+
+    // 3. Section 2 Overview Card items
+    const ovNftStatus = document.getElementById("ovNftStatus");
+    if (ovNftStatus) {
+        if (!nft.installed) {
+            ovNftStatus.innerHTML = `<span class="text-rose">Not Installed</span>`;
+        } else if (nft.active) {
+            ovNftStatus.innerHTML = `<span class="text-emerald">Active (${nft.version || "Installed"})</span>`;
+        } else {
+            ovNftStatus.innerHTML = `<span class="text-amber">Inactive</span>`;
+        }
+    }
+
+    const ovHaproxyStatus = document.getElementById("ovHaproxyStatus");
+    if (ovHaproxyStatus) {
+        if (!ha.installed) {
+            ovHaproxyStatus.innerHTML = `<span class="text-rose">Not Installed</span>`;
+        } else if (ha.active) {
+            ovHaproxyStatus.innerHTML = `<span class="text-emerald">Running (${ha.version || "v?"})</span>`;
+        } else {
+            ovHaproxyStatus.innerHTML = `<span class="text-amber">Standby (${ha.version || "v?"})</span>`;
+        }
+    }
+
+    const ovNginxStatus = document.getElementById("ovNginxStatus");
+    if (ovNginxStatus) {
+        if (!ngx.installed) {
+            ovNginxStatus.innerHTML = `<span class="text-rose">Not Installed</span>`;
+        } else if (ngx.active) {
+            ovNginxStatus.innerHTML = `<span class="text-emerald">Running (${ngx.version || "v?"})</span>`;
+        } else {
+            ovNginxStatus.innerHTML = `<span class="text-amber">Standby (${ngx.version || "v?"})</span>`;
+        }
+    }
+
+    const ovEnginesSummaryBadge = document.getElementById("ovEnginesSummaryBadge");
+    if (ovEnginesSummaryBadge) {
+        if (missing.length === 0) {
+            ovEnginesSummaryBadge.innerText = "ALL READY";
+            ovEnginesSummaryBadge.className = "stat-badge badge-active";
+        } else {
+            ovEnginesSummaryBadge.innerText = `${3 - missing.length}/3 READY`;
+            ovEnginesSummaryBadge.className = "stat-badge badge-warn";
+        }
+    }
+
+    // 4. Section 3 Relay Services Badges & Details
+    const badgeHa = document.getElementById("badgeHaproxyStatus");
+    if (badgeHa) {
+        if (!ha.installed) {
+            badgeHa.innerText = "NOT INSTALLED";
+            badgeHa.className = "stat-badge badge-fail";
+        } else if (ha.active) {
+            badgeHa.innerText = "RUNNING";
+            badgeHa.className = "stat-badge badge-active";
+        } else {
+            badgeHa.innerText = "STANDBY";
+            badgeHa.className = "stat-badge badge-warn";
+        }
+    }
+    const svcHaproxyInstalled = document.getElementById("svcHaproxyInstalled");
+    if (svcHaproxyInstalled) svcHaproxyInstalled.innerText = ha.installed ? "Installed" : "Not Installed";
+    const svcHaproxyState = document.getElementById("svcHaproxyState");
+    if (svcHaproxyState) {
+        svcHaproxyState.innerText = ha.active ? "Active & Running" : (ha.installed ? "Stopped / Standby" : "Not Installed");
+        svcHaproxyState.className = ha.active ? "info-value text-emerald font-mono" : "info-value text-amber font-mono";
+    }
+    const svcHaproxyVersion = document.getElementById("svcHaproxyVersion");
+    if (svcHaproxyVersion) svcHaproxyVersion.innerText = ha.version || (ha.installed ? "Installed" : "--");
+
+    const badgeNft = document.getElementById("badgeNftablesStatus");
+    if (badgeNft) {
+        if (!nft.installed) {
+            badgeNft.innerText = "NOT INSTALLED";
+            badgeNft.className = "stat-badge badge-fail";
+        } else if (nft.active) {
+            badgeNft.innerText = nft.table_active ? "ACTIVE & SYNCED" : "KERNEL READY";
+            badgeNft.className = "stat-badge badge-active";
+        } else {
+            badgeNft.innerText = "INACTIVE";
+            badgeNft.className = "stat-badge badge-warn";
+        }
+    }
+    const svcNftablesInstalled = document.getElementById("svcNftablesInstalled");
+    if (svcNftablesInstalled) svcNftablesInstalled.innerText = nft.installed ? "Installed" : "Not Installed";
+    const svcNftablesKernel = document.getElementById("svcNftablesKernel");
+    if (svcNftablesKernel) {
+        svcNftablesKernel.innerText = nft.active ? (nft.table_active ? "Active (table ip xfwd_orchestrator)" : "Active (Kernel ready)") : "Inactive";
+        svcNftablesKernel.className = nft.active ? "info-value text-emerald font-mono" : "info-value text-amber font-mono";
+    }
+    const svcNftablesVersion = document.getElementById("svcNftablesVersion");
+    if (svcNftablesVersion) svcNftablesVersion.innerText = nft.version || (nft.installed ? "Installed" : "--");
+
+    const badgeNgx = document.getElementById("badgeNginxStatus");
+    if (badgeNgx) {
+        if (!ngx.installed) {
+            badgeNgx.innerText = "NOT INSTALLED";
+            badgeNgx.className = "stat-badge badge-fail";
+        } else if (ngx.active) {
+            badgeNgx.innerText = "RUNNING";
+            badgeNgx.className = "stat-badge badge-active";
+        } else {
+            badgeNgx.innerText = "STANDBY";
+            badgeNgx.className = "stat-badge badge-warn";
+        }
+    }
+    const svcNginxInstalled = document.getElementById("svcNginxInstalled");
+    if (svcNginxInstalled) svcNginxInstalled.innerText = ngx.installed ? "Installed" : "Not Installed";
+    const svcNginxState = document.getElementById("svcNginxState");
+    if (svcNginxState) {
+        svcNginxState.innerText = ngx.active ? "Active & Running" : (ngx.installed ? "Stopped / Standby" : "Not Installed");
+        svcNginxState.className = ngx.active ? "info-value text-emerald font-mono" : "info-value text-amber font-mono";
+    }
+    const svcNginxVersion = document.getElementById("svcNginxVersion");
+    if (svcNginxVersion) svcNginxVersion.innerText = ngx.version || (ngx.installed ? "Installed" : "--");
+
+    // Sidebar badge
+    const navServicesBadge = document.getElementById("navServicesBadge");
+    if (navServicesBadge) {
+        if (missing.length === 0) {
+            navServicesBadge.innerText = "SYNCED";
+            navServicesBadge.className = "nav-badge nav-badge-ok";
+        } else {
+            navServicesBadge.innerText = `${3 - missing.length}/3`;
+            navServicesBadge.className = "nav-badge";
+        }
     }
 }
 
@@ -892,8 +1114,8 @@ function renderRules(rules, runtime) {
         });
 
         // Build dynamic paths list (stacked vertically by priority order)
-        const pathsHtml = sortedDests.map(dest => {
-            const prio = dest.priority || 1;
+        const pathsHtml = sortedDests.map((dest, destIndex) => {
+            const prio = dest.priority || (destIndex + 1);
             const isPrimary = prio === 1;
             const isActive = prio === activePriority;
             const isFailover = isActive && !isPrimary;
@@ -908,7 +1130,7 @@ function renderRules(rules, runtime) {
                 statusLabel = 'HEALTHY';
                 statusClass = 'status-healthy';
             } else if (isDown) {
-                statusLabel = 'DOWN / TIMEOUT';
+                statusLabel = 'DOWN';
                 statusClass = 'status-failed';
             } else if (stat.status) {
                 statusLabel = String(stat.status).toUpperCase();
@@ -919,49 +1141,48 @@ function renderRules(rules, runtime) {
             const latencyBadge = formatLatencyBadge(stat);
             const tagClass = getPrioTagClass(prio);
 
-            // Ribbon badge
-            let ribbonHtml = '';
-            if (isActive) {
-                if (forceOverride === prio) {
-                    ribbonHtml = `<span class="active-ribbon is-manual">MANUAL TEST · P${prio} ACTIVE</span>`;
-                } else if (isFailover) {
-                    ribbonHtml = `<span class="active-ribbon is-failover">AUTO FAILOVER · P${prio} ACTIVE</span>`;
-                } else {
-                    ribbonHtml = `<span class="active-ribbon is-primary">PRIMARY ACTIVE · P1</span>`;
-                }
-            }
-
             // Quick path action button
             let pathActionHtml = '';
             if (forceOverride === prio) {
                 pathActionHtml = `
                     <button type="button" class="btn-path-test is-forced" onclick="handleOverrideChange(decodeURIComponent('${encodedId}'), 0)" title="Currently forced manually. Click to return to Automatic Failover.">
                         <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 14 14"/></svg>
-                        <span>Forced (Reset Auto)</span>
+                        <span>Forced (Reset)</span>
                     </button>
                 `;
-            } else if (isActive && forceOverride === 0) {
+            } else if (!isActive) {
                 pathActionHtml = `
-                    <span class="badge-route-active" title="Currently selected automatically in priority order">
-                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-                        <span>Active (Auto)</span>
-                    </span>
-                `;
-            } else {
-                pathActionHtml = `
-                    <button type="button" class="btn-path-test" onclick="handleOverrideChange(decodeURIComponent('${encodedId}'), ${prio})" title="Click to manually activate Priority ${prio} for testing">
+                    <button type="button" class="btn-path-test" onclick="handleOverrideChange(decodeURIComponent('${encodedId}'), ${prio})" title="Click to manually force Priority ${prio} for testing">
                         <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-                        <span>Force Test P${prio}</span>
+                        <span>Force P${prio}</span>
                     </button>
                 `;
             }
 
+            // Concise meta text (concise reason when down, or comment)
+            const reasonText = (stat.reason && isDown) ? escapeHtml(stat.reason) : '';
+            const commentText = escapeHtml(dest.comment || '');
+            let metaText = '';
+            if (reasonText) {
+                metaText = `<span class="text-amber" title="${reasonText}">${reasonText}</span>`;
+            } else if (commentText) {
+                metaText = commentText;
+            }
+
             return `
-                <div class="path-box ${isActive ? (isFailover ? 'is-failover' : 'is-active') : ''}">
-                    ${ribbonHtml}
+                <div class="path-box ${isActive ? (isFailover ? 'is-failover' : 'is-active') : ''}"
+                     draggable="true"
+                     ondragstart="handlePathDragStart(event, decodeURIComponent('${encodedId}'), ${destIndex})"
+                     ondragover="handlePathDragOver(event)"
+                     ondragleave="handlePathDragLeave(event)"
+                     ondrop="handlePathDrop(event, decodeURIComponent('${encodedId}'), ${destIndex})"
+                     ondragend="handlePathDragEnd(event)">
                     <div class="path-header">
                         <div class="path-header-left">
-                            <span class="path-tag ${tagClass}">Priority ${prio} ${isPrimary ? '(Primary)' : '(Failover)'}</span>
+                            <span class="drag-handle" title="Drag to reorder priority" draggable="false">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="9" cy="6" r="1.5"/><circle cx="15" cy="6" r="1.5"/><circle cx="9" cy="12" r="1.5"/><circle cx="15" cy="12" r="1.5"/><circle cx="9" cy="18" r="1.5"/><circle cx="15" cy="18" r="1.5"/></svg>
+                            </span>
+                            <span class="path-tag ${tagClass}">P${prio}</span>
                             <span class="path-status ${statusClass}">
                                 <span class="status-indicator"></span>
                                 ${statusLabel}
@@ -976,7 +1197,7 @@ function renderRules(rules, runtime) {
                         <button class="btn-copy" onclick="copyText(decodeURIComponent('${encodeURIComponent(rawTarget)}'))" title="Copy Destination IP">${copyPortSvg}</button>
                     </div>
                     <div class="path-meta">
-                        <span>${escapeHtml(dest.comment || (isPrimary ? 'Primary uplink' : `Failover path ${prio}`))}${stat.reason && isDown ? ` · <span class="text-amber" title="${escapeHtml(stat.reason)}">${escapeHtml(stat.reason)}</span>` : ''}</span>
+                        <span>${metaText}</span>
                         ${latencyBadge}
                     </div>
                 </div>
@@ -995,7 +1216,7 @@ function renderRules(rules, runtime) {
                         <button class="btn btn-secondary btn-sm" onclick="editRule(decodeURIComponent('${encodedId}'))" title="Edit Rule">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
                         </button>
-                        <button class="btn btn-danger btn-sm" onclick="deleteRule(decodeURIComponent('${encodedId}'))" title="Delete Rule">
+                        <button class="btn btn-secondary btn-sm" onclick="deleteRule(decodeURIComponent('${encodedId}'))" title="Delete Rule">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
                         </button>
                     </div>
@@ -1019,28 +1240,190 @@ function renderRules(rules, runtime) {
     }).join("");
 }
 
+// ── Drag & Drop Priority Reordering Handlers ──
+let draggedPathInfo = null;
+
+function handlePathDragStart(e, ruleId, index) {
+    draggedPathInfo = { ruleId, index };
+    e.dataTransfer.effectAllowed = "move";
+    try {
+        e.dataTransfer.setData("text/plain", JSON.stringify({ ruleId, index }));
+    } catch (_) {}
+    const box = e.currentTarget;
+    setTimeout(() => {
+        if (box) box.classList.add("is-dragging");
+    }, 0);
+}
+
+function handlePathDragOver(e) {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+    const box = e.currentTarget;
+    if (box && !box.classList.contains("is-dragging")) {
+        box.classList.add("drag-over");
+    }
+}
+
+function handlePathDragLeave(e) {
+    const box = e.currentTarget;
+    if (box) box.classList.remove("drag-over");
+}
+
+function handlePathDragEnd(e) {
+    document.querySelectorAll(".path-box").forEach(el => {
+        el.classList.remove("is-dragging");
+        el.classList.remove("drag-over");
+    });
+    draggedPathInfo = null;
+}
+
+async function handlePathDrop(e, ruleId, toIndex) {
+    e.preventDefault();
+    e.stopPropagation();
+    document.querySelectorAll(".path-box").forEach(el => {
+        el.classList.remove("is-dragging");
+        el.classList.remove("drag-over");
+    });
+
+    if (!draggedPathInfo) return;
+    const fromRuleId = draggedPathInfo.ruleId;
+    const fromIndex = draggedPathInfo.index;
+    draggedPathInfo = null;
+
+    if (fromRuleId !== ruleId || fromIndex === toIndex) return;
+
+    const rule = currentRules.find(r => r.id === ruleId);
+    if (!rule || !rule.destinations) return;
+
+    const dests = [...rule.destinations].sort((a, b) => (a.priority || 1) - (b.priority || 1));
+    const moved = dests.splice(fromIndex, 1)[0];
+    dests.splice(toIndex, 0, moved);
+    dests.forEach((d, i) => d.priority = i + 1);
+    rule.destinations = dests;
+
+    // Optimistic UI update
+    renderRules(currentRules, lastRuntime);
+
+    try {
+        const res = await fetch(`${API_BASE}/rule`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(rule)
+        });
+        const data = await res.json().catch(() => ({}));
+        if (res.ok && data.ok) {
+            showToast(`Reordered: P${fromIndex + 1} ➔ P${toIndex + 1}`, "success");
+            if (data.sync_errors && data.sync_errors.length > 0) {
+                showSyncErrorAlert(data.sync_errors);
+            }
+        } else {
+            showToast(data.error || "Failed to save reordered priority", "error");
+        }
+    } catch (err) {
+        showToast("Network error reordering priority", "error");
+    } finally {
+        fetchStatus();
+    }
+}
+
+// ── Server Sync Error Modal Diagnostics & Retry ──
+const syncErrorModal = document.getElementById("syncErrorModal");
+const syncErrorList = document.getElementById("syncErrorList");
+const btnDismissSyncError = document.getElementById("btnDismissSyncError");
+const btnRetrySyncModal = document.getElementById("btnRetrySyncModal");
+
+function showSyncErrorAlert(errors) {
+    if (!errors || errors.length === 0 || !syncErrorModal || !syncErrorList) return;
+    syncErrorList.innerHTML = errors.map(err => `<div>• ${escapeHtml(err)}</div>`).join("");
+    syncErrorModal.classList.add("show");
+}
+
+function closeSyncErrorModal() {
+    if (syncErrorModal) syncErrorModal.classList.remove("show");
+}
+
+if (btnDismissSyncError) btnDismissSyncError.addEventListener("click", closeSyncErrorModal);
+
+if (btnRetrySyncModal) {
+    btnRetrySyncModal.addEventListener("click", async () => {
+        btnRetrySyncModal.disabled = true;
+        btnRetrySyncModal.innerHTML = '<span class="btn-spinner"></span> <span>Retrying Sync...</span>';
+        try {
+            const res = await fetch(`${API_BASE}/sync`, { method: "POST" });
+            const data = await res.json().catch(() => ({}));
+            if (res.ok && data.ok) {
+                showToast("Server rules synchronized successfully!", "success");
+                closeSyncErrorModal();
+                fetchStatus();
+            } else {
+                if (data.sync_errors && data.sync_errors.length > 0) {
+                    syncErrorList.innerHTML = data.sync_errors.map(err => `<div>• ${escapeHtml(err)}</div>`).join("");
+                }
+                showToast("Server sync retry failed. Check service status.", "error");
+            }
+        } catch (err) {
+            showToast("Connection error while retrying sync", "error");
+        } finally {
+            btnRetrySyncModal.disabled = false;
+            btnRetrySyncModal.innerHTML = `
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+                <span>Retry Server Sync</span>
+            `;
+        }
+    });
+}
+
 // Override change handler (Auto Failover vs Manual Test Priority)
 async function handleOverrideChange(ruleId, val) {
     const prioVal = parseInt(val);
+
+    // Optimistic UI update so button doesn't remain stuck
+    const rule = currentRules.find(x => x.id === ruleId);
+    if (rule) {
+        rule.force_override = prioVal;
+        if (prioVal > 0) {
+            rule.active_priority = prioVal;
+        } else {
+            // Auto Failover: choose lowest healthy priority from cached state, or 1
+            const rState = (lastRuntime.rules_state || {})[ruleId] || {};
+            const destStats = rState.dest_stats || {};
+            let best = 1;
+            const sorted = [...(rule.destinations || [])].sort((a, b) => (a.priority || 1) - (b.priority || 1));
+            for (const d of sorted) {
+                const p = d.priority || 1;
+                if (destStats[`prio_${p}`] && destStats[`prio_${p}`].status === 'healthy') {
+                    best = p;
+                    break;
+                }
+            }
+            rule.active_priority = best;
+        }
+        renderRules(currentRules, lastRuntime);
+    }
+
     try {
         const res = await fetch(`${API_BASE}/override`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ rule_id: ruleId, force_override: prioVal })
         });
-        if (res.ok) {
+        const data = await res.json().catch(() => ({}));
+        if (res.ok && data.ok) {
             if (prioVal === 0) {
                 showToast("Automatic priority failover enabled", "success");
             } else {
                 showToast(`Manual Test: Forced Priority ${prioVal} enabled`, "info");
             }
-            fetchStatus();
+            if (data.sync_errors && data.sync_errors.length > 0) {
+                showSyncErrorAlert(data.sync_errors);
+            }
         } else {
-            const data = await res.json().catch(() => ({}));
             showToast(data.error || "Failed to update forwarding mode", "error");
         }
     } catch (err) {
         showToast("Failed to update forwarding mode", "error");
+    } finally {
+        fetchStatus();
     }
 }
 
@@ -1070,6 +1453,9 @@ batchSelect.addEventListener("change", async () => {
         const data = await res.json().catch(() => ({}));
         if (res.ok && data.ok) {
             showToast(`Applied ${modeLabels[val]} to ${data.count} rule(s)`);
+            if (data.sync_errors && data.sync_errors.length > 0) {
+                showSyncErrorAlert(data.sync_errors);
+            }
             fetchStatus();
         } else {
             showToast(data.error || "Batch action failed", "error");
@@ -1336,11 +1722,14 @@ async function deleteRule(ruleId) {
 
     try {
         const res = await fetch(`${API_BASE}/rule/${encodeURIComponent(ruleId)}`, { method: "DELETE" });
-        if (res.ok) {
+        const data = await res.json().catch(() => ({}));
+        if (res.ok && data.ok) {
             showToast(`Rule '${ruleId}' removed`);
+            if (data.sync_errors && data.sync_errors.length > 0) {
+                showSyncErrorAlert(data.sync_errors);
+            }
             fetchStatus();
         } else {
-            const data = await res.json().catch(() => ({}));
             showToast(data.error || "Error deleting rule", "error");
         }
     } catch (err) {
@@ -1399,13 +1788,16 @@ ruleForm.addEventListener("submit", async (e) => {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(payload)
         });
-        if (res.ok) {
+        const data = await res.json().catch(() => ({}));
+        if (res.ok && data.ok) {
             showToast("Rule saved and applied successfully");
             closeModal();
+            if (data.sync_errors && data.sync_errors.length > 0) {
+                showSyncErrorAlert(data.sync_errors);
+            }
             fetchStatus();
         } else {
-            const errData = await res.json().catch(() => ({}));
-            showToast(errData.error || "Failed to save rule", "error");
+            showToast(data.error || "Failed to save rule", "error");
         }
     } catch (err) {
         showToast("Error communicating with server", "error");
