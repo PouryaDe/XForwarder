@@ -698,6 +698,15 @@ function formatEngineVersion(rawVer) {
     return base ? `v${base}` : str;
 }
 
+// Helper to format user-friendly protocol badges ('both' -> 'TCP+UDP')
+function formatProtoBadge(proto) {
+    const p = String(proto || "both").toLowerCase().trim();
+    if (p === "both") return "TCP+UDP";
+    if (p === "tcp") return "TCP";
+    if (p === "udp") return "UDP";
+    return p.toUpperCase();
+}
+
 // Render Relay Services & Subsystems (NFTables, HAProxy, Nginx)
 function renderServicesStatus(services) {
     if (!services) return;
@@ -1089,13 +1098,14 @@ function renderRules(rules, runtime) {
         const ruleId = String(rule.id || `rule-${rule.port}`).toLowerCase();
         const portStr = String(rule.port || "");
         const protoStr = String(rule.protocol || "both").toLowerCase();
+        const protoSearchStr = protoStr === "both" ? "tcp udp both tcp+udp" : protoStr;
 
         // 1. Search Query Check across all destinations
         if (searchQuery) {
             const matchesBasic = 
                 portStr.includes(searchQuery) ||
                 ruleId.includes(searchQuery) ||
-                protoStr.includes(searchQuery);
+                protoSearchStr.includes(searchQuery);
             const matchesDest = (rule.destinations || []).some(d =>
                 String(d.target || "").toLowerCase().includes(searchQuery) ||
                 String(d.comment || "").toLowerCase().includes(searchQuery) ||
@@ -1265,7 +1275,7 @@ function renderRules(rules, runtime) {
                     <div class="port-badge">
                         <span class="port-num">:${escapeHtml(rule.port)}</span>
                         <button class="btn-copy" onclick="copyText(decodeURIComponent('${encodeURIComponent(rule.port)}'))" title="Copy Port Number">${copyPortSvg}</button>
-                        <span class="proto-pill">${escapeHtml(String(rule.protocol || 'both').toUpperCase())}</span>
+                        <span class="proto-pill">${escapeHtml(formatProtoBadge(rule.protocol))}</span>
                     </div>
                     <div class="rule-actions">
                         <button class="btn btn-secondary btn-sm" onclick="editRule(decodeURIComponent('${encodedId}'))" title="Edit Rule">

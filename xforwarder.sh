@@ -997,6 +997,7 @@ try:
         for r in rules:
             p = r.get('port')
             proto = r.get('protocol', 'both')
+            proto_str = 'TCP+UDP' if str(proto).lower() == 'both' else str(proto).upper()
             act_prio = r.get('active_priority', 1)
             dest = next((d for d in r.get('destinations', []) if d.get('priority') == act_prio), None)
             if dest:
@@ -1004,7 +1005,7 @@ try:
             else:
                 dest_str = 'None'
             prio_tag = f'Priority {act_prio}'
-            print(fmt.format(f':{p}', proto.upper(), prio_tag, dest_str, 'HEALTHY'))
+            print(fmt.format(f':{p}', proto_str, prio_tag, dest_str, 'HEALTHY'))
     print('--------------------------------------------------------------\n')
 except Exception as e:
     print('Error parsing state:', e)
