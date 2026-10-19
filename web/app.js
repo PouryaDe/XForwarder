@@ -735,9 +735,12 @@ function renderNetworkTopology(network) {
                     if (t.reachable && t.latency_ms !== null) {
                         pingClass = t.latency_ms < 60 ? "lat-good" : (t.latency_ms < 150 ? "lat-mid" : "lat-high");
                         pingText = `${t.latency_ms} ms`;
-                    } else {
+                    } else if (t.target_to_ping) {
                         pingClass = "lat-unreachable";
                         pingText = "Unreachable";
+                    } else {
+                        pingClass = "lat-down";
+                        pingText = "No Peer Target";
                     }
                 }
 
@@ -926,7 +929,7 @@ function renderRules(rules, runtime) {
                         <button class="btn-copy" onclick="copyText(decodeURIComponent('${encodeURIComponent(rawTarget)}'))" title="Copy Destination IP">${copyPortSvg}</button>
                     </div>
                     <div class="path-meta">
-                        <span>${escapeHtml(dest.comment || (isPrimary ? 'Primary uplink' : `Failover path ${prio}`))}</span>
+                        <span>${escapeHtml(dest.comment || (isPrimary ? 'Primary uplink' : `Failover path ${prio}`))}${stat.reason && isDown ? ` · <span class="text-amber" title="${escapeHtml(stat.reason)}">${escapeHtml(stat.reason)}</span>` : ''}</span>
                         ${latencyBadge}
                     </div>
                 </div>

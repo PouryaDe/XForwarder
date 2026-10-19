@@ -111,6 +111,34 @@ class TestNetworkInterfaces(unittest.TestCase):
                 f"Ignored interface {t_if['name']} found in tunnel_interfaces!"
             )
 
+    def test_no_synthetic_peer_guessing(self):
+        import json
+        from unittest.mock import patch
+        mock_if_data = [{
+            "ifname": "gre1",
+            "flags": ["UP"],
+            "operstate": "UP",
+            "link_type": "gre",
+            "mtu": 1476,
+            "addr_info": [{
+                "family": "inet",
+                "local": "10.88.1.1",
+                "scope": "global"
+            }]
+        }]
+        with patch("sys.platform", "linux"), \
+             patch("subprocess.check_output", return_value=json.dumps(mock_if_data)), \
+             patch("core.web_server.load_config", return_value={"wan_interface": "eth0", "rules": []}), \
+             patch.dict("core.web_server._NET_CACHE", {"data": None, "expires": 0}):
+            info = get_network_interfaces_info()
+            tunnels = info.get("tunnel_interfaces", [])
+            gre1 = next((t for t in tunnels if t["name"] == "gre1"), None)
+            self.assertIsNotNone(gre1)
+            self.assertEqual(gre1["ip"], "10.88.1.1")
+            self.assertEqual(gre1["peer_ip"], "")
+            # target_to_ping must be empty, NOT guessed 10.88.1.2!
+            self.assertEqual(gre1["target_to_ping"], "")
+
 
 if __name__ == "__main__":
     unittest.main()

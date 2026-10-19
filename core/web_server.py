@@ -479,7 +479,7 @@ def get_network_interfaces_info() -> Dict[str, Any]:
             else:
                 friendly_type = "Virtual / Tunnel"
 
-            # Determine best ping target
+            # Determine best ping target (explicit peer IP or matched configured rule target only)
             target_to_ping = peer_ip
             if not target_to_ping and local_ip:
                 parts = local_ip.split(".")
@@ -488,14 +488,6 @@ def get_network_interfaces_info() -> Dict[str, Any]:
                     matched = next((kt for kt in known_targets if kt.startswith(prefix) and kt != local_ip), None)
                     if matched:
                         target_to_ping = matched
-                    else:
-                        try:
-                            last_octet = int(parts[3])
-                            peer_octet = last_octet + 1 if (last_octet % 2 == 1) else last_octet - 1
-                            if 1 <= peer_octet <= 254:
-                                target_to_ping = f"{prefix}{peer_octet}"
-                        except Exception:
-                            pass
 
             # Skip unconfigured inactive interfaces with no IP and state DOWN
             if not local_ip and not peer_ip and not is_up:

@@ -39,3 +39,9 @@ A port must **NEVER** be bound by HAProxy and forwarded by NFTables DNAT at the 
 - **Persistent Configuration**: `/etc/xforwarder/config.json` (fallback: `/etc/forward-manager/config.json` or `config/config.json`).
 - **Runtime Ephemeral State**: `/run/xforwarder/state.json` (fallback: `/run/forward-manager/state.json`).
 - **Atomic Writes**: Never write directly to configuration or state files without atomic renaming (`tmp.<pid>` -> `os.replace`).
+
+## 5. Strict Interface & Route Isolation for Destination Probes
+- **No WAN Leakage for Private/Tunnel Targets:** Tunnel destinations (e.g. `10.x.x.x`, `172.16-31.x.x`, `192.168.x.x`, IPv6 ULA) must never be probed over the WAN interface (`eth0`). If `ip route get <target>` routes to the WAN interface, the tunnel interface is undefined on the host and the probe MUST be marked `failed` immediately.
+- **Explicit Interface Binding:** When `tunnel_iface` is specified, verify `/sys/class/net/<iface>` exists and is UP. All ICMP and TCP probes must be strictly bound to `<tunnel_iface>` (`ping -I <iface>`, `SO_BINDTODEVICE`).
+- **Zero Synthetic Guessing:** Never synthesize or guess arbitrary peer IP targets (e.g. `+1` or `-1` on the last octet). A tunnel target must strictly be an explicit peer configured on the interface or a configured rule destination.
+

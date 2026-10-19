@@ -13,6 +13,7 @@ import socket
 import subprocess
 import threading
 import signal
+import ipaddress
 from typing import Dict, List, Any, Optional, Tuple
 
 DEFAULT_CONFIG_PATH = "/etc/xforwarder/config.json"
@@ -23,6 +24,17 @@ LEGACY_STATE_FILE_PATH = "/run/forward-manager/state.json"
 HAPROXY_CONF_PATH = "/etc/haproxy/haproxy.cfg"
 UDP_CONF_PATH = "/etc/haproxy/forwarder-udp.conf"
 NGINX_CONF_PATH = "/etc/nginx/nginx.conf"
+
+
+def is_private_or_tunnel_target(target: str) -> bool:
+    """Returns True if the target IP is in RFC 1918 private, loopback, link-local, or IPv6 ULA address space."""
+    if not target:
+        return False
+    try:
+        ip = ipaddress.ip_address(target.strip())
+        return ip.is_private or ip.is_loopback or ip.is_link_local
+    except ValueError:
+        return False
 
 
 class XForwarderEngine:
@@ -307,40 +319,151 @@ class XForwarderEngine:
         self.runtime_state["wan_interface"] = "eth0"
         return "eth0"
 
+    def _is_interface_up(self, iface: str) -> bool:
+        """Checks if a Linux network interface exists and is operstate UP."""
+        if not iface:
+            return False
+        if sys.platform == "win32":
+            return True
+        sys_path = f"/sys/class/net/{iface}"
+        if not os.path.exists(sys_path):
+            return False
+        try:
+            operstate_path = os.path.join(sys_path, "operstate")
+            if os.path.exists(operstate_path):
+                with open(operstate_path, "r", encoding="utf-8") as f:
+                    state = f.read().strip().lower()
+                    if state in ("up", "unknown"):
+                        return True
+                    if state == "down":
+                        return False
+            flags_path = os.path.join(sys_path, "flags")
+            if os.path.exists(flags_path):
+                with open(flags_path, "r", encoding="utf-8") as f:
+                    flags = int(f.read().strip(), 16)
+                    return bool(flags & 0x1)
+        except Exception:
+            pass
+        return True
+
+    def _get_route_interface(self, target: str) -> Optional[str]:
+        """Queries the kernel routing table to find the outbound network interface for target."""
+        if sys.platform == "win32":
+            return None
+        try:
+            out = subprocess.check_output(
+                ["ip", "-o", "route", "get", target],
+                text=True,
+                stderr=subprocess.DEVNULL
+            ).strip()
+            parts = out.split()
+            if "dev" in parts:
+                idx = parts.index("dev")
+                if idx + 1 < len(parts):
+                    return parts[idx + 1]
+        except Exception:
+            return ""
+        return ""
+
     def check_destination(self, dest: Dict[str, Any]) -> Dict[str, Any]:
-        """Perform a low-overhead health check on a target destination."""
+        """Perform a low-overhead health check on a target destination with strict route and interface isolation."""
         target = str(dest.get("target", "")).strip()
         port = int(dest.get("port", 0))
         dest_type = dest.get("type", "haproxy")
+        tunnel_iface = str(dest.get("tunnel_iface", "")).strip()
         start_time = time.perf_counter()
         healthy = False
+        fail_reason = ""
 
         if not target or port <= 0:
             return {"healthy": False, "latency_ms": 0.0, "reason": "Invalid target/port"}
 
+        wan_iface = self._detect_wan_interface()
+        target_is_private = is_private_or_tunnel_target(target)
+
+        # 1. Interface & Route Validation for Tunnel/NFTables destinations
+        if dest_type == "nftables" or tunnel_iface:
+            if tunnel_iface:
+                # Explicit tunnel interface specified - verify it exists and is UP
+                if not self._is_interface_up(tunnel_iface):
+                    return {
+                        "healthy": False,
+                        "latency_ms": 0.0,
+                        "reason": f"Tunnel interface '{tunnel_iface}' is missing or down"
+                    }
+            elif target_is_private:
+                # Private IP without explicit interface - verify route doesn't fall back to WAN default gateway
+                route_iface = self._get_route_interface(target)
+                if route_iface == "":
+                    return {
+                        "healthy": False,
+                        "latency_ms": 0.0,
+                        "reason": f"No route to destination {target}"
+                    }
+                elif route_iface:
+                    if route_iface == wan_iface:
+                        return {
+                            "healthy": False,
+                            "latency_ms": 0.0,
+                            "reason": f"Tunnel destination {target} routes via WAN ({wan_iface}); tunnel interface is not defined"
+                        }
+                    if route_iface in ("lo", "gre0", "gretap0", "erspan0", "tunl0", "sit0", "ip6tnl0", "ip6gre0", "dummy0"):
+                        return {
+                            "healthy": False,
+                            "latency_ms": 0.0,
+                            "reason": f"Destination {target} routes to kernel fallback device {route_iface}"
+                        }
+                    if not self._is_interface_up(route_iface):
+                        return {
+                            "healthy": False,
+                            "latency_ms": 0.0,
+                            "reason": f"Interface {route_iface} for {target} is down"
+                        }
+                    tunnel_iface = route_iface
+
+        # 2. Socket TCP probe (low-overhead connect)
         try:
             family = socket.AF_INET6 if ":" in target else socket.AF_INET
             with socket.socket(family, socket.SOCK_STREAM) as s:
                 s.settimeout(2.0)
+                if tunnel_iface and sys.platform != "win32":
+                    try:
+                        s.setsockopt(socket.SOL_SOCKET, 25, tunnel_iface.encode())
+                    except Exception:
+                        pass
                 res = s.connect_ex((target, port))
                 healthy = (res == 0)
-        except Exception:
+        except Exception as e:
             healthy = False
+            fail_reason = str(e)
 
+        # 3. ICMP Ping fallback probe for NFTables destinations
         if not healthy and dest_type == "nftables":
             try:
                 # Safe ping probe without shell injection
                 if all(c in "0123456789abcdefABCDEF:.-" for c in target):
-                    ping_cmd = ["ping", "-n", "1", "-w", "1000", target] if sys.platform == "win32" else ["ping", "-c", "1", "-W", "1", target]
+                    if sys.platform == "win32":
+                        ping_cmd = ["ping", "-n", "1", "-w", "1000", target]
+                    else:
+                        ping_cmd = ["ping", "-c", "1", "-W", "1"]
+                        if tunnel_iface:
+                            ping_cmd.extend(["-I", tunnel_iface])
+                        ping_cmd.append(target)
                     healthy = (subprocess.call(ping_cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL) == 0)
-            except Exception:
+                    if not healthy and not fail_reason:
+                        fail_reason = "Ping probe unreachable"
+            except Exception as e:
                 healthy = False
+                fail_reason = str(e)
 
         latency_ms = round((time.perf_counter() - start_time) * 1000, 1)
-        return {
+        res_dict = {
             "healthy": healthy,
             "latency_ms": latency_ms if healthy else 0.0
         }
+        if not healthy and fail_reason:
+            res_dict["reason"] = fail_reason
+        return res_dict
 
     def evaluate_rule(self, rule: Dict[str, Any]) -> bool:
         rule_id = rule.get("id", f"rule-{rule.get('port')}")
@@ -372,6 +495,8 @@ class XForwarderEngine:
             stat = rule_state["dest_stats"][dest_key]
             check_res = self.check_destination(dest)
             stat["latency_ms"] = check_res["latency_ms"]
+            if "reason" in check_res:
+                stat["reason"] = check_res["reason"]
 
             if check_res["healthy"]:
                 stat["consecutive_fails"] = 0
