@@ -1919,7 +1919,7 @@ body {
 /* ── Overview, Services & Security Grids ── */
 .overview-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 360px), 1fr));
     gap: 20px;
     margin-bottom: 24px;
 }
@@ -1941,6 +1941,8 @@ body {
     margin-bottom: 18px;
     padding-bottom: 12px;
     border-bottom: 1px solid var(--border-color);
+    gap: 10px;
+    flex-wrap: wrap;
 }
 
 .overview-card-title {
@@ -2010,14 +2012,38 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 8px 12px;
-    border-radius: 8px;
+    gap: 12px;
+    padding: 10px 14px;
+    border-radius: 10px;
     background: rgba(150, 150, 150, 0.05);
+    border: 1px solid var(--border-color);
     font-size: 0.82rem;
+    box-sizing: border-box;
+    transition: border-color 0.18s ease, background 0.18s ease;
 }
 
-.info-label { color: var(--text-secondary); }
-.info-value { font-weight: 600; color: var(--text-primary); }
+.info-item:hover {
+    background: rgba(150, 150, 150, 0.08);
+    border-color: var(--border-active);
+}
+
+.info-label {
+    color: var(--text-secondary);
+    font-weight: 500;
+    flex: 1 1 auto;
+    min-width: 0;
+    line-height: 1.35;
+}
+
+.info-value {
+    font-weight: 600;
+    color: var(--text-primary);
+    text-align: right;
+    flex-shrink: 0;
+    white-space: nowrap;
+    line-height: 1.35;
+}
+
 .font-mono { font-family: var(--font-mono); font-size: 0.8rem; }
 
 .quick-btn-grid {
@@ -3075,6 +3101,21 @@ select option {
     .import-mode-selector { grid-template-columns: 1fr; }
     .login-wrapper { padding: 70px 16px 24px 16px; }
     .login-top-bar { top: 16px; right: 16px; }
+}
+
+@media (max-width: 480px) {
+    .info-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 5px;
+        padding: 9px 12px;
+    }
+    .info-value {
+        text-align: left;
+        white-space: normal;
+        word-break: break-all;
+        align-self: flex-start;
+    }
 }
 
 

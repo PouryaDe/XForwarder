@@ -690,6 +690,14 @@ function renderSystemStats(sys) {
     }
 }
 
+// Helper to format clean, semver-focused engine versions (e.g. 2.4.30-0ubuntu0.22.04.2 -> v2.4.30)
+function formatEngineVersion(rawVer) {
+    if (!rawVer) return "";
+    const str = String(rawVer).trim();
+    const base = str.split("-")[0].trim().replace(/^v/i, "");
+    return base ? `v${base}` : str;
+}
+
 // Render Relay Services & Subsystems (NFTables, HAProxy, Nginx)
 function renderServicesStatus(services) {
     if (!services) return;
@@ -706,51 +714,63 @@ function renderServicesStatus(services) {
             dotNft.className = "svc-pill-dot dot-rose";
             valNft.innerText = "Not Installed";
             valNft.className = "svc-pill-val text-rose";
+            valNft.title = "";
         } else if (nft.active) {
             dotNft.className = "svc-pill-dot dot-emerald";
-            const verStr = nft.version ? ` (${nft.version})` : "";
+            const nftVerShort = formatEngineVersion(nft.version);
+            const verStr = nftVerShort ? ` (${nftVerShort})` : "";
             valNft.innerText = nft.table_active ? `Active & Synced${verStr}` : `Active${verStr}`;
             valNft.className = "svc-pill-val text-emerald";
+            valNft.title = nft.version || "";
         } else {
             dotNft.className = "svc-pill-dot dot-amber";
             valNft.innerText = "Inactive";
             valNft.className = "svc-pill-val text-amber";
+            valNft.title = "";
         }
     }
 
     const dotHa = document.getElementById("svcDotHaproxy");
     const valHa = document.getElementById("svcValHaproxy");
     if (dotHa && valHa) {
+        const haVerShort = formatEngineVersion(ha.version);
         if (!ha.installed) {
             dotHa.className = "svc-pill-dot dot-rose";
             valHa.innerText = "Not Installed";
             valHa.className = "svc-pill-val text-rose";
+            valHa.title = "";
         } else if (ha.active) {
             dotHa.className = "svc-pill-dot dot-emerald";
-            valHa.innerText = ha.version ? `Running (${ha.version})` : "Running";
+            valHa.innerText = haVerShort ? `Running (${haVerShort})` : "Running";
             valHa.className = "svc-pill-val text-emerald";
+            valHa.title = ha.version || "";
         } else {
             dotHa.className = "svc-pill-dot dot-amber";
-            valHa.innerText = ha.version ? `Standby (${ha.version})` : "Standby";
+            valHa.innerText = haVerShort ? `Standby (${haVerShort})` : "Standby";
             valHa.className = "svc-pill-val text-amber";
+            valHa.title = ha.version || "";
         }
     }
 
     const dotNgx = document.getElementById("svcDotNginx");
     const valNgx = document.getElementById("svcValNginx");
     if (dotNgx && valNgx) {
+        const ngxVerShort = formatEngineVersion(ngx.version);
         if (!ngx.installed) {
             dotNgx.className = "svc-pill-dot dot-rose";
             valNgx.innerText = "Not Installed";
             valNgx.className = "svc-pill-val text-rose";
+            valNgx.title = "";
         } else if (ngx.active) {
             dotNgx.className = "svc-pill-dot dot-emerald";
-            valNgx.innerText = ngx.version ? `Running (${ngx.version})` : "Running";
+            valNgx.innerText = ngxVerShort ? `Running (${ngxVerShort})` : "Running";
             valNgx.className = "svc-pill-val text-emerald";
+            valNgx.title = ngx.version || "";
         } else {
             dotNgx.className = "svc-pill-dot dot-amber";
-            valNgx.innerText = ngx.version ? `Standby (${ngx.version})` : "Standby";
+            valNgx.innerText = ngxVerShort ? `Standby (${ngxVerShort})` : "Standby";
             valNgx.className = "svc-pill-val text-amber";
+            valNgx.title = ngx.version || "";
         }
     }
 
@@ -774,34 +794,46 @@ function renderServicesStatus(services) {
     // 3. Section 2 Overview Card items
     const ovNftStatus = document.getElementById("ovNftStatus");
     if (ovNftStatus) {
+        const nftVerShort = formatEngineVersion(nft.version);
         if (!nft.installed) {
             ovNftStatus.innerHTML = `<span class="text-rose">Not Installed</span>`;
+            ovNftStatus.title = "";
         } else if (nft.active) {
-            ovNftStatus.innerHTML = `<span class="text-emerald">Active (${nft.version || "Installed"})</span>`;
+            ovNftStatus.innerHTML = `<span class="text-emerald">Active (${nftVerShort || "Installed"})</span>`;
+            ovNftStatus.title = nft.version || "";
         } else {
             ovNftStatus.innerHTML = `<span class="text-amber">Inactive</span>`;
+            ovNftStatus.title = "";
         }
     }
 
     const ovHaproxyStatus = document.getElementById("ovHaproxyStatus");
     if (ovHaproxyStatus) {
+        const haVerShort = formatEngineVersion(ha.version);
         if (!ha.installed) {
             ovHaproxyStatus.innerHTML = `<span class="text-rose">Not Installed</span>`;
+            ovHaproxyStatus.title = "";
         } else if (ha.active) {
-            ovHaproxyStatus.innerHTML = `<span class="text-emerald">Running (${ha.version || "v?"})</span>`;
+            ovHaproxyStatus.innerHTML = `<span class="text-emerald">Running (${haVerShort || "v?"})</span>`;
+            ovHaproxyStatus.title = ha.version || "";
         } else {
-            ovHaproxyStatus.innerHTML = `<span class="text-amber">Standby (${ha.version || "v?"})</span>`;
+            ovHaproxyStatus.innerHTML = `<span class="text-amber">Standby (${haVerShort || "v?"})</span>`;
+            ovHaproxyStatus.title = ha.version || "";
         }
     }
 
     const ovNginxStatus = document.getElementById("ovNginxStatus");
     if (ovNginxStatus) {
+        const ngxVerShort = formatEngineVersion(ngx.version);
         if (!ngx.installed) {
             ovNginxStatus.innerHTML = `<span class="text-rose">Not Installed</span>`;
+            ovNginxStatus.title = "";
         } else if (ngx.active) {
-            ovNginxStatus.innerHTML = `<span class="text-emerald">Running (${ngx.version || "v?"})</span>`;
+            ovNginxStatus.innerHTML = `<span class="text-emerald">Running (${ngxVerShort || "v?"})</span>`;
+            ovNginxStatus.title = ngx.version || "";
         } else {
-            ovNginxStatus.innerHTML = `<span class="text-amber">Standby (${ngx.version || "v?"})</span>`;
+            ovNginxStatus.innerHTML = `<span class="text-amber">Standby (${ngxVerShort || "v?"})</span>`;
+            ovNginxStatus.title = ngx.version || "";
         }
     }
 

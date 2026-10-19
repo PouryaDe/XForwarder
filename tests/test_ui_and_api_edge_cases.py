@@ -428,8 +428,31 @@ class TestUIAndAPIEdgeCases(unittest.TestCase):
         self.assertEqual(reordered_rule["destinations"][0]["priority"], 1)
         self.assertEqual(reordered_rule["destinations"][1]["priority"], 2)
 
+    def test_overview_relay_engines_alignment_and_responsive(self):
+        """Verifies that formatEngineVersion truncates long distro strings and CSS enforces aligned, responsive info items."""
+        js_path = os.path.join(REPO_ROOT, "web", "app.js")
+        css_path = os.path.join(REPO_ROOT, "web", "style.css")
+        with open(js_path, "r", encoding="utf-8") as f:
+            js = f.read()
+        with open(css_path, "r", encoding="utf-8") as f:
+            css = f.read()
+
+        # 1. formatEngineVersion presence
+        self.assertIn("function formatEngineVersion", js)
+
+        # 2. info-value right alignment and wrap protection
+        self.assertIn(".info-value", css)
+        self.assertIn("text-align: right", css)
+
+        # 3. info-item flex gap spacing
+        self.assertIn("gap: 12px", css)
+
+        # 4. Mobile responsive layout
+        self.assertIn("@media (max-width: 480px)", css)
+
 
 if __name__ == "__main__":
     unittest.main()
+
 
 

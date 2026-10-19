@@ -482,18 +482,6 @@
       "source_location": "L292"
     },
     {
-      "id": "core_web_server_get_services_status",
-      "label": "get_services_status()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 15,
-      "community_name": "TestUIAndAPIEdgeCases",
-      "file_type": "code",
-      "norm_label": "get_services_status()",
-      "source_file": "core/web_server.py",
-      "source_location": "L285"
-    },
-    {
       "id": "tests_test_ui_and_api_edge_cases_testuiandapiedgecases_test_api_test_target_http_endpoint",
       "label": ".test_api_test_target_http_endpoint()",
       "_callable": true,
@@ -504,6 +492,18 @@
       "norm_label": ".test_api_test_target_http_endpoint()",
       "source_file": "tests/test_ui_and_api_edge_cases.py",
       "source_location": "L263"
+    },
+    {
+      "id": "tests_test_ui_and_api_edge_cases_testuiandapiedgecases_test_drag_and_drop_edge_cases_and_reorder_logic",
+      "label": ".test_drag_and_drop_edge_cases_and_reorder_logic()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 15,
+      "community_name": "TestUIAndAPIEdgeCases",
+      "file_type": "code",
+      "norm_label": ".test_drag_and_drop_edge_cases_and_reorder_logic()",
+      "source_file": "tests/test_ui_and_api_edge_cases.py",
+      "source_location": "L395"
     },
     {
       "id": "tests_test_ui_and_api_edge_cases_testuiandapiedgecases_test_drag_and_drop_priority_reordering_integrity",
@@ -540,18 +540,6 @@
       "norm_label": ".test_frontend_js_latency_and_priority_shortening()",
       "source_file": "tests/test_ui_and_api_edge_cases.py",
       "source_location": "L345"
-    },
-    {
-      "id": "tests_test_ui_and_api_edge_cases_testuiandapiedgecases_test_services_status_api_and_dom",
-      "label": ".test_services_status_api_and_dom()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 15,
-      "community_name": "TestUIAndAPIEdgeCases",
-      "file_type": "code",
-      "norm_label": ".test_services_status_api_and_dom()",
-      "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L202"
     },
     {
       "id": "tests_test_ui_and_api_edge_cases_testuiandapiedgecases_test_static_assets_integrity",
@@ -1214,30 +1202,6 @@
       "source_location": "L1707"
     },
     {
-      "id": "core_engine_handle_sig",
-      "label": "handle_sig()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 24,
-      "community_name": "engine.py",
-      "file_type": "code",
-      "norm_label": "handle_sig()",
-      "source_file": "core/engine.py",
-      "source_location": "L1023"
-    },
-    {
-      "id": "core_engine_is_private_or_tunnel_target",
-      "label": "is_private_or_tunnel_target()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 24,
-      "community_name": "engine.py",
-      "file_type": "code",
-      "norm_label": "is_private_or_tunnel_target()",
-      "source_file": "core/engine.py",
-      "source_location": "L30"
-    },
-    {
       "id": "web_app_addlogentry",
       "label": "addLogEntry()",
       "_callable": true,
@@ -1598,6 +1562,18 @@
       "source_location": "L670"
     },
     {
+      "id": "core_web_server_get_services_status",
+      "label": "get_services_status()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 26,
+      "community_name": "get_network_interfaces_info",
+      "file_type": "code",
+      "norm_label": "get_services_status()",
+      "source_file": "core/web_server.py",
+      "source_location": "L285"
+    },
+    {
       "id": "core_web_server_is_ignored_interface",
       "label": "is_ignored_interface()",
       "_callable": true,
@@ -1668,6 +1644,234 @@
       "norm_label": ".test_ping_target_safety()",
       "source_file": "tests/test_network_interfaces.py",
       "source_location": "L17"
+    },
+    {
+      "id": "tests_test_ui_and_api_edge_cases_testuiandapiedgecases_test_services_status_api_and_dom",
+      "label": ".test_services_status_api_and_dom()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 26,
+      "community_name": "get_network_interfaces_info",
+      "file_type": "code",
+      "norm_label": ".test_services_status_api_and_dom()",
+      "source_file": "tests/test_ui_and_api_edge_cases.py",
+      "source_location": "L202"
+    },
+    {
+      "id": "agents_scripts_check_anti_patterns_check_file",
+      "label": "check_file()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 28,
+      "community_name": "web_server.py",
+      "file_type": "code",
+      "norm_label": "check_file()",
+      "source_file": ".agents/scripts/check-anti-patterns.py",
+      "source_location": "L28"
+    },
+    {
+      "id": "agents_scripts_check_anti_patterns_main",
+      "label": "main()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 28,
+      "community_name": "web_server.py",
+      "file_type": "code",
+      "norm_label": "main()",
+      "source_file": ".agents/scripts/check-anti-patterns.py",
+      "source_location": "L53"
+    },
+    {
+      "id": "agents_scripts_log_experience_get_next_number",
+      "label": "get_next_number()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 28,
+      "community_name": "web_server.py",
+      "file_type": "code",
+      "norm_label": "get_next_number()",
+      "source_file": ".agents/scripts/log-experience.py",
+      "source_location": "L17"
+    },
+    {
+      "id": "agents_scripts_log_experience_main",
+      "label": "main()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 28,
+      "community_name": "web_server.py",
+      "file_type": "code",
+      "norm_label": "main()",
+      "source_file": ".agents/scripts/log-experience.py",
+      "source_location": "L34"
+    },
+    {
+      "id": "agents_scripts_log_experience_slugify",
+      "label": "slugify()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 28,
+      "community_name": "web_server.py",
+      "file_type": "code",
+      "norm_label": "slugify()",
+      "source_file": ".agents/scripts/log-experience.py",
+      "source_location": "L27"
+    },
+    {
+      "id": "agents_scripts_session_state_load_state",
+      "label": "load_state()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 28,
+      "community_name": "web_server.py",
+      "file_type": "code",
+      "norm_label": "load_state()",
+      "source_file": ".agents/scripts/session-state.py",
+      "source_location": "L16"
+    },
+    {
+      "id": "agents_scripts_session_state_main",
+      "label": "main()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 28,
+      "community_name": "web_server.py",
+      "file_type": "code",
+      "norm_label": "main()",
+      "source_file": ".agents/scripts/session-state.py",
+      "source_location": "L71"
+    },
+    {
+      "id": "agents_scripts_session_state_save_state",
+      "label": "save_state()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 28,
+      "community_name": "web_server.py",
+      "file_type": "code",
+      "norm_label": "save_state()",
+      "source_file": ".agents/scripts/session-state.py",
+      "source_location": "L34"
+    },
+    {
+      "id": "agents_scripts_session_state_show_state",
+      "label": "show_state()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 28,
+      "community_name": "web_server.py",
+      "file_type": "code",
+      "norm_label": "show_state()",
+      "source_file": ".agents/scripts/session-state.py",
+      "source_location": "L42"
+    },
+    {
+      "id": "agents_scripts_syntax_check_check_syntax",
+      "label": "check_syntax()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 28,
+      "community_name": "web_server.py",
+      "file_type": "code",
+      "norm_label": "check_syntax()",
+      "source_file": ".agents/scripts/syntax-check.py",
+      "source_location": "L49"
+    },
+    {
+      "id": "agents_scripts_syntax_check_get_modified_py_files",
+      "label": "get_modified_py_files()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 28,
+      "community_name": "web_server.py",
+      "file_type": "code",
+      "norm_label": "get_modified_py_files()",
+      "source_file": ".agents/scripts/syntax-check.py",
+      "source_location": "L17"
+    },
+    {
+      "id": "agents_scripts_syntax_check_main",
+      "label": "main()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 28,
+      "community_name": "web_server.py",
+      "file_type": "code",
+      "norm_label": "main()",
+      "source_file": ".agents/scripts/syntax-check.py",
+      "source_location": "L61"
+    },
+    {
+      "id": "agents_scripts_verify_all_main",
+      "label": "main()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 28,
+      "community_name": "web_server.py",
+      "file_type": "code",
+      "norm_label": "main()",
+      "source_file": ".agents/scripts/verify-all.py",
+      "source_location": "L65"
+    },
+    {
+      "id": "agents_scripts_verify_all_run_step",
+      "label": "run_step()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 28,
+      "community_name": "web_server.py",
+      "file_type": "code",
+      "norm_label": "run_step()",
+      "source_file": ".agents/scripts/verify-all.py",
+      "source_location": "L16"
+    },
+    {
+      "id": "agents_scripts_verify_all_show_git_status",
+      "label": "show_git_status()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 28,
+      "community_name": "web_server.py",
+      "file_type": "code",
+      "norm_label": "show_git_status()",
+      "source_file": ".agents/scripts/verify-all.py",
+      "source_location": "L48"
+    },
+    {
+      "id": "agents_scripts_verify_all_validate_json_files",
+      "label": "validate_json_files()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 28,
+      "community_name": "web_server.py",
+      "file_type": "code",
+      "norm_label": "validate_json_files()",
+      "source_file": ".agents/scripts/verify-all.py",
+      "source_location": "L27"
+    },
+    {
+      "id": "core_engine_handle_sig",
+      "label": "handle_sig()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 28,
+      "community_name": "web_server.py",
+      "file_type": "code",
+      "norm_label": "handle_sig()",
+      "source_file": "core/engine.py",
+      "source_location": "L1023"
+    },
+    {
+      "id": "core_engine_is_private_or_tunnel_target",
+      "label": "is_private_or_tunnel_target()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 28,
+      "community_name": "web_server.py",
+      "file_type": "code",
+      "norm_label": "is_private_or_tunnel_target()",
+      "source_file": "core/engine.py",
+      "source_location": "L30"
     },
     {
       "id": "core_engine_sync_system_rules",
@@ -2162,138 +2366,6 @@
       "source_location": "L2031"
     },
     {
-      "id": "agents_scripts_verify_all_main",
-      "label": "main()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 30,
-      "community_name": "json",
-      "file_type": "code",
-      "norm_label": "main()",
-      "source_file": ".agents/scripts/verify-all.py",
-      "source_location": "L65"
-    },
-    {
-      "id": "agents_scripts_verify_all_run_step",
-      "label": "run_step()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 30,
-      "community_name": "json",
-      "file_type": "code",
-      "norm_label": "run_step()",
-      "source_file": ".agents/scripts/verify-all.py",
-      "source_location": "L16"
-    },
-    {
-      "id": "agents_scripts_verify_all_show_git_status",
-      "label": "show_git_status()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 30,
-      "community_name": "json",
-      "file_type": "code",
-      "norm_label": "show_git_status()",
-      "source_file": ".agents/scripts/verify-all.py",
-      "source_location": "L48"
-    },
-    {
-      "id": "agents_scripts_verify_all_validate_json_files",
-      "label": "validate_json_files()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 30,
-      "community_name": "json",
-      "file_type": "code",
-      "norm_label": "validate_json_files()",
-      "source_file": ".agents/scripts/verify-all.py",
-      "source_location": "L27"
-    },
-    {
-      "id": "agents_scripts_session_state_load_state",
-      "label": "load_state()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 31,
-      "community_name": "os",
-      "file_type": "code",
-      "norm_label": "load_state()",
-      "source_file": ".agents/scripts/session-state.py",
-      "source_location": "L16"
-    },
-    {
-      "id": "agents_scripts_session_state_main",
-      "label": "main()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 31,
-      "community_name": "os",
-      "file_type": "code",
-      "norm_label": "main()",
-      "source_file": ".agents/scripts/session-state.py",
-      "source_location": "L71"
-    },
-    {
-      "id": "agents_scripts_session_state_save_state",
-      "label": "save_state()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 31,
-      "community_name": "os",
-      "file_type": "code",
-      "norm_label": "save_state()",
-      "source_file": ".agents/scripts/session-state.py",
-      "source_location": "L34"
-    },
-    {
-      "id": "agents_scripts_session_state_show_state",
-      "label": "show_state()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 31,
-      "community_name": "os",
-      "file_type": "code",
-      "norm_label": "show_state()",
-      "source_file": ".agents/scripts/session-state.py",
-      "source_location": "L42"
-    },
-    {
-      "id": "agents_scripts_syntax_check_check_syntax",
-      "label": "check_syntax()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 34,
-      "community_name": "syntax-check.py",
-      "file_type": "code",
-      "norm_label": "check_syntax()",
-      "source_file": ".agents/scripts/syntax-check.py",
-      "source_location": "L49"
-    },
-    {
-      "id": "agents_scripts_syntax_check_get_modified_py_files",
-      "label": "get_modified_py_files()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 34,
-      "community_name": "syntax-check.py",
-      "file_type": "code",
-      "norm_label": "get_modified_py_files()",
-      "source_file": ".agents/scripts/syntax-check.py",
-      "source_location": "L17"
-    },
-    {
-      "id": "agents_scripts_syntax_check_main",
-      "label": "main()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 34,
-      "community_name": "syntax-check.py",
-      "file_type": "code",
-      "norm_label": "main()",
-      "source_file": ".agents/scripts/syntax-check.py",
-      "source_location": "L61"
-    },
-    {
       "id": "core_haproxy_parser_build_xforwarder_rule",
       "label": "_build_xforwarder_rule()",
       "_callable": true,
@@ -2388,66 +2460,6 @@
       "norm_label": ".test_parse_sample_haproxy_content()",
       "source_file": "tests/test_haproxy_parser.py",
       "source_location": "L80"
-    },
-    {
-      "id": "agents_scripts_check_anti_patterns_check_file",
-      "label": "check_file()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 4,
-      "community_name": "sys",
-      "file_type": "code",
-      "norm_label": "check_file()",
-      "source_file": ".agents/scripts/check-anti-patterns.py",
-      "source_location": "L28"
-    },
-    {
-      "id": "agents_scripts_check_anti_patterns_main",
-      "label": "main()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 4,
-      "community_name": "sys",
-      "file_type": "code",
-      "norm_label": "main()",
-      "source_file": ".agents/scripts/check-anti-patterns.py",
-      "source_location": "L53"
-    },
-    {
-      "id": "agents_scripts_log_experience_get_next_number",
-      "label": "get_next_number()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 4,
-      "community_name": "sys",
-      "file_type": "code",
-      "norm_label": "get_next_number()",
-      "source_file": ".agents/scripts/log-experience.py",
-      "source_location": "L17"
-    },
-    {
-      "id": "agents_scripts_log_experience_main",
-      "label": "main()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 4,
-      "community_name": "sys",
-      "file_type": "code",
-      "norm_label": "main()",
-      "source_file": ".agents/scripts/log-experience.py",
-      "source_location": "L34"
-    },
-    {
-      "id": "agents_scripts_log_experience_slugify",
-      "label": "slugify()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 4,
-      "community_name": "sys",
-      "file_type": "code",
-      "norm_label": "slugify()",
-      "source_file": ".agents/scripts/log-experience.py",
-      "source_location": "L27"
     },
     {
       "id": "core_engine_xforwarderengine_migrate_and_normalize_config",
@@ -4383,100 +4395,6 @@
       "source_location": "L12"
     },
     {
-      "id": "core_web_server_py_any",
-      "label": "Any",
-      "_origin": "ast",
-      "community": 15,
-      "community_name": "TestUIAndAPIEdgeCases",
-      "file_type": "code",
-      "norm_label": "any",
-      "source_file": "",
-      "source_location": ""
-    },
-    {
-      "id": "agents_experiences_006_host_subsystem_inspection_and_drag_drop_priorities_1_context_motivation",
-      "label": "1. Context & Motivation",
-      "_origin": "ast",
-      "community": 15,
-      "community_name": "TestUIAndAPIEdgeCases",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "1. context & motivation",
-      "source_file": ".agents/experiences/006-host-subsystem-inspection-and-drag-drop-priorities.md",
-      "source_location": "L9"
-    },
-    {
-      "id": "agents_experiences_006_host_subsystem_inspection_and_drag_drop_priorities_2_core_dynamics_low_resource_relay_safeguards",
-      "label": "2. Core Dynamics & Low-Resource Relay Safeguards",
-      "_origin": "ast",
-      "community": 15,
-      "community_name": "TestUIAndAPIEdgeCases",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "2. core dynamics & low-resource relay safeguards",
-      "source_file": ".agents/experiences/006-host-subsystem-inspection-and-drag-drop-priorities.md",
-      "source_location": "L15"
-    },
-    {
-      "id": "agents_experiences_006_host_subsystem_inspection_and_drag_drop_priorities_3_architecture_solution_implemented",
-      "label": "3. Architecture & Solution Implemented",
-      "_origin": "ast",
-      "community": 15,
-      "community_name": "TestUIAndAPIEdgeCases",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "3. architecture & solution implemented",
-      "source_file": ".agents/experiences/006-host-subsystem-inspection-and-drag-drop-priorities.md",
-      "source_location": "L25"
-    },
-    {
-      "id": "agents_experiences_006_host_subsystem_inspection_and_drag_drop_priorities_4_invariants_rules_for_ai_agents",
-      "label": "4. Invariants & Rules for AI Agents",
-      "_origin": "ast",
-      "community": 15,
-      "community_name": "TestUIAndAPIEdgeCases",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "4. invariants & rules for ai agents",
-      "source_file": ".agents/experiences/006-host-subsystem-inspection-and-drag-drop-priorities.md",
-      "source_location": "L38"
-    },
-    {
-      "id": "agents_experiences_006_host_subsystem_inspection_and_drag_drop_priorities_5_verification_testing",
-      "label": "5. Verification & Testing",
-      "_origin": "ast",
-      "community": 15,
-      "community_name": "TestUIAndAPIEdgeCases",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "5. verification & testing",
-      "source_file": ".agents/experiences/006-host-subsystem-inspection-and-drag-drop-priorities.md",
-      "source_location": "L43"
-    },
-    {
-      "id": "agents_experiences_006_host_subsystem_inspection_and_drag_drop_priorities_experience_006_host_subsystem_inspection_and_drag_drop_priority_reordering",
-      "label": "Experience 006: Host Subsystem Inspection and Drag-Drop Priority Reordering",
-      "_origin": "ast",
-      "community": 15,
-      "community_name": "TestUIAndAPIEdgeCases",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "experience 006: host subsystem inspection and drag-drop priority reordering",
-      "source_file": ".agents/experiences/006-host-subsystem-inspection-and-drag-drop-priorities.md",
-      "source_location": "L1"
-    },
-    {
-      "id": "core_web_server_rationale_286",
-      "label": "Inspects whether NFTables, HAProxy, and Nginx are installed and active on the\u2026",
-      "_origin": "ast",
-      "community": 15,
-      "community_name": "TestUIAndAPIEdgeCases",
-      "file_type": "rationale",
-      "norm_label": "inspects whether nftables, haproxy, and nginx are installed and active on the...",
-      "source_file": "core/web_server.py",
-      "source_location": "L286"
-    },
-    {
       "id": "tests_test_ui_and_api_edge_cases_rationale_120",
       "label": "Verifies that index.html, style.css, and app.js exist and meet architectural\u2026",
       "_origin": "ast",
@@ -4486,17 +4404,6 @@
       "norm_label": "verifies that index.html, style.css, and app.js exist and meet architectural...",
       "source_file": "tests/test_ui_and_api_edge_cases.py",
       "source_location": "L120"
-    },
-    {
-      "id": "tests_test_ui_and_api_edge_cases_rationale_203",
-      "label": "Verifies get_services_status API structure and DOM presence for NFTables,\u2026",
-      "_origin": "ast",
-      "community": 15,
-      "community_name": "TestUIAndAPIEdgeCases",
-      "file_type": "rationale",
-      "norm_label": "verifies get_services_status api structure and dom presence for nftables,...",
-      "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L203"
     },
     {
       "id": "tests_test_ui_and_api_edge_cases_rationale_247",
@@ -4552,6 +4459,17 @@
       "norm_label": "verifies that both rules list and modal support priority drag-and-drop...",
       "source_file": "tests/test_ui_and_api_edge_cases.py",
       "source_location": "L359"
+    },
+    {
+      "id": "tests_test_ui_and_api_edge_cases_rationale_396",
+      "label": "Verifies edge case handling for priority reordering: click isolation, rule\u2026",
+      "_origin": "ast",
+      "community": 15,
+      "community_name": "TestUIAndAPIEdgeCases",
+      "file_type": "rationale",
+      "norm_label": "verifies edge case handling for priority reordering: click isolation, rule...",
+      "source_file": "tests/test_ui_and_api_edge_cases.py",
+      "source_location": "L396"
     },
     {
       "id": "tests_test_ui_and_api_edge_cases_rationale_40",
@@ -5457,48 +5375,15 @@
       "source_location": "L8"
     },
     {
-      "id": "core_engine",
-      "label": "engine.py",
-      "_origin": "ast",
-      "community": 24,
-      "community_name": "engine.py",
-      "file_type": "code",
-      "norm_label": "engine.py",
-      "source_file": "core/engine.py",
-      "source_location": "L1"
-    },
-    {
-      "id": "core_engine_rationale_2",
-      "label": "XForwarder - Core Engine Daemon Monitors uplink destinations (IPv6 HAProxy vs\u2026",
-      "_origin": "ast",
-      "community": 24,
-      "community_name": "engine.py",
-      "file_type": "rationale",
-      "norm_label": "xforwarder - core engine daemon monitors uplink destinations (ipv6 haproxy vs...",
-      "source_file": "core/engine.py",
-      "source_location": "L2"
-    },
-    {
-      "id": "core_engine_rationale_31",
-      "label": "Returns True if the target IP is in RFC 1918 private, loopback, link-local, or\u2026",
-      "_origin": "ast",
-      "community": 24,
-      "community_name": "engine.py",
-      "file_type": "rationale",
-      "norm_label": "returns true if the target ip is in rfc 1918 private, loopback, link-local, or...",
-      "source_file": "core/engine.py",
-      "source_location": "L31"
-    },
-    {
-      "id": "tests_test_network_interfaces",
-      "label": "test_network_interfaces.py",
+      "id": "core_web_server_py_any",
+      "label": "Any",
       "_origin": "ast",
       "community": 26,
       "community_name": "get_network_interfaces_info",
       "file_type": "code",
-      "norm_label": "test_network_interfaces.py",
-      "source_file": "tests/test_network_interfaces.py",
-      "source_location": "L1"
+      "norm_label": "any",
+      "source_file": "",
+      "source_location": ""
     },
     {
       "id": "agents_rules_03_networking_and_kernel",
@@ -5514,6 +5399,78 @@
       "node_kind": "page",
       "norm_label": "03-networking-and-kernel.md",
       "source_file": ".agents/rules/03-networking-and-kernel.md",
+      "source_location": "L1"
+    },
+    {
+      "id": "agents_experiences_006_host_subsystem_inspection_and_drag_drop_priorities_1_context_motivation",
+      "label": "1. Context & Motivation",
+      "_origin": "ast",
+      "community": 26,
+      "community_name": "get_network_interfaces_info",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "1. context & motivation",
+      "source_file": ".agents/experiences/006-host-subsystem-inspection-and-drag-drop-priorities.md",
+      "source_location": "L9"
+    },
+    {
+      "id": "agents_experiences_006_host_subsystem_inspection_and_drag_drop_priorities_2_core_dynamics_low_resource_relay_safeguards",
+      "label": "2. Core Dynamics & Low-Resource Relay Safeguards",
+      "_origin": "ast",
+      "community": 26,
+      "community_name": "get_network_interfaces_info",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "2. core dynamics & low-resource relay safeguards",
+      "source_file": ".agents/experiences/006-host-subsystem-inspection-and-drag-drop-priorities.md",
+      "source_location": "L15"
+    },
+    {
+      "id": "agents_experiences_006_host_subsystem_inspection_and_drag_drop_priorities_3_architecture_solution_implemented",
+      "label": "3. Architecture & Solution Implemented",
+      "_origin": "ast",
+      "community": 26,
+      "community_name": "get_network_interfaces_info",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "3. architecture & solution implemented",
+      "source_file": ".agents/experiences/006-host-subsystem-inspection-and-drag-drop-priorities.md",
+      "source_location": "L25"
+    },
+    {
+      "id": "agents_experiences_006_host_subsystem_inspection_and_drag_drop_priorities_4_invariants_rules_for_ai_agents",
+      "label": "4. Invariants & Rules for AI Agents",
+      "_origin": "ast",
+      "community": 26,
+      "community_name": "get_network_interfaces_info",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "4. invariants & rules for ai agents",
+      "source_file": ".agents/experiences/006-host-subsystem-inspection-and-drag-drop-priorities.md",
+      "source_location": "L38"
+    },
+    {
+      "id": "agents_experiences_006_host_subsystem_inspection_and_drag_drop_priorities_5_verification_testing",
+      "label": "5. Verification & Testing",
+      "_origin": "ast",
+      "community": 26,
+      "community_name": "get_network_interfaces_info",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "5. verification & testing",
+      "source_file": ".agents/experiences/006-host-subsystem-inspection-and-drag-drop-priorities.md",
+      "source_location": "L43"
+    },
+    {
+      "id": "agents_experiences_006_host_subsystem_inspection_and_drag_drop_priorities_experience_006_host_subsystem_inspection_and_drag_drop_priority_reordering",
+      "label": "Experience 006: Host Subsystem Inspection and Drag-Drop Priority Reordering",
+      "_origin": "ast",
+      "community": 26,
+      "community_name": "get_network_interfaces_info",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "experience 006: host subsystem inspection and drag-drop priority reordering",
+      "source_file": ".agents/experiences/006-host-subsystem-inspection-and-drag-drop-priorities.md",
       "source_location": "L1"
     },
     {
@@ -5577,6 +5534,17 @@
       "source_location": "L6"
     },
     {
+      "id": "core_web_server_rationale_286",
+      "label": "Inspects whether NFTables, HAProxy, and Nginx are installed and active on the\u2026",
+      "_origin": "ast",
+      "community": 26,
+      "community_name": "get_network_interfaces_info",
+      "file_type": "rationale",
+      "norm_label": "inspects whether nftables, haproxy, and nginx are installed and active on the...",
+      "source_file": "core/web_server.py",
+      "source_location": "L286"
+    },
+    {
       "id": "core_web_server_rationale_461",
       "label": "Returns True if the interface is a system loopback, default kernel fallback\u2026",
       "_origin": "ast",
@@ -5608,6 +5576,17 @@
       "norm_label": "discovers all network interfaces, identifying server wan ips and all...",
       "source_file": "core/web_server.py",
       "source_location": "L497"
+    },
+    {
+      "id": "tests_test_ui_and_api_edge_cases_rationale_203",
+      "label": "Verifies get_services_status API structure and DOM presence for NFTables,\u2026",
+      "_origin": "ast",
+      "community": 26,
+      "community_name": "get_network_interfaces_info",
+      "file_type": "rationale",
+      "norm_label": "verifies get_services_status api structure and dom presence for nftables,...",
+      "source_file": "tests/test_ui_and_api_edge_cases.py",
+      "source_location": "L203"
     },
     {
       "id": "agents_rules_reverse_prompting",
@@ -5664,6 +5643,72 @@
       "source_location": "L8"
     },
     {
+      "id": "agents_scripts_check_anti_patterns",
+      "label": "check-anti-patterns.py",
+      "_origin": "ast",
+      "community": 28,
+      "community_name": "web_server.py",
+      "file_type": "code",
+      "norm_label": "check-anti-patterns.py",
+      "source_file": ".agents/scripts/check-anti-patterns.py",
+      "source_location": "L1"
+    },
+    {
+      "id": "agents_scripts_log_experience",
+      "label": "log-experience.py",
+      "_origin": "ast",
+      "community": 28,
+      "community_name": "web_server.py",
+      "file_type": "code",
+      "norm_label": "log-experience.py",
+      "source_file": ".agents/scripts/log-experience.py",
+      "source_location": "L1"
+    },
+    {
+      "id": "agents_scripts_session_state",
+      "label": "session-state.py",
+      "_origin": "ast",
+      "community": 28,
+      "community_name": "web_server.py",
+      "file_type": "code",
+      "norm_label": "session-state.py",
+      "source_file": ".agents/scripts/session-state.py",
+      "source_location": "L1"
+    },
+    {
+      "id": "agents_scripts_syntax_check",
+      "label": "syntax-check.py",
+      "_origin": "ast",
+      "community": 28,
+      "community_name": "web_server.py",
+      "file_type": "code",
+      "norm_label": "syntax-check.py",
+      "source_file": ".agents/scripts/syntax-check.py",
+      "source_location": "L1"
+    },
+    {
+      "id": "agents_scripts_verify_all",
+      "label": "verify-all.py",
+      "_origin": "ast",
+      "community": 28,
+      "community_name": "web_server.py",
+      "file_type": "code",
+      "norm_label": "verify-all.py",
+      "source_file": ".agents/scripts/verify-all.py",
+      "source_location": "L1"
+    },
+    {
+      "id": "core_engine",
+      "label": "engine.py",
+      "_origin": "ast",
+      "community": 28,
+      "community_name": "web_server.py",
+      "file_type": "code",
+      "norm_label": "engine.py",
+      "source_file": "core/engine.py",
+      "source_location": "L1"
+    },
+    {
       "id": "core_web_server",
       "label": "web_server.py",
       "_origin": "ast",
@@ -5672,6 +5717,50 @@
       "file_type": "code",
       "norm_label": "web_server.py",
       "source_file": "core/web_server.py",
+      "source_location": "L1"
+    },
+    {
+      "id": "tests_test_engine_probes",
+      "label": "test_engine_probes.py",
+      "_origin": "ast",
+      "community": 28,
+      "community_name": "web_server.py",
+      "file_type": "code",
+      "norm_label": "test_engine_probes.py",
+      "source_file": "tests/test_engine_probes.py",
+      "source_location": "L1"
+    },
+    {
+      "id": "tests_test_export_import",
+      "label": "test_export_import.py",
+      "_origin": "ast",
+      "community": 28,
+      "community_name": "web_server.py",
+      "file_type": "code",
+      "norm_label": "test_export_import.py",
+      "source_file": "tests/test_export_import.py",
+      "source_location": "L1"
+    },
+    {
+      "id": "tests_test_migration",
+      "label": "test_migration.py",
+      "_origin": "ast",
+      "community": 28,
+      "community_name": "web_server.py",
+      "file_type": "code",
+      "norm_label": "test_migration.py",
+      "source_file": "tests/test_migration.py",
+      "source_location": "L1"
+    },
+    {
+      "id": "tests_test_network_interfaces",
+      "label": "test_network_interfaces.py",
+      "_origin": "ast",
+      "community": 28,
+      "community_name": "web_server.py",
+      "file_type": "code",
+      "norm_label": "test_network_interfaces.py",
+      "source_file": "tests/test_network_interfaces.py",
       "source_location": "L1"
     },
     {
@@ -5695,6 +5784,83 @@
       "norm_label": "test_ui_and_api_edge_cases.py",
       "source_file": "tests/test_ui_and_api_edge_cases.py",
       "source_location": "L1"
+    },
+    {
+      "id": "agents_scripts_check_anti_patterns_rationale_2",
+      "label": "Anti-Pattern and Architectural Violation Scanner for XForwarder Enforces\u2026",
+      "_origin": "ast",
+      "community": 28,
+      "community_name": "web_server.py",
+      "file_type": "rationale",
+      "norm_label": "anti-pattern and architectural violation scanner for xforwarder enforces...",
+      "source_file": ".agents/scripts/check-anti-patterns.py",
+      "source_location": "L2"
+    },
+    {
+      "id": "agents_scripts_log_experience_rationale_2",
+      "label": "Experience Logger Script for XForwarder Scaffolds a new architectural\u2026",
+      "_origin": "ast",
+      "community": 28,
+      "community_name": "web_server.py",
+      "file_type": "rationale",
+      "norm_label": "experience logger script for xforwarder scaffolds a new architectural...",
+      "source_file": ".agents/scripts/log-experience.py",
+      "source_location": "L2"
+    },
+    {
+      "id": "agents_scripts_session_state_rationale_2",
+      "label": "CLI Manager for .agents/session-state.json Provides structured task context,\u2026",
+      "_origin": "ast",
+      "community": 28,
+      "community_name": "web_server.py",
+      "file_type": "rationale",
+      "norm_label": "cli manager for .agents/session-state.json provides structured task context,...",
+      "source_file": ".agents/scripts/session-state.py",
+      "source_location": "L2"
+    },
+    {
+      "id": "agents_scripts_syntax_check_rationale_2",
+      "label": "Antigravity Lifecycle Hook for Automatic Python Syntax Checking Handles\u2026",
+      "_origin": "ast",
+      "community": 28,
+      "community_name": "web_server.py",
+      "file_type": "rationale",
+      "norm_label": "antigravity lifecycle hook for automatic python syntax checking handles...",
+      "source_file": ".agents/scripts/syntax-check.py",
+      "source_location": "L2"
+    },
+    {
+      "id": "agents_scripts_verify_all_rationale_2",
+      "label": "Pre-Commit & Task Completion Verification Pipeline for XForwarder Runs syntax\u2026",
+      "_origin": "ast",
+      "community": 28,
+      "community_name": "web_server.py",
+      "file_type": "rationale",
+      "norm_label": "pre-commit & task completion verification pipeline for xforwarder runs syntax...",
+      "source_file": ".agents/scripts/verify-all.py",
+      "source_location": "L2"
+    },
+    {
+      "id": "core_engine_rationale_2",
+      "label": "XForwarder - Core Engine Daemon Monitors uplink destinations (IPv6 HAProxy vs\u2026",
+      "_origin": "ast",
+      "community": 28,
+      "community_name": "web_server.py",
+      "file_type": "rationale",
+      "norm_label": "xforwarder - core engine daemon monitors uplink destinations (ipv6 haproxy vs...",
+      "source_file": "core/engine.py",
+      "source_location": "L2"
+    },
+    {
+      "id": "core_engine_rationale_31",
+      "label": "Returns True if the target IP is in RFC 1918 private, loopback, link-local, or\u2026",
+      "_origin": "ast",
+      "community": 28,
+      "community_name": "web_server.py",
+      "file_type": "rationale",
+      "norm_label": "returns true if the target ip is in rfc 1918 private, loopback, link-local, or...",
+      "source_file": "core/engine.py",
+      "source_location": "L31"
     },
     {
       "id": "core_engine_rationale_989",
@@ -5761,6 +5927,17 @@
       "norm_label": "strictly validates if a destination target is a valid ipv4, ipv6, or rfc...",
       "source_file": "core/web_server.py",
       "source_location": "L819"
+    },
+    {
+      "id": "tests_test_migration_rationale_2",
+      "label": "Unit tests for XForwarder Configuration Migration & Backward Compatibility.\u2026",
+      "_origin": "ast",
+      "community": 28,
+      "community_name": "web_server.py",
+      "file_type": "rationale",
+      "norm_label": "unit tests for xforwarder configuration migration & backward compatibility....",
+      "source_file": "tests/test_migration.py",
+      "source_location": "L2"
     },
     {
       "id": "tests_test_security_rationale_2",
@@ -5860,94 +6037,6 @@
       "norm_label": "applies comprehensive owasp recommended security headers.",
       "source_file": "core/web_server.py",
       "source_location": "L951"
-    },
-    {
-      "id": "agents_scripts_verify_all",
-      "label": "verify-all.py",
-      "_origin": "ast",
-      "community": 30,
-      "community_name": "json",
-      "file_type": "code",
-      "norm_label": "verify-all.py",
-      "source_file": ".agents/scripts/verify-all.py",
-      "source_location": "L1"
-    },
-    {
-      "id": "tests_test_engine_probes",
-      "label": "test_engine_probes.py",
-      "_origin": "ast",
-      "community": 30,
-      "community_name": "json",
-      "file_type": "code",
-      "norm_label": "test_engine_probes.py",
-      "source_file": "tests/test_engine_probes.py",
-      "source_location": "L1"
-    },
-    {
-      "id": "tests_test_export_import",
-      "label": "test_export_import.py",
-      "_origin": "ast",
-      "community": 30,
-      "community_name": "json",
-      "file_type": "code",
-      "norm_label": "test_export_import.py",
-      "source_file": "tests/test_export_import.py",
-      "source_location": "L1"
-    },
-    {
-      "id": "tests_test_migration",
-      "label": "test_migration.py",
-      "_origin": "ast",
-      "community": 30,
-      "community_name": "json",
-      "file_type": "code",
-      "norm_label": "test_migration.py",
-      "source_file": "tests/test_migration.py",
-      "source_location": "L1"
-    },
-    {
-      "id": "agents_scripts_verify_all_rationale_2",
-      "label": "Pre-Commit & Task Completion Verification Pipeline for XForwarder Runs syntax\u2026",
-      "_origin": "ast",
-      "community": 30,
-      "community_name": "json",
-      "file_type": "rationale",
-      "norm_label": "pre-commit & task completion verification pipeline for xforwarder runs syntax...",
-      "source_file": ".agents/scripts/verify-all.py",
-      "source_location": "L2"
-    },
-    {
-      "id": "tests_test_migration_rationale_2",
-      "label": "Unit tests for XForwarder Configuration Migration & Backward Compatibility.\u2026",
-      "_origin": "ast",
-      "community": 30,
-      "community_name": "json",
-      "file_type": "rationale",
-      "norm_label": "unit tests for xforwarder configuration migration & backward compatibility....",
-      "source_file": "tests/test_migration.py",
-      "source_location": "L2"
-    },
-    {
-      "id": "agents_scripts_session_state",
-      "label": "session-state.py",
-      "_origin": "ast",
-      "community": 31,
-      "community_name": "os",
-      "file_type": "code",
-      "norm_label": "session-state.py",
-      "source_file": ".agents/scripts/session-state.py",
-      "source_location": "L1"
-    },
-    {
-      "id": "agents_scripts_session_state_rationale_2",
-      "label": "CLI Manager for .agents/session-state.json Provides structured task context,\u2026",
-      "_origin": "ast",
-      "community": 31,
-      "community_name": "os",
-      "file_type": "rationale",
-      "norm_label": "cli manager for .agents/session-state.json provides structured task context,...",
-      "source_file": ".agents/scripts/session-state.py",
-      "source_location": "L2"
     },
     {
       "id": "agents_rules_02_python_core_standards",
@@ -6072,28 +6161,6 @@
       "norm_label": "zero-collision invariant checks",
       "source_file": ".agents/skills/xfwd-ops/SKILL.md",
       "source_location": "L81"
-    },
-    {
-      "id": "agents_scripts_syntax_check",
-      "label": "syntax-check.py",
-      "_origin": "ast",
-      "community": 34,
-      "community_name": "syntax-check.py",
-      "file_type": "code",
-      "norm_label": "syntax-check.py",
-      "source_file": ".agents/scripts/syntax-check.py",
-      "source_location": "L1"
-    },
-    {
-      "id": "agents_scripts_syntax_check_rationale_2",
-      "label": "Antigravity Lifecycle Hook for Automatic Python Syntax Checking Handles\u2026",
-      "_origin": "ast",
-      "community": 34,
-      "community_name": "syntax-check.py",
-      "file_type": "rationale",
-      "norm_label": "antigravity lifecycle hook for automatic python syntax checking handles...",
-      "source_file": ".agents/scripts/syntax-check.py",
-      "source_location": "L2"
     },
     {
       "id": "agents_rules_session_handoff",
@@ -6330,50 +6397,6 @@
       "norm_label": "xforwarder master architecture constitution",
       "source_file": ".agents/AGENTS.md",
       "source_location": "L1"
-    },
-    {
-      "id": "agents_scripts_check_anti_patterns",
-      "label": "check-anti-patterns.py",
-      "_origin": "ast",
-      "community": 4,
-      "community_name": "sys",
-      "file_type": "code",
-      "norm_label": "check-anti-patterns.py",
-      "source_file": ".agents/scripts/check-anti-patterns.py",
-      "source_location": "L1"
-    },
-    {
-      "id": "agents_scripts_log_experience",
-      "label": "log-experience.py",
-      "_origin": "ast",
-      "community": 4,
-      "community_name": "sys",
-      "file_type": "code",
-      "norm_label": "log-experience.py",
-      "source_file": ".agents/scripts/log-experience.py",
-      "source_location": "L1"
-    },
-    {
-      "id": "agents_scripts_check_anti_patterns_rationale_2",
-      "label": "Anti-Pattern and Architectural Violation Scanner for XForwarder Enforces\u2026",
-      "_origin": "ast",
-      "community": 4,
-      "community_name": "sys",
-      "file_type": "rationale",
-      "norm_label": "anti-pattern and architectural violation scanner for xforwarder enforces...",
-      "source_file": ".agents/scripts/check-anti-patterns.py",
-      "source_location": "L2"
-    },
-    {
-      "id": "agents_scripts_log_experience_rationale_2",
-      "label": "Experience Logger Script for XForwarder Scaffolds a new architectural\u2026",
-      "_origin": "ast",
-      "community": 4,
-      "community_name": "sys",
-      "file_type": "rationale",
-      "norm_label": "experience logger script for xforwarder scaffolds a new architectural...",
-      "source_file": ".agents/scripts/log-experience.py",
-      "source_location": "L2"
     },
     {
       "id": "readme",
@@ -7923,50 +7946,14 @@
       "source_location": "L39"
     },
     {
-      "id": "ipaddress",
-      "label": "ipaddress",
+      "id": "datetime",
+      "label": "datetime",
       "_origin": "semantic",
-      "community": 24,
-      "community_name": "engine.py",
+      "community": 28,
+      "community_name": "web_server.py",
       "external": true,
       "file_type": "concept",
-      "norm_label": "ipaddress",
-      "source_file": "",
-      "type": "external"
-    },
-    {
-      "id": "shutil",
-      "label": "shutil",
-      "_origin": "semantic",
-      "community": 24,
-      "community_name": "engine.py",
-      "external": true,
-      "file_type": "concept",
-      "norm_label": "shutil",
-      "source_file": "",
-      "type": "external"
-    },
-    {
-      "id": "signal",
-      "label": "signal",
-      "_origin": "semantic",
-      "community": 24,
-      "community_name": "engine.py",
-      "external": true,
-      "file_type": "concept",
-      "norm_label": "signal",
-      "source_file": "",
-      "type": "external"
-    },
-    {
-      "id": "socket",
-      "label": "socket",
-      "_origin": "semantic",
-      "community": 24,
-      "community_name": "engine.py",
-      "external": true,
-      "file_type": "concept",
-      "norm_label": "socket",
+      "norm_label": "datetime",
       "source_file": "",
       "type": "external"
     },
@@ -8007,6 +7994,66 @@
       "type": "external"
     },
     {
+      "id": "ipaddress",
+      "label": "ipaddress",
+      "_origin": "semantic",
+      "community": 28,
+      "community_name": "web_server.py",
+      "external": true,
+      "file_type": "concept",
+      "norm_label": "ipaddress",
+      "source_file": "",
+      "type": "external"
+    },
+    {
+      "id": "json",
+      "label": "json",
+      "_origin": "semantic",
+      "community": 28,
+      "community_name": "web_server.py",
+      "external": true,
+      "file_type": "concept",
+      "norm_label": "json",
+      "source_file": "",
+      "type": "external"
+    },
+    {
+      "id": "os",
+      "label": "os",
+      "_origin": "semantic",
+      "community": 28,
+      "community_name": "web_server.py",
+      "external": true,
+      "file_type": "concept",
+      "norm_label": "os",
+      "source_file": "",
+      "type": "external"
+    },
+    {
+      "id": "py_compile",
+      "label": "py_compile",
+      "_origin": "semantic",
+      "community": 28,
+      "community_name": "web_server.py",
+      "external": true,
+      "file_type": "concept",
+      "norm_label": "py_compile",
+      "source_file": "",
+      "type": "external"
+    },
+    {
+      "id": "re",
+      "label": "re",
+      "_origin": "semantic",
+      "community": 28,
+      "community_name": "web_server.py",
+      "external": true,
+      "file_type": "concept",
+      "norm_label": "re",
+      "source_file": "",
+      "type": "external"
+    },
+    {
       "id": "secrets",
       "label": "secrets",
       "_origin": "semantic",
@@ -8019,6 +8066,42 @@
       "type": "external"
     },
     {
+      "id": "shutil",
+      "label": "shutil",
+      "_origin": "semantic",
+      "community": 28,
+      "community_name": "web_server.py",
+      "external": true,
+      "file_type": "concept",
+      "norm_label": "shutil",
+      "source_file": "",
+      "type": "external"
+    },
+    {
+      "id": "signal",
+      "label": "signal",
+      "_origin": "semantic",
+      "community": 28,
+      "community_name": "web_server.py",
+      "external": true,
+      "file_type": "concept",
+      "norm_label": "signal",
+      "source_file": "",
+      "type": "external"
+    },
+    {
+      "id": "socket",
+      "label": "socket",
+      "_origin": "semantic",
+      "community": 28,
+      "community_name": "web_server.py",
+      "external": true,
+      "file_type": "concept",
+      "norm_label": "socket",
+      "source_file": "",
+      "type": "external"
+    },
+    {
       "id": "ssl",
       "label": "ssl",
       "_origin": "semantic",
@@ -8027,6 +8110,42 @@
       "external": true,
       "file_type": "concept",
       "norm_label": "ssl",
+      "source_file": "",
+      "type": "external"
+    },
+    {
+      "id": "subprocess",
+      "label": "subprocess",
+      "_origin": "semantic",
+      "community": 28,
+      "community_name": "web_server.py",
+      "external": true,
+      "file_type": "concept",
+      "norm_label": "subprocess",
+      "source_file": "",
+      "type": "external"
+    },
+    {
+      "id": "sys",
+      "label": "sys",
+      "_origin": "semantic",
+      "community": 28,
+      "community_name": "web_server.py",
+      "external": true,
+      "file_type": "concept",
+      "norm_label": "sys",
+      "source_file": "",
+      "type": "external"
+    },
+    {
+      "id": "tempfile",
+      "label": "tempfile",
+      "_origin": "semantic",
+      "community": 28,
+      "community_name": "web_server.py",
+      "external": true,
+      "file_type": "concept",
+      "norm_label": "tempfile",
       "source_file": "",
       "type": "external"
     },
@@ -8051,6 +8170,42 @@
       "external": true,
       "file_type": "concept",
       "norm_label": "time",
+      "source_file": "",
+      "type": "external"
+    },
+    {
+      "id": "typing",
+      "label": "typing",
+      "_origin": "semantic",
+      "community": 28,
+      "community_name": "web_server.py",
+      "external": true,
+      "file_type": "concept",
+      "norm_label": "typing",
+      "source_file": "",
+      "type": "external"
+    },
+    {
+      "id": "unittest",
+      "label": "unittest",
+      "_origin": "semantic",
+      "community": 28,
+      "community_name": "web_server.py",
+      "external": true,
+      "file_type": "concept",
+      "norm_label": "unittest",
+      "source_file": "",
+      "type": "external"
+    },
+    {
+      "id": "unittest_mock",
+      "label": "unittest_mock",
+      "_origin": "semantic",
+      "community": 28,
+      "community_name": "web_server.py",
+      "external": true,
+      "file_type": "concept",
+      "norm_label": "unittest_mock",
       "source_file": "",
       "type": "external"
     },
@@ -8091,102 +8246,6 @@
       "type": "external"
     },
     {
-      "id": "json",
-      "label": "json",
-      "_origin": "semantic",
-      "community": 30,
-      "community_name": "json",
-      "external": true,
-      "file_type": "concept",
-      "norm_label": "json",
-      "source_file": "",
-      "type": "external"
-    },
-    {
-      "id": "subprocess",
-      "label": "subprocess",
-      "_origin": "semantic",
-      "community": 30,
-      "community_name": "json",
-      "external": true,
-      "file_type": "concept",
-      "norm_label": "subprocess",
-      "source_file": "",
-      "type": "external"
-    },
-    {
-      "id": "tempfile",
-      "label": "tempfile",
-      "_origin": "semantic",
-      "community": 30,
-      "community_name": "json",
-      "external": true,
-      "file_type": "concept",
-      "norm_label": "tempfile",
-      "source_file": "",
-      "type": "external"
-    },
-    {
-      "id": "unittest",
-      "label": "unittest",
-      "_origin": "semantic",
-      "community": 30,
-      "community_name": "json",
-      "external": true,
-      "file_type": "concept",
-      "norm_label": "unittest",
-      "source_file": "",
-      "type": "external"
-    },
-    {
-      "id": "unittest_mock",
-      "label": "unittest_mock",
-      "_origin": "semantic",
-      "community": 30,
-      "community_name": "json",
-      "external": true,
-      "file_type": "concept",
-      "norm_label": "unittest_mock",
-      "source_file": "",
-      "type": "external"
-    },
-    {
-      "id": "os",
-      "label": "os",
-      "_origin": "semantic",
-      "community": 31,
-      "community_name": "os",
-      "external": true,
-      "file_type": "concept",
-      "norm_label": "os",
-      "source_file": "",
-      "type": "external"
-    },
-    {
-      "id": "py_compile",
-      "label": "py_compile",
-      "_origin": "semantic",
-      "community": 34,
-      "community_name": "syntax-check.py",
-      "external": true,
-      "file_type": "concept",
-      "norm_label": "py_compile",
-      "source_file": "",
-      "type": "external"
-    },
-    {
-      "id": "typing",
-      "label": "typing",
-      "_origin": "semantic",
-      "community": 34,
-      "community_name": "syntax-check.py",
-      "external": true,
-      "file_type": "concept",
-      "norm_label": "typing",
-      "source_file": "",
-      "type": "external"
-    },
-    {
       "id": "glob",
       "label": "glob",
       "_origin": "semantic",
@@ -8207,42 +8266,6 @@
       "external": true,
       "file_type": "concept",
       "norm_label": "logging",
-      "source_file": "",
-      "type": "external"
-    },
-    {
-      "id": "datetime",
-      "label": "datetime",
-      "_origin": "semantic",
-      "community": 4,
-      "community_name": "sys",
-      "external": true,
-      "file_type": "concept",
-      "norm_label": "datetime",
-      "source_file": "",
-      "type": "external"
-    },
-    {
-      "id": "re",
-      "label": "re",
-      "_origin": "semantic",
-      "community": 4,
-      "community_name": "sys",
-      "external": true,
-      "file_type": "concept",
-      "norm_label": "re",
-      "source_file": "",
-      "type": "external"
-    },
-    {
-      "id": "sys",
-      "label": "sys",
-      "_origin": "semantic",
-      "community": 4,
-      "community_name": "sys",
-      "external": true,
-      "file_type": "concept",
-      "norm_label": "sys",
       "source_file": "",
       "type": "external"
     }
@@ -10322,6 +10345,18 @@
       "context": "call",
       "source_file": "tests/test_ui_and_api_edge_cases.py",
       "source_location": "L265",
+      "weight": 1.0
+    },
+    {
+      "source": "tests_test_ui_and_api_edge_cases_testuiandapiedgecases_test_drag_and_drop_edge_cases_and_reorder_logic",
+      "target": "core_web_server_validate_rule",
+      "relation": "calls",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "call",
+      "source_file": "tests/test_ui_and_api_edge_cases.py",
+      "source_location": "L426",
       "weight": 1.0
     },
     {
@@ -20194,6 +20229,17 @@
     },
     {
       "source": "tests_test_ui_and_api_edge_cases_testuiandapiedgecases",
+      "target": "tests_test_ui_and_api_edge_cases_testuiandapiedgecases_test_drag_and_drop_edge_cases_and_reorder_logic",
+      "relation": "method",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "tests/test_ui_and_api_edge_cases.py",
+      "source_location": "L395",
+      "weight": 1.0
+    },
+    {
+      "source": "tests_test_ui_and_api_edge_cases_testuiandapiedgecases",
       "target": "tests_test_ui_and_api_edge_cases_testuiandapiedgecases_test_validate_rule_empty_destinations_rejected",
       "relation": "method",
       "_origin": "ast",
@@ -21026,6 +21072,17 @@
       "confidence_score": 1.0,
       "source_file": "tests/test_ui_and_api_edge_cases.py",
       "source_location": "L359",
+      "weight": 1.0
+    },
+    {
+      "source": "tests_test_ui_and_api_edge_cases_rationale_396",
+      "target": "tests_test_ui_and_api_edge_cases_testuiandapiedgecases_test_drag_and_drop_edge_cases_and_reorder_logic",
+      "relation": "rationale_for",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "tests/test_ui_and_api_edge_cases.py",
+      "source_location": "L396",
       "weight": 1.0
     },
     {

@@ -4,30 +4,30 @@
   "graph": {},
   "nodes": [
     {
-      "id": "core_web_server_xforwarderwebserver",
-      "label": "XForwarderWebServer",
-      "_callable": true,
-      "_callable_class": true,
-      "_origin": "ast",
-      "community": 0,
-      "community_name": "TestXForwarderSecurity",
-      "file_type": "code",
-      "norm_label": "xforwarderwebserver",
-      "source_file": "core/web_server.py",
-      "source_location": "L1576"
-    },
-    {
       "id": "tests_test_security_testxforwardersecurity",
       "label": "TestXForwarderSecurity",
       "_callable": true,
       "_callable_class": true,
       "_origin": "ast",
       "community": 0,
-      "community_name": "TestXForwarderSecurity",
+      "community_name": "validate_rule",
       "file_type": "code",
       "norm_label": "testxforwardersecurity",
       "source_file": "tests/test_security.py",
       "source_location": "L29"
+    },
+    {
+      "id": "core_web_server_xforwarderwebserver",
+      "label": "XForwarderWebServer",
+      "_callable": true,
+      "_callable_class": true,
+      "_origin": "ast",
+      "community": 15,
+      "community_name": "TestUIAndAPIEdgeCases",
+      "file_type": "code",
+      "norm_label": "xforwarderwebserver",
+      "source_file": "core/web_server.py",
+      "source_location": "L1576"
     },
     {
       "id": "tests_test_ui_and_api_edge_cases_testuiandapiedgecases",
@@ -134,52 +134,76 @@
       "source_location": "L23"
     },
     {
+      "id": "core_web_server_check_rate_limit",
+      "label": "check_rate_limit()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 0,
+      "community_name": "validate_rule",
+      "file_type": "code",
+      "norm_label": "check_rate_limit()",
+      "source_file": "core/web_server.py",
+      "source_location": "L760"
+    },
+    {
+      "id": "core_web_server_is_valid_target",
+      "label": "is_valid_target()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 0,
+      "community_name": "validate_rule",
+      "file_type": "code",
+      "norm_label": "is_valid_target()",
+      "source_file": "core/web_server.py",
+      "source_location": "L818"
+    },
+    {
+      "id": "core_web_server_record_failed_login",
+      "label": "record_failed_login()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 0,
+      "community_name": "validate_rule",
+      "file_type": "code",
+      "norm_label": "record_failed_login()",
+      "source_file": "core/web_server.py",
+      "source_location": "L781"
+    },
+    {
       "id": "core_web_server_reset_rate_limit",
       "label": "reset_rate_limit()",
       "_callable": true,
       "_origin": "ast",
       "community": 0,
-      "community_name": "TestXForwarderSecurity",
+      "community_name": "validate_rule",
       "file_type": "code",
       "norm_label": "reset_rate_limit()",
       "source_file": "core/web_server.py",
       "source_location": "L809"
     },
     {
-      "id": "core_web_server_xforwarderwebserver_init",
-      "label": ".__init__()",
+      "id": "core_web_server_validate_rule",
+      "label": "validate_rule()",
       "_callable": true,
       "_origin": "ast",
       "community": 0,
-      "community_name": "TestXForwarderSecurity",
+      "community_name": "validate_rule",
       "file_type": "code",
-      "norm_label": ".__init__()",
+      "norm_label": "validate_rule()",
       "source_file": "core/web_server.py",
-      "source_location": "L1577"
+      "source_location": "L843"
     },
     {
-      "id": "core_web_server_xforwarderwebserver_start",
-      "label": ".start()",
+      "id": "core_web_server_verify_password",
+      "label": "verify_password()",
       "_callable": true,
       "_origin": "ast",
       "community": 0,
-      "community_name": "TestXForwarderSecurity",
+      "community_name": "validate_rule",
       "file_type": "code",
-      "norm_label": ".start()",
+      "norm_label": "verify_password()",
       "source_file": "core/web_server.py",
-      "source_location": "L1588"
-    },
-    {
-      "id": "core_web_server_xforwarderwebserver_stop",
-      "label": ".stop()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 0,
-      "community_name": "TestXForwarderSecurity",
-      "file_type": "code",
-      "norm_label": ".stop()",
-      "source_file": "core/web_server.py",
-      "source_location": "L1627"
+      "source_location": "L730"
     },
     {
       "id": "tests_test_security_testxforwardersecurity_setup",
@@ -187,7 +211,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 0,
-      "community_name": "TestXForwarderSecurity",
+      "community_name": "validate_rule",
       "file_type": "code",
       "norm_label": ".setup()",
       "source_file": "tests/test_security.py",
@@ -199,7 +223,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 0,
-      "community_name": "TestXForwarderSecurity",
+      "community_name": "validate_rule",
       "file_type": "code",
       "norm_label": ".teardown()",
       "source_file": "tests/test_security.py",
@@ -211,7 +235,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 0,
-      "community_name": "TestXForwarderSecurity",
+      "community_name": "validate_rule",
       "file_type": "code",
       "norm_label": ".test_brute_force_rate_limiting_and_lockout()",
       "source_file": "tests/test_security.py",
@@ -223,7 +247,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 0,
-      "community_name": "TestXForwarderSecurity",
+      "community_name": "validate_rule",
       "file_type": "code",
       "norm_label": ".test_destination_target_validation()",
       "source_file": "tests/test_security.py",
@@ -235,7 +259,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 0,
-      "community_name": "TestXForwarderSecurity",
+      "community_name": "validate_rule",
       "file_type": "code",
       "norm_label": ".test_legacy_sha256_backward_compatibility_and_rehash_flag()",
       "source_file": "tests/test_security.py",
@@ -247,7 +271,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 0,
-      "community_name": "TestXForwarderSecurity",
+      "community_name": "validate_rule",
       "file_type": "code",
       "norm_label": ".test_rule_validation_rejects_injections()",
       "source_file": "tests/test_security.py",
@@ -259,7 +283,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 0,
-      "community_name": "TestXForwarderSecurity",
+      "community_name": "validate_rule",
       "file_type": "code",
       "norm_label": ".test_validate_rule_multi_priority_cascading()",
       "source_file": "tests/test_security.py",
@@ -271,7 +295,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 0,
-      "community_name": "TestXForwarderSecurity",
+      "community_name": "validate_rule",
       "file_type": "code",
       "norm_label": ".test_validate_rule_port_boundary_edge_cases()",
       "source_file": "tests/test_security.py",
@@ -283,35 +307,11 @@
       "_callable": true,
       "_origin": "ast",
       "community": 0,
-      "community_name": "TestXForwarderSecurity",
+      "community_name": "validate_rule",
       "file_type": "code",
       "norm_label": ".test_verify_password_corrupt_and_empty_inputs()",
       "source_file": "tests/test_security.py",
       "source_location": "L145"
-    },
-    {
-      "id": "tests_test_security_testxforwardersecurity_test_web_server_ssl_initialization",
-      "label": ".test_web_server_ssl_initialization()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 0,
-      "community_name": "TestXForwarderSecurity",
-      "file_type": "code",
-      "norm_label": ".test_web_server_ssl_initialization()",
-      "source_file": "tests/test_security.py",
-      "source_location": "L215"
-    },
-    {
-      "id": "tests_test_ui_and_api_edge_cases_testuiandapiedgecases_test_ssl_web_server_graceful_fallback",
-      "label": ".test_ssl_web_server_graceful_fallback()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 0,
-      "community_name": "TestXForwarderSecurity",
-      "file_type": "code",
-      "norm_label": ".test_ssl_web_server_graceful_fallback()",
-      "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L109"
     },
     {
       "id": "web_app_closeimportmodal",
@@ -323,7 +323,7 @@
       "file_type": "code",
       "norm_label": "closeimportmodal()",
       "source_file": "web/app.js",
-      "source_location": "L2316"
+      "source_location": "L2348"
     },
     {
       "id": "web_app_closemodal",
@@ -335,7 +335,7 @@
       "file_type": "code",
       "norm_label": "closemodal()",
       "source_file": "web/app.js",
-      "source_location": "L1863"
+      "source_location": "L1895"
     },
     {
       "id": "web_app_closesecuritymodal",
@@ -359,7 +359,7 @@
       "file_type": "code",
       "norm_label": "closesyncerrormodal()",
       "source_file": "web/app.js",
-      "source_location": "L1375"
+      "source_location": "L1407"
     },
     {
       "id": "web_app_evaluatepasswordstrength",
@@ -383,7 +383,7 @@
       "file_type": "code",
       "norm_label": "getpriosubtitle()",
       "source_file": "web/app.js",
-      "source_location": "L1546"
+      "source_location": "L1578"
     },
     {
       "id": "web_app_handlepathdragend",
@@ -395,7 +395,7 @@
       "file_type": "code",
       "norm_label": "handlepathdragend()",
       "source_file": "web/app.js",
-      "source_location": "L1304"
+      "source_location": "L1336"
     },
     {
       "id": "web_app_handlepathdragleave",
@@ -407,7 +407,7 @@
       "file_type": "code",
       "norm_label": "handlepathdragleave()",
       "source_file": "web/app.js",
-      "source_location": "L1297"
+      "source_location": "L1329"
     },
     {
       "id": "web_app_handlepathdragover",
@@ -419,7 +419,7 @@
       "file_type": "code",
       "norm_label": "handlepathdragover()",
       "source_file": "web/app.js",
-      "source_location": "L1285"
+      "source_location": "L1317"
     },
     {
       "id": "web_app_handlepathdragstart",
@@ -431,7 +431,7 @@
       "file_type": "code",
       "norm_label": "handlepathdragstart()",
       "source_file": "web/app.js",
-      "source_location": "L1269"
+      "source_location": "L1301"
     },
     {
       "id": "web_app_openimportmodal",
@@ -443,7 +443,7 @@
       "file_type": "code",
       "norm_label": "openimportmodal()",
       "source_file": "web/app.js",
-      "source_location": "L2300"
+      "source_location": "L2332"
     },
     {
       "id": "web_app_openmobilesidebar",
@@ -455,7 +455,7 @@
       "file_type": "code",
       "norm_label": "openmobilesidebar()",
       "source_file": "web/app.js",
-      "source_location": "L2080"
+      "source_location": "L2112"
     },
     {
       "id": "web_app_setupcapslockdetection",
@@ -480,6 +480,54 @@
       "norm_label": "setuppasswordtoggle()",
       "source_file": "web/app.js",
       "source_location": "L292"
+    },
+    {
+      "id": "core_web_server_xforwarderwebserver_init",
+      "label": ".__init__()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 15,
+      "community_name": "TestUIAndAPIEdgeCases",
+      "file_type": "code",
+      "norm_label": ".__init__()",
+      "source_file": "core/web_server.py",
+      "source_location": "L1577"
+    },
+    {
+      "id": "core_web_server_xforwarderwebserver_start",
+      "label": ".start()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 15,
+      "community_name": "TestUIAndAPIEdgeCases",
+      "file_type": "code",
+      "norm_label": ".start()",
+      "source_file": "core/web_server.py",
+      "source_location": "L1588"
+    },
+    {
+      "id": "core_web_server_xforwarderwebserver_stop",
+      "label": ".stop()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 15,
+      "community_name": "TestUIAndAPIEdgeCases",
+      "file_type": "code",
+      "norm_label": ".stop()",
+      "source_file": "core/web_server.py",
+      "source_location": "L1627"
+    },
+    {
+      "id": "tests_test_security_testxforwardersecurity_test_web_server_ssl_initialization",
+      "label": ".test_web_server_ssl_initialization()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 15,
+      "community_name": "TestUIAndAPIEdgeCases",
+      "file_type": "code",
+      "norm_label": ".test_web_server_ssl_initialization()",
+      "source_file": "tests/test_security.py",
+      "source_location": "L215"
     },
     {
       "id": "tests_test_ui_and_api_edge_cases_testuiandapiedgecases_test_api_test_target_http_endpoint",
@@ -540,6 +588,18 @@
       "norm_label": ".test_frontend_js_latency_and_priority_shortening()",
       "source_file": "tests/test_ui_and_api_edge_cases.py",
       "source_location": "L345"
+    },
+    {
+      "id": "tests_test_ui_and_api_edge_cases_testuiandapiedgecases_test_ssl_web_server_graceful_fallback",
+      "label": ".test_ssl_web_server_graceful_fallback()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 15,
+      "community_name": "TestUIAndAPIEdgeCases",
+      "file_type": "code",
+      "norm_label": ".test_ssl_web_server_graceful_fallback()",
+      "source_file": "tests/test_ui_and_api_edge_cases.py",
+      "source_location": "L109"
     },
     {
       "id": "tests_test_ui_and_api_edge_cases_testuiandapiedgecases_test_static_assets_integrity",
@@ -1067,7 +1127,7 @@
       "file_type": "code",
       "norm_label": "adddestinationrow()",
       "source_file": "web/app.js",
-      "source_location": "L1803"
+      "source_location": "L1835"
     },
     {
       "id": "web_app_editrule",
@@ -1079,7 +1139,7 @@
       "file_type": "code",
       "norm_label": "editrule()",
       "source_file": "web/app.js",
-      "source_location": "L1870"
+      "source_location": "L1902"
     },
     {
       "id": "web_app_handlemodalpriodragend",
@@ -1091,7 +1151,7 @@
       "file_type": "code",
       "norm_label": "handlemodalpriodragend()",
       "source_file": "web/app.js",
-      "source_location": "L1601"
+      "source_location": "L1633"
     },
     {
       "id": "web_app_handlemodalpriodragleave",
@@ -1103,7 +1163,7 @@
       "file_type": "code",
       "norm_label": "handlemodalpriodragleave()",
       "source_file": "web/app.js",
-      "source_location": "L1594"
+      "source_location": "L1626"
     },
     {
       "id": "web_app_handlemodalpriodragover",
@@ -1115,7 +1175,7 @@
       "file_type": "code",
       "norm_label": "handlemodalpriodragover()",
       "source_file": "web/app.js",
-      "source_location": "L1584"
+      "source_location": "L1616"
     },
     {
       "id": "web_app_handlemodalpriodragstart",
@@ -1127,7 +1187,7 @@
       "file_type": "code",
       "norm_label": "handlemodalpriodragstart()",
       "source_file": "web/app.js",
-      "source_location": "L1567"
+      "source_location": "L1599"
     },
     {
       "id": "web_app_handlemodalpriodrop",
@@ -1139,7 +1199,7 @@
       "file_type": "code",
       "norm_label": "handlemodalpriodrop()",
       "source_file": "web/app.js",
-      "source_location": "L1609"
+      "source_location": "L1641"
     },
     {
       "id": "web_app_movedestinationrow",
@@ -1151,7 +1211,7 @@
       "file_type": "code",
       "norm_label": "movedestinationrow()",
       "source_file": "web/app.js",
-      "source_location": "L1553"
+      "source_location": "L1585"
     },
     {
       "id": "web_app_removedestinationrow",
@@ -1163,7 +1223,7 @@
       "file_type": "code",
       "norm_label": "removedestinationrow()",
       "source_file": "web/app.js",
-      "source_location": "L1817"
+      "source_location": "L1849"
     },
     {
       "id": "web_app_renderdestinationrow",
@@ -1175,7 +1235,7 @@
       "file_type": "code",
       "norm_label": "renderdestinationrow()",
       "source_file": "web/app.js",
-      "source_location": "L1627"
+      "source_location": "L1659"
     },
     {
       "id": "web_app_renderdestinationslist",
@@ -1187,7 +1247,7 @@
       "file_type": "code",
       "norm_label": "renderdestinationslist()",
       "source_file": "web/app.js",
-      "source_location": "L1788"
+      "source_location": "L1820"
     },
     {
       "id": "web_app_syncdestinationsfromdom",
@@ -1199,7 +1259,115 @@
       "file_type": "code",
       "norm_label": "syncdestinationsfromdom()",
       "source_file": "web/app.js",
-      "source_location": "L1707"
+      "source_location": "L1739"
+    },
+    {
+      "id": "web_app_applytheme",
+      "label": "applyTheme()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 24,
+      "community_name": "showToast",
+      "file_type": "code",
+      "norm_label": "applytheme()",
+      "source_file": "web/app.js",
+      "source_location": "L2028"
+    },
+    {
+      "id": "web_app_copyiptoclipboard",
+      "label": "copyIpToClipboard()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 24,
+      "community_name": "showToast",
+      "file_type": "code",
+      "norm_label": "copyiptoclipboard()",
+      "source_file": "web/app.js",
+      "source_location": "L1059"
+    },
+    {
+      "id": "web_app_copytext",
+      "label": "copyText()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 24,
+      "community_name": "showToast",
+      "file_type": "code",
+      "norm_label": "copytext()",
+      "source_file": "web/app.js",
+      "source_location": "L99"
+    },
+    {
+      "id": "web_app_fallbackcopy",
+      "label": "fallbackCopy()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 24,
+      "community_name": "showToast",
+      "file_type": "code",
+      "norm_label": "fallbackcopy()",
+      "source_file": "web/app.js",
+      "source_location": "L110"
+    },
+    {
+      "id": "web_app_handleexportconfig",
+      "label": "handleExportConfig()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 24,
+      "community_name": "showToast",
+      "file_type": "code",
+      "norm_label": "handleexportconfig()",
+      "source_file": "web/app.js",
+      "source_location": "L2275"
+    },
+    {
+      "id": "web_app_inittheme",
+      "label": "initTheme()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 24,
+      "community_name": "showToast",
+      "file_type": "code",
+      "norm_label": "inittheme()",
+      "source_file": "web/app.js",
+      "source_location": "L2023"
+    },
+    {
+      "id": "web_app_showtoast",
+      "label": "showToast()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 24,
+      "community_name": "showToast",
+      "file_type": "code",
+      "norm_label": "showtoast()",
+      "source_file": "web/app.js",
+      "source_location": "L86"
+    },
+    {
+      "id": "web_app_startlockouttimer",
+      "label": "startLockoutTimer()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 24,
+      "community_name": "showToast",
+      "file_type": "code",
+      "norm_label": "startlockouttimer()",
+      "source_file": "web/app.js",
+      "source_location": "L319"
+    },
+    {
+      "id": "web_app_toggletheme",
+      "label": "toggleTheme()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 24,
+      "community_name": "showToast",
+      "file_type": "code",
+      "norm_label": "toggletheme()",
+      "source_file": "web/app.js",
+      "source_location": "L2043"
     },
     {
       "id": "web_app_addlogentry",
@@ -1211,19 +1379,7 @@
       "file_type": "code",
       "norm_label": "addlogentry()",
       "source_file": "web/app.js",
-      "source_location": "L2502"
-    },
-    {
-      "id": "web_app_applytheme",
-      "label": "applyTheme()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 25,
-      "community_name": "fetchStatus",
-      "file_type": "code",
-      "norm_label": "applytheme()",
-      "source_file": "web/app.js",
-      "source_location": "L1996"
+      "source_location": "L2534"
     },
     {
       "id": "web_app_askconfirm",
@@ -1238,30 +1394,6 @@
       "source_location": "L165"
     },
     {
-      "id": "web_app_copyiptoclipboard",
-      "label": "copyIpToClipboard()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 25,
-      "community_name": "fetchStatus",
-      "file_type": "code",
-      "norm_label": "copyiptoclipboard()",
-      "source_file": "web/app.js",
-      "source_location": "L1027"
-    },
-    {
-      "id": "web_app_copytext",
-      "label": "copyText()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 25,
-      "community_name": "fetchStatus",
-      "file_type": "code",
-      "norm_label": "copytext()",
-      "source_file": "web/app.js",
-      "source_location": "L99"
-    },
-    {
       "id": "web_app_deleterule",
       "label": "deleteRule()",
       "_callable": true,
@@ -1271,7 +1403,7 @@
       "file_type": "code",
       "norm_label": "deleterule()",
       "source_file": "web/app.js",
-      "source_location": "L1893"
+      "source_location": "L1925"
     },
     {
       "id": "web_app_escapehtml",
@@ -1284,18 +1416,6 @@
       "norm_label": "escapehtml()",
       "source_file": "web/app.js",
       "source_location": "L154"
-    },
-    {
-      "id": "web_app_fallbackcopy",
-      "label": "fallbackCopy()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 25,
-      "community_name": "fetchStatus",
-      "file_type": "code",
-      "norm_label": "fallbackcopy()",
-      "source_file": "web/app.js",
-      "source_location": "L110"
     },
     {
       "id": "web_app_fetchstatus",
@@ -1322,6 +1442,18 @@
       "source_location": "L136"
     },
     {
+      "id": "web_app_formatengineversion",
+      "label": "formatEngineVersion()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 25,
+      "community_name": "fetchStatus",
+      "file_type": "code",
+      "norm_label": "formatengineversion()",
+      "source_file": "web/app.js",
+      "source_location": "L694"
+    },
+    {
       "id": "web_app_formatlatencybadge",
       "label": "formatLatencyBadge()",
       "_callable": true,
@@ -1343,19 +1475,7 @@
       "file_type": "code",
       "norm_label": "getpriotagclass()",
       "source_file": "web/app.js",
-      "source_location": "L1537"
-    },
-    {
-      "id": "web_app_handleexportconfig",
-      "label": "handleExportConfig()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 25,
-      "community_name": "fetchStatus",
-      "file_type": "code",
-      "norm_label": "handleexportconfig()",
-      "source_file": "web/app.js",
-      "source_location": "L2243"
+      "source_location": "L1569"
     },
     {
       "id": "web_app_handleoverridechange",
@@ -1367,7 +1487,7 @@
       "file_type": "code",
       "norm_label": "handleoverridechange()",
       "source_file": "web/app.js",
-      "source_location": "L1411"
+      "source_location": "L1443"
     },
     {
       "id": "web_app_handlepathdrop",
@@ -1379,19 +1499,7 @@
       "file_type": "code",
       "norm_label": "handlepathdrop()",
       "source_file": "web/app.js",
-      "source_location": "L1312"
-    },
-    {
-      "id": "web_app_inittheme",
-      "label": "initTheme()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 25,
-      "community_name": "fetchStatus",
-      "file_type": "code",
-      "norm_label": "inittheme()",
-      "source_file": "web/app.js",
-      "source_location": "L1991"
+      "source_location": "L1344"
     },
     {
       "id": "web_app_parseandvalidateimportjson",
@@ -1403,7 +1511,7 @@
       "file_type": "code",
       "norm_label": "parseandvalidateimportjson()",
       "source_file": "web/app.js",
-      "source_location": "L2333"
+      "source_location": "L2365"
     },
     {
       "id": "web_app_rendernetworktopology",
@@ -1415,7 +1523,7 @@
       "file_type": "code",
       "norm_label": "rendernetworktopology()",
       "source_file": "web/app.js",
-      "source_location": "L903"
+      "source_location": "L935"
     },
     {
       "id": "web_app_renderrules",
@@ -1427,7 +1535,7 @@
       "file_type": "code",
       "norm_label": "renderrules()",
       "source_file": "web/app.js",
-      "source_location": "L1042"
+      "source_location": "L1074"
     },
     {
       "id": "web_app_renderservicesstatus",
@@ -1439,7 +1547,7 @@
       "file_type": "code",
       "norm_label": "renderservicesstatus()",
       "source_file": "web/app.js",
-      "source_location": "L694"
+      "source_location": "L702"
     },
     {
       "id": "web_app_renderstats",
@@ -1475,31 +1583,7 @@
       "file_type": "code",
       "norm_label": "showsyncerroralert()",
       "source_file": "web/app.js",
-      "source_location": "L1369"
-    },
-    {
-      "id": "web_app_showtoast",
-      "label": "showToast()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 25,
-      "community_name": "fetchStatus",
-      "file_type": "code",
-      "norm_label": "showtoast()",
-      "source_file": "web/app.js",
-      "source_location": "L86"
-    },
-    {
-      "id": "web_app_startlockouttimer",
-      "label": "startLockoutTimer()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 25,
-      "community_name": "fetchStatus",
-      "file_type": "code",
-      "norm_label": "startlockouttimer()",
-      "source_file": "web/app.js",
-      "source_location": "L319"
+      "source_location": "L1401"
     },
     {
       "id": "web_app_testmodaldestination",
@@ -1511,19 +1595,7 @@
       "file_type": "code",
       "norm_label": "testmodaldestination()",
       "source_file": "web/app.js",
-      "source_location": "L1732"
-    },
-    {
-      "id": "web_app_toggletheme",
-      "label": "toggleTheme()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 25,
-      "community_name": "fetchStatus",
-      "file_type": "code",
-      "norm_label": "toggletheme()",
-      "source_file": "web/app.js",
-      "source_location": "L2011"
+      "source_location": "L1764"
     },
     {
       "id": "web_app_trackfailoverevents",
@@ -1658,210 +1730,6 @@
       "source_location": "L202"
     },
     {
-      "id": "agents_scripts_check_anti_patterns_check_file",
-      "label": "check_file()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 28,
-      "community_name": "web_server.py",
-      "file_type": "code",
-      "norm_label": "check_file()",
-      "source_file": ".agents/scripts/check-anti-patterns.py",
-      "source_location": "L28"
-    },
-    {
-      "id": "agents_scripts_check_anti_patterns_main",
-      "label": "main()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 28,
-      "community_name": "web_server.py",
-      "file_type": "code",
-      "norm_label": "main()",
-      "source_file": ".agents/scripts/check-anti-patterns.py",
-      "source_location": "L53"
-    },
-    {
-      "id": "agents_scripts_log_experience_get_next_number",
-      "label": "get_next_number()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 28,
-      "community_name": "web_server.py",
-      "file_type": "code",
-      "norm_label": "get_next_number()",
-      "source_file": ".agents/scripts/log-experience.py",
-      "source_location": "L17"
-    },
-    {
-      "id": "agents_scripts_log_experience_main",
-      "label": "main()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 28,
-      "community_name": "web_server.py",
-      "file_type": "code",
-      "norm_label": "main()",
-      "source_file": ".agents/scripts/log-experience.py",
-      "source_location": "L34"
-    },
-    {
-      "id": "agents_scripts_log_experience_slugify",
-      "label": "slugify()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 28,
-      "community_name": "web_server.py",
-      "file_type": "code",
-      "norm_label": "slugify()",
-      "source_file": ".agents/scripts/log-experience.py",
-      "source_location": "L27"
-    },
-    {
-      "id": "agents_scripts_session_state_load_state",
-      "label": "load_state()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 28,
-      "community_name": "web_server.py",
-      "file_type": "code",
-      "norm_label": "load_state()",
-      "source_file": ".agents/scripts/session-state.py",
-      "source_location": "L16"
-    },
-    {
-      "id": "agents_scripts_session_state_main",
-      "label": "main()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 28,
-      "community_name": "web_server.py",
-      "file_type": "code",
-      "norm_label": "main()",
-      "source_file": ".agents/scripts/session-state.py",
-      "source_location": "L71"
-    },
-    {
-      "id": "agents_scripts_session_state_save_state",
-      "label": "save_state()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 28,
-      "community_name": "web_server.py",
-      "file_type": "code",
-      "norm_label": "save_state()",
-      "source_file": ".agents/scripts/session-state.py",
-      "source_location": "L34"
-    },
-    {
-      "id": "agents_scripts_session_state_show_state",
-      "label": "show_state()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 28,
-      "community_name": "web_server.py",
-      "file_type": "code",
-      "norm_label": "show_state()",
-      "source_file": ".agents/scripts/session-state.py",
-      "source_location": "L42"
-    },
-    {
-      "id": "agents_scripts_syntax_check_check_syntax",
-      "label": "check_syntax()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 28,
-      "community_name": "web_server.py",
-      "file_type": "code",
-      "norm_label": "check_syntax()",
-      "source_file": ".agents/scripts/syntax-check.py",
-      "source_location": "L49"
-    },
-    {
-      "id": "agents_scripts_syntax_check_get_modified_py_files",
-      "label": "get_modified_py_files()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 28,
-      "community_name": "web_server.py",
-      "file_type": "code",
-      "norm_label": "get_modified_py_files()",
-      "source_file": ".agents/scripts/syntax-check.py",
-      "source_location": "L17"
-    },
-    {
-      "id": "agents_scripts_syntax_check_main",
-      "label": "main()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 28,
-      "community_name": "web_server.py",
-      "file_type": "code",
-      "norm_label": "main()",
-      "source_file": ".agents/scripts/syntax-check.py",
-      "source_location": "L61"
-    },
-    {
-      "id": "agents_scripts_verify_all_main",
-      "label": "main()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 28,
-      "community_name": "web_server.py",
-      "file_type": "code",
-      "norm_label": "main()",
-      "source_file": ".agents/scripts/verify-all.py",
-      "source_location": "L65"
-    },
-    {
-      "id": "agents_scripts_verify_all_run_step",
-      "label": "run_step()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 28,
-      "community_name": "web_server.py",
-      "file_type": "code",
-      "norm_label": "run_step()",
-      "source_file": ".agents/scripts/verify-all.py",
-      "source_location": "L16"
-    },
-    {
-      "id": "agents_scripts_verify_all_show_git_status",
-      "label": "show_git_status()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 28,
-      "community_name": "web_server.py",
-      "file_type": "code",
-      "norm_label": "show_git_status()",
-      "source_file": ".agents/scripts/verify-all.py",
-      "source_location": "L48"
-    },
-    {
-      "id": "agents_scripts_verify_all_validate_json_files",
-      "label": "validate_json_files()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 28,
-      "community_name": "web_server.py",
-      "file_type": "code",
-      "norm_label": "validate_json_files()",
-      "source_file": ".agents/scripts/verify-all.py",
-      "source_location": "L27"
-    },
-    {
-      "id": "core_engine_handle_sig",
-      "label": "handle_sig()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 28,
-      "community_name": "web_server.py",
-      "file_type": "code",
-      "norm_label": "handle_sig()",
-      "source_file": "core/engine.py",
-      "source_location": "L1023"
-    },
-    {
       "id": "core_engine_is_private_or_tunnel_target",
       "label": "is_private_or_tunnel_target()",
       "_callable": true,
@@ -1884,66 +1752,6 @@
       "norm_label": "sync_system_rules()",
       "source_file": "core/engine.py",
       "source_location": "L988"
-    },
-    {
-      "id": "core_web_server_check_rate_limit",
-      "label": "check_rate_limit()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 28,
-      "community_name": "web_server.py",
-      "file_type": "code",
-      "norm_label": "check_rate_limit()",
-      "source_file": "core/web_server.py",
-      "source_location": "L760"
-    },
-    {
-      "id": "core_web_server_is_valid_target",
-      "label": "is_valid_target()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 28,
-      "community_name": "web_server.py",
-      "file_type": "code",
-      "norm_label": "is_valid_target()",
-      "source_file": "core/web_server.py",
-      "source_location": "L818"
-    },
-    {
-      "id": "core_web_server_record_failed_login",
-      "label": "record_failed_login()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 28,
-      "community_name": "web_server.py",
-      "file_type": "code",
-      "norm_label": "record_failed_login()",
-      "source_file": "core/web_server.py",
-      "source_location": "L781"
-    },
-    {
-      "id": "core_web_server_validate_rule",
-      "label": "validate_rule()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 28,
-      "community_name": "web_server.py",
-      "file_type": "code",
-      "norm_label": "validate_rule()",
-      "source_file": "core/web_server.py",
-      "source_location": "L843"
-    },
-    {
-      "id": "core_web_server_verify_password",
-      "label": "verify_password()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 28,
-      "community_name": "web_server.py",
-      "file_type": "code",
-      "norm_label": "verify_password()",
-      "source_file": "core/web_server.py",
-      "source_location": "L730"
     },
     {
       "id": "core_web_server_export_config_data",
@@ -2327,7 +2135,7 @@
       "file_type": "code",
       "norm_label": "closemobilesidebar()",
       "source_file": "web/app.js",
-      "source_location": "L2085"
+      "source_location": "L2117"
     },
     {
       "id": "web_app_showdashboard",
@@ -2363,7 +2171,139 @@
       "file_type": "code",
       "norm_label": "switchsection()",
       "source_file": "web/app.js",
-      "source_location": "L2031"
+      "source_location": "L2063"
+    },
+    {
+      "id": "agents_scripts_session_state_load_state",
+      "label": "load_state()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 30,
+      "community_name": "json",
+      "file_type": "code",
+      "norm_label": "load_state()",
+      "source_file": ".agents/scripts/session-state.py",
+      "source_location": "L16"
+    },
+    {
+      "id": "agents_scripts_session_state_main",
+      "label": "main()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 30,
+      "community_name": "json",
+      "file_type": "code",
+      "norm_label": "main()",
+      "source_file": ".agents/scripts/session-state.py",
+      "source_location": "L71"
+    },
+    {
+      "id": "agents_scripts_session_state_save_state",
+      "label": "save_state()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 30,
+      "community_name": "json",
+      "file_type": "code",
+      "norm_label": "save_state()",
+      "source_file": ".agents/scripts/session-state.py",
+      "source_location": "L34"
+    },
+    {
+      "id": "agents_scripts_session_state_show_state",
+      "label": "show_state()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 30,
+      "community_name": "json",
+      "file_type": "code",
+      "norm_label": "show_state()",
+      "source_file": ".agents/scripts/session-state.py",
+      "source_location": "L42"
+    },
+    {
+      "id": "agents_scripts_syntax_check_check_syntax",
+      "label": "check_syntax()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 31,
+      "community_name": "syntax-check.py",
+      "file_type": "code",
+      "norm_label": "check_syntax()",
+      "source_file": ".agents/scripts/syntax-check.py",
+      "source_location": "L49"
+    },
+    {
+      "id": "agents_scripts_syntax_check_get_modified_py_files",
+      "label": "get_modified_py_files()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 31,
+      "community_name": "syntax-check.py",
+      "file_type": "code",
+      "norm_label": "get_modified_py_files()",
+      "source_file": ".agents/scripts/syntax-check.py",
+      "source_location": "L17"
+    },
+    {
+      "id": "agents_scripts_syntax_check_main",
+      "label": "main()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 31,
+      "community_name": "syntax-check.py",
+      "file_type": "code",
+      "norm_label": "main()",
+      "source_file": ".agents/scripts/syntax-check.py",
+      "source_location": "L61"
+    },
+    {
+      "id": "agents_scripts_verify_all_main",
+      "label": "main()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 34,
+      "community_name": "verify-all.py",
+      "file_type": "code",
+      "norm_label": "main()",
+      "source_file": ".agents/scripts/verify-all.py",
+      "source_location": "L65"
+    },
+    {
+      "id": "agents_scripts_verify_all_run_step",
+      "label": "run_step()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 34,
+      "community_name": "verify-all.py",
+      "file_type": "code",
+      "norm_label": "run_step()",
+      "source_file": ".agents/scripts/verify-all.py",
+      "source_location": "L16"
+    },
+    {
+      "id": "agents_scripts_verify_all_show_git_status",
+      "label": "show_git_status()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 34,
+      "community_name": "verify-all.py",
+      "file_type": "code",
+      "norm_label": "show_git_status()",
+      "source_file": ".agents/scripts/verify-all.py",
+      "source_location": "L48"
+    },
+    {
+      "id": "agents_scripts_verify_all_validate_json_files",
+      "label": "validate_json_files()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 34,
+      "community_name": "verify-all.py",
+      "file_type": "code",
+      "norm_label": "validate_json_files()",
+      "source_file": ".agents/scripts/verify-all.py",
+      "source_location": "L27"
     },
     {
       "id": "core_haproxy_parser_build_xforwarder_rule",
@@ -2460,6 +2400,78 @@
       "norm_label": ".test_parse_sample_haproxy_content()",
       "source_file": "tests/test_haproxy_parser.py",
       "source_location": "L80"
+    },
+    {
+      "id": "agents_scripts_check_anti_patterns_check_file",
+      "label": "check_file()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 4,
+      "community_name": "os",
+      "file_type": "code",
+      "norm_label": "check_file()",
+      "source_file": ".agents/scripts/check-anti-patterns.py",
+      "source_location": "L28"
+    },
+    {
+      "id": "agents_scripts_check_anti_patterns_main",
+      "label": "main()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 4,
+      "community_name": "os",
+      "file_type": "code",
+      "norm_label": "main()",
+      "source_file": ".agents/scripts/check-anti-patterns.py",
+      "source_location": "L53"
+    },
+    {
+      "id": "agents_scripts_log_experience_get_next_number",
+      "label": "get_next_number()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 4,
+      "community_name": "os",
+      "file_type": "code",
+      "norm_label": "get_next_number()",
+      "source_file": ".agents/scripts/log-experience.py",
+      "source_location": "L17"
+    },
+    {
+      "id": "agents_scripts_log_experience_main",
+      "label": "main()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 4,
+      "community_name": "os",
+      "file_type": "code",
+      "norm_label": "main()",
+      "source_file": ".agents/scripts/log-experience.py",
+      "source_location": "L34"
+    },
+    {
+      "id": "agents_scripts_log_experience_slugify",
+      "label": "slugify()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 4,
+      "community_name": "os",
+      "file_type": "code",
+      "norm_label": "slugify()",
+      "source_file": ".agents/scripts/log-experience.py",
+      "source_location": "L27"
+    },
+    {
+      "id": "core_engine_handle_sig",
+      "label": "handle_sig()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 4,
+      "community_name": "os",
+      "file_type": "code",
+      "norm_label": "handle_sig()",
+      "source_file": "core/engine.py",
+      "source_location": "L1023"
     },
     {
       "id": "core_engine_xforwarderengine_migrate_and_normalize_config",
@@ -2594,22 +2606,77 @@
       "source_location": "L38"
     },
     {
+      "id": "tests_test_security",
+      "label": "test_security.py",
+      "_origin": "ast",
+      "community": 0,
+      "community_name": "validate_rule",
+      "file_type": "code",
+      "norm_label": "test_security.py",
+      "source_file": "tests/test_security.py",
+      "source_location": "L1"
+    },
+    {
+      "id": "core_web_server_rationale_731",
+      "label": "Verifies password against stored hash using constant-time comparison. Returns:\u2026",
+      "_origin": "ast",
+      "community": 0,
+      "community_name": "validate_rule",
+      "file_type": "rationale",
+      "norm_label": "verifies password against stored hash using constant-time comparison. returns:...",
+      "source_file": "core/web_server.py",
+      "source_location": "L731"
+    },
+    {
+      "id": "core_web_server_rationale_761",
+      "label": "Checks if client IP is currently rate-limited. Returns (is_locked,\u2026",
+      "_origin": "ast",
+      "community": 0,
+      "community_name": "validate_rule",
+      "file_type": "rationale",
+      "norm_label": "checks if client ip is currently rate-limited. returns (is_locked,...",
+      "source_file": "core/web_server.py",
+      "source_location": "L761"
+    },
+    {
+      "id": "core_web_server_rationale_782",
+      "label": "Records a failed login attempt and calculates lockout status.",
+      "_origin": "ast",
+      "community": 0,
+      "community_name": "validate_rule",
+      "file_type": "rationale",
+      "norm_label": "records a failed login attempt and calculates lockout status.",
+      "source_file": "core/web_server.py",
+      "source_location": "L782"
+    },
+    {
       "id": "core_web_server_rationale_810",
       "label": "Clears failed login counter on successful authentication.",
       "_origin": "ast",
       "community": 0,
-      "community_name": "TestXForwarderSecurity",
+      "community_name": "validate_rule",
       "file_type": "rationale",
       "norm_label": "clears failed login counter on successful authentication.",
       "source_file": "core/web_server.py",
       "source_location": "L810"
     },
     {
+      "id": "core_web_server_rationale_819",
+      "label": "Strictly validates if a destination target is a valid IPv4, IPv6, or RFC\u2026",
+      "_origin": "ast",
+      "community": 0,
+      "community_name": "validate_rule",
+      "file_type": "rationale",
+      "norm_label": "strictly validates if a destination target is a valid ipv4, ipv6, or rfc...",
+      "source_file": "core/web_server.py",
+      "source_location": "L819"
+    },
+    {
       "id": "tests_test_security_rationale_101",
       "label": "Verifies that IPv4, IPv6, and domain names are accepted, while injection\u2026",
       "_origin": "ast",
       "community": 0,
-      "community_name": "TestXForwarderSecurity",
+      "community_name": "validate_rule",
       "file_type": "rationale",
       "norm_label": "verifies that ipv4, ipv6, and domain names are accepted, while injection...",
       "source_file": "tests/test_security.py",
@@ -2620,7 +2687,7 @@
       "label": "Verifies that validate_rule blocks command injection hazards.",
       "_origin": "ast",
       "community": 0,
-      "community_name": "TestXForwarderSecurity",
+      "community_name": "validate_rule",
       "file_type": "rationale",
       "norm_label": "verifies that validate_rule blocks command injection hazards.",
       "source_file": "tests/test_security.py",
@@ -2631,7 +2698,7 @@
       "label": "Verifies that verify_password handles malformed, empty, or None inputs\u2026",
       "_origin": "ast",
       "community": 0,
-      "community_name": "TestXForwarderSecurity",
+      "community_name": "validate_rule",
       "file_type": "rationale",
       "norm_label": "verifies that verify_password handles malformed, empty, or none inputs...",
       "source_file": "tests/test_security.py",
@@ -2642,7 +2709,7 @@
       "label": "Verifies boundary port constraints (1-65535) and protocol validation.",
       "_origin": "ast",
       "community": 0,
-      "community_name": "TestXForwarderSecurity",
+      "community_name": "validate_rule",
       "file_type": "rationale",
       "norm_label": "verifies boundary port constraints (1-65535) and protocol validation.",
       "source_file": "tests/test_security.py",
@@ -2653,29 +2720,29 @@
       "label": "Verifies that arbitrary positive priority numbers (N-tier failover) are\u2026",
       "_origin": "ast",
       "community": 0,
-      "community_name": "TestXForwarderSecurity",
+      "community_name": "validate_rule",
       "file_type": "rationale",
       "norm_label": "verifies that arbitrary positive priority numbers (n-tier failover) are...",
       "source_file": "tests/test_security.py",
       "source_location": "L190"
     },
     {
-      "id": "tests_test_security_rationale_216",
-      "label": "Verifies that XForwarderWebServer parses ssl_cert and ssl_key attributes.",
+      "id": "tests_test_security_rationale_2",
+      "label": "Unit tests for XForwarder Web & Authentication Security. Tests PBKDF2 hashing,\u2026",
       "_origin": "ast",
       "community": 0,
-      "community_name": "TestXForwarderSecurity",
+      "community_name": "validate_rule",
       "file_type": "rationale",
-      "norm_label": "verifies that xforwarderwebserver parses ssl_cert and ssl_key attributes.",
+      "norm_label": "unit tests for xforwarder web & authentication security. tests pbkdf2 hashing,...",
       "source_file": "tests/test_security.py",
-      "source_location": "L216"
+      "source_location": "L2"
     },
     {
       "id": "tests_test_security_rationale_58",
       "label": "Verifies that legacy plain SHA-256 hashes are verified and flagged for auto-\u2026",
       "_origin": "ast",
       "community": 0,
-      "community_name": "TestXForwarderSecurity",
+      "community_name": "validate_rule",
       "file_type": "rationale",
       "norm_label": "verifies that legacy plain sha-256 hashes are verified and flagged for auto-...",
       "source_file": "tests/test_security.py",
@@ -2686,22 +2753,11 @@
       "label": "Verifies that 5 failed attempts trigger IP lockout.",
       "_origin": "ast",
       "community": 0,
-      "community_name": "TestXForwarderSecurity",
+      "community_name": "validate_rule",
       "file_type": "rationale",
       "norm_label": "verifies that 5 failed attempts trigger ip lockout.",
       "source_file": "tests/test_security.py",
       "source_location": "L71"
-    },
-    {
-      "id": "tests_test_ui_and_api_edge_cases_rationale_110",
-      "label": "Verifies that XForwarderWebServer handles missing SSL certs without crashing.",
-      "_origin": "ast",
-      "community": 0,
-      "community_name": "TestXForwarderSecurity",
-      "file_type": "rationale",
-      "norm_label": "verifies that xforwarderwebserver handles missing ssl certs without crashing.",
-      "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L110"
     },
     {
       "id": "web_app",
@@ -2745,7 +2801,7 @@
       "file_type": "code",
       "norm_label": "btnadddestination",
       "source_file": "web/app.js",
-      "source_location": "L1827"
+      "source_location": "L1859"
     },
     {
       "id": "web_app_btncancelimportmodal",
@@ -2756,7 +2812,7 @@
       "file_type": "code",
       "norm_label": "btncancelimportmodal",
       "source_file": "web/app.js",
-      "source_location": "L2284"
+      "source_location": "L2316"
     },
     {
       "id": "web_app_btncancelmodal",
@@ -2789,7 +2845,7 @@
       "file_type": "code",
       "norm_label": "btnclearlogs",
       "source_file": "web/app.js",
-      "source_location": "L2498"
+      "source_location": "L2530"
     },
     {
       "id": "web_app_btnclearsearch",
@@ -2811,7 +2867,7 @@
       "file_type": "code",
       "norm_label": "btncloseimportmodal",
       "source_file": "web/app.js",
-      "source_location": "L2283"
+      "source_location": "L2315"
     },
     {
       "id": "web_app_btnclosemodal",
@@ -2844,7 +2900,7 @@
       "file_type": "code",
       "norm_label": "btnclosesidebar",
       "source_file": "web/app.js",
-      "source_location": "L2078"
+      "source_location": "L2110"
     },
     {
       "id": "web_app_btnconfirmimport",
@@ -2855,7 +2911,7 @@
       "file_type": "code",
       "norm_label": "btnconfirmimport",
       "source_file": "web/app.js",
-      "source_location": "L2296"
+      "source_location": "L2328"
     },
     {
       "id": "web_app_btndismissimportbanner",
@@ -2888,7 +2944,7 @@
       "file_type": "code",
       "norm_label": "btndismisssyncerror",
       "source_file": "web/app.js",
-      "source_location": "L1366"
+      "source_location": "L1398"
     },
     {
       "id": "web_app_btnexportconfig",
@@ -2899,7 +2955,7 @@
       "file_type": "code",
       "norm_label": "btnexportconfig",
       "source_file": "web/app.js",
-      "source_location": "L2273"
+      "source_location": "L2305"
     },
     {
       "id": "web_app_btnexportconfigsec",
@@ -2910,7 +2966,7 @@
       "file_type": "code",
       "norm_label": "btnexportconfigsec",
       "source_file": "web/app.js",
-      "source_location": "L2276"
+      "source_location": "L2308"
     },
     {
       "id": "web_app_btnheaderthemetoggle",
@@ -2921,7 +2977,7 @@
       "file_type": "code",
       "norm_label": "btnheaderthemetoggle",
       "source_file": "web/app.js",
-      "source_location": "L2021"
+      "source_location": "L2053"
     },
     {
       "id": "web_app_btnimporthaproxy",
@@ -2954,7 +3010,7 @@
       "file_type": "code",
       "norm_label": "btnloginthemetoggle",
       "source_file": "web/app.js",
-      "source_location": "L2024"
+      "source_location": "L2056"
     },
     {
       "id": "web_app_btnlogout",
@@ -2998,7 +3054,7 @@
       "file_type": "code",
       "norm_label": "btnopenimportmodal",
       "source_file": "web/app.js",
-      "source_location": "L2281"
+      "source_location": "L2313"
     },
     {
       "id": "web_app_btnopenimportmodalsec",
@@ -3009,7 +3065,7 @@
       "file_type": "code",
       "norm_label": "btnopenimportmodalsec",
       "source_file": "web/app.js",
-      "source_location": "L2282"
+      "source_location": "L2314"
     },
     {
       "id": "web_app_btnopensecuritymodal",
@@ -3031,7 +3087,7 @@
       "file_type": "code",
       "norm_label": "btnovaddrule",
       "source_file": "web/app.js",
-      "source_location": "L2118"
+      "source_location": "L2150"
     },
     {
       "id": "web_app_btnovgotosecurity",
@@ -3042,7 +3098,7 @@
       "file_type": "code",
       "norm_label": "btnovgotosecurity",
       "source_file": "web/app.js",
-      "source_location": "L2131"
+      "source_location": "L2163"
     },
     {
       "id": "web_app_btnovgotoservices",
@@ -3053,7 +3109,7 @@
       "file_type": "code",
       "norm_label": "btnovgotoservices",
       "source_file": "web/app.js",
-      "source_location": "L2126"
+      "source_location": "L2158"
     },
     {
       "id": "web_app_btnretrysyncmodal",
@@ -3064,7 +3120,7 @@
       "file_type": "code",
       "norm_label": "btnretrysyncmodal",
       "source_file": "web/app.js",
-      "source_location": "L1367"
+      "source_location": "L1399"
     },
     {
       "id": "web_app_btnscanhaproxy",
@@ -3075,7 +3131,7 @@
       "file_type": "code",
       "norm_label": "btnscanhaproxy",
       "source_file": "web/app.js",
-      "source_location": "L2137"
+      "source_location": "L2169"
     },
     {
       "id": "web_app_btnsidebarlogout",
@@ -3086,7 +3142,7 @@
       "file_type": "code",
       "norm_label": "btnsidebarlogout",
       "source_file": "web/app.js",
-      "source_location": "L2110"
+      "source_location": "L2142"
     },
     {
       "id": "web_app_btnthemetoggle",
@@ -3097,7 +3153,7 @@
       "file_type": "code",
       "norm_label": "btnthemetoggle",
       "source_file": "web/app.js",
-      "source_location": "L2018"
+      "source_location": "L2050"
     },
     {
       "id": "web_app_btntogglelogfeed",
@@ -3108,7 +3164,7 @@
       "file_type": "code",
       "norm_label": "btntogglelogfeed",
       "source_file": "web/app.js",
-      "source_location": "L2499"
+      "source_location": "L2531"
     },
     {
       "id": "web_app_btntoggleloginpwd",
@@ -3130,7 +3186,7 @@
       "file_type": "code",
       "norm_label": "btntogglepastejson",
       "source_file": "web/app.js",
-      "source_location": "L2292"
+      "source_location": "L2324"
     },
     {
       "id": "web_app_btntogglesecpwd",
@@ -3152,7 +3208,7 @@
       "file_type": "code",
       "norm_label": "btntogglesidebar",
       "source_file": "web/app.js",
-      "source_location": "L2077"
+      "source_location": "L2109"
     },
     {
       "id": "web_app_capslockwarning",
@@ -3185,7 +3241,7 @@
       "file_type": "code",
       "norm_label": "currentmodaldestinations",
       "source_file": "web/app.js",
-      "source_location": "L1535"
+      "source_location": "L1567"
     },
     {
       "id": "web_app_currentrules",
@@ -3317,7 +3373,7 @@
       "file_type": "code",
       "norm_label": "formportinput",
       "source_file": "web/app.js",
-      "source_location": "L1833"
+      "source_location": "L1865"
     },
     {
       "id": "web_app_importconfigform",
@@ -3328,7 +3384,7 @@
       "file_type": "code",
       "norm_label": "importconfigform",
       "source_file": "web/app.js",
-      "source_location": "L2285"
+      "source_location": "L2317"
     },
     {
       "id": "web_app_importconfigmodal",
@@ -3339,7 +3395,7 @@
       "file_type": "code",
       "norm_label": "importconfigmodal",
       "source_file": "web/app.js",
-      "source_location": "L2280"
+      "source_location": "L2312"
     },
     {
       "id": "web_app_importdropzone",
@@ -3350,7 +3406,7 @@
       "file_type": "code",
       "norm_label": "importdropzone",
       "source_file": "web/app.js",
-      "source_location": "L2286"
+      "source_location": "L2318"
     },
     {
       "id": "web_app_importerror",
@@ -3361,7 +3417,7 @@
       "file_type": "code",
       "norm_label": "importerror",
       "source_file": "web/app.js",
-      "source_location": "L2295"
+      "source_location": "L2327"
     },
     {
       "id": "web_app_importfileinput",
@@ -3372,7 +3428,7 @@
       "file_type": "code",
       "norm_label": "importfileinput",
       "source_file": "web/app.js",
-      "source_location": "L2287"
+      "source_location": "L2319"
     },
     {
       "id": "web_app_importjsontextarea",
@@ -3383,7 +3439,7 @@
       "file_type": "code",
       "norm_label": "importjsontextarea",
       "source_file": "web/app.js",
-      "source_location": "L2294"
+      "source_location": "L2326"
     },
     {
       "id": "web_app_importpreviewbadge",
@@ -3394,7 +3450,7 @@
       "file_type": "code",
       "norm_label": "importpreviewbadge",
       "source_file": "web/app.js",
-      "source_location": "L2289"
+      "source_location": "L2321"
     },
     {
       "id": "web_app_importpreviewbox",
@@ -3405,7 +3461,7 @@
       "file_type": "code",
       "norm_label": "importpreviewbox",
       "source_file": "web/app.js",
-      "source_location": "L2288"
+      "source_location": "L2320"
     },
     {
       "id": "web_app_importpreviewdetails",
@@ -3416,7 +3472,7 @@
       "file_type": "code",
       "norm_label": "importpreviewdetails",
       "source_file": "web/app.js",
-      "source_location": "L2291"
+      "source_location": "L2323"
     },
     {
       "id": "web_app_importpreviewfilename",
@@ -3427,7 +3483,7 @@
       "file_type": "code",
       "norm_label": "importpreviewfilename",
       "source_file": "web/app.js",
-      "source_location": "L2290"
+      "source_location": "L2322"
     },
     {
       "id": "web_app_inlinesecurityform",
@@ -3438,7 +3494,7 @@
       "file_type": "code",
       "norm_label": "inlinesecurityform",
       "source_file": "web/app.js",
-      "source_location": "L2177"
+      "source_location": "L2209"
     },
     {
       "id": "web_app_lastruntime",
@@ -3493,7 +3549,7 @@
       "file_type": "code",
       "norm_label": "logconsole",
       "source_file": "web/app.js",
-      "source_location": "L2496"
+      "source_location": "L2528"
     },
     {
       "id": "web_app_logfeedtext",
@@ -3504,7 +3560,7 @@
       "file_type": "code",
       "norm_label": "logfeedtext",
       "source_file": "web/app.js",
-      "source_location": "L2500"
+      "source_location": "L2532"
     },
     {
       "id": "web_app_loginerror",
@@ -3570,7 +3626,7 @@
       "file_type": "code",
       "norm_label": "logsearchinput",
       "source_file": "web/app.js",
-      "source_location": "L2497"
+      "source_location": "L2529"
     },
     {
       "id": "web_app_modaltitle",
@@ -3592,7 +3648,7 @@
       "file_type": "code",
       "norm_label": "pastejsoncontainer",
       "source_file": "web/app.js",
-      "source_location": "L2293"
+      "source_location": "L2325"
     },
     {
       "id": "web_app_previousactivepriorities",
@@ -3768,7 +3824,7 @@
       "file_type": "code",
       "norm_label": "sections",
       "source_file": "web/app.js",
-      "source_location": "L2029"
+      "source_location": "L2061"
     },
     {
       "id": "web_app_securityerror",
@@ -3812,7 +3868,7 @@
       "file_type": "code",
       "norm_label": "sidebar",
       "source_file": "web/app.js",
-      "source_location": "L2075"
+      "source_location": "L2107"
     },
     {
       "id": "web_app_sidebarbackdrop",
@@ -3823,7 +3879,7 @@
       "file_type": "code",
       "norm_label": "sidebarbackdrop",
       "source_file": "web/app.js",
-      "source_location": "L2076"
+      "source_location": "L2108"
     },
     {
       "id": "web_app_statactivehaproxy",
@@ -3867,7 +3923,7 @@
       "file_type": "code",
       "norm_label": "syncerrorlist",
       "source_file": "web/app.js",
-      "source_location": "L1365"
+      "source_location": "L1397"
     },
     {
       "id": "web_app_syncerrormodal",
@@ -3878,7 +3934,7 @@
       "file_type": "code",
       "norm_label": "syncerrormodal",
       "source_file": "web/app.js",
-      "source_location": "L1364"
+      "source_location": "L1396"
     },
     {
       "id": "agents_rules_mandatory_checklist",
@@ -4393,6 +4449,28 @@
       "norm_label": "the 8-point audit checklist",
       "source_file": ".agents/skills/code-review-audit/SKILL.md",
       "source_location": "L12"
+    },
+    {
+      "id": "tests_test_security_rationale_216",
+      "label": "Verifies that XForwarderWebServer parses ssl_cert and ssl_key attributes.",
+      "_origin": "ast",
+      "community": 15,
+      "community_name": "TestUIAndAPIEdgeCases",
+      "file_type": "rationale",
+      "norm_label": "verifies that xforwarderwebserver parses ssl_cert and ssl_key attributes.",
+      "source_file": "tests/test_security.py",
+      "source_location": "L216"
+    },
+    {
+      "id": "tests_test_ui_and_api_edge_cases_rationale_110",
+      "label": "Verifies that XForwarderWebServer handles missing SSL certs without crashing.",
+      "_origin": "ast",
+      "community": 15,
+      "community_name": "TestUIAndAPIEdgeCases",
+      "file_type": "rationale",
+      "norm_label": "verifies that xforwarderwebserver handles missing ssl certs without crashing.",
+      "source_file": "tests/test_ui_and_api_edge_cases.py",
+      "source_location": "L110"
     },
     {
       "id": "tests_test_ui_and_api_edge_cases_rationale_120",
@@ -5643,61 +5721,6 @@
       "source_location": "L8"
     },
     {
-      "id": "agents_scripts_check_anti_patterns",
-      "label": "check-anti-patterns.py",
-      "_origin": "ast",
-      "community": 28,
-      "community_name": "web_server.py",
-      "file_type": "code",
-      "norm_label": "check-anti-patterns.py",
-      "source_file": ".agents/scripts/check-anti-patterns.py",
-      "source_location": "L1"
-    },
-    {
-      "id": "agents_scripts_log_experience",
-      "label": "log-experience.py",
-      "_origin": "ast",
-      "community": 28,
-      "community_name": "web_server.py",
-      "file_type": "code",
-      "norm_label": "log-experience.py",
-      "source_file": ".agents/scripts/log-experience.py",
-      "source_location": "L1"
-    },
-    {
-      "id": "agents_scripts_session_state",
-      "label": "session-state.py",
-      "_origin": "ast",
-      "community": 28,
-      "community_name": "web_server.py",
-      "file_type": "code",
-      "norm_label": "session-state.py",
-      "source_file": ".agents/scripts/session-state.py",
-      "source_location": "L1"
-    },
-    {
-      "id": "agents_scripts_syntax_check",
-      "label": "syntax-check.py",
-      "_origin": "ast",
-      "community": 28,
-      "community_name": "web_server.py",
-      "file_type": "code",
-      "norm_label": "syntax-check.py",
-      "source_file": ".agents/scripts/syntax-check.py",
-      "source_location": "L1"
-    },
-    {
-      "id": "agents_scripts_verify_all",
-      "label": "verify-all.py",
-      "_origin": "ast",
-      "community": 28,
-      "community_name": "web_server.py",
-      "file_type": "code",
-      "norm_label": "verify-all.py",
-      "source_file": ".agents/scripts/verify-all.py",
-      "source_location": "L1"
-    },
-    {
       "id": "core_engine",
       "label": "engine.py",
       "_origin": "ast",
@@ -5764,17 +5787,6 @@
       "source_location": "L1"
     },
     {
-      "id": "tests_test_security",
-      "label": "test_security.py",
-      "_origin": "ast",
-      "community": 28,
-      "community_name": "web_server.py",
-      "file_type": "code",
-      "norm_label": "test_security.py",
-      "source_file": "tests/test_security.py",
-      "source_location": "L1"
-    },
-    {
       "id": "tests_test_ui_and_api_edge_cases",
       "label": "test_ui_and_api_edge_cases.py",
       "_origin": "ast",
@@ -5784,61 +5796,6 @@
       "norm_label": "test_ui_and_api_edge_cases.py",
       "source_file": "tests/test_ui_and_api_edge_cases.py",
       "source_location": "L1"
-    },
-    {
-      "id": "agents_scripts_check_anti_patterns_rationale_2",
-      "label": "Anti-Pattern and Architectural Violation Scanner for XForwarder Enforces\u2026",
-      "_origin": "ast",
-      "community": 28,
-      "community_name": "web_server.py",
-      "file_type": "rationale",
-      "norm_label": "anti-pattern and architectural violation scanner for xforwarder enforces...",
-      "source_file": ".agents/scripts/check-anti-patterns.py",
-      "source_location": "L2"
-    },
-    {
-      "id": "agents_scripts_log_experience_rationale_2",
-      "label": "Experience Logger Script for XForwarder Scaffolds a new architectural\u2026",
-      "_origin": "ast",
-      "community": 28,
-      "community_name": "web_server.py",
-      "file_type": "rationale",
-      "norm_label": "experience logger script for xforwarder scaffolds a new architectural...",
-      "source_file": ".agents/scripts/log-experience.py",
-      "source_location": "L2"
-    },
-    {
-      "id": "agents_scripts_session_state_rationale_2",
-      "label": "CLI Manager for .agents/session-state.json Provides structured task context,\u2026",
-      "_origin": "ast",
-      "community": 28,
-      "community_name": "web_server.py",
-      "file_type": "rationale",
-      "norm_label": "cli manager for .agents/session-state.json provides structured task context,...",
-      "source_file": ".agents/scripts/session-state.py",
-      "source_location": "L2"
-    },
-    {
-      "id": "agents_scripts_syntax_check_rationale_2",
-      "label": "Antigravity Lifecycle Hook for Automatic Python Syntax Checking Handles\u2026",
-      "_origin": "ast",
-      "community": 28,
-      "community_name": "web_server.py",
-      "file_type": "rationale",
-      "norm_label": "antigravity lifecycle hook for automatic python syntax checking handles...",
-      "source_file": ".agents/scripts/syntax-check.py",
-      "source_location": "L2"
-    },
-    {
-      "id": "agents_scripts_verify_all_rationale_2",
-      "label": "Pre-Commit & Task Completion Verification Pipeline for XForwarder Runs syntax\u2026",
-      "_origin": "ast",
-      "community": 28,
-      "community_name": "web_server.py",
-      "file_type": "rationale",
-      "norm_label": "pre-commit & task completion verification pipeline for xforwarder runs syntax...",
-      "source_file": ".agents/scripts/verify-all.py",
-      "source_location": "L2"
     },
     {
       "id": "core_engine_rationale_2",
@@ -5885,50 +5842,6 @@
       "source_location": "L2"
     },
     {
-      "id": "core_web_server_rationale_731",
-      "label": "Verifies password against stored hash using constant-time comparison. Returns:\u2026",
-      "_origin": "ast",
-      "community": 28,
-      "community_name": "web_server.py",
-      "file_type": "rationale",
-      "norm_label": "verifies password against stored hash using constant-time comparison. returns:...",
-      "source_file": "core/web_server.py",
-      "source_location": "L731"
-    },
-    {
-      "id": "core_web_server_rationale_761",
-      "label": "Checks if client IP is currently rate-limited. Returns (is_locked,\u2026",
-      "_origin": "ast",
-      "community": 28,
-      "community_name": "web_server.py",
-      "file_type": "rationale",
-      "norm_label": "checks if client ip is currently rate-limited. returns (is_locked,...",
-      "source_file": "core/web_server.py",
-      "source_location": "L761"
-    },
-    {
-      "id": "core_web_server_rationale_782",
-      "label": "Records a failed login attempt and calculates lockout status.",
-      "_origin": "ast",
-      "community": 28,
-      "community_name": "web_server.py",
-      "file_type": "rationale",
-      "norm_label": "records a failed login attempt and calculates lockout status.",
-      "source_file": "core/web_server.py",
-      "source_location": "L782"
-    },
-    {
-      "id": "core_web_server_rationale_819",
-      "label": "Strictly validates if a destination target is a valid IPv4, IPv6, or RFC\u2026",
-      "_origin": "ast",
-      "community": 28,
-      "community_name": "web_server.py",
-      "file_type": "rationale",
-      "norm_label": "strictly validates if a destination target is a valid ipv4, ipv6, or rfc...",
-      "source_file": "core/web_server.py",
-      "source_location": "L819"
-    },
-    {
       "id": "tests_test_migration_rationale_2",
       "label": "Unit tests for XForwarder Configuration Migration & Backward Compatibility.\u2026",
       "_origin": "ast",
@@ -5937,17 +5850,6 @@
       "file_type": "rationale",
       "norm_label": "unit tests for xforwarder configuration migration & backward compatibility....",
       "source_file": "tests/test_migration.py",
-      "source_location": "L2"
-    },
-    {
-      "id": "tests_test_security_rationale_2",
-      "label": "Unit tests for XForwarder Web & Authentication Security. Tests PBKDF2 hashing,\u2026",
-      "_origin": "ast",
-      "community": 28,
-      "community_name": "web_server.py",
-      "file_type": "rationale",
-      "norm_label": "unit tests for xforwarder web & authentication security. tests pbkdf2 hashing,...",
-      "source_file": "tests/test_security.py",
       "source_location": "L2"
     },
     {
@@ -6037,6 +5939,50 @@
       "norm_label": "applies comprehensive owasp recommended security headers.",
       "source_file": "core/web_server.py",
       "source_location": "L951"
+    },
+    {
+      "id": "agents_scripts_session_state",
+      "label": "session-state.py",
+      "_origin": "ast",
+      "community": 30,
+      "community_name": "json",
+      "file_type": "code",
+      "norm_label": "session-state.py",
+      "source_file": ".agents/scripts/session-state.py",
+      "source_location": "L1"
+    },
+    {
+      "id": "agents_scripts_session_state_rationale_2",
+      "label": "CLI Manager for .agents/session-state.json Provides structured task context,\u2026",
+      "_origin": "ast",
+      "community": 30,
+      "community_name": "json",
+      "file_type": "rationale",
+      "norm_label": "cli manager for .agents/session-state.json provides structured task context,...",
+      "source_file": ".agents/scripts/session-state.py",
+      "source_location": "L2"
+    },
+    {
+      "id": "agents_scripts_syntax_check",
+      "label": "syntax-check.py",
+      "_origin": "ast",
+      "community": 31,
+      "community_name": "syntax-check.py",
+      "file_type": "code",
+      "norm_label": "syntax-check.py",
+      "source_file": ".agents/scripts/syntax-check.py",
+      "source_location": "L1"
+    },
+    {
+      "id": "agents_scripts_syntax_check_rationale_2",
+      "label": "Antigravity Lifecycle Hook for Automatic Python Syntax Checking Handles\u2026",
+      "_origin": "ast",
+      "community": 31,
+      "community_name": "syntax-check.py",
+      "file_type": "rationale",
+      "norm_label": "antigravity lifecycle hook for automatic python syntax checking handles...",
+      "source_file": ".agents/scripts/syntax-check.py",
+      "source_location": "L2"
     },
     {
       "id": "agents_rules_02_python_core_standards",
@@ -6161,6 +6107,28 @@
       "norm_label": "zero-collision invariant checks",
       "source_file": ".agents/skills/xfwd-ops/SKILL.md",
       "source_location": "L81"
+    },
+    {
+      "id": "agents_scripts_verify_all",
+      "label": "verify-all.py",
+      "_origin": "ast",
+      "community": 34,
+      "community_name": "verify-all.py",
+      "file_type": "code",
+      "norm_label": "verify-all.py",
+      "source_file": ".agents/scripts/verify-all.py",
+      "source_location": "L1"
+    },
+    {
+      "id": "agents_scripts_verify_all_rationale_2",
+      "label": "Pre-Commit & Task Completion Verification Pipeline for XForwarder Runs syntax\u2026",
+      "_origin": "ast",
+      "community": 34,
+      "community_name": "verify-all.py",
+      "file_type": "rationale",
+      "norm_label": "pre-commit & task completion verification pipeline for xforwarder runs syntax...",
+      "source_file": ".agents/scripts/verify-all.py",
+      "source_location": "L2"
     },
     {
       "id": "agents_rules_session_handoff",
@@ -6397,6 +6365,50 @@
       "norm_label": "xforwarder master architecture constitution",
       "source_file": ".agents/AGENTS.md",
       "source_location": "L1"
+    },
+    {
+      "id": "agents_scripts_check_anti_patterns",
+      "label": "check-anti-patterns.py",
+      "_origin": "ast",
+      "community": 4,
+      "community_name": "os",
+      "file_type": "code",
+      "norm_label": "check-anti-patterns.py",
+      "source_file": ".agents/scripts/check-anti-patterns.py",
+      "source_location": "L1"
+    },
+    {
+      "id": "agents_scripts_log_experience",
+      "label": "log-experience.py",
+      "_origin": "ast",
+      "community": 4,
+      "community_name": "os",
+      "file_type": "code",
+      "norm_label": "log-experience.py",
+      "source_file": ".agents/scripts/log-experience.py",
+      "source_location": "L1"
+    },
+    {
+      "id": "agents_scripts_check_anti_patterns_rationale_2",
+      "label": "Anti-Pattern and Architectural Violation Scanner for XForwarder Enforces\u2026",
+      "_origin": "ast",
+      "community": 4,
+      "community_name": "os",
+      "file_type": "rationale",
+      "norm_label": "anti-pattern and architectural violation scanner for xforwarder enforces...",
+      "source_file": ".agents/scripts/check-anti-patterns.py",
+      "source_location": "L2"
+    },
+    {
+      "id": "agents_scripts_log_experience_rationale_2",
+      "label": "Experience Logger Script for XForwarder Scaffolds a new architectural\u2026",
+      "_origin": "ast",
+      "community": 4,
+      "community_name": "os",
+      "file_type": "rationale",
+      "norm_label": "experience logger script for xforwarder scaffolds a new architectural...",
+      "source_file": ".agents/scripts/log-experience.py",
+      "source_location": "L2"
     },
     {
       "id": "readme",
@@ -7946,23 +7958,11 @@
       "source_location": "L39"
     },
     {
-      "id": "datetime",
-      "label": "datetime",
-      "_origin": "semantic",
-      "community": 28,
-      "community_name": "web_server.py",
-      "external": true,
-      "file_type": "concept",
-      "norm_label": "datetime",
-      "source_file": "",
-      "type": "external"
-    },
-    {
       "id": "hashlib",
       "label": "hashlib",
       "_origin": "semantic",
-      "community": 28,
-      "community_name": "web_server.py",
+      "community": 0,
+      "community_name": "validate_rule",
       "external": true,
       "file_type": "concept",
       "norm_label": "hashlib",
@@ -8002,54 +8002,6 @@
       "external": true,
       "file_type": "concept",
       "norm_label": "ipaddress",
-      "source_file": "",
-      "type": "external"
-    },
-    {
-      "id": "json",
-      "label": "json",
-      "_origin": "semantic",
-      "community": 28,
-      "community_name": "web_server.py",
-      "external": true,
-      "file_type": "concept",
-      "norm_label": "json",
-      "source_file": "",
-      "type": "external"
-    },
-    {
-      "id": "os",
-      "label": "os",
-      "_origin": "semantic",
-      "community": 28,
-      "community_name": "web_server.py",
-      "external": true,
-      "file_type": "concept",
-      "norm_label": "os",
-      "source_file": "",
-      "type": "external"
-    },
-    {
-      "id": "py_compile",
-      "label": "py_compile",
-      "_origin": "semantic",
-      "community": 28,
-      "community_name": "web_server.py",
-      "external": true,
-      "file_type": "concept",
-      "norm_label": "py_compile",
-      "source_file": "",
-      "type": "external"
-    },
-    {
-      "id": "re",
-      "label": "re",
-      "_origin": "semantic",
-      "community": 28,
-      "community_name": "web_server.py",
-      "external": true,
-      "file_type": "concept",
-      "norm_label": "re",
       "source_file": "",
       "type": "external"
     },
@@ -8114,30 +8066,6 @@
       "type": "external"
     },
     {
-      "id": "subprocess",
-      "label": "subprocess",
-      "_origin": "semantic",
-      "community": 28,
-      "community_name": "web_server.py",
-      "external": true,
-      "file_type": "concept",
-      "norm_label": "subprocess",
-      "source_file": "",
-      "type": "external"
-    },
-    {
-      "id": "sys",
-      "label": "sys",
-      "_origin": "semantic",
-      "community": 28,
-      "community_name": "web_server.py",
-      "external": true,
-      "file_type": "concept",
-      "norm_label": "sys",
-      "source_file": "",
-      "type": "external"
-    },
-    {
       "id": "tempfile",
       "label": "tempfile",
       "_origin": "semantic",
@@ -8170,18 +8098,6 @@
       "external": true,
       "file_type": "concept",
       "norm_label": "time",
-      "source_file": "",
-      "type": "external"
-    },
-    {
-      "id": "typing",
-      "label": "typing",
-      "_origin": "semantic",
-      "community": 28,
-      "community_name": "web_server.py",
-      "external": true,
-      "file_type": "concept",
-      "norm_label": "typing",
       "source_file": "",
       "type": "external"
     },
@@ -8246,6 +8162,54 @@
       "type": "external"
     },
     {
+      "id": "json",
+      "label": "json",
+      "_origin": "semantic",
+      "community": 30,
+      "community_name": "json",
+      "external": true,
+      "file_type": "concept",
+      "norm_label": "json",
+      "source_file": "",
+      "type": "external"
+    },
+    {
+      "id": "py_compile",
+      "label": "py_compile",
+      "_origin": "semantic",
+      "community": 31,
+      "community_name": "syntax-check.py",
+      "external": true,
+      "file_type": "concept",
+      "norm_label": "py_compile",
+      "source_file": "",
+      "type": "external"
+    },
+    {
+      "id": "typing",
+      "label": "typing",
+      "_origin": "semantic",
+      "community": 31,
+      "community_name": "syntax-check.py",
+      "external": true,
+      "file_type": "concept",
+      "norm_label": "typing",
+      "source_file": "",
+      "type": "external"
+    },
+    {
+      "id": "subprocess",
+      "label": "subprocess",
+      "_origin": "semantic",
+      "community": 34,
+      "community_name": "verify-all.py",
+      "external": true,
+      "file_type": "concept",
+      "norm_label": "subprocess",
+      "source_file": "",
+      "type": "external"
+    },
+    {
       "id": "glob",
       "label": "glob",
       "_origin": "semantic",
@@ -8266,6 +8230,54 @@
       "external": true,
       "file_type": "concept",
       "norm_label": "logging",
+      "source_file": "",
+      "type": "external"
+    },
+    {
+      "id": "datetime",
+      "label": "datetime",
+      "_origin": "semantic",
+      "community": 4,
+      "community_name": "os",
+      "external": true,
+      "file_type": "concept",
+      "norm_label": "datetime",
+      "source_file": "",
+      "type": "external"
+    },
+    {
+      "id": "os",
+      "label": "os",
+      "_origin": "semantic",
+      "community": 4,
+      "community_name": "os",
+      "external": true,
+      "file_type": "concept",
+      "norm_label": "os",
+      "source_file": "",
+      "type": "external"
+    },
+    {
+      "id": "re",
+      "label": "re",
+      "_origin": "semantic",
+      "community": 4,
+      "community_name": "os",
+      "external": true,
+      "file_type": "concept",
+      "norm_label": "re",
+      "source_file": "",
+      "type": "external"
+    },
+    {
+      "id": "sys",
+      "label": "sys",
+      "_origin": "semantic",
+      "community": 4,
+      "community_name": "os",
+      "external": true,
+      "file_type": "concept",
+      "norm_label": "sys",
       "source_file": "",
       "type": "external"
     }
@@ -10452,7 +10464,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/app.js",
-      "source_location": "L1804",
+      "source_location": "L1836",
       "weight": 1.0
     },
     {
@@ -10464,7 +10476,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/app.js",
-      "source_location": "L1814",
+      "source_location": "L1846",
       "weight": 1.0
     },
     {
@@ -10476,7 +10488,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/app.js",
-      "source_location": "L2518",
+      "source_location": "L2550",
       "weight": 1.0
     },
     {
@@ -10512,7 +10524,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/app.js",
-      "source_location": "L1030",
+      "source_location": "L1062",
       "weight": 1.0
     },
     {
@@ -10548,7 +10560,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/app.js",
-      "source_location": "L1894",
+      "source_location": "L1926",
       "weight": 1.0
     },
     {
@@ -10560,7 +10572,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/app.js",
-      "source_location": "L1904",
+      "source_location": "L1936",
       "weight": 1.0
     },
     {
@@ -10572,7 +10584,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/app.js",
-      "source_location": "L1906",
+      "source_location": "L1938",
       "weight": 1.0
     },
     {
@@ -10584,7 +10596,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/app.js",
-      "source_location": "L1908",
+      "source_location": "L1940",
       "weight": 1.0
     },
     {
@@ -10596,7 +10608,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/app.js",
-      "source_location": "L1888",
+      "source_location": "L1920",
       "weight": 1.0
     },
     {
@@ -10704,7 +10716,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/app.js",
-      "source_location": "L2248",
+      "source_location": "L2280",
       "weight": 1.0
     },
     {
@@ -10716,7 +10728,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/app.js",
-      "source_location": "L1572",
+      "source_location": "L1604",
       "weight": 1.0
     },
     {
@@ -10728,7 +10740,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/app.js",
-      "source_location": "L1617",
+      "source_location": "L1649",
       "weight": 1.0
     },
     {
@@ -10740,7 +10752,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/app.js",
-      "source_location": "L1624",
+      "source_location": "L1656",
       "weight": 1.0
     },
     {
@@ -10752,7 +10764,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/app.js",
-      "source_location": "L1435",
+      "source_location": "L1467",
       "weight": 1.0
     },
     {
@@ -10764,7 +10776,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/app.js",
-      "source_location": "L1447",
+      "source_location": "L1479",
       "weight": 1.0
     },
     {
@@ -10776,7 +10788,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/app.js",
-      "source_location": "L1452",
+      "source_location": "L1484",
       "weight": 1.0
     },
     {
@@ -10788,7 +10800,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/app.js",
-      "source_location": "L1460",
+      "source_location": "L1492",
       "weight": 1.0
     },
     {
@@ -10800,7 +10812,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/app.js",
-      "source_location": "L1339",
+      "source_location": "L1371",
       "weight": 1.0
     },
     {
@@ -10812,7 +10824,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/app.js",
-      "source_location": "L1349",
+      "source_location": "L1381",
       "weight": 1.0
     },
     {
@@ -10824,7 +10836,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/app.js",
-      "source_location": "L1351",
+      "source_location": "L1383",
       "weight": 1.0
     },
     {
@@ -10836,7 +10848,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/app.js",
-      "source_location": "L1359",
+      "source_location": "L1391",
       "weight": 1.0
     },
     {
@@ -10848,7 +10860,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/app.js",
-      "source_location": "L1993",
+      "source_location": "L2025",
       "weight": 1.0
     },
     {
@@ -10860,7 +10872,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/app.js",
-      "source_location": "L1554",
+      "source_location": "L1586",
       "weight": 1.0
     },
     {
@@ -10872,7 +10884,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/app.js",
-      "source_location": "L1561",
+      "source_location": "L1593",
       "weight": 1.0
     },
     {
@@ -10884,7 +10896,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/app.js",
-      "source_location": "L2380",
+      "source_location": "L2412",
       "weight": 1.0
     },
     {
@@ -10896,7 +10908,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/app.js",
-      "source_location": "L1818",
+      "source_location": "L1850",
       "weight": 1.0
     },
     {
@@ -10908,7 +10920,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/app.js",
-      "source_location": "L1820",
+      "source_location": "L1852",
       "weight": 1.0
     },
     {
@@ -10920,7 +10932,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/app.js",
-      "source_location": "L1824",
+      "source_location": "L1856",
       "weight": 1.0
     },
     {
@@ -10932,7 +10944,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/app.js",
-      "source_location": "L1640",
+      "source_location": "L1672",
       "weight": 1.0
     },
     {
@@ -10944,7 +10956,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/app.js",
-      "source_location": "L1641",
+      "source_location": "L1673",
       "weight": 1.0
     },
     {
@@ -10956,7 +10968,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/app.js",
-      "source_location": "L1642",
+      "source_location": "L1674",
       "weight": 1.0
     },
     {
@@ -10968,7 +10980,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/app.js",
-      "source_location": "L1643",
+      "source_location": "L1675",
       "weight": 1.0
     },
     {
@@ -10980,7 +10992,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/app.js",
-      "source_location": "L1644",
+      "source_location": "L1676",
       "weight": 1.0
     },
     {
@@ -10992,7 +11004,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/app.js",
-      "source_location": "L1652",
+      "source_location": "L1684",
       "weight": 1.0
     },
     {
@@ -11004,7 +11016,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/app.js",
-      "source_location": "L1679",
+      "source_location": "L1711",
       "weight": 1.0
     },
     {
@@ -11016,7 +11028,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/app.js",
-      "source_location": "L1799",
+      "source_location": "L1831",
       "weight": 1.0
     },
     {
@@ -11028,7 +11040,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/app.js",
-      "source_location": "L921",
+      "source_location": "L953",
       "weight": 1.0
     },
     {
@@ -11040,7 +11052,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/app.js",
-      "source_location": "L1128",
+      "source_location": "L1160",
       "weight": 1.0
     },
     {
@@ -11052,7 +11064,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/app.js",
-      "source_location": "L1162",
+      "source_location": "L1194",
       "weight": 1.0
     },
     {
@@ -11064,7 +11076,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/app.js",
-      "source_location": "L1163",
+      "source_location": "L1195",
       "weight": 1.0
     },
     {
@@ -11076,7 +11088,19 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/app.js",
-      "source_location": "L1185",
+      "source_location": "L1217",
+      "weight": 1.0
+    },
+    {
+      "source": "web_app_renderservicesstatus",
+      "target": "web_app_formatengineversion",
+      "relation": "calls",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "call",
+      "source_file": "web/app.js",
+      "source_location": "L720",
       "weight": 1.0
     },
     {
@@ -11124,7 +11148,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/app.js",
-      "source_location": "L1371",
+      "source_location": "L1403",
       "weight": 1.0
     },
     {
@@ -11148,7 +11172,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/app.js",
-      "source_location": "L2071",
+      "source_location": "L2103",
       "weight": 1.0
     },
     {
@@ -11160,7 +11184,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/app.js",
-      "source_location": "L1733",
+      "source_location": "L1765",
       "weight": 1.0
     },
     {
@@ -11172,7 +11196,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/app.js",
-      "source_location": "L1742",
+      "source_location": "L1774",
       "weight": 1.0
     },
     {
@@ -11184,7 +11208,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/app.js",
-      "source_location": "L1774",
+      "source_location": "L1806",
       "weight": 1.0
     },
     {
@@ -11196,7 +11220,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/app.js",
-      "source_location": "L2014",
+      "source_location": "L2046",
       "weight": 1.0
     },
     {
@@ -11208,7 +11232,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/app.js",
-      "source_location": "L2015",
+      "source_location": "L2047",
       "weight": 1.0
     },
     {
@@ -12672,7 +12696,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/app.js",
-      "source_location": "L1042",
+      "source_location": "L1074",
       "weight": 1.0
     },
     {
@@ -12684,7 +12708,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/app.js",
-      "source_location": "L1369",
+      "source_location": "L1401",
       "weight": 1.0
     },
     {
@@ -12696,7 +12720,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/app.js",
-      "source_location": "L1375",
+      "source_location": "L1407",
       "weight": 1.0
     },
     {
@@ -12732,7 +12756,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/app.js",
-      "source_location": "L1707",
+      "source_location": "L1739",
       "weight": 1.0
     },
     {
@@ -12744,7 +12768,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/app.js",
-      "source_location": "L1788",
+      "source_location": "L1820",
       "weight": 1.0
     },
     {
@@ -12756,7 +12780,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/app.js",
-      "source_location": "L1863",
+      "source_location": "L1895",
       "weight": 1.0
     },
     {
@@ -12773,18 +12797,6 @@
     },
     {
       "source": "web_app",
-      "target": "web_app_switchsection",
-      "relation": "contains",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "context": "call",
-      "source_file": "web/app.js",
-      "source_location": "L2031",
-      "weight": 1.0
-    },
-    {
-      "source": "web_app",
       "target": "web_app_showdashboard",
       "relation": "contains",
       "_origin": "ast",
@@ -12797,6 +12809,18 @@
     },
     {
       "source": "web_app",
+      "target": "web_app_switchsection",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "call",
+      "source_file": "web/app.js",
+      "source_location": "L2063",
+      "weight": 1.0
+    },
+    {
+      "source": "web_app",
       "target": "web_app_closeimportmodal",
       "relation": "contains",
       "_origin": "ast",
@@ -12804,7 +12828,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/app.js",
-      "source_location": "L2316",
+      "source_location": "L2348",
       "weight": 1.0
     },
     {
@@ -12816,7 +12840,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/app.js",
-      "source_location": "L2333",
+      "source_location": "L2365",
       "weight": 1.0
     },
     {
@@ -17331,7 +17355,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "web/app.js",
-      "source_location": "L1027",
+      "source_location": "L1059",
       "weight": 1.0
     },
     {
@@ -17364,7 +17388,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "web/app.js",
-      "source_location": "L1269",
+      "source_location": "L1301",
       "weight": 1.0
     },
     {
@@ -17375,7 +17399,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "web/app.js",
-      "source_location": "L1285",
+      "source_location": "L1317",
       "weight": 1.0
     },
     {
@@ -17386,7 +17410,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "web/app.js",
-      "source_location": "L1297",
+      "source_location": "L1329",
       "weight": 1.0
     },
     {
@@ -17397,7 +17421,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "web/app.js",
-      "source_location": "L1304",
+      "source_location": "L1336",
       "weight": 1.0
     },
     {
@@ -17408,7 +17432,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "web/app.js",
-      "source_location": "L1312",
+      "source_location": "L1344",
       "weight": 1.0
     },
     {
@@ -17430,7 +17454,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "web/app.js",
-      "source_location": "L1364",
+      "source_location": "L1396",
       "weight": 1.0
     },
     {
@@ -17441,7 +17465,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "web/app.js",
-      "source_location": "L1365",
+      "source_location": "L1397",
       "weight": 1.0
     },
     {
@@ -17452,7 +17476,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "web/app.js",
-      "source_location": "L1366",
+      "source_location": "L1398",
       "weight": 1.0
     },
     {
@@ -17463,7 +17487,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "web/app.js",
-      "source_location": "L1367",
+      "source_location": "L1399",
       "weight": 1.0
     },
     {
@@ -17474,7 +17498,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "web/app.js",
-      "source_location": "L1411",
+      "source_location": "L1443",
       "weight": 1.0
     },
     {
@@ -17485,7 +17509,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "web/app.js",
-      "source_location": "L1535",
+      "source_location": "L1567",
       "weight": 1.0
     },
     {
@@ -17496,7 +17520,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "web/app.js",
-      "source_location": "L1537",
+      "source_location": "L1569",
       "weight": 1.0
     },
     {
@@ -17507,7 +17531,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "web/app.js",
-      "source_location": "L1546",
+      "source_location": "L1578",
       "weight": 1.0
     },
     {
@@ -17518,7 +17542,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "web/app.js",
-      "source_location": "L1553",
+      "source_location": "L1585",
       "weight": 1.0
     },
     {
@@ -17529,29 +17553,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "web/app.js",
-      "source_location": "L1567",
-      "weight": 1.0
-    },
-    {
-      "source": "web_app",
-      "target": "web_app_handlemodalpriodragover",
-      "relation": "contains",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "web/app.js",
-      "source_location": "L1584",
-      "weight": 1.0
-    },
-    {
-      "source": "web_app",
-      "target": "web_app_handlemodalpriodragleave",
-      "relation": "contains",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "web/app.js",
-      "source_location": "L1594",
+      "source_location": "L1599",
       "weight": 1.0
     },
     {
@@ -17567,13 +17569,35 @@
     },
     {
       "source": "web_app",
+      "target": "web_app_handlemodalpriodragover",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "web/app.js",
+      "source_location": "L1616",
+      "weight": 1.0
+    },
+    {
+      "source": "web_app",
+      "target": "web_app_handlemodalpriodragleave",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "web/app.js",
+      "source_location": "L1626",
+      "weight": 1.0
+    },
+    {
+      "source": "web_app",
       "target": "web_app_handlemodalpriodragend",
       "relation": "contains",
       "_origin": "ast",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "web/app.js",
-      "source_location": "L1601",
+      "source_location": "L1633",
       "weight": 1.0
     },
     {
@@ -17584,7 +17608,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "web/app.js",
-      "source_location": "L1609",
+      "source_location": "L1641",
       "weight": 1.0
     },
     {
@@ -17595,7 +17619,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "web/app.js",
-      "source_location": "L1627",
+      "source_location": "L1659",
       "weight": 1.0
     },
     {
@@ -17617,7 +17641,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "web/app.js",
-      "source_location": "L1732",
+      "source_location": "L1764",
       "weight": 1.0
     },
     {
@@ -17639,29 +17663,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "web/app.js",
-      "source_location": "L1817",
-      "weight": 1.0
-    },
-    {
-      "source": "web_app",
-      "target": "web_app_btnadddestination",
-      "relation": "contains",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "web/app.js",
-      "source_location": "L1827",
-      "weight": 1.0
-    },
-    {
-      "source": "web_app",
-      "target": "web_app_formportinput",
-      "relation": "contains",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "web/app.js",
-      "source_location": "L1833",
+      "source_location": "L1849",
       "weight": 1.0
     },
     {
@@ -17677,24 +17679,24 @@
     },
     {
       "source": "web_app",
-      "target": "web_app_editrule",
+      "target": "web_app_btnadddestination",
       "relation": "contains",
       "_origin": "ast",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "web/app.js",
-      "source_location": "L1870",
+      "source_location": "L1859",
       "weight": 1.0
     },
     {
       "source": "web_app",
-      "target": "web_app_deleterule",
+      "target": "web_app_formportinput",
       "relation": "contains",
       "_origin": "ast",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "web/app.js",
-      "source_location": "L1893",
+      "source_location": "L1865",
       "weight": 1.0
     },
     {
@@ -17710,24 +17712,24 @@
     },
     {
       "source": "web_app",
-      "target": "web_app_inittheme",
+      "target": "web_app_editrule",
       "relation": "contains",
       "_origin": "ast",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "web/app.js",
-      "source_location": "L1991",
+      "source_location": "L1902",
       "weight": 1.0
     },
     {
       "source": "web_app",
-      "target": "web_app_applytheme",
+      "target": "web_app_deleterule",
       "relation": "contains",
       "_origin": "ast",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "web/app.js",
-      "source_location": "L1996",
+      "source_location": "L1925",
       "weight": 1.0
     },
     {
@@ -17743,13 +17745,35 @@
     },
     {
       "source": "web_app",
+      "target": "web_app_inittheme",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "web/app.js",
+      "source_location": "L2023",
+      "weight": 1.0
+    },
+    {
+      "source": "web_app",
+      "target": "web_app_applytheme",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "web/app.js",
+      "source_location": "L2028",
+      "weight": 1.0
+    },
+    {
+      "source": "web_app",
       "target": "web_app_btnthemetoggle",
       "relation": "contains",
       "_origin": "ast",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "web/app.js",
-      "source_location": "L2018",
+      "source_location": "L2050",
       "weight": 1.0
     },
     {
@@ -17760,7 +17784,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "web/app.js",
-      "source_location": "L2021",
+      "source_location": "L2053",
       "weight": 1.0
     },
     {
@@ -17771,7 +17795,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "web/app.js",
-      "source_location": "L2024",
+      "source_location": "L2056",
       "weight": 1.0
     },
     {
@@ -17782,51 +17806,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "web/app.js",
-      "source_location": "L2029",
-      "weight": 1.0
-    },
-    {
-      "source": "web_app",
-      "target": "web_app_sidebar",
-      "relation": "contains",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "web/app.js",
-      "source_location": "L2075",
-      "weight": 1.0
-    },
-    {
-      "source": "web_app",
-      "target": "web_app_sidebarbackdrop",
-      "relation": "contains",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "web/app.js",
-      "source_location": "L2076",
-      "weight": 1.0
-    },
-    {
-      "source": "web_app",
-      "target": "web_app_btntogglesidebar",
-      "relation": "contains",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "web/app.js",
-      "source_location": "L2077",
-      "weight": 1.0
-    },
-    {
-      "source": "web_app",
-      "target": "web_app_btnclosesidebar",
-      "relation": "contains",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "web/app.js",
-      "source_location": "L2078",
+      "source_location": "L2061",
       "weight": 1.0
     },
     {
@@ -17842,7 +17822,40 @@
     },
     {
       "source": "web_app",
-      "target": "web_app_btnsidebarlogout",
+      "target": "web_app_sidebar",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "web/app.js",
+      "source_location": "L2107",
+      "weight": 1.0
+    },
+    {
+      "source": "web_app",
+      "target": "web_app_sidebarbackdrop",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "web/app.js",
+      "source_location": "L2108",
+      "weight": 1.0
+    },
+    {
+      "source": "web_app",
+      "target": "web_app_btntogglesidebar",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "web/app.js",
+      "source_location": "L2109",
+      "weight": 1.0
+    },
+    {
+      "source": "web_app",
+      "target": "web_app_btnclosesidebar",
       "relation": "contains",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -17853,13 +17866,24 @@
     },
     {
       "source": "web_app",
+      "target": "web_app_btnsidebarlogout",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "web/app.js",
+      "source_location": "L2142",
+      "weight": 1.0
+    },
+    {
+      "source": "web_app",
       "target": "web_app_btnovaddrule",
       "relation": "contains",
       "_origin": "ast",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "web/app.js",
-      "source_location": "L2118",
+      "source_location": "L2150",
       "weight": 1.0
     },
     {
@@ -17870,7 +17894,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "web/app.js",
-      "source_location": "L2126",
+      "source_location": "L2158",
       "weight": 1.0
     },
     {
@@ -17881,7 +17905,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "web/app.js",
-      "source_location": "L2131",
+      "source_location": "L2163",
       "weight": 1.0
     },
     {
@@ -17892,7 +17916,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "web/app.js",
-      "source_location": "L2137",
+      "source_location": "L2169",
       "weight": 1.0
     },
     {
@@ -17903,7 +17927,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "web/app.js",
-      "source_location": "L2177",
+      "source_location": "L2209",
       "weight": 1.0
     },
     {
@@ -17919,13 +17943,24 @@
     },
     {
       "source": "web_app",
+      "target": "web_app_rulescontainer",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "web/app.js",
+      "source_location": "L23",
+      "weight": 1.0
+    },
+    {
+      "source": "web_app",
       "target": "web_app_btnexportconfig",
       "relation": "contains",
       "_origin": "ast",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "web/app.js",
-      "source_location": "L2273",
+      "source_location": "L2305",
       "weight": 1.0
     },
     {
@@ -17936,7 +17971,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "web/app.js",
-      "source_location": "L2276",
+      "source_location": "L2308",
       "weight": 1.0
     },
     {
@@ -17947,7 +17982,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "web/app.js",
-      "source_location": "L2280",
+      "source_location": "L2312",
       "weight": 1.0
     },
     {
@@ -17958,7 +17993,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "web/app.js",
-      "source_location": "L2281",
+      "source_location": "L2313",
       "weight": 1.0
     },
     {
@@ -17969,7 +18004,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "web/app.js",
-      "source_location": "L2282",
+      "source_location": "L2314",
       "weight": 1.0
     },
     {
@@ -17980,7 +18015,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "web/app.js",
-      "source_location": "L2283",
+      "source_location": "L2315",
       "weight": 1.0
     },
     {
@@ -17991,7 +18026,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "web/app.js",
-      "source_location": "L2284",
+      "source_location": "L2316",
       "weight": 1.0
     },
     {
@@ -18002,7 +18037,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "web/app.js",
-      "source_location": "L2285",
+      "source_location": "L2317",
       "weight": 1.0
     },
     {
@@ -18013,7 +18048,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "web/app.js",
-      "source_location": "L2286",
+      "source_location": "L2318",
       "weight": 1.0
     },
     {
@@ -18024,7 +18059,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "web/app.js",
-      "source_location": "L2287",
+      "source_location": "L2319",
       "weight": 1.0
     },
     {
@@ -18035,7 +18070,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "web/app.js",
-      "source_location": "L2288",
+      "source_location": "L2320",
       "weight": 1.0
     },
     {
@@ -18046,7 +18081,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "web/app.js",
-      "source_location": "L2289",
+      "source_location": "L2321",
       "weight": 1.0
     },
     {
@@ -18057,7 +18092,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "web/app.js",
-      "source_location": "L2290",
+      "source_location": "L2322",
       "weight": 1.0
     },
     {
@@ -18068,7 +18103,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "web/app.js",
-      "source_location": "L2291",
+      "source_location": "L2323",
       "weight": 1.0
     },
     {
@@ -18079,7 +18114,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "web/app.js",
-      "source_location": "L2292",
+      "source_location": "L2324",
       "weight": 1.0
     },
     {
@@ -18090,7 +18125,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "web/app.js",
-      "source_location": "L2293",
+      "source_location": "L2325",
       "weight": 1.0
     },
     {
@@ -18101,7 +18136,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "web/app.js",
-      "source_location": "L2294",
+      "source_location": "L2326",
       "weight": 1.0
     },
     {
@@ -18112,7 +18147,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "web/app.js",
-      "source_location": "L2295",
+      "source_location": "L2327",
       "weight": 1.0
     },
     {
@@ -18123,18 +18158,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "web/app.js",
-      "source_location": "L2296",
-      "weight": 1.0
-    },
-    {
-      "source": "web_app",
-      "target": "web_app_rulescontainer",
-      "relation": "contains",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "web/app.js",
-      "source_location": "L23",
+      "source_location": "L2328",
       "weight": 1.0
     },
     {
@@ -18161,50 +18185,6 @@
     },
     {
       "source": "web_app",
-      "target": "web_app_logconsole",
-      "relation": "contains",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "web/app.js",
-      "source_location": "L2496",
-      "weight": 1.0
-    },
-    {
-      "source": "web_app",
-      "target": "web_app_logsearchinput",
-      "relation": "contains",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "web/app.js",
-      "source_location": "L2497",
-      "weight": 1.0
-    },
-    {
-      "source": "web_app",
-      "target": "web_app_btnclearlogs",
-      "relation": "contains",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "web/app.js",
-      "source_location": "L2498",
-      "weight": 1.0
-    },
-    {
-      "source": "web_app",
-      "target": "web_app_btntogglelogfeed",
-      "relation": "contains",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "web/app.js",
-      "source_location": "L2499",
-      "weight": 1.0
-    },
-    {
-      "source": "web_app",
       "target": "web_app_ruleform",
       "relation": "contains",
       "_origin": "ast",
@@ -18216,13 +18196,57 @@
     },
     {
       "source": "web_app",
+      "target": "web_app_logconsole",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "web/app.js",
+      "source_location": "L2528",
+      "weight": 1.0
+    },
+    {
+      "source": "web_app",
+      "target": "web_app_logsearchinput",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "web/app.js",
+      "source_location": "L2529",
+      "weight": 1.0
+    },
+    {
+      "source": "web_app",
+      "target": "web_app_btnclearlogs",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "web/app.js",
+      "source_location": "L2530",
+      "weight": 1.0
+    },
+    {
+      "source": "web_app",
+      "target": "web_app_btntogglelogfeed",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "web/app.js",
+      "source_location": "L2531",
+      "weight": 1.0
+    },
+    {
+      "source": "web_app",
       "target": "web_app_logfeedtext",
       "relation": "contains",
       "_origin": "ast",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "web/app.js",
-      "source_location": "L2500",
+      "source_location": "L2532",
       "weight": 1.0
     },
     {
@@ -18233,7 +18257,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "web/app.js",
-      "source_location": "L2502",
+      "source_location": "L2534",
       "weight": 1.0
     },
     {
@@ -18722,7 +18746,7 @@
     },
     {
       "source": "web_app",
-      "target": "web_app_renderservicesstatus",
+      "target": "web_app_formatengineversion",
       "relation": "contains",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -18751,6 +18775,17 @@
       "confidence_score": 1.0,
       "source_file": "web/app.js",
       "source_location": "L70",
+      "weight": 1.0
+    },
+    {
+      "source": "web_app",
+      "target": "web_app_renderservicesstatus",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "web/app.js",
+      "source_location": "L702",
       "weight": 1.0
     },
     {
@@ -18871,7 +18906,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "web/app.js",
-      "source_location": "L903",
+      "source_location": "L935",
       "weight": 1.0
     },
     {
@@ -21525,7 +21560,7 @@
       "confidence_score": 0.85,
       "context": "argument",
       "source_file": "web/app.js",
-      "source_location": "L1829",
+      "source_location": "L1861",
       "weight": 1.0
     },
     {
@@ -21537,7 +21572,7 @@
       "confidence_score": 0.85,
       "context": "argument",
       "source_file": "web/app.js",
-      "source_location": "L2019",
+      "source_location": "L2051",
       "weight": 1.0
     },
     {
@@ -21549,7 +21584,7 @@
       "confidence_score": 0.85,
       "context": "argument",
       "source_file": "web/app.js",
-      "source_location": "L2090",
+      "source_location": "L2122",
       "weight": 1.0
     },
     {
@@ -21561,7 +21596,7 @@
       "confidence_score": 0.85,
       "context": "argument",
       "source_file": "web/app.js",
-      "source_location": "L2091",
+      "source_location": "L2123",
       "weight": 1.0
     },
     {
@@ -21573,7 +21608,7 @@
       "confidence_score": 0.85,
       "context": "argument",
       "source_file": "web/app.js",
-      "source_location": "L2274",
+      "source_location": "L2306",
       "weight": 1.0
     },
     {
@@ -21585,7 +21620,7 @@
       "confidence_score": 0.85,
       "context": "argument",
       "source_file": "web/app.js",
-      "source_location": "L2320",
+      "source_location": "L2352",
       "weight": 1.0
     },
     {
@@ -22099,5 +22134,5 @@
     }
   ],
   "hyperedges": [],
-  "built_at_commit": "d0909f75ca9e7d3e726d24d3c85daf03e835f9e6"
+  "built_at_commit": "b357fe21ed1042b9af4fb94ee1d0fc38fdba3ba7"
 }
