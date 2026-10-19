@@ -778,9 +778,11 @@ body {
     height: 34px;
     min-height: 34px;
     box-sizing: border-box;
-    padding: 0 10px;
+    padding: 0 32px 0 10px !important;
     font-size: 0.8rem;
     border-radius: 8px;
+    background-position: calc(100% - 10px) center !important;
+    background-size: 14px 14px !important;
 }
 
 .rule-actions .btn-sm {
@@ -1009,13 +1011,20 @@ body {
     height: 38px;
     min-height: 38px;
     box-sizing: border-box;
-    padding: 0 12px;
+    padding: 0 36px 0 14px !important;
     font-size: 0.82rem;
     background: var(--bg-card);
     border: 1px solid rgba(245, 158, 11, 0.4);
     color: var(--accent-amber);
     border-radius: 10px;
     cursor: pointer;
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23F59E0B' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E") !important;
+    background-repeat: no-repeat !important;
+    background-position: calc(100% - 12px) center !important;
+    background-size: 14px 14px !important;
 }
 .batch-select:hover { border-color: var(--accent-amber); }
 
@@ -1211,6 +1220,30 @@ body {
     box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
 }
 
+select.form-control,
+select {
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%239CA3AF' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: calc(100% - 14px) center;
+    background-size: 16px 16px;
+    padding-right: 40px !important;
+    cursor: pointer;
+}
+
+[data-theme="light"] select.form-control,
+[data-theme="light"] select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23475569' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+}
+
+select option {
+    background: var(--bg-surface);
+    color: var(--text-primary);
+    padding: 8px 12px;
+}
+
 .form-row { display: flex; gap: 12px; }
 .flex-1 { flex: 1; }
 .flex-2 { flex: 2; }
@@ -1348,6 +1381,14 @@ body {
     overflow-y: auto;
     padding: 26px;
     box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE and Edge */
+}
+
+.modal-card::-webkit-scrollbar {
+    display: none; /* Chrome, Safari, Opera */
+    width: 0;
+    height: 0;
 }
 
 .modal-header {

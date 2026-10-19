@@ -4,19 +4,6 @@
   "graph": {},
   "nodes": [
     {
-      "id": "tests_test_haproxy_parser_testhaproxyparser",
-      "label": "TestHAProxyParser",
-      "_callable": true,
-      "_callable_class": true,
-      "_origin": "ast",
-      "community": 0,
-      "community_name": "os",
-      "file_type": "code",
-      "norm_label": "testhaproxyparser",
-      "source_file": "tests/test_haproxy_parser.py",
-      "source_location": "L78"
-    },
-    {
       "id": "core_engine_xforwarderengine",
       "label": "XForwarderEngine",
       "_callable": true,
@@ -43,17 +30,17 @@
       "source_location": "L384"
     },
     {
-      "id": "tests_test_security_testxforwardersecurity",
-      "label": "TestXForwarderSecurity",
+      "id": "tests_test_haproxy_parser_testhaproxyparser",
+      "label": "TestHAProxyParser",
       "_callable": true,
       "_callable_class": true,
       "_origin": "ast",
-      "community": 29,
-      "community_name": "TestXForwarderSecurity",
+      "community": 27,
+      "community_name": "haproxy_parser.py",
       "file_type": "code",
-      "norm_label": "testxforwardersecurity",
-      "source_file": "tests/test_security.py",
-      "source_location": "L29"
+      "norm_label": "testhaproxyparser",
+      "source_file": "tests/test_haproxy_parser.py",
+      "source_location": "L78"
     },
     {
       "id": "core_web_server_xforwarderwebserver",
@@ -61,12 +48,25 @@
       "_callable": true,
       "_callable_class": true,
       "_origin": "ast",
-      "community": 30,
-      "community_name": "XForwarderWebServer",
+      "community": 4,
+      "community_name": "web_server.py",
       "file_type": "code",
       "norm_label": "xforwarderwebserver",
       "source_file": "core/web_server.py",
       "source_location": "L891"
+    },
+    {
+      "id": "tests_test_security_testxforwardersecurity",
+      "label": "TestXForwarderSecurity",
+      "_callable": true,
+      "_callable_class": true,
+      "_origin": "ast",
+      "community": 4,
+      "community_name": "web_server.py",
+      "file_type": "code",
+      "norm_label": "testxforwardersecurity",
+      "source_file": "tests/test_security.py",
+      "source_location": "L29"
     },
     {
       "id": "tests_test_migration_testxforwardermigration",
@@ -286,102 +286,6 @@
       "source_location": "L774"
     },
     {
-      "id": "core_haproxy_parser_build_xforwarder_rule",
-      "label": "_build_xforwarder_rule()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 0,
-      "community_name": "os",
-      "file_type": "code",
-      "norm_label": "_build_xforwarder_rule()",
-      "source_file": "core/haproxy_parser.py",
-      "source_location": "L161"
-    },
-    {
-      "id": "core_haproxy_parser_discover_importable_rules",
-      "label": "discover_importable_rules()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 0,
-      "community_name": "os",
-      "file_type": "code",
-      "norm_label": "discover_importable_rules()",
-      "source_file": "core/haproxy_parser.py",
-      "source_location": "L226"
-    },
-    {
-      "id": "core_haproxy_parser_find_candidate_haproxy_files",
-      "label": "find_candidate_haproxy_files()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 0,
-      "community_name": "os",
-      "file_type": "code",
-      "norm_label": "find_candidate_haproxy_files()",
-      "source_file": "core/haproxy_parser.py",
-      "source_location": "L200"
-    },
-    {
-      "id": "core_haproxy_parser_import_haproxy_rules_into_config",
-      "label": "import_haproxy_rules_into_config()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 0,
-      "community_name": "os",
-      "file_type": "code",
-      "norm_label": "import_haproxy_rules_into_config()",
-      "source_file": "core/haproxy_parser.py",
-      "source_location": "L253"
-    },
-    {
-      "id": "core_haproxy_parser_parse_haproxy_content",
-      "label": "parse_haproxy_content()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 0,
-      "community_name": "os",
-      "file_type": "code",
-      "norm_label": "parse_haproxy_content()",
-      "source_file": "core/haproxy_parser.py",
-      "source_location": "L39"
-    },
-    {
-      "id": "core_haproxy_parser_parse_haproxy_file",
-      "label": "parse_haproxy_file()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 0,
-      "community_name": "os",
-      "file_type": "code",
-      "norm_label": "parse_haproxy_file()",
-      "source_file": "core/haproxy_parser.py",
-      "source_location": "L187"
-    },
-    {
-      "id": "tests_test_haproxy_parser_testhaproxyparser_test_import_into_config_file",
-      "label": ".test_import_into_config_file()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 0,
-      "community_name": "os",
-      "file_type": "code",
-      "norm_label": ".test_import_into_config_file()",
-      "source_file": "tests/test_haproxy_parser.py",
-      "source_location": "L101"
-    },
-    {
-      "id": "tests_test_haproxy_parser_testhaproxyparser_test_parse_sample_haproxy_content",
-      "label": ".test_parse_sample_haproxy_content()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 0,
-      "community_name": "os",
-      "file_type": "code",
-      "norm_label": ".test_parse_sample_haproxy_content()",
-      "source_file": "tests/test_haproxy_parser.py",
-      "source_location": "L80"
-    },
-    {
       "id": "web_app_closemodal",
       "label": "closeModal()",
       "_callable": true,
@@ -391,7 +295,7 @@
       "file_type": "code",
       "norm_label": "closemodal()",
       "source_file": "web/app.js",
-      "source_location": "L1054"
+      "source_location": "L1086"
     },
     {
       "id": "web_app_closesecuritymodal",
@@ -403,7 +307,7 @@
       "file_type": "code",
       "norm_label": "closesecuritymodal()",
       "source_file": "web/app.js",
-      "source_location": "L342"
+      "source_location": "L350"
     },
     {
       "id": "web_app_evaluatepasswordstrength",
@@ -415,7 +319,19 @@
       "file_type": "code",
       "norm_label": "evaluatepasswordstrength()",
       "source_file": "web/app.js",
-      "source_location": "L315"
+      "source_location": "L323"
+    },
+    {
+      "id": "web_app_openmobilesidebar",
+      "label": "openMobileSidebar()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 1,
+      "community_name": "app.js",
+      "file_type": "code",
+      "norm_label": "openmobilesidebar()",
+      "source_file": "web/app.js",
+      "source_location": "L1288"
     },
     {
       "id": "web_app_setupcapslockdetection",
@@ -427,7 +343,7 @@
       "file_type": "code",
       "norm_label": "setupcapslockdetection()",
       "source_file": "web/app.js",
-      "source_location": "L266"
+      "source_location": "L274"
     },
     {
       "id": "web_app_setuppasswordtoggle",
@@ -439,7 +355,7 @@
       "file_type": "code",
       "norm_label": "setuppasswordtoggle()",
       "source_file": "web/app.js",
-      "source_location": "L254"
+      "source_location": "L262"
     },
     {
       "id": "core_engine_xforwarderengine_apply_haproxy",
@@ -634,6 +550,18 @@
       "source_location": "L425"
     },
     {
+      "id": "web_app_applytheme",
+      "label": "applyTheme()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 23,
+      "community_name": "showToast",
+      "file_type": "code",
+      "norm_label": "applytheme()",
+      "source_file": "web/app.js",
+      "source_location": "L1212"
+    },
+    {
       "id": "web_app_askconfirm",
       "label": "askConfirm()",
       "_callable": true,
@@ -667,7 +595,7 @@
       "file_type": "code",
       "norm_label": "deleterule()",
       "source_file": "web/app.js",
-      "source_location": "L1084"
+      "source_location": "L1116"
     },
     {
       "id": "web_app_fallbackcopy",
@@ -680,6 +608,18 @@
       "norm_label": "fallbackcopy()",
       "source_file": "web/app.js",
       "source_location": "L110"
+    },
+    {
+      "id": "web_app_inittheme",
+      "label": "initTheme()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 23,
+      "community_name": "showToast",
+      "file_type": "code",
+      "norm_label": "inittheme()",
+      "source_file": "web/app.js",
+      "source_location": "L1207"
     },
     {
       "id": "web_app_showtoast",
@@ -703,7 +643,79 @@
       "file_type": "code",
       "norm_label": "startlockouttimer()",
       "source_file": "web/app.js",
-      "source_location": "L281"
+      "source_location": "L289"
+    },
+    {
+      "id": "web_app_toggletheme",
+      "label": "toggleTheme()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 23,
+      "community_name": "showToast",
+      "file_type": "code",
+      "norm_label": "toggletheme()",
+      "source_file": "web/app.js",
+      "source_location": "L1223"
+    },
+    {
+      "id": "core_web_server_get_config_path",
+      "label": "get_config_path()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 24,
+      "community_name": ".do_POST",
+      "file_type": "code",
+      "norm_label": "get_config_path()",
+      "source_file": "core/web_server.py",
+      "source_location": "L62"
+    },
+    {
+      "id": "core_web_server_get_system_stats",
+      "label": "get_system_stats()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 24,
+      "community_name": ".do_POST",
+      "file_type": "code",
+      "norm_label": "get_system_stats()",
+      "source_file": "core/web_server.py",
+      "source_location": "L133"
+    },
+    {
+      "id": "core_web_server_load_config",
+      "label": "load_config()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 24,
+      "community_name": ".do_POST",
+      "file_type": "code",
+      "norm_label": "load_config()",
+      "source_file": "core/web_server.py",
+      "source_location": "L72"
+    },
+    {
+      "id": "core_web_server_load_state",
+      "label": "load_state()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 24,
+      "community_name": ".do_POST",
+      "file_type": "code",
+      "norm_label": "load_state()",
+      "source_file": "core/web_server.py",
+      "source_location": "L122"
+    },
+    {
+      "id": "core_web_server_save_config",
+      "label": "save_config()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 24,
+      "community_name": ".do_POST",
+      "file_type": "code",
+      "norm_label": "save_config()",
+      "source_file": "core/web_server.py",
+      "source_location": "L106"
     },
     {
       "id": "core_web_server_xforwarderwebhandler_apply_security_headers",
@@ -838,6 +850,18 @@
       "source_location": "L422"
     },
     {
+      "id": "web_app_addlogentry",
+      "label": "addLogEntry()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 25,
+      "community_name": "renderDestinationRow",
+      "file_type": "code",
+      "norm_label": "addlogentry()",
+      "source_file": "web/app.js",
+      "source_location": "L1458"
+    },
+    {
       "id": "web_app_escapehtml",
       "label": "escapeHtml()",
       "_callable": true,
@@ -871,7 +895,7 @@
       "file_type": "code",
       "norm_label": "getpriosubtitle()",
       "source_file": "web/app.js",
-      "source_location": "L868"
+      "source_location": "L900"
     },
     {
       "id": "web_app_getpriotagclass",
@@ -883,7 +907,7 @@
       "file_type": "code",
       "norm_label": "getpriotagclass()",
       "source_file": "web/app.js",
-      "source_location": "L859"
+      "source_location": "L891"
     },
     {
       "id": "web_app_renderdestinationrow",
@@ -895,7 +919,7 @@
       "file_type": "code",
       "norm_label": "renderdestinationrow()",
       "source_file": "web/app.js",
-      "source_location": "L875"
+      "source_location": "L907"
     },
     {
       "id": "web_app_renderrules",
@@ -907,79 +931,103 @@
       "file_type": "code",
       "norm_label": "renderrules()",
       "source_file": "web/app.js",
-      "source_location": "L600"
+      "source_location": "L632"
     },
     {
-      "id": "core_web_server_check_rate_limit",
-      "label": "check_rate_limit()",
+      "id": "core_haproxy_parser_build_xforwarder_rule",
+      "label": "_build_xforwarder_rule()",
       "_callable": true,
       "_origin": "ast",
       "community": 27,
-      "community_name": "web_server.py",
+      "community_name": "haproxy_parser.py",
       "file_type": "code",
-      "norm_label": "check_rate_limit()",
-      "source_file": "core/web_server.py",
-      "source_location": "L210"
+      "norm_label": "_build_xforwarder_rule()",
+      "source_file": "core/haproxy_parser.py",
+      "source_location": "L161"
     },
     {
-      "id": "core_web_server_get_system_stats",
-      "label": "get_system_stats()",
+      "id": "core_haproxy_parser_discover_importable_rules",
+      "label": "discover_importable_rules()",
       "_callable": true,
       "_origin": "ast",
       "community": 27,
-      "community_name": "web_server.py",
+      "community_name": "haproxy_parser.py",
       "file_type": "code",
-      "norm_label": "get_system_stats()",
-      "source_file": "core/web_server.py",
-      "source_location": "L133"
+      "norm_label": "discover_importable_rules()",
+      "source_file": "core/haproxy_parser.py",
+      "source_location": "L226"
     },
     {
-      "id": "core_web_server_is_haproxy_listening",
-      "label": "is_haproxy_listening()",
+      "id": "core_haproxy_parser_find_candidate_haproxy_files",
+      "label": "find_candidate_haproxy_files()",
       "_callable": true,
       "_origin": "ast",
       "community": 27,
-      "community_name": "web_server.py",
+      "community_name": "haproxy_parser.py",
       "file_type": "code",
-      "norm_label": "is_haproxy_listening()",
-      "source_file": "core/web_server.py",
-      "source_location": "L355"
+      "norm_label": "find_candidate_haproxy_files()",
+      "source_file": "core/haproxy_parser.py",
+      "source_location": "L200"
     },
     {
-      "id": "core_web_server_is_port_in_use_by_external_service",
-      "label": "is_port_in_use_by_external_service()",
+      "id": "core_haproxy_parser_import_haproxy_rules_into_config",
+      "label": "import_haproxy_rules_into_config()",
       "_callable": true,
       "_origin": "ast",
       "community": 27,
-      "community_name": "web_server.py",
+      "community_name": "haproxy_parser.py",
       "file_type": "code",
-      "norm_label": "is_port_in_use_by_external_service()",
-      "source_file": "core/web_server.py",
-      "source_location": "L366"
+      "norm_label": "import_haproxy_rules_into_config()",
+      "source_file": "core/haproxy_parser.py",
+      "source_location": "L253"
     },
     {
-      "id": "core_web_server_load_state",
-      "label": "load_state()",
+      "id": "core_haproxy_parser_parse_haproxy_content",
+      "label": "parse_haproxy_content()",
       "_callable": true,
       "_origin": "ast",
       "community": 27,
-      "community_name": "web_server.py",
+      "community_name": "haproxy_parser.py",
       "file_type": "code",
-      "norm_label": "load_state()",
-      "source_file": "core/web_server.py",
-      "source_location": "L122"
+      "norm_label": "parse_haproxy_content()",
+      "source_file": "core/haproxy_parser.py",
+      "source_location": "L39"
     },
     {
-      "id": "core_web_server_record_failed_login",
-      "label": "record_failed_login()",
+      "id": "core_haproxy_parser_parse_haproxy_file",
+      "label": "parse_haproxy_file()",
       "_callable": true,
       "_origin": "ast",
       "community": 27,
-      "community_name": "web_server.py",
+      "community_name": "haproxy_parser.py",
       "file_type": "code",
-      "norm_label": "record_failed_login()",
-      "source_file": "core/web_server.py",
-      "source_location": "L231"
+      "norm_label": "parse_haproxy_file()",
+      "source_file": "core/haproxy_parser.py",
+      "source_location": "L187"
+    },
+    {
+      "id": "tests_test_haproxy_parser_testhaproxyparser_test_import_into_config_file",
+      "label": ".test_import_into_config_file()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 27,
+      "community_name": "haproxy_parser.py",
+      "file_type": "code",
+      "norm_label": ".test_import_into_config_file()",
+      "source_file": "tests/test_haproxy_parser.py",
+      "source_location": "L101"
+    },
+    {
+      "id": "tests_test_haproxy_parser_testhaproxyparser_test_parse_sample_haproxy_content",
+      "label": ".test_parse_sample_haproxy_content()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 27,
+      "community_name": "haproxy_parser.py",
+      "file_type": "code",
+      "norm_label": ".test_parse_sample_haproxy_content()",
+      "source_file": "tests/test_haproxy_parser.py",
+      "source_location": "L80"
     },
     {
       "id": "web_app_adddestinationrow",
@@ -991,7 +1039,7 @@
       "file_type": "code",
       "norm_label": "adddestinationrow()",
       "source_file": "web/app.js",
-      "source_location": "L963"
+      "source_location": "L995"
     },
     {
       "id": "web_app_editrule",
@@ -1003,7 +1051,7 @@
       "file_type": "code",
       "norm_label": "editrule()",
       "source_file": "web/app.js",
-      "source_location": "L1061"
+      "source_location": "L1093"
     },
     {
       "id": "web_app_removedestinationrow",
@@ -1015,7 +1063,7 @@
       "file_type": "code",
       "norm_label": "removedestinationrow()",
       "source_file": "web/app.js",
-      "source_location": "L977"
+      "source_location": "L1009"
     },
     {
       "id": "web_app_renderdestinationslist",
@@ -1027,7 +1075,7 @@
       "file_type": "code",
       "norm_label": "renderdestinationslist()",
       "source_file": "web/app.js",
-      "source_location": "L948"
+      "source_location": "L980"
     },
     {
       "id": "web_app_syncdestinationsfromdom",
@@ -1039,103 +1087,7 @@
       "file_type": "code",
       "norm_label": "syncdestinationsfromdom()",
       "source_file": "web/app.js",
-      "source_location": "L925"
-    },
-    {
-      "id": "core_web_server_reset_rate_limit",
-      "label": "reset_rate_limit()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 29,
-      "community_name": "TestXForwarderSecurity",
-      "file_type": "code",
-      "norm_label": "reset_rate_limit()",
-      "source_file": "core/web_server.py",
-      "source_location": "L259"
-    },
-    {
-      "id": "core_web_server_validate_rule",
-      "label": "validate_rule()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 29,
-      "community_name": "TestXForwarderSecurity",
-      "file_type": "code",
-      "norm_label": "validate_rule()",
-      "source_file": "core/web_server.py",
-      "source_location": "L293"
-    },
-    {
-      "id": "tests_test_security_testxforwardersecurity_setup",
-      "label": ".setUp()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 29,
-      "community_name": "TestXForwarderSecurity",
-      "file_type": "code",
-      "norm_label": ".setup()",
-      "source_file": "tests/test_security.py",
-      "source_location": "L31"
-    },
-    {
-      "id": "tests_test_security_testxforwardersecurity_teardown",
-      "label": ".tearDown()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 29,
-      "community_name": "TestXForwarderSecurity",
-      "file_type": "code",
-      "norm_label": ".teardown()",
-      "source_file": "tests/test_security.py",
-      "source_location": "L35"
-    },
-    {
-      "id": "tests_test_security_testxforwardersecurity_test_brute_force_rate_limiting_and_lockout",
-      "label": ".test_brute_force_rate_limiting_and_lockout()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 29,
-      "community_name": "TestXForwarderSecurity",
-      "file_type": "code",
-      "norm_label": ".test_brute_force_rate_limiting_and_lockout()",
-      "source_file": "tests/test_security.py",
-      "source_location": "L70"
-    },
-    {
-      "id": "tests_test_security_testxforwardersecurity_test_rule_validation_rejects_injections",
-      "label": ".test_rule_validation_rejects_injections()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 29,
-      "community_name": "TestXForwarderSecurity",
-      "file_type": "code",
-      "norm_label": ".test_rule_validation_rejects_injections()",
-      "source_file": "tests/test_security.py",
-      "source_location": "L127"
-    },
-    {
-      "id": "tests_test_security_testxforwardersecurity_test_validate_rule_multi_priority_cascading",
-      "label": ".test_validate_rule_multi_priority_cascading()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 29,
-      "community_name": "TestXForwarderSecurity",
-      "file_type": "code",
-      "norm_label": ".test_validate_rule_multi_priority_cascading()",
-      "source_file": "tests/test_security.py",
-      "source_location": "L189"
-    },
-    {
-      "id": "tests_test_security_testxforwardersecurity_test_validate_rule_port_boundary_edge_cases",
-      "label": ".test_validate_rule_port_boundary_edge_cases()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 29,
-      "community_name": "TestXForwarderSecurity",
-      "file_type": "code",
-      "norm_label": ".test_validate_rule_port_boundary_edge_cases()",
-      "source_file": "tests/test_security.py",
-      "source_location": "L166"
+      "source_location": "L957"
     },
     {
       "id": "web_app_checkauth",
@@ -1159,7 +1111,19 @@
       "file_type": "code",
       "norm_label": "checkimportablerules()",
       "source_file": "web/app.js",
-      "source_location": "L197"
+      "source_location": "L205"
+    },
+    {
+      "id": "web_app_closemobilesidebar",
+      "label": "closeMobileSidebar()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 3,
+      "community_name": "fetchStatus",
+      "file_type": "code",
+      "norm_label": "closemobilesidebar()",
+      "source_file": "web/app.js",
+      "source_location": "L1293"
     },
     {
       "id": "web_app_fetchstatus",
@@ -1171,7 +1135,7 @@
       "file_type": "code",
       "norm_label": "fetchstatus()",
       "source_file": "web/app.js",
-      "source_location": "L514"
+      "source_location": "L522"
     },
     {
       "id": "web_app_handleoverridechange",
@@ -1183,7 +1147,7 @@
       "file_type": "code",
       "norm_label": "handleoverridechange()",
       "source_file": "web/app.js",
-      "source_location": "L770"
+      "source_location": "L802"
     },
     {
       "id": "web_app_renderstats",
@@ -1195,7 +1159,7 @@
       "file_type": "code",
       "norm_label": "renderstats()",
       "source_file": "web/app.js",
-      "source_location": "L537"
+      "source_location": "L545"
     },
     {
       "id": "web_app_rendersystemstats",
@@ -1207,7 +1171,7 @@
       "file_type": "code",
       "norm_label": "rendersystemstats()",
       "source_file": "web/app.js",
-      "source_location": "L589"
+      "source_location": "L613"
     },
     {
       "id": "web_app_showdashboard",
@@ -1234,12 +1198,132 @@
       "source_location": "L178"
     },
     {
+      "id": "web_app_switchsection",
+      "label": "switchSection()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 3,
+      "community_name": "fetchStatus",
+      "file_type": "code",
+      "norm_label": "switchsection()",
+      "source_file": "web/app.js",
+      "source_location": "L1239"
+    },
+    {
+      "id": "core_web_server_check_rate_limit",
+      "label": "check_rate_limit()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 4,
+      "community_name": "web_server.py",
+      "file_type": "code",
+      "norm_label": "check_rate_limit()",
+      "source_file": "core/web_server.py",
+      "source_location": "L210"
+    },
+    {
+      "id": "core_web_server_hash_password",
+      "label": "hash_password()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 4,
+      "community_name": "web_server.py",
+      "file_type": "code",
+      "norm_label": "hash_password()",
+      "source_file": "core/web_server.py",
+      "source_location": "L171"
+    },
+    {
+      "id": "core_web_server_is_haproxy_listening",
+      "label": "is_haproxy_listening()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 4,
+      "community_name": "web_server.py",
+      "file_type": "code",
+      "norm_label": "is_haproxy_listening()",
+      "source_file": "core/web_server.py",
+      "source_location": "L355"
+    },
+    {
+      "id": "core_web_server_is_port_in_use_by_external_service",
+      "label": "is_port_in_use_by_external_service()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 4,
+      "community_name": "web_server.py",
+      "file_type": "code",
+      "norm_label": "is_port_in_use_by_external_service()",
+      "source_file": "core/web_server.py",
+      "source_location": "L366"
+    },
+    {
+      "id": "core_web_server_is_valid_target",
+      "label": "is_valid_target()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 4,
+      "community_name": "web_server.py",
+      "file_type": "code",
+      "norm_label": "is_valid_target()",
+      "source_file": "core/web_server.py",
+      "source_location": "L268"
+    },
+    {
+      "id": "core_web_server_record_failed_login",
+      "label": "record_failed_login()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 4,
+      "community_name": "web_server.py",
+      "file_type": "code",
+      "norm_label": "record_failed_login()",
+      "source_file": "core/web_server.py",
+      "source_location": "L231"
+    },
+    {
+      "id": "core_web_server_reset_rate_limit",
+      "label": "reset_rate_limit()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 4,
+      "community_name": "web_server.py",
+      "file_type": "code",
+      "norm_label": "reset_rate_limit()",
+      "source_file": "core/web_server.py",
+      "source_location": "L259"
+    },
+    {
+      "id": "core_web_server_validate_rule",
+      "label": "validate_rule()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 4,
+      "community_name": "web_server.py",
+      "file_type": "code",
+      "norm_label": "validate_rule()",
+      "source_file": "core/web_server.py",
+      "source_location": "L293"
+    },
+    {
+      "id": "core_web_server_verify_password",
+      "label": "verify_password()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 4,
+      "community_name": "web_server.py",
+      "file_type": "code",
+      "norm_label": "verify_password()",
+      "source_file": "core/web_server.py",
+      "source_location": "L180"
+    },
+    {
       "id": "core_web_server_xforwarderwebserver_init",
       "label": ".__init__()",
       "_callable": true,
       "_origin": "ast",
-      "community": 30,
-      "community_name": "XForwarderWebServer",
+      "community": 4,
+      "community_name": "web_server.py",
       "file_type": "code",
       "norm_label": ".__init__()",
       "source_file": "core/web_server.py",
@@ -1250,8 +1334,8 @@
       "label": ".start()",
       "_callable": true,
       "_origin": "ast",
-      "community": 30,
-      "community_name": "XForwarderWebServer",
+      "community": 4,
+      "community_name": "web_server.py",
       "file_type": "code",
       "norm_label": ".start()",
       "source_file": "core/web_server.py",
@@ -1262,108 +1346,60 @@
       "label": ".stop()",
       "_callable": true,
       "_origin": "ast",
-      "community": 30,
-      "community_name": "XForwarderWebServer",
+      "community": 4,
+      "community_name": "web_server.py",
       "file_type": "code",
       "norm_label": ".stop()",
       "source_file": "core/web_server.py",
       "source_location": "L942"
     },
     {
-      "id": "tests_test_security_testxforwardersecurity_test_web_server_ssl_initialization",
-      "label": ".test_web_server_ssl_initialization()",
+      "id": "tests_test_security_testxforwardersecurity_setup",
+      "label": ".setUp()",
       "_callable": true,
       "_origin": "ast",
-      "community": 30,
-      "community_name": "XForwarderWebServer",
+      "community": 4,
+      "community_name": "web_server.py",
       "file_type": "code",
-      "norm_label": ".test_web_server_ssl_initialization()",
+      "norm_label": ".setup()",
       "source_file": "tests/test_security.py",
-      "source_location": "L215"
+      "source_location": "L31"
     },
     {
-      "id": "core_web_server_get_config_path",
-      "label": "get_config_path()",
+      "id": "tests_test_security_testxforwardersecurity_teardown",
+      "label": ".tearDown()",
       "_callable": true,
       "_origin": "ast",
-      "community": 31,
-      "community_name": "test_migration.py",
+      "community": 4,
+      "community_name": "web_server.py",
       "file_type": "code",
-      "norm_label": "get_config_path()",
-      "source_file": "core/web_server.py",
-      "source_location": "L62"
+      "norm_label": ".teardown()",
+      "source_file": "tests/test_security.py",
+      "source_location": "L35"
     },
     {
-      "id": "core_web_server_load_config",
-      "label": "load_config()",
+      "id": "tests_test_security_testxforwardersecurity_test_brute_force_rate_limiting_and_lockout",
+      "label": ".test_brute_force_rate_limiting_and_lockout()",
       "_callable": true,
       "_origin": "ast",
-      "community": 31,
-      "community_name": "test_migration.py",
+      "community": 4,
+      "community_name": "web_server.py",
       "file_type": "code",
-      "norm_label": "load_config()",
-      "source_file": "core/web_server.py",
-      "source_location": "L72"
-    },
-    {
-      "id": "core_web_server_save_config",
-      "label": "save_config()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 31,
-      "community_name": "test_migration.py",
-      "file_type": "code",
-      "norm_label": "save_config()",
-      "source_file": "core/web_server.py",
-      "source_location": "L106"
-    },
-    {
-      "id": "core_web_server_is_valid_target",
-      "label": "is_valid_target()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 32,
-      "community_name": "is_valid_target",
-      "file_type": "code",
-      "norm_label": "is_valid_target()",
-      "source_file": "core/web_server.py",
-      "source_location": "L268"
+      "norm_label": ".test_brute_force_rate_limiting_and_lockout()",
+      "source_file": "tests/test_security.py",
+      "source_location": "L70"
     },
     {
       "id": "tests_test_security_testxforwardersecurity_test_destination_target_validation",
       "label": ".test_destination_target_validation()",
       "_callable": true,
       "_origin": "ast",
-      "community": 32,
-      "community_name": "is_valid_target",
+      "community": 4,
+      "community_name": "web_server.py",
       "file_type": "code",
       "norm_label": ".test_destination_target_validation()",
       "source_file": "tests/test_security.py",
       "source_location": "L100"
-    },
-    {
-      "id": "core_web_server_hash_password",
-      "label": "hash_password()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 4,
-      "community_name": "test_security.py",
-      "file_type": "code",
-      "norm_label": "hash_password()",
-      "source_file": "core/web_server.py",
-      "source_location": "L171"
-    },
-    {
-      "id": "core_web_server_verify_password",
-      "label": "verify_password()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 4,
-      "community_name": "test_security.py",
-      "file_type": "code",
-      "norm_label": "verify_password()",
-      "source_file": "core/web_server.py",
-      "source_location": "L180"
     },
     {
       "id": "tests_test_security_testxforwardersecurity_test_legacy_sha256_backward_compatibility_and_rehash_flag",
@@ -1371,7 +1407,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 4,
-      "community_name": "test_security.py",
+      "community_name": "web_server.py",
       "file_type": "code",
       "norm_label": ".test_legacy_sha256_backward_compatibility_and_rehash_flag()",
       "source_file": "tests/test_security.py",
@@ -1383,11 +1419,47 @@
       "_callable": true,
       "_origin": "ast",
       "community": 4,
-      "community_name": "test_security.py",
+      "community_name": "web_server.py",
       "file_type": "code",
       "norm_label": ".test_pbkdf2_password_hashing_and_verification()",
       "source_file": "tests/test_security.py",
       "source_location": "L38"
+    },
+    {
+      "id": "tests_test_security_testxforwardersecurity_test_rule_validation_rejects_injections",
+      "label": ".test_rule_validation_rejects_injections()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 4,
+      "community_name": "web_server.py",
+      "file_type": "code",
+      "norm_label": ".test_rule_validation_rejects_injections()",
+      "source_file": "tests/test_security.py",
+      "source_location": "L127"
+    },
+    {
+      "id": "tests_test_security_testxforwardersecurity_test_validate_rule_multi_priority_cascading",
+      "label": ".test_validate_rule_multi_priority_cascading()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 4,
+      "community_name": "web_server.py",
+      "file_type": "code",
+      "norm_label": ".test_validate_rule_multi_priority_cascading()",
+      "source_file": "tests/test_security.py",
+      "source_location": "L189"
+    },
+    {
+      "id": "tests_test_security_testxforwardersecurity_test_validate_rule_port_boundary_edge_cases",
+      "label": ".test_validate_rule_port_boundary_edge_cases()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 4,
+      "community_name": "web_server.py",
+      "file_type": "code",
+      "norm_label": ".test_validate_rule_port_boundary_edge_cases()",
+      "source_file": "tests/test_security.py",
+      "source_location": "L166"
     },
     {
       "id": "tests_test_security_testxforwardersecurity_test_verify_password_corrupt_and_empty_inputs",
@@ -1395,11 +1467,23 @@
       "_callable": true,
       "_origin": "ast",
       "community": 4,
-      "community_name": "test_security.py",
+      "community_name": "web_server.py",
       "file_type": "code",
       "norm_label": ".test_verify_password_corrupt_and_empty_inputs()",
       "source_file": "tests/test_security.py",
       "source_location": "L145"
+    },
+    {
+      "id": "tests_test_security_testxforwardersecurity_test_web_server_ssl_initialization",
+      "label": ".test_web_server_ssl_initialization()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 4,
+      "community_name": "web_server.py",
+      "file_type": "code",
+      "norm_label": ".test_web_server_ssl_initialization()",
+      "source_file": "tests/test_security.py",
+      "source_location": "L215"
     },
     {
       "id": "core_engine_xforwarderengine_migrate_and_normalize_config",
@@ -1576,39 +1660,6 @@
       "source_location": "L1"
     },
     {
-      "id": "core_haproxy_parser",
-      "label": "haproxy_parser.py",
-      "_origin": "ast",
-      "community": 0,
-      "community_name": "os",
-      "file_type": "code",
-      "norm_label": "haproxy_parser.py",
-      "source_file": "core/haproxy_parser.py",
-      "source_location": "L1"
-    },
-    {
-      "id": "core_haproxy_parser_py_any",
-      "label": "Any",
-      "_origin": "ast",
-      "community": 0,
-      "community_name": "os",
-      "file_type": "code",
-      "norm_label": "any",
-      "source_file": "",
-      "source_location": ""
-    },
-    {
-      "id": "tests_test_haproxy_parser",
-      "label": "test_haproxy_parser.py",
-      "_origin": "ast",
-      "community": 0,
-      "community_name": "os",
-      "file_type": "code",
-      "norm_label": "test_haproxy_parser.py",
-      "source_file": "tests/test_haproxy_parser.py",
-      "source_location": "L1"
-    },
-    {
       "id": "agents_scripts_check_anti_patterns_rationale_2",
       "label": "Anti-Pattern and Architectural Violation Scanner for XForwarder Enforces\u2026",
       "_origin": "ast",
@@ -1675,83 +1726,6 @@
       "source_location": "L2"
     },
     {
-      "id": "core_haproxy_parser_rationale_188",
-      "label": "Safely reads and parses a HAProxy config file.",
-      "_origin": "ast",
-      "community": 0,
-      "community_name": "os",
-      "file_type": "rationale",
-      "norm_label": "safely reads and parses a haproxy config file.",
-      "source_file": "core/haproxy_parser.py",
-      "source_location": "L188"
-    },
-    {
-      "id": "core_haproxy_parser_rationale_2",
-      "label": "XForwarder - HAProxy Configuration Parser & Importer Discovers and extracts\u2026",
-      "_origin": "ast",
-      "community": 0,
-      "community_name": "os",
-      "file_type": "rationale",
-      "norm_label": "xforwarder - haproxy configuration parser & importer discovers and extracts...",
-      "source_file": "core/haproxy_parser.py",
-      "source_location": "L2"
-    },
-    {
-      "id": "core_haproxy_parser_rationale_201",
-      "label": "Finds existing /etc/haproxy/haproxy.cfg and backup files sorted by modification\u2026",
-      "_origin": "ast",
-      "community": 0,
-      "community_name": "os",
-      "file_type": "rationale",
-      "norm_label": "finds existing /etc/haproxy/haproxy.cfg and backup files sorted by modification...",
-      "source_file": "core/haproxy_parser.py",
-      "source_location": "L201"
-    },
-    {
-      "id": "core_haproxy_parser_rationale_227",
-      "label": "Scans candidate HAProxy configs and returns rules for ports NOT currently in\u2026",
-      "_origin": "ast",
-      "community": 0,
-      "community_name": "os",
-      "file_type": "rationale",
-      "norm_label": "scans candidate haproxy configs and returns rules for ports not currently in...",
-      "source_file": "core/haproxy_parser.py",
-      "source_location": "L227"
-    },
-    {
-      "id": "core_haproxy_parser_rationale_254",
-      "label": "Discovers unimported HAProxy rules and appends them to config_path atomically.\u2026",
-      "_origin": "ast",
-      "community": 0,
-      "community_name": "os",
-      "file_type": "rationale",
-      "norm_label": "discovers unimported haproxy rules and appends them to config_path atomically....",
-      "source_file": "core/haproxy_parser.py",
-      "source_location": "L254"
-    },
-    {
-      "id": "core_haproxy_parser_rationale_40",
-      "label": "Parses HAProxy configuration text and extracts list/frontend rules. Returns a\u2026",
-      "_origin": "ast",
-      "community": 0,
-      "community_name": "os",
-      "file_type": "rationale",
-      "norm_label": "parses haproxy configuration text and extracts list/frontend rules. returns a...",
-      "source_file": "core/haproxy_parser.py",
-      "source_location": "L40"
-    },
-    {
-      "id": "tests_test_haproxy_parser_rationale_2",
-      "label": "Unit tests for HAProxy Configuration Parser & Importer. Standard Library\u2026",
-      "_origin": "ast",
-      "community": 0,
-      "community_name": "os",
-      "file_type": "rationale",
-      "norm_label": "unit tests for haproxy configuration parser & importer. standard library...",
-      "source_file": "tests/test_haproxy_parser.py",
-      "source_location": "L2"
-    },
-    {
       "id": "web_app",
       "label": "app.js",
       "_origin": "ast",
@@ -1793,7 +1767,7 @@
       "file_type": "code",
       "norm_label": "btnadddestination",
       "source_file": "web/app.js",
-      "source_location": "L987"
+      "source_location": "L1019"
     },
     {
       "id": "web_app_btncancelmodal",
@@ -1816,6 +1790,17 @@
       "norm_label": "btncancelsecurity",
       "source_file": "web/app.js",
       "source_location": "L69"
+    },
+    {
+      "id": "web_app_btnclearlogs",
+      "label": "btnClearLogs",
+      "_origin": "ast",
+      "community": 1,
+      "community_name": "app.js",
+      "file_type": "code",
+      "norm_label": "btnclearlogs",
+      "source_file": "web/app.js",
+      "source_location": "L1454"
     },
     {
       "id": "web_app_btnclearsearch",
@@ -1851,6 +1836,17 @@
       "source_location": "L68"
     },
     {
+      "id": "web_app_btnclosesidebar",
+      "label": "btnCloseSidebar",
+      "_origin": "ast",
+      "community": 1,
+      "community_name": "app.js",
+      "file_type": "code",
+      "norm_label": "btnclosesidebar",
+      "source_file": "web/app.js",
+      "source_location": "L1286"
+    },
+    {
       "id": "web_app_btndismissimportbanner",
       "label": "btnDismissImportBanner",
       "_origin": "ast",
@@ -1859,7 +1855,18 @@
       "file_type": "code",
       "norm_label": "btndismissimportbanner",
       "source_file": "web/app.js",
-      "source_location": "L245"
+      "source_location": "L253"
+    },
+    {
+      "id": "web_app_btnheaderthemetoggle",
+      "label": "btnHeaderThemeToggle",
+      "_origin": "ast",
+      "community": 1,
+      "community_name": "app.js",
+      "file_type": "code",
+      "norm_label": "btnheaderthemetoggle",
+      "source_file": "web/app.js",
+      "source_location": "L1233"
     },
     {
       "id": "web_app_btnimporthaproxy",
@@ -1870,7 +1877,7 @@
       "file_type": "code",
       "norm_label": "btnimporthaproxy",
       "source_file": "web/app.js",
-      "source_location": "L217"
+      "source_location": "L225"
     },
     {
       "id": "web_app_btnlogin",
@@ -1928,6 +1935,83 @@
       "source_location": "L67"
     },
     {
+      "id": "web_app_btnovaddrule",
+      "label": "btnOvAddRule",
+      "_origin": "ast",
+      "community": 1,
+      "community_name": "app.js",
+      "file_type": "code",
+      "norm_label": "btnovaddrule",
+      "source_file": "web/app.js",
+      "source_location": "L1326"
+    },
+    {
+      "id": "web_app_btnovgotosecurity",
+      "label": "btnOvGotoSecurity",
+      "_origin": "ast",
+      "community": 1,
+      "community_name": "app.js",
+      "file_type": "code",
+      "norm_label": "btnovgotosecurity",
+      "source_file": "web/app.js",
+      "source_location": "L1339"
+    },
+    {
+      "id": "web_app_btnovgotoservices",
+      "label": "btnOvGotoServices",
+      "_origin": "ast",
+      "community": 1,
+      "community_name": "app.js",
+      "file_type": "code",
+      "norm_label": "btnovgotoservices",
+      "source_file": "web/app.js",
+      "source_location": "L1334"
+    },
+    {
+      "id": "web_app_btnscanhaproxy",
+      "label": "btnScanHaproxy",
+      "_origin": "ast",
+      "community": 1,
+      "community_name": "app.js",
+      "file_type": "code",
+      "norm_label": "btnscanhaproxy",
+      "source_file": "web/app.js",
+      "source_location": "L1345"
+    },
+    {
+      "id": "web_app_btnsidebarlogout",
+      "label": "btnSidebarLogout",
+      "_origin": "ast",
+      "community": 1,
+      "community_name": "app.js",
+      "file_type": "code",
+      "norm_label": "btnsidebarlogout",
+      "source_file": "web/app.js",
+      "source_location": "L1318"
+    },
+    {
+      "id": "web_app_btnthemetoggle",
+      "label": "btnThemeToggle",
+      "_origin": "ast",
+      "community": 1,
+      "community_name": "app.js",
+      "file_type": "code",
+      "norm_label": "btnthemetoggle",
+      "source_file": "web/app.js",
+      "source_location": "L1230"
+    },
+    {
+      "id": "web_app_btntogglelogfeed",
+      "label": "btnToggleLogFeed",
+      "_origin": "ast",
+      "community": 1,
+      "community_name": "app.js",
+      "file_type": "code",
+      "norm_label": "btntogglelogfeed",
+      "source_file": "web/app.js",
+      "source_location": "L1455"
+    },
+    {
       "id": "web_app_btntoggleloginpwd",
       "label": "btnToggleLoginPwd",
       "_origin": "ast",
@@ -1948,6 +2032,17 @@
       "norm_label": "btntogglesecpwd",
       "source_file": "web/app.js",
       "source_location": "L74"
+    },
+    {
+      "id": "web_app_btntogglesidebar",
+      "label": "btnToggleSidebar",
+      "_origin": "ast",
+      "community": 1,
+      "community_name": "app.js",
+      "file_type": "code",
+      "norm_label": "btntogglesidebar",
+      "source_file": "web/app.js",
+      "source_location": "L1285"
     },
     {
       "id": "web_app_capslockwarning",
@@ -1980,7 +2075,7 @@
       "file_type": "code",
       "norm_label": "currentmodaldestinations",
       "source_file": "web/app.js",
-      "source_location": "L857"
+      "source_location": "L889"
     },
     {
       "id": "web_app_currentrules",
@@ -2112,7 +2207,18 @@
       "file_type": "code",
       "norm_label": "formportinput",
       "source_file": "web/app.js",
-      "source_location": "L993"
+      "source_location": "L1025"
+    },
+    {
+      "id": "web_app_inlinesecurityform",
+      "label": "inlineSecurityForm",
+      "_origin": "ast",
+      "community": 1,
+      "community_name": "app.js",
+      "file_type": "code",
+      "norm_label": "inlinesecurityform",
+      "source_file": "web/app.js",
+      "source_location": "L1385"
     },
     {
       "id": "web_app_lastruntime",
@@ -2157,6 +2263,28 @@
       "norm_label": "lockouttimer",
       "source_file": "web/app.js",
       "source_location": "L61"
+    },
+    {
+      "id": "web_app_logconsole",
+      "label": "logConsole",
+      "_origin": "ast",
+      "community": 1,
+      "community_name": "app.js",
+      "file_type": "code",
+      "norm_label": "logconsole",
+      "source_file": "web/app.js",
+      "source_location": "L1452"
+    },
+    {
+      "id": "web_app_logfeedtext",
+      "label": "logFeedText",
+      "_origin": "ast",
+      "community": 1,
+      "community_name": "app.js",
+      "file_type": "code",
+      "norm_label": "logfeedtext",
+      "source_file": "web/app.js",
+      "source_location": "L1456"
     },
     {
       "id": "web_app_loginerror",
@@ -2212,6 +2340,17 @@
       "norm_label": "loginusernameinput",
       "source_file": "web/app.js",
       "source_location": "L63"
+    },
+    {
+      "id": "web_app_logsearchinput",
+      "label": "logSearchInput",
+      "_origin": "ast",
+      "community": 1,
+      "community_name": "app.js",
+      "file_type": "code",
+      "norm_label": "logsearchinput",
+      "source_file": "web/app.js",
+      "source_location": "L1453"
     },
     {
       "id": "web_app_modaltitle",
@@ -2379,6 +2518,17 @@
       "source_location": "L71"
     },
     {
+      "id": "web_app_sections",
+      "label": "SECTIONS",
+      "_origin": "ast",
+      "community": 1,
+      "community_name": "app.js",
+      "file_type": "code",
+      "norm_label": "sections",
+      "source_file": "web/app.js",
+      "source_location": "L1237"
+    },
+    {
       "id": "web_app_securityerror",
       "label": "securityError",
       "_origin": "ast",
@@ -2410,6 +2560,28 @@
       "norm_label": "securitymodal",
       "source_file": "web/app.js",
       "source_location": "L65"
+    },
+    {
+      "id": "web_app_sidebar",
+      "label": "sidebar",
+      "_origin": "ast",
+      "community": 1,
+      "community_name": "app.js",
+      "file_type": "code",
+      "norm_label": "sidebar",
+      "source_file": "web/app.js",
+      "source_location": "L1283"
+    },
+    {
+      "id": "web_app_sidebarbackdrop",
+      "label": "sidebarBackdrop",
+      "_origin": "ast",
+      "community": 1,
+      "community_name": "app.js",
+      "file_type": "code",
+      "norm_label": "sidebarbackdrop",
+      "source_file": "web/app.js",
+      "source_location": "L1284"
     },
     {
       "id": "web_app_statactivehaproxy",
@@ -3219,6 +3391,24 @@
       "source_location": "L8"
     },
     {
+      "id": "agents_rules_reverse_prompting",
+      "label": "reverse-prompting.md",
+      "_origin": "ast",
+      "community": 19,
+      "community_name": ".agents/AGENTS.md",
+      "file_type": "document",
+      "frontmatter": {
+        "name": "reverse-prompting",
+        "description": "Reverse Prompt Engineering: single-question interactive clarification for ambiguous or architectural requests.",
+        "always_on": false,
+        "trigger": "model_decision"
+      },
+      "node_kind": "page",
+      "norm_label": "reverse-prompting.md",
+      "source_file": ".agents/rules/reverse-prompting.md",
+      "source_location": "L1"
+    },
+    {
       "id": "agents_skills_fwdman_ops_skill",
       "label": "fwdman-ops/SKILL.md",
       "_origin": "ast",
@@ -3263,6 +3453,42 @@
       "source_location": "L1"
     },
     {
+      "id": "agents_rules_reverse_prompting_1_zero_assumption_policy_triggers",
+      "label": "1. Zero-Assumption Policy & Triggers",
+      "_origin": "ast",
+      "community": 19,
+      "community_name": ".agents/AGENTS.md",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "1. zero-assumption policy & triggers",
+      "source_file": ".agents/rules/reverse-prompting.md",
+      "source_location": "L14"
+    },
+    {
+      "id": "agents_rules_reverse_prompting_2_rules_of_engagement",
+      "label": "2. Rules of Engagement",
+      "_origin": "ast",
+      "community": 19,
+      "community_name": ".agents/AGENTS.md",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "2. rules of engagement",
+      "source_file": ".agents/rules/reverse-prompting.md",
+      "source_location": "L29"
+    },
+    {
+      "id": "agents_rules_reverse_prompting_interactive_requirements_clarification_reverse_prompt_engineering",
+      "label": "Interactive Requirements Clarification (Reverse Prompt Engineering)",
+      "_origin": "ast",
+      "community": 19,
+      "community_name": ".agents/AGENTS.md",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "interactive requirements clarification (reverse prompt engineering)",
+      "source_file": ".agents/rules/reverse-prompting.md",
+      "source_location": "L8"
+    },
+    {
       "id": "agents_skills_fwdman_ops_skill_quick_cli_command_reference",
       "label": "Quick CLI Command Reference",
       "_origin": "ast",
@@ -3287,7 +3513,7 @@
       "source_location": "L6"
     },
     {
-      "id": "any",
+      "id": "core_engine_py_any",
       "label": "Any",
       "_origin": "ast",
       "community": 2,
@@ -3791,6 +4017,17 @@
       "source_location": ""
     },
     {
+      "id": "tests_test_migration",
+      "label": "test_migration.py",
+      "_origin": "ast",
+      "community": 24,
+      "community_name": ".do_POST",
+      "file_type": "code",
+      "norm_label": "test_migration.py",
+      "source_file": "tests/test_migration.py",
+      "source_location": "L1"
+    },
+    {
       "id": "core_web_server_rationale_390",
       "label": "Applies comprehensive OWASP recommended security headers.",
       "_origin": "ast",
@@ -3833,6 +4070,17 @@
       "norm_label": "resolves the requested path against configured secret_path. returns:...",
       "source_file": "core/web_server.py",
       "source_location": "L508"
+    },
+    {
+      "id": "tests_test_migration_rationale_2",
+      "label": "Unit tests for XForwarder Configuration Migration & Backward Compatibility.\u2026",
+      "_origin": "ast",
+      "community": 24,
+      "community_name": ".do_POST",
+      "file_type": "rationale",
+      "norm_label": "unit tests for xforwarder configuration migration & backward compatibility....",
+      "source_file": "tests/test_migration.py",
+      "source_location": "L2"
     },
     {
       "id": "agents_rules_session_handoff",
@@ -3889,10 +4137,120 @@
       "source_location": "L8"
     },
     {
+      "id": "core_haproxy_parser",
+      "label": "haproxy_parser.py",
+      "_origin": "ast",
+      "community": 27,
+      "community_name": "haproxy_parser.py",
+      "file_type": "code",
+      "norm_label": "haproxy_parser.py",
+      "source_file": "core/haproxy_parser.py",
+      "source_location": "L1"
+    },
+    {
+      "id": "core_haproxy_parser_py_any",
+      "label": "Any",
+      "_origin": "ast",
+      "community": 27,
+      "community_name": "haproxy_parser.py",
+      "file_type": "code",
+      "norm_label": "any",
+      "source_file": "",
+      "source_location": ""
+    },
+    {
+      "id": "tests_test_haproxy_parser",
+      "label": "test_haproxy_parser.py",
+      "_origin": "ast",
+      "community": 27,
+      "community_name": "haproxy_parser.py",
+      "file_type": "code",
+      "norm_label": "test_haproxy_parser.py",
+      "source_file": "tests/test_haproxy_parser.py",
+      "source_location": "L1"
+    },
+    {
+      "id": "core_haproxy_parser_rationale_188",
+      "label": "Safely reads and parses a HAProxy config file.",
+      "_origin": "ast",
+      "community": 27,
+      "community_name": "haproxy_parser.py",
+      "file_type": "rationale",
+      "norm_label": "safely reads and parses a haproxy config file.",
+      "source_file": "core/haproxy_parser.py",
+      "source_location": "L188"
+    },
+    {
+      "id": "core_haproxy_parser_rationale_2",
+      "label": "XForwarder - HAProxy Configuration Parser & Importer Discovers and extracts\u2026",
+      "_origin": "ast",
+      "community": 27,
+      "community_name": "haproxy_parser.py",
+      "file_type": "rationale",
+      "norm_label": "xforwarder - haproxy configuration parser & importer discovers and extracts...",
+      "source_file": "core/haproxy_parser.py",
+      "source_location": "L2"
+    },
+    {
+      "id": "core_haproxy_parser_rationale_201",
+      "label": "Finds existing /etc/haproxy/haproxy.cfg and backup files sorted by modification\u2026",
+      "_origin": "ast",
+      "community": 27,
+      "community_name": "haproxy_parser.py",
+      "file_type": "rationale",
+      "norm_label": "finds existing /etc/haproxy/haproxy.cfg and backup files sorted by modification...",
+      "source_file": "core/haproxy_parser.py",
+      "source_location": "L201"
+    },
+    {
+      "id": "core_haproxy_parser_rationale_227",
+      "label": "Scans candidate HAProxy configs and returns rules for ports NOT currently in\u2026",
+      "_origin": "ast",
+      "community": 27,
+      "community_name": "haproxy_parser.py",
+      "file_type": "rationale",
+      "norm_label": "scans candidate haproxy configs and returns rules for ports not currently in...",
+      "source_file": "core/haproxy_parser.py",
+      "source_location": "L227"
+    },
+    {
+      "id": "core_haproxy_parser_rationale_254",
+      "label": "Discovers unimported HAProxy rules and appends them to config_path atomically.\u2026",
+      "_origin": "ast",
+      "community": 27,
+      "community_name": "haproxy_parser.py",
+      "file_type": "rationale",
+      "norm_label": "discovers unimported haproxy rules and appends them to config_path atomically....",
+      "source_file": "core/haproxy_parser.py",
+      "source_location": "L254"
+    },
+    {
+      "id": "core_haproxy_parser_rationale_40",
+      "label": "Parses HAProxy configuration text and extracts list/frontend rules. Returns a\u2026",
+      "_origin": "ast",
+      "community": 27,
+      "community_name": "haproxy_parser.py",
+      "file_type": "rationale",
+      "norm_label": "parses haproxy configuration text and extracts list/frontend rules. returns a...",
+      "source_file": "core/haproxy_parser.py",
+      "source_location": "L40"
+    },
+    {
+      "id": "tests_test_haproxy_parser_rationale_2",
+      "label": "Unit tests for HAProxy Configuration Parser & Importer. Standard Library\u2026",
+      "_origin": "ast",
+      "community": 27,
+      "community_name": "haproxy_parser.py",
+      "file_type": "rationale",
+      "norm_label": "unit tests for haproxy configuration parser & importer. standard library...",
+      "source_file": "tests/test_haproxy_parser.py",
+      "source_location": "L2"
+    },
+    {
       "id": "core_web_server",
       "label": "web_server.py",
       "_origin": "ast",
-      "community": 27,
+      "community": 4,
       "community_name": "web_server.py",
       "file_type": "code",
       "norm_label": "web_server.py",
@@ -3900,241 +4258,11 @@
       "source_location": "L1"
     },
     {
-      "id": "core_web_server_rationale_2",
-      "label": "XForwarder - 24/7 Always-Online Web Server Provides a secure English dashboard\u2026",
-      "_origin": "ast",
-      "community": 27,
-      "community_name": "web_server.py",
-      "file_type": "rationale",
-      "norm_label": "xforwarder - 24/7 always-online web server provides a secure english dashboard...",
-      "source_file": "core/web_server.py",
-      "source_location": "L2"
-    },
-    {
-      "id": "core_web_server_rationale_211",
-      "label": "Checks if client IP is currently rate-limited. Returns (is_locked,\u2026",
-      "_origin": "ast",
-      "community": 27,
-      "community_name": "web_server.py",
-      "file_type": "rationale",
-      "norm_label": "checks if client ip is currently rate-limited. returns (is_locked,...",
-      "source_file": "core/web_server.py",
-      "source_location": "L211"
-    },
-    {
-      "id": "core_web_server_rationale_232",
-      "label": "Records a failed login attempt and calculates lockout status.",
-      "_origin": "ast",
-      "community": 27,
-      "community_name": "web_server.py",
-      "file_type": "rationale",
-      "norm_label": "records a failed login attempt and calculates lockout status.",
-      "source_file": "core/web_server.py",
-      "source_location": "L232"
-    },
-    {
-      "id": "core_web_server_rationale_356",
-      "label": "Returns True if the process currently listening on port is HAProxy (which\u2026",
-      "_origin": "ast",
-      "community": 27,
-      "community_name": "web_server.py",
-      "file_type": "rationale",
-      "norm_label": "returns true if the process currently listening on port is haproxy (which...",
-      "source_file": "core/web_server.py",
-      "source_location": "L356"
-    },
-    {
-      "id": "core_web_server_rationale_367",
-      "label": "Checks if a port is actively bound by an external non-HAProxy process not\u2026",
-      "_origin": "ast",
-      "community": 27,
-      "community_name": "web_server.py",
-      "file_type": "rationale",
-      "norm_label": "checks if a port is actively bound by an external non-haproxy process not...",
-      "source_file": "core/web_server.py",
-      "source_location": "L367"
-    },
-    {
-      "id": "core_web_server_rationale_260",
-      "label": "Clears failed login counter on successful authentication.",
-      "_origin": "ast",
-      "community": 29,
-      "community_name": "TestXForwarderSecurity",
-      "file_type": "rationale",
-      "norm_label": "clears failed login counter on successful authentication.",
-      "source_file": "core/web_server.py",
-      "source_location": "L260"
-    },
-    {
-      "id": "tests_test_security_rationale_128",
-      "label": "Verifies that validate_rule blocks command injection hazards.",
-      "_origin": "ast",
-      "community": 29,
-      "community_name": "TestXForwarderSecurity",
-      "file_type": "rationale",
-      "norm_label": "verifies that validate_rule blocks command injection hazards.",
-      "source_file": "tests/test_security.py",
-      "source_location": "L128"
-    },
-    {
-      "id": "tests_test_security_rationale_167",
-      "label": "Verifies boundary port constraints (1-65535) and protocol validation.",
-      "_origin": "ast",
-      "community": 29,
-      "community_name": "TestXForwarderSecurity",
-      "file_type": "rationale",
-      "norm_label": "verifies boundary port constraints (1-65535) and protocol validation.",
-      "source_file": "tests/test_security.py",
-      "source_location": "L167"
-    },
-    {
-      "id": "tests_test_security_rationale_190",
-      "label": "Verifies that arbitrary positive priority numbers (N-tier failover) are\u2026",
-      "_origin": "ast",
-      "community": 29,
-      "community_name": "TestXForwarderSecurity",
-      "file_type": "rationale",
-      "norm_label": "verifies that arbitrary positive priority numbers (n-tier failover) are...",
-      "source_file": "tests/test_security.py",
-      "source_location": "L190"
-    },
-    {
-      "id": "tests_test_security_rationale_71",
-      "label": "Verifies that 5 failed attempts trigger IP lockout.",
-      "_origin": "ast",
-      "community": 29,
-      "community_name": "TestXForwarderSecurity",
-      "file_type": "rationale",
-      "norm_label": "verifies that 5 failed attempts trigger ip lockout.",
-      "source_file": "tests/test_security.py",
-      "source_location": "L71"
-    },
-    {
-      "id": "tests_test_security_rationale_216",
-      "label": "Verifies that XForwarderWebServer parses ssl_cert and ssl_key attributes.",
-      "_origin": "ast",
-      "community": 30,
-      "community_name": "XForwarderWebServer",
-      "file_type": "rationale",
-      "norm_label": "verifies that xforwarderwebserver parses ssl_cert and ssl_key attributes.",
-      "source_file": "tests/test_security.py",
-      "source_location": "L216"
-    },
-    {
-      "id": "tests_test_migration",
-      "label": "test_migration.py",
-      "_origin": "ast",
-      "community": 31,
-      "community_name": "test_migration.py",
-      "file_type": "code",
-      "norm_label": "test_migration.py",
-      "source_file": "tests/test_migration.py",
-      "source_location": "L1"
-    },
-    {
-      "id": "tests_test_migration_rationale_2",
-      "label": "Unit tests for XForwarder Configuration Migration & Backward Compatibility.\u2026",
-      "_origin": "ast",
-      "community": 31,
-      "community_name": "test_migration.py",
-      "file_type": "rationale",
-      "norm_label": "unit tests for xforwarder configuration migration & backward compatibility....",
-      "source_file": "tests/test_migration.py",
-      "source_location": "L2"
-    },
-    {
-      "id": "core_web_server_rationale_269",
-      "label": "Strictly validates if a destination target is a valid IPv4, IPv6, or RFC\u2026",
-      "_origin": "ast",
-      "community": 32,
-      "community_name": "is_valid_target",
-      "file_type": "rationale",
-      "norm_label": "strictly validates if a destination target is a valid ipv4, ipv6, or rfc...",
-      "source_file": "core/web_server.py",
-      "source_location": "L269"
-    },
-    {
-      "id": "tests_test_security_rationale_101",
-      "label": "Verifies that IPv4, IPv6, and domain names are accepted, while injection\u2026",
-      "_origin": "ast",
-      "community": 32,
-      "community_name": "is_valid_target",
-      "file_type": "rationale",
-      "norm_label": "verifies that ipv4, ipv6, and domain names are accepted, while injection...",
-      "source_file": "tests/test_security.py",
-      "source_location": "L101"
-    },
-    {
-      "id": "agents_rules_reverse_prompting",
-      "label": "reverse-prompting.md",
-      "_origin": "ast",
-      "community": 33,
-      "community_name": "Interactive Requirements Clarification (Reverse Prompt Engineering)",
-      "file_type": "document",
-      "frontmatter": {
-        "name": "reverse-prompting",
-        "description": "Reverse Prompt Engineering: single-question interactive clarification for ambiguous or architectural requests.",
-        "always_on": false,
-        "trigger": "model_decision"
-      },
-      "node_kind": "page",
-      "norm_label": "reverse-prompting.md",
-      "source_file": ".agents/rules/reverse-prompting.md",
-      "source_location": "L1"
-    },
-    {
-      "id": "agents_rules_reverse_prompting_1_zero_assumption_policy_triggers",
-      "label": "1. Zero-Assumption Policy & Triggers",
-      "_origin": "ast",
-      "community": 33,
-      "community_name": "Interactive Requirements Clarification (Reverse Prompt Engineering)",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "1. zero-assumption policy & triggers",
-      "source_file": ".agents/rules/reverse-prompting.md",
-      "source_location": "L14"
-    },
-    {
-      "id": "agents_rules_reverse_prompting_2_rules_of_engagement",
-      "label": "2. Rules of Engagement",
-      "_origin": "ast",
-      "community": 33,
-      "community_name": "Interactive Requirements Clarification (Reverse Prompt Engineering)",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "2. rules of engagement",
-      "source_file": ".agents/rules/reverse-prompting.md",
-      "source_location": "L29"
-    },
-    {
-      "id": "agents_rules_reverse_prompting_interactive_requirements_clarification_reverse_prompt_engineering",
-      "label": "Interactive Requirements Clarification (Reverse Prompt Engineering)",
-      "_origin": "ast",
-      "community": 33,
-      "community_name": "Interactive Requirements Clarification (Reverse Prompt Engineering)",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "interactive requirements clarification (reverse prompt engineering)",
-      "source_file": ".agents/rules/reverse-prompting.md",
-      "source_location": "L8"
-    },
-    {
-      "id": "core_engine_py_any",
-      "label": "Any",
-      "_origin": "ast",
-      "community": 34,
-      "community_name": "Any",
-      "file_type": "code",
-      "norm_label": "any",
-      "source_file": "",
-      "source_location": ""
-    },
-    {
       "id": "tests_test_security",
       "label": "test_security.py",
       "_origin": "ast",
       "community": 4,
-      "community_name": "test_security.py",
+      "community_name": "web_server.py",
       "file_type": "code",
       "norm_label": "test_security.py",
       "source_file": "tests/test_security.py",
@@ -4145,7 +4273,7 @@
       "label": "Generates a secure PBKDF2-HMAC-SHA256 salted password hash.",
       "_origin": "ast",
       "community": 4,
-      "community_name": "test_security.py",
+      "community_name": "web_server.py",
       "file_type": "rationale",
       "norm_label": "generates a secure pbkdf2-hmac-sha256 salted password hash.",
       "source_file": "core/web_server.py",
@@ -4156,40 +4284,172 @@
       "label": "Verifies password against stored hash using constant-time comparison. Returns:\u2026",
       "_origin": "ast",
       "community": 4,
-      "community_name": "test_security.py",
+      "community_name": "web_server.py",
       "file_type": "rationale",
       "norm_label": "verifies password against stored hash using constant-time comparison. returns:...",
       "source_file": "core/web_server.py",
       "source_location": "L181"
     },
     {
+      "id": "core_web_server_rationale_2",
+      "label": "XForwarder - 24/7 Always-Online Web Server Provides a secure English dashboard\u2026",
+      "_origin": "ast",
+      "community": 4,
+      "community_name": "web_server.py",
+      "file_type": "rationale",
+      "norm_label": "xforwarder - 24/7 always-online web server provides a secure english dashboard...",
+      "source_file": "core/web_server.py",
+      "source_location": "L2"
+    },
+    {
+      "id": "core_web_server_rationale_211",
+      "label": "Checks if client IP is currently rate-limited. Returns (is_locked,\u2026",
+      "_origin": "ast",
+      "community": 4,
+      "community_name": "web_server.py",
+      "file_type": "rationale",
+      "norm_label": "checks if client ip is currently rate-limited. returns (is_locked,...",
+      "source_file": "core/web_server.py",
+      "source_location": "L211"
+    },
+    {
+      "id": "core_web_server_rationale_232",
+      "label": "Records a failed login attempt and calculates lockout status.",
+      "_origin": "ast",
+      "community": 4,
+      "community_name": "web_server.py",
+      "file_type": "rationale",
+      "norm_label": "records a failed login attempt and calculates lockout status.",
+      "source_file": "core/web_server.py",
+      "source_location": "L232"
+    },
+    {
+      "id": "core_web_server_rationale_260",
+      "label": "Clears failed login counter on successful authentication.",
+      "_origin": "ast",
+      "community": 4,
+      "community_name": "web_server.py",
+      "file_type": "rationale",
+      "norm_label": "clears failed login counter on successful authentication.",
+      "source_file": "core/web_server.py",
+      "source_location": "L260"
+    },
+    {
+      "id": "core_web_server_rationale_269",
+      "label": "Strictly validates if a destination target is a valid IPv4, IPv6, or RFC\u2026",
+      "_origin": "ast",
+      "community": 4,
+      "community_name": "web_server.py",
+      "file_type": "rationale",
+      "norm_label": "strictly validates if a destination target is a valid ipv4, ipv6, or rfc...",
+      "source_file": "core/web_server.py",
+      "source_location": "L269"
+    },
+    {
+      "id": "core_web_server_rationale_356",
+      "label": "Returns True if the process currently listening on port is HAProxy (which\u2026",
+      "_origin": "ast",
+      "community": 4,
+      "community_name": "web_server.py",
+      "file_type": "rationale",
+      "norm_label": "returns true if the process currently listening on port is haproxy (which...",
+      "source_file": "core/web_server.py",
+      "source_location": "L356"
+    },
+    {
+      "id": "core_web_server_rationale_367",
+      "label": "Checks if a port is actively bound by an external non-HAProxy process not\u2026",
+      "_origin": "ast",
+      "community": 4,
+      "community_name": "web_server.py",
+      "file_type": "rationale",
+      "norm_label": "checks if a port is actively bound by an external non-haproxy process not...",
+      "source_file": "core/web_server.py",
+      "source_location": "L367"
+    },
+    {
+      "id": "tests_test_security_rationale_101",
+      "label": "Verifies that IPv4, IPv6, and domain names are accepted, while injection\u2026",
+      "_origin": "ast",
+      "community": 4,
+      "community_name": "web_server.py",
+      "file_type": "rationale",
+      "norm_label": "verifies that ipv4, ipv6, and domain names are accepted, while injection...",
+      "source_file": "tests/test_security.py",
+      "source_location": "L101"
+    },
+    {
+      "id": "tests_test_security_rationale_128",
+      "label": "Verifies that validate_rule blocks command injection hazards.",
+      "_origin": "ast",
+      "community": 4,
+      "community_name": "web_server.py",
+      "file_type": "rationale",
+      "norm_label": "verifies that validate_rule blocks command injection hazards.",
+      "source_file": "tests/test_security.py",
+      "source_location": "L128"
+    },
+    {
       "id": "tests_test_security_rationale_146",
       "label": "Verifies that verify_password handles malformed, empty, or None inputs\u2026",
       "_origin": "ast",
       "community": 4,
-      "community_name": "test_security.py",
+      "community_name": "web_server.py",
       "file_type": "rationale",
       "norm_label": "verifies that verify_password handles malformed, empty, or none inputs...",
       "source_file": "tests/test_security.py",
       "source_location": "L146"
     },
     {
+      "id": "tests_test_security_rationale_167",
+      "label": "Verifies boundary port constraints (1-65535) and protocol validation.",
+      "_origin": "ast",
+      "community": 4,
+      "community_name": "web_server.py",
+      "file_type": "rationale",
+      "norm_label": "verifies boundary port constraints (1-65535) and protocol validation.",
+      "source_file": "tests/test_security.py",
+      "source_location": "L167"
+    },
+    {
+      "id": "tests_test_security_rationale_190",
+      "label": "Verifies that arbitrary positive priority numbers (N-tier failover) are\u2026",
+      "_origin": "ast",
+      "community": 4,
+      "community_name": "web_server.py",
+      "file_type": "rationale",
+      "norm_label": "verifies that arbitrary positive priority numbers (n-tier failover) are...",
+      "source_file": "tests/test_security.py",
+      "source_location": "L190"
+    },
+    {
       "id": "tests_test_security_rationale_2",
       "label": "Unit tests for XForwarder Web & Authentication Security. Tests PBKDF2 hashing,\u2026",
       "_origin": "ast",
       "community": 4,
-      "community_name": "test_security.py",
+      "community_name": "web_server.py",
       "file_type": "rationale",
       "norm_label": "unit tests for xforwarder web & authentication security. tests pbkdf2 hashing,...",
       "source_file": "tests/test_security.py",
       "source_location": "L2"
     },
     {
+      "id": "tests_test_security_rationale_216",
+      "label": "Verifies that XForwarderWebServer parses ssl_cert and ssl_key attributes.",
+      "_origin": "ast",
+      "community": 4,
+      "community_name": "web_server.py",
+      "file_type": "rationale",
+      "norm_label": "verifies that xforwarderwebserver parses ssl_cert and ssl_key attributes.",
+      "source_file": "tests/test_security.py",
+      "source_location": "L216"
+    },
+    {
       "id": "tests_test_security_rationale_39",
       "label": "Verifies PBKDF2-HMAC-SHA256 password hashing with unique salts.",
       "_origin": "ast",
       "community": 4,
-      "community_name": "test_security.py",
+      "community_name": "web_server.py",
       "file_type": "rationale",
       "norm_label": "verifies pbkdf2-hmac-sha256 password hashing with unique salts.",
       "source_file": "tests/test_security.py",
@@ -4200,11 +4460,22 @@
       "label": "Verifies that legacy plain SHA-256 hashes are verified and flagged for auto-\u2026",
       "_origin": "ast",
       "community": 4,
-      "community_name": "test_security.py",
+      "community_name": "web_server.py",
       "file_type": "rationale",
       "norm_label": "verifies that legacy plain sha-256 hashes are verified and flagged for auto-...",
       "source_file": "tests/test_security.py",
       "source_location": "L58"
+    },
+    {
+      "id": "tests_test_security_rationale_71",
+      "label": "Verifies that 5 failed attempts trigger IP lockout.",
+      "_origin": "ast",
+      "community": 4,
+      "community_name": "web_server.py",
+      "file_type": "rationale",
+      "norm_label": "verifies that 5 failed attempts trigger ip lockout.",
+      "source_file": "tests/test_security.py",
+      "source_location": "L71"
     },
     {
       "id": "readme",
@@ -4988,6 +5259,18 @@
       "source_location": "L42"
     },
     {
+      "id": "agents_experiences_004_backward_compatibility_and_schema_migrations",
+      "label": "004-backward-compatibility-and-schema-migrations.md",
+      "_origin": "ast",
+      "community": 8,
+      "community_name": ".migrate_and_normalize_config",
+      "file_type": "document",
+      "node_kind": "page",
+      "norm_label": "004-backward-compatibility-and-schema-migrations.md",
+      "source_file": ".agents/experiences/004-backward-compatibility-and-schema-migrations.md",
+      "source_location": "L1"
+    },
+    {
       "id": "agents_experiences_004_backward_compatibility_and_schema_migrations_1_context_motivation",
       "label": "1. Context & Motivation",
       "_origin": "ast",
@@ -5549,18 +5832,6 @@
       "source_location": "L1"
     },
     {
-      "id": "agents_experiences_004_backward_compatibility_and_schema_migrations",
-      "label": "004-backward-compatibility-and-schema-migrations.md",
-      "_origin": "ast",
-      "community": 9,
-      "community_name": "experiences/README.md",
-      "file_type": "document",
-      "node_kind": "page",
-      "norm_label": "004-backward-compatibility-and-schema-migrations.md",
-      "source_file": ".agents/experiences/004-backward-compatibility-and-schema-migrations.md",
-      "source_location": "L1"
-    },
-    {
       "id": "agents_experiences_005_pbkdf2_salted_auth_and_adaptive_rate_limiting",
       "label": "005-pbkdf2-salted-auth-and-adaptive-rate-limiting.md",
       "_origin": "ast",
@@ -5717,18 +5988,6 @@
       "type": "external"
     },
     {
-      "id": "glob",
-      "label": "glob",
-      "_origin": "semantic",
-      "community": 0,
-      "community_name": "os",
-      "external": true,
-      "file_type": "concept",
-      "norm_label": "glob",
-      "source_file": "",
-      "type": "external"
-    },
-    {
       "id": "json",
       "label": "json",
       "_origin": "semantic",
@@ -5737,18 +5996,6 @@
       "external": true,
       "file_type": "concept",
       "norm_label": "json",
-      "source_file": "",
-      "type": "external"
-    },
-    {
-      "id": "logging",
-      "label": "logging",
-      "_origin": "semantic",
-      "community": 0,
-      "community_name": "os",
-      "external": true,
-      "file_type": "concept",
-      "norm_label": "logging",
       "source_file": "",
       "type": "external"
     },
@@ -5825,18 +6072,6 @@
       "type": "external"
     },
     {
-      "id": "tempfile",
-      "label": "tempfile",
-      "_origin": "semantic",
-      "community": 0,
-      "community_name": "os",
-      "external": true,
-      "file_type": "concept",
-      "norm_label": "tempfile",
-      "source_file": "",
-      "type": "external"
-    },
-    {
       "id": "threading",
       "label": "threading",
       "_origin": "semantic",
@@ -5861,74 +6096,50 @@
       "type": "external"
     },
     {
-      "id": "http_server",
-      "label": "http_server",
+      "id": "glob",
+      "label": "glob",
       "_origin": "semantic",
       "community": 27,
-      "community_name": "web_server.py",
+      "community_name": "haproxy_parser.py",
       "external": true,
       "file_type": "concept",
-      "norm_label": "http_server",
+      "norm_label": "glob",
       "source_file": "",
       "type": "external"
     },
     {
-      "id": "socket",
-      "label": "socket",
+      "id": "logging",
+      "label": "logging",
       "_origin": "semantic",
       "community": 27,
-      "community_name": "web_server.py",
+      "community_name": "haproxy_parser.py",
       "external": true,
       "file_type": "concept",
-      "norm_label": "socket",
+      "norm_label": "logging",
       "source_file": "",
       "type": "external"
     },
     {
-      "id": "ssl",
-      "label": "ssl",
+      "id": "tempfile",
+      "label": "tempfile",
       "_origin": "semantic",
       "community": 27,
-      "community_name": "web_server.py",
+      "community_name": "haproxy_parser.py",
       "external": true,
       "file_type": "concept",
-      "norm_label": "ssl",
+      "norm_label": "tempfile",
       "source_file": "",
       "type": "external"
     },
     {
-      "id": "time",
-      "label": "time",
+      "id": "unittest",
+      "label": "unittest",
       "_origin": "semantic",
       "community": 27,
-      "community_name": "web_server.py",
+      "community_name": "haproxy_parser.py",
       "external": true,
       "file_type": "concept",
-      "norm_label": "time",
-      "source_file": "",
-      "type": "external"
-    },
-    {
-      "id": "urllib_parse",
-      "label": "urllib_parse",
-      "_origin": "semantic",
-      "community": 27,
-      "community_name": "web_server.py",
-      "external": true,
-      "file_type": "concept",
-      "norm_label": "urllib_parse",
-      "source_file": "",
-      "type": "external"
-    },
-    {
-      "id": "ipaddress",
-      "label": "ipaddress",
-      "_origin": "semantic",
-      "community": 32,
-      "community_name": "is_valid_target",
-      "external": true,
-      "file_type": "concept",
-      "norm_label": "ipaddress",
+      "norm_label": "unittest",
       "source_file": "",
       "type": "external"
     },
@@ -5937,7 +6148,7 @@
       "label": "hashlib",
       "_origin": "semantic",
       "community": 4,
-      "community_name": "test_security.py",
+      "community_name": "web_server.py",
       "external": true,
       "file_type": "concept",
       "norm_label": "hashlib",
@@ -5949,10 +6160,34 @@
       "label": "hmac",
       "_origin": "semantic",
       "community": 4,
-      "community_name": "test_security.py",
+      "community_name": "web_server.py",
       "external": true,
       "file_type": "concept",
       "norm_label": "hmac",
+      "source_file": "",
+      "type": "external"
+    },
+    {
+      "id": "http_server",
+      "label": "http_server",
+      "_origin": "semantic",
+      "community": 4,
+      "community_name": "web_server.py",
+      "external": true,
+      "file_type": "concept",
+      "norm_label": "http_server",
+      "source_file": "",
+      "type": "external"
+    },
+    {
+      "id": "ipaddress",
+      "label": "ipaddress",
+      "_origin": "semantic",
+      "community": 4,
+      "community_name": "web_server.py",
+      "external": true,
+      "file_type": "concept",
+      "norm_label": "ipaddress",
       "source_file": "",
       "type": "external"
     },
@@ -5961,7 +6196,7 @@
       "label": "secrets",
       "_origin": "semantic",
       "community": 4,
-      "community_name": "test_security.py",
+      "community_name": "web_server.py",
       "external": true,
       "file_type": "concept",
       "norm_label": "secrets",
@@ -5969,14 +6204,50 @@
       "type": "external"
     },
     {
-      "id": "unittest",
-      "label": "unittest",
+      "id": "socket",
+      "label": "socket",
       "_origin": "semantic",
       "community": 4,
-      "community_name": "test_security.py",
+      "community_name": "web_server.py",
       "external": true,
       "file_type": "concept",
-      "norm_label": "unittest",
+      "norm_label": "socket",
+      "source_file": "",
+      "type": "external"
+    },
+    {
+      "id": "ssl",
+      "label": "ssl",
+      "_origin": "semantic",
+      "community": 4,
+      "community_name": "web_server.py",
+      "external": true,
+      "file_type": "concept",
+      "norm_label": "ssl",
+      "source_file": "",
+      "type": "external"
+    },
+    {
+      "id": "time",
+      "label": "time",
+      "_origin": "semantic",
+      "community": 4,
+      "community_name": "web_server.py",
+      "external": true,
+      "file_type": "concept",
+      "norm_label": "time",
+      "source_file": "",
+      "type": "external"
+    },
+    {
+      "id": "urllib_parse",
+      "label": "urllib_parse",
+      "_origin": "semantic",
+      "community": 4,
+      "community_name": "web_server.py",
+      "external": true,
+      "file_type": "concept",
+      "norm_label": "urllib_parse",
       "source_file": "",
       "type": "external"
     }
@@ -7640,18 +7911,6 @@
     },
     {
       "source": "web_app_adddestinationrow",
-      "target": "web_app_syncdestinationsfromdom",
-      "relation": "calls",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "context": "call",
-      "source_file": "web/app.js",
-      "source_location": "L964",
-      "weight": 1.0
-    },
-    {
-      "source": "web_app_adddestinationrow",
       "target": "web_app_renderdestinationslist",
       "relation": "calls",
       "_origin": "ast",
@@ -7659,7 +7918,31 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/app.js",
-      "source_location": "L974",
+      "source_location": "L1006",
+      "weight": 1.0
+    },
+    {
+      "source": "web_app_adddestinationrow",
+      "target": "web_app_syncdestinationsfromdom",
+      "relation": "calls",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "call",
+      "source_file": "web/app.js",
+      "source_location": "L996",
+      "weight": 1.0
+    },
+    {
+      "source": "web_app_addlogentry",
+      "target": "web_app_escapehtml",
+      "relation": "calls",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "call",
+      "source_file": "web/app.js",
+      "source_location": "L1474",
       "weight": 1.0
     },
     {
@@ -7719,7 +8002,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/app.js",
-      "source_location": "L1085",
+      "source_location": "L1117",
       "weight": 1.0
     },
     {
@@ -7731,7 +8014,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/app.js",
-      "source_location": "L1094",
+      "source_location": "L1126",
       "weight": 1.0
     },
     {
@@ -7743,7 +8026,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/app.js",
-      "source_location": "L1095",
+      "source_location": "L1127",
       "weight": 1.0
     },
     {
@@ -7755,7 +8038,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/app.js",
-      "source_location": "L1079",
+      "source_location": "L1111",
       "weight": 1.0
     },
     {
@@ -7779,7 +8062,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/app.js",
-      "source_location": "L518",
+      "source_location": "L526",
       "weight": 1.0
     },
     {
@@ -7791,7 +8074,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/app.js",
-      "source_location": "L528",
+      "source_location": "L536",
       "weight": 1.0
     },
     {
@@ -7803,7 +8086,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/app.js",
-      "source_location": "L529",
+      "source_location": "L537",
       "weight": 1.0
     },
     {
@@ -7815,7 +8098,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/app.js",
-      "source_location": "L530",
+      "source_location": "L538",
       "weight": 1.0
     },
     {
@@ -7827,7 +8110,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/app.js",
-      "source_location": "L778",
+      "source_location": "L810",
       "weight": 1.0
     },
     {
@@ -7839,7 +8122,19 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/app.js",
-      "source_location": "L779",
+      "source_location": "L811",
+      "weight": 1.0
+    },
+    {
+      "source": "web_app_inittheme",
+      "target": "web_app_applytheme",
+      "relation": "calls",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "call",
+      "source_file": "web/app.js",
+      "source_location": "L1209",
       "weight": 1.0
     },
     {
@@ -7851,7 +8146,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/app.js",
-      "source_location": "L978",
+      "source_location": "L1010",
       "weight": 1.0
     },
     {
@@ -7863,7 +8158,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/app.js",
-      "source_location": "L980",
+      "source_location": "L1012",
       "weight": 1.0
     },
     {
@@ -7875,7 +8170,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/app.js",
-      "source_location": "L984",
+      "source_location": "L1016",
       "weight": 1.0
     },
     {
@@ -7887,7 +8182,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/app.js",
-      "source_location": "L891",
+      "source_location": "L923",
       "weight": 1.0
     },
     {
@@ -7899,7 +8194,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/app.js",
-      "source_location": "L892",
+      "source_location": "L924",
       "weight": 1.0
     },
     {
@@ -7911,7 +8206,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/app.js",
-      "source_location": "L910",
+      "source_location": "L942",
       "weight": 1.0
     },
     {
@@ -7923,7 +8218,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/app.js",
-      "source_location": "L959",
+      "source_location": "L991",
       "weight": 1.0
     },
     {
@@ -7935,7 +8230,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/app.js",
-      "source_location": "L681",
+      "source_location": "L713",
       "weight": 1.0
     },
     {
@@ -7947,7 +8242,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/app.js",
-      "source_location": "L711",
+      "source_location": "L743",
       "weight": 1.0
     },
     {
@@ -7959,7 +8254,19 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/app.js",
-      "source_location": "L712",
+      "source_location": "L744",
+      "weight": 1.0
+    },
+    {
+      "source": "web_app_showdashboard",
+      "target": "web_app_switchsection",
+      "relation": "calls",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "call",
+      "source_file": "web/app.js",
+      "source_location": "L195",
       "weight": 1.0
     },
     {
@@ -7971,7 +8278,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/app.js",
-      "source_location": "L189",
+      "source_location": "L197",
       "weight": 1.0
     },
     {
@@ -7983,7 +8290,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/app.js",
-      "source_location": "L190",
+      "source_location": "L198",
       "weight": 1.0
     },
     {
@@ -7995,7 +8302,43 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/app.js",
-      "source_location": "L307",
+      "source_location": "L315",
+      "weight": 1.0
+    },
+    {
+      "source": "web_app_switchsection",
+      "target": "web_app_closemobilesidebar",
+      "relation": "calls",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "call",
+      "source_file": "web/app.js",
+      "source_location": "L1279",
+      "weight": 1.0
+    },
+    {
+      "source": "web_app_toggletheme",
+      "target": "web_app_applytheme",
+      "relation": "calls",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "call",
+      "source_file": "web/app.js",
+      "source_location": "L1226",
+      "weight": 1.0
+    },
+    {
+      "source": "web_app_toggletheme",
+      "target": "web_app_showtoast",
+      "relation": "calls",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "call",
+      "source_file": "web/app.js",
+      "source_location": "L1227",
       "weight": 1.0
     },
     {
@@ -9183,7 +9526,19 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/app.js",
-      "source_location": "L1054",
+      "source_location": "L1086",
+      "weight": 1.0
+    },
+    {
+      "source": "web_app",
+      "target": "web_app_switchsection",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "call",
+      "source_file": "web/app.js",
+      "source_location": "L1239",
       "weight": 1.0
     },
     {
@@ -9231,7 +9586,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/app.js",
-      "source_location": "L281",
+      "source_location": "L289",
       "weight": 1.0
     },
     {
@@ -9243,7 +9598,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/app.js",
-      "source_location": "L315",
+      "source_location": "L323",
       "weight": 1.0
     },
     {
@@ -9255,7 +9610,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/app.js",
-      "source_location": "L342",
+      "source_location": "L350",
       "weight": 1.0
     },
     {
@@ -9267,7 +9622,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/app.js",
-      "source_location": "L514",
+      "source_location": "L522",
       "weight": 1.0
     },
     {
@@ -9279,7 +9634,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/app.js",
-      "source_location": "L600",
+      "source_location": "L632",
       "weight": 1.0
     },
     {
@@ -9303,7 +9658,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/app.js",
-      "source_location": "L925",
+      "source_location": "L957",
       "weight": 1.0
     },
     {
@@ -9315,12 +9670,12 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/app.js",
-      "source_location": "L948",
+      "source_location": "L980",
       "weight": 1.0
     },
     {
       "source": "core_engine_xforwarderengine_check_destination",
-      "target": "any",
+      "target": "core_engine_py_any",
       "relation": "references",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -9332,7 +9687,7 @@
     },
     {
       "source": "core_engine_xforwarderengine_evaluate_rule",
-      "target": "any",
+      "target": "core_engine_py_any",
       "relation": "references",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -9344,7 +9699,7 @@
     },
     {
       "source": "core_engine_xforwarderengine_migrate_and_normalize_config",
-      "target": "any",
+      "target": "core_engine_py_any",
       "relation": "references",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -12718,24 +13073,46 @@
     },
     {
       "source": "web_app",
+      "target": "web_app_removedestinationrow",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "web/app.js",
+      "source_location": "L1009",
+      "weight": 1.0
+    },
+    {
+      "source": "web_app",
+      "target": "web_app_btnadddestination",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "web/app.js",
+      "source_location": "L1019",
+      "weight": 1.0
+    },
+    {
+      "source": "web_app",
+      "target": "web_app_formportinput",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "web/app.js",
+      "source_location": "L1025",
+      "weight": 1.0
+    },
+    {
+      "source": "web_app",
       "target": "web_app_editrule",
       "relation": "contains",
       "_origin": "ast",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "web/app.js",
-      "source_location": "L1061",
-      "weight": 1.0
-    },
-    {
-      "source": "web_app",
-      "target": "web_app_deleterule",
-      "relation": "contains",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "web/app.js",
-      "source_location": "L1084",
+      "source_location": "L1093",
       "weight": 1.0
     },
     {
@@ -12751,6 +13128,28 @@
     },
     {
       "source": "web_app",
+      "target": "web_app_deleterule",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "web/app.js",
+      "source_location": "L1116",
+      "weight": 1.0
+    },
+    {
+      "source": "web_app",
+      "target": "web_app_inittheme",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "web/app.js",
+      "source_location": "L1207",
+      "weight": 1.0
+    },
+    {
+      "source": "web_app",
       "target": "web_app_formatlatencybadge",
       "relation": "contains",
       "_origin": "ast",
@@ -12762,6 +13161,116 @@
     },
     {
       "source": "web_app",
+      "target": "web_app_applytheme",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "web/app.js",
+      "source_location": "L1212",
+      "weight": 1.0
+    },
+    {
+      "source": "web_app",
+      "target": "web_app_btnthemetoggle",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "web/app.js",
+      "source_location": "L1230",
+      "weight": 1.0
+    },
+    {
+      "source": "web_app",
+      "target": "web_app_btnheaderthemetoggle",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "web/app.js",
+      "source_location": "L1233",
+      "weight": 1.0
+    },
+    {
+      "source": "web_app",
+      "target": "web_app_sections",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "web/app.js",
+      "source_location": "L1237",
+      "weight": 1.0
+    },
+    {
+      "source": "web_app",
+      "target": "web_app_sidebar",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "web/app.js",
+      "source_location": "L1283",
+      "weight": 1.0
+    },
+    {
+      "source": "web_app",
+      "target": "web_app_sidebarbackdrop",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "web/app.js",
+      "source_location": "L1284",
+      "weight": 1.0
+    },
+    {
+      "source": "web_app",
+      "target": "web_app_btntogglesidebar",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "web/app.js",
+      "source_location": "L1285",
+      "weight": 1.0
+    },
+    {
+      "source": "web_app",
+      "target": "web_app_btnclosesidebar",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "web/app.js",
+      "source_location": "L1286",
+      "weight": 1.0
+    },
+    {
+      "source": "web_app",
+      "target": "web_app_btnsidebarlogout",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "web/app.js",
+      "source_location": "L1318",
+      "weight": 1.0
+    },
+    {
+      "source": "web_app",
+      "target": "web_app_btnovaddrule",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "web/app.js",
+      "source_location": "L1326",
+      "weight": 1.0
+    },
+    {
+      "source": "web_app",
       "target": "web_app_escapehtml",
       "relation": "contains",
       "_origin": "ast",
@@ -12769,6 +13278,116 @@
       "confidence_score": 1.0,
       "source_file": "web/app.js",
       "source_location": "L133",
+      "weight": 1.0
+    },
+    {
+      "source": "web_app",
+      "target": "web_app_btnovgotoservices",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "web/app.js",
+      "source_location": "L1334",
+      "weight": 1.0
+    },
+    {
+      "source": "web_app",
+      "target": "web_app_btnovgotosecurity",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "web/app.js",
+      "source_location": "L1339",
+      "weight": 1.0
+    },
+    {
+      "source": "web_app",
+      "target": "web_app_btnscanhaproxy",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "web/app.js",
+      "source_location": "L1345",
+      "weight": 1.0
+    },
+    {
+      "source": "web_app",
+      "target": "web_app_inlinesecurityform",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "web/app.js",
+      "source_location": "L1385",
+      "weight": 1.0
+    },
+    {
+      "source": "web_app",
+      "target": "web_app_logconsole",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "web/app.js",
+      "source_location": "L1452",
+      "weight": 1.0
+    },
+    {
+      "source": "web_app",
+      "target": "web_app_logsearchinput",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "web/app.js",
+      "source_location": "L1453",
+      "weight": 1.0
+    },
+    {
+      "source": "web_app",
+      "target": "web_app_btnclearlogs",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "web/app.js",
+      "source_location": "L1454",
+      "weight": 1.0
+    },
+    {
+      "source": "web_app",
+      "target": "web_app_btntogglelogfeed",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "web/app.js",
+      "source_location": "L1455",
+      "weight": 1.0
+    },
+    {
+      "source": "web_app",
+      "target": "web_app_logfeedtext",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "web/app.js",
+      "source_location": "L1456",
+      "weight": 1.0
+    },
+    {
+      "source": "web_app",
+      "target": "web_app_addlogentry",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "web/app.js",
+      "source_location": "L1458",
       "weight": 1.0
     },
     {
@@ -12828,17 +13447,6 @@
     },
     {
       "source": "web_app",
-      "target": "web_app_checkimportablerules",
-      "relation": "contains",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "web/app.js",
-      "source_location": "L197",
-      "weight": 1.0
-    },
-    {
-      "source": "web_app",
       "target": "web_app_currentusernameel",
       "relation": "contains",
       "_origin": "ast",
@@ -12846,6 +13454,17 @@
       "confidence_score": 1.0,
       "source_file": "web/app.js",
       "source_location": "L20",
+      "weight": 1.0
+    },
+    {
+      "source": "web_app",
+      "target": "web_app_checkimportablerules",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "web/app.js",
+      "source_location": "L205",
       "weight": 1.0
     },
     {
@@ -12867,7 +13486,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "web/app.js",
-      "source_location": "L217",
+      "source_location": "L225",
       "weight": 1.0
     },
     {
@@ -12894,17 +13513,6 @@
     },
     {
       "source": "web_app",
-      "target": "web_app_btndismissimportbanner",
-      "relation": "contains",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "web/app.js",
-      "source_location": "L245",
-      "weight": 1.0
-    },
-    {
-      "source": "web_app",
       "target": "web_app_ruleform",
       "relation": "contains",
       "_origin": "ast",
@@ -12916,13 +13524,13 @@
     },
     {
       "source": "web_app",
-      "target": "web_app_setuppasswordtoggle",
+      "target": "web_app_btndismissimportbanner",
       "relation": "contains",
       "_origin": "ast",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "web/app.js",
-      "source_location": "L254",
+      "source_location": "L253",
       "weight": 1.0
     },
     {
@@ -12938,13 +13546,13 @@
     },
     {
       "source": "web_app",
-      "target": "web_app_setupcapslockdetection",
+      "target": "web_app_setuppasswordtoggle",
       "relation": "contains",
       "_origin": "ast",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "web/app.js",
-      "source_location": "L266",
+      "source_location": "L262",
       "weight": 1.0
     },
     {
@@ -12956,6 +13564,17 @@
       "confidence_score": 1.0,
       "source_file": "web/app.js",
       "source_location": "L27",
+      "weight": 1.0
+    },
+    {
+      "source": "web_app",
+      "target": "web_app_setupcapslockdetection",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "web/app.js",
+      "source_location": "L274",
       "weight": 1.0
     },
     {
@@ -13186,7 +13805,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "web/app.js",
-      "source_location": "L537",
+      "source_location": "L545",
       "weight": 1.0
     },
     {
@@ -13235,17 +13854,6 @@
     },
     {
       "source": "web_app",
-      "target": "web_app_rendersystemstats",
-      "relation": "contains",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "web/app.js",
-      "source_location": "L589",
-      "weight": 1.0
-    },
-    {
-      "source": "web_app",
       "target": "web_app_lockoutalert",
       "relation": "contains",
       "_origin": "ast",
@@ -13275,6 +13883,17 @@
       "confidence_score": 1.0,
       "source_file": "web/app.js",
       "source_location": "L61",
+      "weight": 1.0
+    },
+    {
+      "source": "web_app",
+      "target": "web_app_rendersystemstats",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "web/app.js",
+      "source_location": "L613",
       "weight": 1.0
     },
     {
@@ -13455,17 +14074,6 @@
     },
     {
       "source": "web_app",
-      "target": "web_app_handleoverridechange",
-      "relation": "contains",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "web/app.js",
-      "source_location": "L770",
-      "weight": 1.0
-    },
-    {
-      "source": "web_app",
       "target": "web_app_pwdstrengthlabel",
       "relation": "contains",
       "_origin": "ast",
@@ -13499,13 +14107,24 @@
     },
     {
       "source": "web_app",
+      "target": "web_app_handleoverridechange",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "web/app.js",
+      "source_location": "L802",
+      "weight": 1.0
+    },
+    {
+      "source": "web_app",
       "target": "web_app_currentmodaldestinations",
       "relation": "contains",
       "_origin": "ast",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "web/app.js",
-      "source_location": "L857",
+      "source_location": "L889",
       "weight": 1.0
     },
     {
@@ -13516,7 +14135,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "web/app.js",
-      "source_location": "L859",
+      "source_location": "L891",
       "weight": 1.0
     },
     {
@@ -13527,7 +14146,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "web/app.js",
-      "source_location": "L868",
+      "source_location": "L900",
       "weight": 1.0
     },
     {
@@ -13538,29 +14157,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "web/app.js",
-      "source_location": "L875",
-      "weight": 1.0
-    },
-    {
-      "source": "web_app",
-      "target": "web_app_removedestinationrow",
-      "relation": "contains",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "web/app.js",
-      "source_location": "L977",
-      "weight": 1.0
-    },
-    {
-      "source": "web_app",
-      "target": "web_app_btnadddestination",
-      "relation": "contains",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "web/app.js",
-      "source_location": "L987",
+      "source_location": "L907",
       "weight": 1.0
     },
     {
@@ -13572,17 +14169,6 @@
       "confidence_score": 1.0,
       "source_file": "web/app.js",
       "source_location": "L99",
-      "weight": 1.0
-    },
-    {
-      "source": "web_app",
-      "target": "web_app_formportinput",
-      "relation": "contains",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "web/app.js",
-      "source_location": "L993",
       "weight": 1.0
     },
     {
@@ -15343,7 +15929,43 @@
       "confidence_score": 0.85,
       "context": "argument",
       "source_file": "web/app.js",
-      "source_location": "L989",
+      "source_location": "L1021",
+      "weight": 1.0
+    },
+    {
+      "source": "web_app",
+      "target": "web_app_toggletheme",
+      "relation": "indirect_call",
+      "_origin": "ast",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "context": "argument",
+      "source_file": "web/app.js",
+      "source_location": "L1231",
+      "weight": 1.0
+    },
+    {
+      "source": "web_app",
+      "target": "web_app_openmobilesidebar",
+      "relation": "indirect_call",
+      "_origin": "ast",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "context": "argument",
+      "source_file": "web/app.js",
+      "source_location": "L1298",
+      "weight": 1.0
+    },
+    {
+      "source": "web_app",
+      "target": "web_app_closemobilesidebar",
+      "relation": "indirect_call",
+      "_origin": "ast",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "context": "argument",
+      "source_file": "web/app.js",
+      "source_location": "L1299",
       "weight": 1.0
     },
     {

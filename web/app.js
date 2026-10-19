@@ -1037,37 +1037,6 @@ formPortInput.addEventListener("input", () => {
     previousPortVal = val;
 });
 
-// Modal Preset Scenario Buttons
-document.getElementById("presetHaproxyGre").addEventListener("click", () => {
-    const listenPort = document.getElementById("formPort").value.trim();
-    currentModalDestinations = [
-        { priority: 1, type: "haproxy", target: "", port: listenPort, comment: "Primary Direct IPv6" },
-        { priority: 2, type: "nftables", target: "", port: listenPort, comment: "Backup GRE/FakeTCP Tunnel" }
-    ];
-    renderDestinationsList();
-    showToast("Preset applied: HAProxy IPv6 + GRE/FakeTCP");
-});
-
-document.getElementById("presetNginxTunnel").addEventListener("click", () => {
-    const listenPort = document.getElementById("formPort").value.trim();
-    currentModalDestinations = [
-        { priority: 1, type: "nginx", target: "", port: listenPort, comment: "Primary Nginx Stream Proxy" },
-        { priority: 2, type: "nftables", target: "", port: listenPort, comment: "Backup Layer 3 Tunnel" }
-    ];
-    renderDestinationsList();
-    showToast("Preset applied: Nginx Proxy + Tunnel");
-});
-
-document.getElementById("presetDualHaproxy").addEventListener("click", () => {
-    const listenPort = document.getElementById("formPort").value.trim();
-    currentModalDestinations = [
-        { priority: 1, type: "haproxy", target: "", port: listenPort, comment: "Foreign Exit Node 1" },
-        { priority: 2, type: "haproxy", target: "", port: listenPort, comment: "Foreign Exit Node 2" }
-    ];
-    renderDestinationsList();
-    showToast("Preset applied: Dual Direct IPv6");
-});
-
 // Modal open/close
 btnOpenAddModal.addEventListener("click", () => {
     modalTitle.innerText = "Add New Port Forwarding Rule";
