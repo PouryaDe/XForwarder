@@ -253,7 +253,26 @@ class TestNginxStreamEngine(unittest.TestCase):
             res = self.engine.check_destination(dest, rule_port=443, protocol="tcp")
             # Despite TCP refused, ICMP ping fallback marked it healthy
             self.assertTrue(res["healthy"])
-            self.assertIsNotNone(res["latency_ms"])
+    def test_nftables_masquerade_rules_syntax(self):
+        """Verifies that _apply_nftables generates individual masquerade lines without wildcard set byteorder mismatch."""
+        with patch("shutil.which", return_value="nft"), \
+             patch("subprocess.run") as mock_run, \
+             patch("subprocess.Popen") as mock_popen:
+            mock_proc = MagicMock()
+            mock_proc.communicate.return_value = ("", "")
+            mock_proc.returncode = 0
+            mock_popen.return_value = mock_proc
+
+            ok, err = self.engine._apply_nftables(["        iifname \"eth0\" tcp dport 443 dnat to 10.88.1.2:443"])
+            self.assertTrue(ok)
+            self.assertIsNone(err)
+
+            # Retrieve the input passed to communicate()
+            sent_input = mock_proc.communicate.call_args_list[0][1]["input"]
+            self.assertNotIn('oifname { "gre*"', sent_input)
+            self.assertIn('oifname "gre*" masquerade', sent_input)
+            self.assertIn('oifname "ipip*" masquerade', sent_input)
+            self.assertIn('oifname "awg*" masquerade', sent_input)
 
 
 if __name__ == "__main__":

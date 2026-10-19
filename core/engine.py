@@ -725,7 +725,12 @@ table ip xfwd_orchestrator {{
 
     chain postrouting {{
         type nat hook postrouting priority srcnat; policy accept;
-        oifname {{ "gre*", "ipip*", "ftcp*", "awg*", "gnv*", "vxlan*" }} masquerade
+        oifname "gre*" masquerade
+        oifname "ipip*" masquerade
+        oifname "ftcp*" masquerade
+        oifname "awg*" masquerade
+        oifname "gnv*" masquerade
+        oifname "vxlan*" masquerade
     }}
 
     chain forward {{
