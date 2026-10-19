@@ -3,7 +3,7 @@
   "1": "app.js",
   "2": "XForwarderEngine",
   "3": "showDashboard",
-  "4": ".do_POST",
+  "4": "load_config",
   "5": "🌐 XForwarder",
   "6": "xforwarder.sh",
   "7": "Workflow: Deploy & Update Services",
@@ -14,7 +14,7 @@
   "12": "Workflow: Diagnose Failover & Forwarding",
   "13": "Architecture & Failover Rules (XForwarder)",
   "14": "The 8-Point Audit Checklist",
-  "15": "haproxy_parser.py",
+  "15": "validate_rule",
   "16": "Large Files Inspection & Surgical Editing Rule",
   "17": "Systematic Debugging Skill (XForwarder)",
   "18": "UI Design & Universal Consistency Standards (`web/`)",
@@ -27,7 +27,12 @@
   "25": "fetchStatus",
   "26": "get_network_interfaces_info",
   "27": "Interactive Requirements Clarification (Reverse Prompt Engineering)",
-  "32": "renderDestinationsList",
+  "28": "web_server.py",
+  "29": ".do_POST",
+  "30": "sys",
+  "31": "is_port_in_use_by_external_service",
+  "32": "Python Core Standards (`core/engine.py` & `core/web_server.py`)",
+  "33": "XForwarder Operations Runbook",
   "35": "Session State & Task Handoff Rule (XForwarder)",
-  "36": "web_server.py"
+  "36": "os"
 }

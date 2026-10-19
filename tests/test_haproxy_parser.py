@@ -89,6 +89,10 @@ class TestHAProxyParser(unittest.TestCase):
         self.assertEqual(rule_2083["destinations"][0]["target"], "2001:4ba0:cafe:84e::1")
         self.assertEqual(rule_2083["destinations"][0]["port"], 2083)
         self.assertEqual(rule_2083["destinations"][0]["type"], "haproxy")
+        self.assertTrue(rule_2083["destinations"][0].get("proxy_protocol"))
+
+        rule_8080 = next(r for r in rules if r["port"] == 8080)
+        self.assertFalse(rule_8080["destinations"][0].get("proxy_protocol"))
 
         # Verify frontend/backend resolution
         rule_443 = next(r for r in rules if r["port"] == 443)

@@ -99,6 +99,17 @@ ensure_dependencies() {
     # Disable system nftables service to prevent boot-time flush conflicts with XForwarder
     systemctl disable --now nftables >/dev/null 2>&1 || true
 
+    # Ensure runtime directories exist
+    mkdir -p /run/haproxy /run/xforwarder
+
+    # Enable proxy services so they are active on system boot
+    if command -v haproxy >/dev/null 2>&1; then
+        systemctl enable haproxy >/dev/null 2>&1 || true
+    fi
+    if command -v nginx >/dev/null 2>&1; then
+        systemctl enable nginx >/dev/null 2>&1 || true
+    fi
+
     # Unlink default Nginx welcome site to prevent it from holding port 80
     rm -f /etc/nginx/sites-enabled/default >/dev/null 2>&1 || true
 

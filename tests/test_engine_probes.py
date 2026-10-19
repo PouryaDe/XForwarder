@@ -1,3 +1,5 @@
+import json
+import tempfile
 import unittest
 import sys
 import os
@@ -125,6 +127,110 @@ class TestEngineProbes(unittest.TestCase):
         self.assertFalse(self.engine.check_destination({"target": "", "port": 80})["healthy"])
         self.assertFalse(self.engine.check_destination({"target": "10.0.0.1", "port": 0})["healthy"])
         self.assertFalse(self.engine.check_destination({"target": "10.0.0.1", "port": -5})["healthy"])
+
+    def test_destination_port_fallback(self):
+        # When dest has no port, falls back to rule_port
+        dest = {"priority": 1, "type": "haproxy", "target": "127.0.0.1"}
+        mock_sock = MagicMock()
+        mock_sock.connect_ex.return_value = 0
+        mock_sock.__enter__.return_value = mock_sock
+        mock_sock.__exit__.return_value = False
+        with patch("socket.socket", return_value=mock_sock):
+            res = self.engine.check_destination(dest, rule_port=9999)
+            self.assertTrue(res["healthy"])
+            mock_sock.connect_ex.assert_called_once_with(("127.0.0.1", 9999))
+
+    def test_state_preservation_on_init_and_save(self):
+        # Verifies that initializing engine or saving state does NOT wipe existing rules_state
+        temp_dir = tempfile.mkdtemp()
+        try:
+            state_file = os.path.join(temp_dir, "state.json")
+            initial_state = {
+                "active_services": {"haproxy": True},
+                "wan_interface": "eth0",
+                "rules_state": {
+                    "rule-80": {
+                        "active_priority": 1,
+                        "destinations": {
+                            "1": {"status": "healthy", "latency_ms": 14.5}
+                        }
+                    }
+                }
+            }
+            with open(state_file, "w", encoding="utf-8") as f:
+                json.dump(initial_state, f)
+
+            engine = XForwarderEngine(config_path=None, state_file_path=state_file)
+            self.assertIn("rule-80", engine.rules_state)
+            self.assertEqual(engine.rules_state["rule-80"]["destinations"]["1"]["latency_ms"], 14.5)
+
+            # Save state
+            engine._save_state_file()
+
+            with open(state_file, "r", encoding="utf-8") as f:
+                saved = json.load(f)
+            self.assertIn("rule-80", saved.get("runtime", {}).get("rules_state", {}))
+            self.assertEqual(saved["runtime"]["rules_state"]["rule-80"]["destinations"]["1"]["latency_ms"], 14.5)
+        finally:
+            for root, dirs, files in os.walk(temp_dir, topdown=False):
+                for f in files:
+                    try:
+                        os.remove(os.path.join(root, f))
+                    except Exception:
+                        pass
+                try:
+                    os.rmdir(root)
+                except Exception:
+                    pass
+
+    def test_haproxy_generation_proxy_protocol_and_brackets(self):
+        # Test sync_firewall_and_proxies generating haproxy entries
+        self.engine.config["rules"] = [
+            {
+                "id": "rule-no-proxy",
+                "port": 443,
+                "protocol": "tcp",
+                "active_priority": 1,
+                "destinations": [
+                    {"priority": 1, "type": "haproxy", "target": "[2a01:4f8::1]", "port": 443, "proxy_protocol": False}
+                ]
+            },
+            {
+                "id": "rule-with-proxy",
+                "port": 8443,
+                "protocol": "tcp",
+                "active_priority": 1,
+                "destinations": [
+                    {"priority": 1, "type": "haproxy", "target": "1.2.3.4", "port": 8443, "proxy_protocol": True}
+                ]
+            }
+        ]
+
+        captured_haproxy = []
+        def mock_apply_haproxy(haproxy_entries, udp_entries=None):
+            captured_haproxy.extend(haproxy_entries)
+            return True, None
+
+        with patch.object(self.engine, "_detect_wan_interface", return_value="eth0"), \
+             patch.object(self.engine, "_apply_nftables", return_value=(True, None)), \
+             patch.object(self.engine, "_apply_haproxy", side_effect=mock_apply_haproxy), \
+             patch.object(self.engine, "_apply_nginx", return_value=(True, None)), \
+             patch.object(self.engine, "_save_state_file"):
+            ok, errors = self.engine.sync_firewall_and_proxies()
+            self.assertTrue(ok)
+            self.assertEqual(len(errors), 0)
+
+        self.assertEqual(len(captured_haproxy), 2)
+        # 1. rule-no-proxy: no send-proxy-v2 and brackets stripped properly
+        fwd_443 = next(e for e in captured_haproxy if "fwd_443" in e)
+        self.assertNotIn("send-proxy-v2", fwd_443)
+        self.assertIn("[2a01:4f8::1]:443", fwd_443)
+        self.assertNotIn("[[", fwd_443)
+
+        # 2. rule-with-proxy: has send-proxy-v2
+        fwd_8443 = next(e for e in captured_haproxy if "fwd_8443" in e)
+        self.assertIn("send-proxy-v2", fwd_8443)
+        self.assertIn("1.2.3.4:8443", fwd_8443)
 
 
 if __name__ == "__main__":

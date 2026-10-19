@@ -74,6 +74,11 @@ XForwarder/
    - Adaptive brute-force protection: 5 failed attempts in 5 minutes triggers a 15-minute IP lockout (HTTP 429).
    - OWASP defense in depth: enforce CSP, X-Frame-Options DENY, SameSite=Strict HttpOnly cookies, and CSRF origin validation.
 
+8. **Clean TCP Stream by Default & Runtime State Preservation (Mandatory)**:
+   - HAProxy forwarding must stream clean raw TCP by default. Never unconditionally append `send-proxy-v2` because upstream proxies (Xray, Trojan, Nginx) drop unexpected PROXY protocol headers. Only send PROXY protocol v2 when `proxy_protocol` is explicitly enabled.
+   - Live health checks must strictly test the specific destination and port (falling back to rule port if omitted) and provide real-time diagnostic reporting via `POST /api/test-target`.
+   - Ad-hoc sync calls (`sync_system_rules()`) from the web server must never erase live `rules_state` metrics in `/run/xforwarder/state.json`.
+
 ---
 
 ## 🔍 Codebase Knowledge Graph (graphify)

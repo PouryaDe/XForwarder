@@ -20,7 +20,7 @@ All DNAT routing managed by XForwarder must strictly reside inside the dedicated
 ## 2. HAProxy Zero-Tunnel Relay
 - **Config Path**: `/etc/haproxy/haproxy.cfg`
 - **Protocol**: `mode tcp`, with TCP keepalives and appropriate timeouts (`timeout connect 5s`, `timeout client 1h`, `timeout server 1h`).
-- **Proxy Protocol**: Backend servers receive client real IPs when configured with `send-proxy-v2`.
+- **Proxy Protocol**: Clean raw TCP forwarding is the default. Backend servers receive `send-proxy-v2` ONLY when `proxy_protocol` is explicitly toggled on for that destination. Never hardcode `send-proxy-v2`.
 - **Reloading Mechanism**: Use non-disruptive reload (`systemctl reload haproxy`) to preserve existing connections during rule updates.
 
 ## 3. Kernel Forwarding Requirements

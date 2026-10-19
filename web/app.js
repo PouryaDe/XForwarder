@@ -1577,9 +1577,22 @@ function renderDestinationRow(dest, index, totalCount) {
                 <input type="number" class="form-control dest-port" placeholder="Same as listen" min="1" max="65535" value="${escapeHtml(port)}">
             </div>
         </div>
-        <div class="form-group" style="margin-bottom:0;">
+        <div class="form-group" style="margin-bottom:10px;">
             <label>Comment / Label</label>
             <input type="text" class="form-control dest-comment" placeholder="e.g. ${isPrimary ? 'Foreign Server 1 - Primary IPv6' : 'Backup Tunnel Node ' + prio}" value="${escapeHtml(comment)}">
+        </div>
+        <div class="dest-extra-row">
+            <label class="dest-toggle-label" title="Enable only if remote destination (e.g. Xray/V2Ray with acceptProxyProtocol) is configured to receive PROXY Protocol headers.">
+                <input type="checkbox" class="dest-proxy-proto" ${dest.proxy_protocol ? "checked" : ""}>
+                <span>Send PROXY Protocol v2 (Advanced)</span>
+            </label>
+            <div class="dest-test-group">
+                <button type="button" class="btn btn-secondary btn-xs btn-test-dest" onclick="testModalDestination(${index})">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+                    <span>Test Target</span>
+                </button>
+                <span class="test-dest-result" id="testDestResult_${index}"></span>
+            </div>
         </div>
     `;
     return div;
@@ -1595,16 +1608,74 @@ function syncDestinationsFromDom() {
         const targetEl = box.querySelector(".dest-target");
         const portEl = box.querySelector(".dest-port");
         const commentEl = box.querySelector(".dest-comment");
+        const protoEl = box.querySelector(".dest-proxy-proto");
         updated.push({
             priority: idx + 1,
             type: typeEl ? typeEl.value : (idx === 0 ? "haproxy" : "nftables"),
             target: targetEl ? targetEl.value : "",
             port: portEl ? portEl.value : "",
+            proxy_protocol: protoEl ? protoEl.checked : false,
             comment: commentEl ? commentEl.value : ""
         });
     });
     if (updated.length > 0) {
         currentModalDestinations = updated;
+    }
+}
+
+async function testModalDestination(index) {
+    syncDestinationsFromDom();
+    const dest = currentModalDestinations[index];
+    if (!dest) return;
+    const target = (dest.target || "").trim().replace(/^\[|\]$/g, '');
+    const listenPort = document.getElementById("formPort") ? document.getElementById("formPort").value.trim() : "";
+    const port = dest.port || listenPort;
+    const resEl = document.getElementById(`testDestResult_${index}`);
+
+    if (!target) {
+        showToast("Please enter a destination target IP or host", "warn");
+        if (resEl) { resEl.innerHTML = '<span class="text-amber">Enter target IP</span>'; }
+        return;
+    }
+    if (!port) {
+        showToast("Please specify a port to test", "warn");
+        if (resEl) { resEl.innerHTML = '<span class="text-amber">Enter port</span>'; }
+        return;
+    }
+
+    if (resEl) {
+        resEl.innerHTML = '<span class="btn-spinner" style="width:11px;height:11px;display:inline-block;vertical-align:middle;"></span> <span class="text-muted" style="font-size:0.75rem;">Probing...</span>';
+    }
+
+    try {
+        const res = await fetch(`${API_BASE}/test-target`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                target: target,
+                port: parseInt(port),
+                type: dest.type || "haproxy"
+            })
+        });
+        const data = await res.json().catch(() => ({}));
+        if (res.ok && data.ok) {
+            if (data.healthy) {
+                const latStr = data.latency_ms !== null && data.latency_ms !== undefined ? ` (${data.latency_ms}ms)` : "";
+                if (resEl) resEl.innerHTML = `<span class="badge-probe text-emerald" style="display:inline-flex;align-items:center;gap:4px;font-size:0.75rem;">✓ Reachable${latStr}</span>`;
+                showToast(`Destination [${target}]:${port} is reachable${latStr}`);
+            } else {
+                const reason = data.reason ? `: ${data.reason}` : "";
+                if (resEl) resEl.innerHTML = `<span class="badge-fail text-rose" style="display:inline-flex;align-items:center;gap:4px;font-size:0.75rem;" title="${escapeHtml(data.reason || '')}">✗ Unreachable${escapeHtml(reason)}</span>`;
+                showToast(`Destination [${target}]:${port} unreachable${reason}`, "error");
+            }
+        } else {
+            const err = data.error || "Probe test failed";
+            if (resEl) resEl.innerHTML = `<span class="badge-fail text-rose" style="font-size:0.75rem;">✗ ${escapeHtml(err)}</span>`;
+            showToast(err, "error");
+        }
+    } catch (e) {
+        if (resEl) resEl.innerHTML = '<span class="badge-fail text-rose" style="font-size:0.75rem;">✗ Network error</span>';
+        showToast("Network error contacting server", "error");
     }
 }
 
@@ -1769,8 +1840,9 @@ ruleForm.addEventListener("submit", async (e) => {
         destinations: currentModalDestinations.map((d, idx) => ({
             priority: idx + 1,
             type: d.type || (idx === 0 ? "haproxy" : "nftables"),
-            target: d.target.trim(),
+            target: d.target.trim().replace(/^\[|\]$/g, ''),
             port: d.port ? parseInt(d.port) : port,
+            proxy_protocol: Boolean(d.proxy_protocol),
             comment: (d.comment || "").trim()
         }))
     };
@@ -2031,7 +2103,7 @@ if (inlineSecurityForm) {
         submitBtn.innerHTML = '<span class="btn-spinner"></span> <span>Updating...</span>';
 
         try {
-            const res = await fetch(`${API_BASE}/security`, {
+            const res = await fetch(`${API_BASE}/security/credentials`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({

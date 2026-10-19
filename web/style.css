@@ -2162,6 +2162,66 @@ select option {
 
 .priority-box:hover { border-color: var(--border-active); }
 
+.dest-extra-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 10px;
+    padding-top: 8px;
+    border-top: 1px dashed var(--border-color);
+    font-size: 0.82rem;
+}
+
+.dest-toggle-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    cursor: pointer;
+    color: var(--text-secondary);
+    user-select: none;
+    font-size: 0.8rem;
+}
+
+.dest-toggle-label:hover {
+    color: var(--text-primary);
+}
+
+.dest-proxy-proto {
+    accent-color: var(--accent-primary);
+    cursor: pointer;
+}
+
+.dest-test-group {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.btn-test-dest {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 8px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    border-radius: 6px;
+    cursor: pointer;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    color: var(--text-secondary);
+    transition: all 0.15s ease;
+}
+
+.btn-test-dest:hover {
+    color: var(--accent-primary);
+    border-color: var(--accent-primary);
+}
+
+.test-dest-result {
+    font-size: 0.75rem;
+    font-family: var(--font-mono);
+}
+
 .priority-header {
     display: flex;
     justify-content: space-between;

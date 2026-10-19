@@ -913,8 +913,19 @@ def is_haproxy_listening(port: int) -> bool:
     return False
 
 
+def is_nginx_listening(port: int) -> bool:
+    """Returns True if the process currently listening on port is Nginx (which XForwarder manages)."""
+    try:
+        res = subprocess.run(["ss", "-tlpn", f"sport = :{port}"], capture_output=True, text=True, timeout=1.0)
+        if "nginx" in res.stdout.lower():
+            return True
+    except Exception:
+        pass
+    return False
+
+
 def is_port_in_use_by_external_service(port: int, current_rule_id: str, existing_rules: list) -> bool:
-    """Checks if a port is actively bound by an external non-HAProxy process not managed by this rule."""
+    """Checks if a port is actively bound by an external non-managed process not managed by this rule."""
     for r in existing_rules:
         if r.get("id") == current_rule_id and r.get("port") == port:
             return False
@@ -922,8 +933,8 @@ def is_port_in_use_by_external_service(port: int, current_rule_id: str, existing
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             s.settimeout(0.2)
             if s.connect_ex(("127.0.0.1", port)) == 0:
-                # If connected, check if it's HAProxy (which XForwarder will orchestrate and reload)
-                if is_haproxy_listening(port):
+                # If connected, check if it's managed by XForwarder (HAProxy or Nginx)
+                if is_haproxy_listening(port) or is_nginx_listening(port):
                     return False
                 return True
     except Exception:
@@ -1289,7 +1300,7 @@ class XForwarderWebHandler(BaseHTTPRequestHandler):
             return
 
         # 3. Security Credentials Management (Change Username / Password)
-        if subpath == "/api/security/credentials":
+        if subpath in ("/api/security", "/api/security/credentials"):
             current_pwd = body.get("current_password", "")
             new_user = body.get("new_username", "").strip()
             new_pwd = body.get("new_password", "")
@@ -1501,8 +1512,29 @@ class XForwarderWebHandler(BaseHTTPRequestHandler):
                 from core.engine import sync_system_rules
                 sync_ok, sync_errors = sync_system_rules(max_retries=2)
                 self.send_json({"ok": True, "sync_ok": sync_ok, "sync_errors": sync_errors, **info})
-            else:
-                self.send_json({"ok": False, "error": err}, 400)
+        elif subpath == "/api/test-target":
+            target = str(body.get("target", "")).strip().strip("[]")
+            try:
+                port = int(body.get("port", 0))
+            except (ValueError, TypeError):
+                port = 0
+            if not target or not is_valid_target(target) or port <= 0 or port > 65535:
+                self.send_json({"ok": False, "healthy": False, "error": "Invalid target IP/host or port"}, 400)
+                return
+
+            dest_type = str(body.get("type", "haproxy")).lower()
+            try:
+                from core.engine import XForwarderEngine
+                engine = XForwarderEngine(config_path=get_config_path())
+                probe_res = engine.check_destination({"target": target, "port": port, "type": dest_type})
+                self.send_json({
+                    "ok": True,
+                    "healthy": probe_res.get("healthy", False),
+                    "latency_ms": probe_res.get("latency_ms"),
+                    "reason": probe_res.get("reason", "")
+                })
+            except Exception as e:
+                self.send_json({"ok": False, "healthy": False, "error": str(e)}, 500)
             return
 
         else:

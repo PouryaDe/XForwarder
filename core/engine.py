@@ -39,8 +39,9 @@ def is_private_or_tunnel_target(target: str) -> bool:
 
 
 class XForwarderEngine:
-    def __init__(self, config_path: Optional[str] = None):
+    def __init__(self, config_path: Optional[str] = None, state_file_path: Optional[str] = None):
         self.config_path = self._resolve_config_path(config_path)
+        self.state_file_path = state_file_path or STATE_FILE_PATH
         self.running = False
         self.lock = threading.Lock()
         self.config: Dict[str, Any] = {}
@@ -56,8 +57,48 @@ class XForwarderEngine:
             },
             "rules_state": {}
         }
+        self._load_initial_runtime_state()
         self._last_applied_rules: Optional[str] = None
         self.load_config()
+
+    @property
+    def rules_state(self) -> Dict[str, Any]:
+        return self.runtime_state.get("rules_state", {})
+
+    def _load_initial_runtime_state(self) -> None:
+        """Loads pre-existing runtime state from disk if available to prevent state erasure during dynamic sync."""
+        paths = [self.state_file_path]
+        if self.state_file_path == STATE_FILE_PATH:
+            paths.append(LEGACY_STATE_FILE_PATH)
+        for s_path in paths:
+            if os.path.exists(s_path):
+                try:
+                    with open(s_path, "r", encoding="utf-8") as rf:
+                        data = json.load(rf)
+                        if isinstance(data, dict):
+                            rt = data.get("runtime") if isinstance(data.get("runtime"), dict) else data
+                            if "rules_state" in rt and isinstance(rt["rules_state"], dict):
+                                self.runtime_state["rules_state"] = rt["rules_state"]
+                            if "uptime_started" in rt:
+                                self.runtime_state["uptime_started"] = rt["uptime_started"]
+                            if "last_check_timestamp" in rt:
+                                self.runtime_state["last_check_timestamp"] = rt["last_check_timestamp"]
+                            if "active_services" in rt and isinstance(rt["active_services"], dict):
+                                self.runtime_state["active_services"].update(rt["active_services"])
+                            break
+                except Exception:
+                    pass
+
+    @staticmethod
+    def _is_ipv6_supported() -> bool:
+        """Returns True if the host kernel has an active IPv6 networking stack."""
+        if os.path.exists("/proc/net/if_inet6"):
+            return True
+        try:
+            with socket.socket(socket.AF_INET6, socket.SOCK_STREAM) as s:
+                return True
+        except Exception:
+            return False
 
     def _resolve_config_path(self, override_path: Optional[str]) -> str:
         if override_path:
@@ -239,10 +280,15 @@ class XForwarderEngine:
                     modified = True
 
                 if "target" in d:
-                    clean_target = str(d["target"]).strip()
+                    clean_target = str(d["target"]).strip().strip("[]")
                     if d["target"] != clean_target:
                         d["target"] = clean_target
                         modified = True
+
+                has_pp = bool(d.get("proxy_protocol", False) or d.get("send_proxy", False))
+                if d.get("proxy_protocol") != has_pp:
+                    d["proxy_protocol"] = has_pp
+                    modified = True
 
         return cfg, modified
 
@@ -366,10 +412,10 @@ class XForwarderEngine:
             return ""
         return ""
 
-    def check_destination(self, dest: Dict[str, Any]) -> Dict[str, Any]:
+    def check_destination(self, dest: Dict[str, Any], rule_port: Optional[int] = None) -> Dict[str, Any]:
         """Perform a low-overhead health check on a target destination with strict route and interface isolation."""
-        target = str(dest.get("target", "")).strip()
-        port = int(dest.get("port", 0))
+        target = str(dest.get("target", "")).strip().strip("[]")
+        port = int(dest.get("port") or rule_port or 0)
         dest_type = dest.get("type", "haproxy")
         tunnel_iface = str(dest.get("tunnel_iface", "")).strip()
         start_time = time.perf_counter()
@@ -494,7 +540,7 @@ class XForwarderEngine:
                 }
 
             stat = rule_state["dest_stats"][dest_key]
-            check_res = self.check_destination(dest)
+            check_res = self.check_destination(dest, rule_port=rule.get("port"))
             stat["latency_ms"] = check_res["latency_ms"]
             if "reason" in check_res:
                 stat["reason"] = check_res["reason"]
@@ -571,25 +617,31 @@ class XForwarderEngine:
             if not dest:
                 continue
 
-            target = str(dest.get("target", "")).strip()
+            target = str(dest.get("target", "")).strip().strip("[]")
             target_port = dest.get("port", port)
             dest_type = dest.get("type", "haproxy")
             target_str = f"[{target}]:{target_port}" if ":" in target else f"{target}:{target_port}"
             comment_clean = str(dest.get("comment") or rule.get("id") or f"Port {port}").replace("\n", " ").replace("\r", "")
 
             if dest_type == "haproxy":
+                send_proxy = bool(dest.get("proxy_protocol", False) or dest.get("send_proxy", False))
+                proxy_flag = " send-proxy-v2" if send_proxy else ""
+                binds = [f"bind *:{port}"]
+                if self._is_ipv6_supported():
+                    binds.append(f"bind [::]:{port} v6only")
+                bind_str = "\n    ".join(binds)
+
                 if proto in ("tcp", "both"):
                     haproxy_entries.append(
                         f"listen fwd_{port}\n"
-                        f"    bind *:{port}\n"
-                        f"    server srv_{port} {target_str} send-proxy-v2\n"
+                        f"    {bind_str}\n"
+                        f"    server srv_{port} {target_str}{proxy_flag}\n"
                     )
                 if proto in ("udp", "both"):
-                    udp_entries.append(
-                        f"    server {{\n"
-                        f"        listen {port} udp reuseport;\n"
-                        f"        proxy_pass {target_str};\n"
-                        f"    }}\n"
+                    # Use Nginx stream for UDP forwarding of HAProxy rules
+                    nginx_entries.append(
+                        f"    # [UDP for HAProxy {comment_clean}]\n"
+                        f"    server {{ listen {port} udp reuseport; proxy_pass {target_str}; }}"
                     )
             elif dest_type == "nginx":
                 # Nginx Stream TCP/UDP Forwarding (XManager Standard)
@@ -687,10 +739,26 @@ table ip xfwd_orchestrator {{
         except Exception as ex:
             return False, f"NFTables error: {str(ex)}"
 
-    def _apply_haproxy(self, haproxy_entries: List[str], udp_entries: List[str]) -> Tuple[bool, Optional[str]]:
+    def _apply_haproxy(self, haproxy_entries: List[str], udp_entries: Optional[List[str]] = None) -> Tuple[bool, Optional[str]]:
         haproxy_dir = os.path.dirname(HAPROXY_CONF_PATH)
         if not os.path.exists(haproxy_dir) and not shutil.which("haproxy"):
             return True, None
+
+        # Guarantee /run/haproxy exists for admin.sock
+        try:
+            os.makedirs("/run/haproxy", exist_ok=True)
+        except Exception:
+            pass
+
+        # Standby dummy section prevents HAProxy error "no frontend, backend or listen section found" when 0 rules active
+        active_entries = list(haproxy_entries)
+        if not active_entries:
+            active_entries = [
+                "frontend xfwd_standby\n"
+                "    mode tcp\n"
+                "    bind 127.0.0.1:65534\n"
+                "    disabled\n"
+            ]
 
         base_haproxy = """# Generated by XForwarder
 global
@@ -715,7 +783,7 @@ defaults
     timeout client-fin 30s
     timeout server-fin 30s
 
-""" + "\n".join(haproxy_entries)
+""" + "\n".join(active_entries)
 
         try:
             if not os.path.exists(haproxy_dir):
@@ -741,47 +809,9 @@ defaults
                     return False, "HAProxy service reload/restart failed"
 
             self.runtime_state["active_services"]["haproxy"] = bool(haproxy_entries)
+            return True, None
         except Exception as ex:
             return False, f"HAProxy error: {str(ex)}"
-
-        # UDP stream forwarder
-        udp_dir = os.path.dirname(UDP_CONF_PATH)
-        if udp_entries:
-            try:
-                if not os.path.exists(udp_dir):
-                    os.makedirs(udp_dir, exist_ok=True)
-                udp_content = f"""# Generated by XForwarder UDP Forwarder
-user www-data;
-worker_processes auto;
-worker_rlimit_nofile 1048576;
-pid /run/haproxy-forwarder-udp.pid;
-daemon off;
-
-events {{
-    worker_connections 65535;
-    multi_accept on;
-    use epoll;
-}}
-
-stream {{
-    proxy_timeout 60s;
-    proxy_buffer_size 64k;
-{"".join(udp_entries)}
-}}
-"""
-                tmp_udp = f"{UDP_CONF_PATH}.tmp.{os.getpid()}"
-                with open(tmp_udp, "w", encoding="utf-8") as f:
-                    f.write(udp_content)
-                os.replace(tmp_udp, UDP_CONF_PATH)
-                if shutil.which("systemctl"):
-                    subprocess.call("systemctl reload haproxy-forwarder-udp >/dev/null 2>&1 || systemctl restart haproxy-forwarder-udp >/dev/null 2>&1", shell=True)
-                self.runtime_state["active_services"]["udp_stream"] = True
-            except Exception as ex:
-                return False, f"UDP Stream error: {str(ex)}"
-        else:
-            self.runtime_state["active_services"]["udp_stream"] = False
-
-        return True, None
 
     def _apply_nginx(self, nginx_entries: List[str]) -> Tuple[bool, Optional[str]]:
         nginx_dir = os.path.dirname(NGINX_CONF_PATH)
@@ -871,16 +901,41 @@ http {{
 
     def _save_state_file(self) -> None:
         try:
-            for s_path in [STATE_FILE_PATH, LEGACY_STATE_FILE_PATH]:
+            # If self.runtime_state has empty rules_state (e.g. called from one-off sync),
+            # attempt to preserve live rules_state from existing state file on disk
+            rt_to_save = dict(self.runtime_state)
+            paths = [self.state_file_path]
+            if self.state_file_path == STATE_FILE_PATH:
+                paths.append(LEGACY_STATE_FILE_PATH)
+
+            if not rt_to_save.get("rules_state"):
+                for s_path in paths:
+                    if os.path.exists(s_path):
+                        try:
+                            with open(s_path, "r", encoding="utf-8") as rf:
+                                existing_state = json.load(rf)
+                                if isinstance(existing_state, dict):
+                                    existing_rt = existing_state.get("runtime") if isinstance(existing_state.get("runtime"), dict) else existing_state
+                                    live_rules = existing_rt.get("rules_state", {})
+                                    if live_rules:
+                                        rt_to_save["rules_state"] = live_rules
+                                    if "uptime_started" in existing_rt:
+                                        rt_to_save["uptime_started"] = existing_rt["uptime_started"]
+                                    break
+                        except Exception:
+                            pass
+
+            for s_path in paths:
                 s_dir = os.path.dirname(s_path)
                 if s_path == LEGACY_STATE_FILE_PATH and not os.path.exists(s_dir):
                     continue
-                os.makedirs(s_dir, exist_ok=True)
+                if s_dir:
+                    os.makedirs(s_dir, exist_ok=True)
                 tmp_path = f"{s_path}.tmp.{os.getpid()}"
                 with open(tmp_path, "w", encoding="utf-8") as f:
                     json.dump({
                         "config": self.config,
-                        "runtime": self.runtime_state,
+                        "runtime": rt_to_save,
                         "updated_at": time.time()
                     }, f, indent=2, ensure_ascii=False)
                 os.replace(tmp_path, s_path)
@@ -930,13 +985,13 @@ http {{
         self.running = False
 
 
-def sync_system_rules(max_retries: int = 2, delay_between_retries: float = 0.5) -> Tuple[bool, List[str]]:
+def sync_system_rules(max_retries: int = 2, delay_between_retries: float = 0.5, config_path: Optional[str] = None) -> Tuple[bool, List[str]]:
     """
     Synchronizes firewall (NFTables) and proxy layers (HAProxy, Nginx) on demand.
     Automatically retries up to max_retries times if a transient service or syntax failure occurs.
     Returns (success: bool, errors: List[str]).
     """
-    engine = XForwarderEngine()
+    engine = XForwarderEngine(config_path=config_path)
     last_errors: List[str] = []
     for attempt in range(max_retries + 1):
         engine.load_config()

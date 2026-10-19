@@ -91,9 +91,11 @@ def parse_haproxy_content(content: str) -> List[Dict[str, Any]]:
         if srv_match:
             raw_target = srv_match.group(1).strip().strip("[]")
             raw_port = srv_match.group(2)
+            has_send_proxy = bool(re.search(r"\bsend-proxy(-v2)?\b", line, re.IGNORECASE))
             current_sec["servers"].append({
                 "target": raw_target,
-                "port": int(raw_port) if raw_port else None
+                "port": int(raw_port) if raw_port else None,
+                "proxy_protocol": has_send_proxy
             })
             continue
 
@@ -130,8 +132,9 @@ def parse_haproxy_content(content: str) -> List[Dict[str, Any]]:
 
                 target = srv["target"]
                 target_port = srv.get("port") or port
+                proxy_protocol = bool(srv.get("proxy_protocol", False))
 
-                rules.append(_build_xforwarder_rule(port, target, target_port, sec_name))
+                rules.append(_build_xforwarder_rule(port, target, target_port, sec_name, proxy_protocol))
                 seen_ports.add(port)
 
         # Case 2: frontend block (resolves to backend)
@@ -143,22 +146,24 @@ def parse_haproxy_content(content: str) -> List[Dict[str, Any]]:
                 # Find associated backend
                 target = None
                 target_port = port
+                proxy_protocol = False
                 for be_name in sec["backends"]:
                     be = backends_by_name.get(be_name)
                     if be and be["servers"]:
                         srv = be["servers"][0]
                         target = srv.get("target")
                         target_port = srv.get("port") or port
+                        proxy_protocol = bool(srv.get("proxy_protocol", False))
                         break
 
                 if target:
-                    rules.append(_build_xforwarder_rule(port, target, target_port, sec_name))
+                    rules.append(_build_xforwarder_rule(port, target, target_port, sec_name, proxy_protocol))
                     seen_ports.add(port)
 
     return rules
 
 
-def _build_xforwarder_rule(port: int, target: str, target_port: int, sec_name: str) -> Dict[str, Any]:
+def _build_xforwarder_rule(port: int, target: str, target_port: int, sec_name: str, proxy_protocol: bool = False) -> Dict[str, Any]:
     return {
         "id": f"rule-{port}",
         "port": port,
@@ -171,6 +176,7 @@ def _build_xforwarder_rule(port: int, target: str, target_port: int, sec_name: s
                 "type": "haproxy",
                 "target": target,
                 "port": target_port,
+                "proxy_protocol": proxy_protocol,
                 "comment": f"Imported from HAProxy ({sec_name})"
             },
             {
@@ -178,6 +184,7 @@ def _build_xforwarder_rule(port: int, target: str, target_port: int, sec_name: s
                 "type": "nftables",
                 "target": "10.88.1.2",
                 "port": target_port,
+                "proxy_protocol": False,
                 "comment": "Backup Tunnel"
             }
         ]

@@ -11,6 +11,11 @@ import unittest
 import tempfile
 import json
 import re
+import time
+import threading
+import urllib.request
+import urllib.error
+from http.server import HTTPServer
 
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if REPO_ROOT not in sys.path:
@@ -21,7 +26,10 @@ from core.web_server import (
     is_valid_target,
     XForwarderWebServer,
     load_config,
-    get_services_status
+    get_services_status,
+    XForwarderWebHandler,
+    ACTIVE_SESSIONS,
+    SESSION_LOCK
 )
 from core.engine import XForwarderEngine
 
@@ -234,6 +242,92 @@ class TestUIAndAPIEdgeCases(unittest.TestCase):
         self.assertIn(".services-status-bar", style_content)
         self.assertIn(".services-warning-banner", style_content)
         self.assertIn(".svc-pill-dot", style_content)
+
+    def test_ui_proxy_protocol_and_test_target_dom(self):
+        """Verifies UI elements for PROXY Protocol toggle and Test Target button exist."""
+        web_dir = os.path.join(REPO_ROOT, "web")
+        with open(os.path.join(web_dir, "app.js"), "r", encoding="utf-8") as f:
+            app_content = f.read()
+        with open(os.path.join(web_dir, "style.css"), "r", encoding="utf-8") as f:
+            style_content = f.read()
+
+        self.assertIn("dest-proxy-proto", app_content)
+        self.assertIn("proxy_protocol", app_content)
+        self.assertIn("testModalDestination", app_content)
+        self.assertIn("/test-target", app_content)
+
+        self.assertIn(".dest-proxy-proto", style_content)
+        self.assertIn(".btn-test-dest", style_content)
+        self.assertIn(".test-dest-result", style_content)
+
+    def test_api_test_target_http_endpoint(self):
+        """Tests POST /api/test-target endpoint auth, input validation, and successful probing."""
+        cfg = load_config()
+        secret = str(cfg.get("web", {}).get("secret_path", "")).strip().strip("/")
+        secret_prefix = f"/{secret}" if secret else ""
+
+        server = HTTPServer(("127.0.0.1", 0), XForwarderWebHandler)
+        port = server.server_port
+        t = threading.Thread(target=server.serve_forever, daemon=True)
+        t.start()
+
+        token = "test_target_session_token"
+        with SESSION_LOCK:
+            ACTIVE_SESSIONS[token] = {
+                "username": "admin",
+                "created_at": time.time(),
+                "last_active": time.time(),
+                "expires_at": time.time() + 3600
+            }
+
+        try:
+            # 1. Unauthenticated request under secret prefix must return 401
+            req_unauth = urllib.request.Request(
+                f"http://127.0.0.1:{port}{secret_prefix}/api/test-target",
+                data=json.dumps({"target": "127.0.0.1", "port": 80}).encode("utf-8"),
+                headers={"Content-Type": "application/json"}
+            )
+            try:
+                urllib.request.urlopen(req_unauth, timeout=3.0)
+                self.fail("Expected 401 HTTPError")
+            except urllib.error.HTTPError as err:
+                self.assertEqual(err.code, 401)
+
+            # 2. Authenticated request with invalid target syntax must return 400
+            req_bad = urllib.request.Request(
+                f"http://127.0.0.1:{port}/api/test-target",
+                data=json.dumps({"target": "127.0.0.1; rm -rf /", "port": 80}).encode("utf-8"),
+                headers={
+                    "Content-Type": "application/json",
+                    "Cookie": f"xfwd_session={token}",
+                    "Origin": f"http://127.0.0.1:{port}"
+                }
+            )
+            try:
+                urllib.request.urlopen(req_bad, timeout=3.0)
+                self.fail("Expected 400 HTTPError")
+            except urllib.error.HTTPError as err:
+                self.assertEqual(err.code, 400)
+
+            # 3. Authenticated valid request returns JSON with ok: true
+            req_valid = urllib.request.Request(
+                f"http://127.0.0.1:{port}/api/test-target",
+                data=json.dumps({"target": "127.0.0.1", "port": port}).encode("utf-8"),
+                headers={
+                    "Content-Type": "application/json",
+                    "Cookie": f"xfwd_session={token}",
+                    "Origin": f"http://127.0.0.1:{port}"
+                }
+            )
+            with urllib.request.urlopen(req_valid, timeout=3.0) as resp:
+                self.assertEqual(resp.status, 200)
+                body = json.loads(resp.read().decode("utf-8"))
+                self.assertTrue(body.get("ok"))
+                self.assertTrue(body.get("healthy"))
+                self.assertIsNotNone(body.get("latency_ms"))
+        finally:
+            server.shutdown()
+            server.server_close()
 
 
 if __name__ == "__main__":
