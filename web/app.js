@@ -1585,6 +1585,258 @@ if (inlineSecurityForm) {
     });
 }
 
+// ── Configuration Export & Import Handlers ──
+async function handleExportConfig() {
+    try {
+        const res = await fetch(`${API_BASE}/config/export`);
+        if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            showToast(err.error || "Failed to export configuration", "error");
+            return;
+        }
+        const blob = await res.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.style.display = "none";
+        a.href = url;
+        const disposition = res.headers.get("content-disposition");
+        let filename = `xforwarder-backup-${new Date().toISOString().replace(/[-:T]/g, "").slice(0, 14)}.json`;
+        if (disposition && disposition.includes("filename=")) {
+            const match = disposition.match(/filename=["']?([^"';]+)["']?/);
+            if (match && match[1]) filename = match[1];
+        }
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        a.remove();
+        showToast(`Configuration backup downloaded: ${filename}`, "success");
+    } catch (e) {
+        showToast("Error downloading configuration backup", "error");
+    }
+}
+
+const btnExportConfig = document.getElementById("btnExportConfig");
+if (btnExportConfig) btnExportConfig.addEventListener("click", handleExportConfig);
+
+const btnExportConfigSec = document.getElementById("btnExportConfigSec");
+if (btnExportConfigSec) btnExportConfigSec.addEventListener("click", handleExportConfig);
+
+// Modal and import elements
+const importConfigModal = document.getElementById("importConfigModal");
+const btnOpenImportModal = document.getElementById("btnOpenImportModal");
+const btnOpenImportModalSec = document.getElementById("btnOpenImportModalSec");
+const btnCloseImportModal = document.getElementById("btnCloseImportModal");
+const btnCancelImportModal = document.getElementById("btnCancelImportModal");
+const importConfigForm = document.getElementById("importConfigForm");
+const importDropzone = document.getElementById("importDropzone");
+const importFileInput = document.getElementById("importFileInput");
+const importPreviewBox = document.getElementById("importPreviewBox");
+const importPreviewBadge = document.getElementById("importPreviewBadge");
+const importPreviewFilename = document.getElementById("importPreviewFilename");
+const importPreviewDetails = document.getElementById("importPreviewDetails");
+const btnTogglePasteJson = document.getElementById("btnTogglePasteJson");
+const pasteJsonContainer = document.getElementById("pasteJsonContainer");
+const importJsonTextarea = document.getElementById("importJsonTextarea");
+const importError = document.getElementById("importError");
+const btnConfirmImport = document.getElementById("btnConfirmImport");
+
+let currentImportConfig = null;
+
+function openImportModal() {
+    if (!importConfigModal) return;
+    currentImportConfig = null;
+    if (importConfigForm) importConfigForm.reset();
+    if (importFileInput) importFileInput.value = "";
+    if (importJsonTextarea) importJsonTextarea.value = "";
+    if (pasteJsonContainer) pasteJsonContainer.style.display = "none";
+    if (importPreviewBox) importPreviewBox.style.display = "none";
+    if (importError) {
+        importError.innerText = "";
+        importError.style.display = "none";
+    }
+    if (btnConfirmImport) btnConfirmImport.disabled = true;
+    importConfigModal.classList.add("show");
+}
+
+function closeImportModal() {
+    if (importConfigModal) importConfigModal.classList.remove("show");
+}
+
+if (btnOpenImportModal) btnOpenImportModal.addEventListener("click", openImportModal);
+if (btnOpenImportModalSec) btnOpenImportModalSec.addEventListener("click", openImportModal);
+if (btnCloseImportModal) btnCloseImportModal.addEventListener("click", closeImportModal);
+if (btnCancelImportModal) btnCancelImportModal.addEventListener("click", closeImportModal);
+
+if (btnTogglePasteJson) {
+    btnTogglePasteJson.addEventListener("click", () => {
+        if (!pasteJsonContainer) return;
+        const isHidden = pasteJsonContainer.style.display === "none";
+        pasteJsonContainer.style.display = isHidden ? "block" : "none";
+    });
+}
+
+function parseAndValidateImportJson(rawText, sourceName) {
+    if (!rawText || !rawText.trim()) {
+        if (importPreviewBox) importPreviewBox.style.display = "none";
+        if (btnConfirmImport) btnConfirmImport.disabled = true;
+        return;
+    }
+    try {
+        let parsed = JSON.parse(rawText);
+        if (Array.isArray(parsed)) {
+            parsed = { rules: parsed };
+        } else if (!parsed || typeof parsed !== "object") {
+            throw new Error("Configuration must be a valid JSON object or rules array");
+        }
+
+        const rules = Array.isArray(parsed.rules) ? parsed.rules : [];
+        if (rules.length === 0) {
+            throw new Error("No forwarding rules found in configuration payload");
+        }
+
+        const ports = [];
+        for (const r of rules) {
+            if (r && r.port) {
+                const p = parseInt(r.port, 10);
+                if (p > 0 && p <= 65535) ports.push(p);
+            }
+        }
+
+        currentImportConfig = parsed;
+        if (importError) {
+            importError.innerText = "";
+            importError.style.display = "none";
+        }
+
+        if (importPreviewBox) {
+            importPreviewBox.style.display = "block";
+            if (importPreviewBadge) {
+                importPreviewBadge.className = "preview-badge";
+                importPreviewBadge.innerText = `${rules.length} Rule(s) Ready`;
+            }
+            if (importPreviewFilename) importPreviewFilename.innerText = sourceName || "config.json";
+            if (importPreviewDetails) {
+                const portsDisplay = ports.length > 0
+                    ? `<code>:${ports.slice(0, 12).join("</code>, <code>:")}${ports.length > 12 ? '... (+' + (ports.length - 12) + ' more)' : ''}</code>`
+                    : "No ports";
+                importPreviewDetails.innerHTML = `
+                    <div><strong>Detected Rules:</strong> ${rules.length} port mapping(s)</div>
+                    <div style="margin-top: 4px;"><strong>Target Ports:</strong> ${portsDisplay}</div>
+                    ${parsed.wan_interface ? `<div style="margin-top: 4px;"><strong>WAN Interface:</strong> <code>${escapeHtml(parsed.wan_interface)}</code></div>` : ""}
+                `;
+            }
+        }
+        if (btnConfirmImport) btnConfirmImport.disabled = false;
+
+    } catch (e) {
+        currentImportConfig = null;
+        if (importPreviewBox) importPreviewBox.style.display = "none";
+        if (importError) {
+            importError.innerText = `Invalid JSON: ${e.message}`;
+            importError.style.display = "block";
+        }
+        if (btnConfirmImport) btnConfirmImport.disabled = true;
+    }
+}
+
+if (importDropzone && importFileInput) {
+    importDropzone.addEventListener("click", () => importFileInput.click());
+
+    importDropzone.addEventListener("dragover", (e) => {
+        e.preventDefault();
+        importDropzone.classList.add("dragover");
+    });
+
+    ["dragleave", "dragend"].forEach(type => {
+        importDropzone.addEventListener(type, () => importDropzone.classList.remove("dragover"));
+    });
+
+    importDropzone.addEventListener("drop", (e) => {
+        e.preventDefault();
+        importDropzone.classList.remove("dragover");
+        if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+            const file = e.dataTransfer.files[0];
+            const reader = new FileReader();
+            reader.onload = (event) => parseAndValidateImportJson(event.target.result, file.name);
+            reader.readAsText(file);
+        }
+    });
+
+    importFileInput.addEventListener("change", function() {
+        if (this.files && this.files.length > 0) {
+            const file = this.files[0];
+            const reader = new FileReader();
+            reader.onload = (event) => parseAndValidateImportJson(event.target.result, file.name);
+            reader.readAsText(file);
+        }
+    });
+}
+
+if (importJsonTextarea) {
+    importJsonTextarea.addEventListener("input", function() {
+        parseAndValidateImportJson(this.value, "Pasted JSON Content");
+    });
+}
+
+if (importConfigForm) {
+    importConfigForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        if (!currentImportConfig) {
+            if (importError) {
+                importError.innerText = "Please select or paste a valid configuration file";
+                importError.style.display = "block";
+            }
+            return;
+        }
+
+        const modeRadio = document.querySelector('input[name="importMode"]:checked');
+        const mode = modeRadio ? modeRadio.value : "merge";
+
+        if (btnConfirmImport) {
+            btnConfirmImport.disabled = true;
+            btnConfirmImport.innerHTML = '<span class="btn-spinner"></span> <span>Applying...</span>';
+        }
+        if (importError) importError.style.display = "none";
+
+        try {
+            const res = await fetch(`${API_BASE}/config/import`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    mode: mode,
+                    config: currentImportConfig
+                })
+            });
+            const data = await res.json().catch(() => ({}));
+            if (res.ok && data.ok) {
+                showToast(`Successfully imported ${data.imported_count} rule(s) (${data.mode} mode)! Pre-restore backup saved.`);
+                closeImportModal();
+                fetchStatus();
+            } else {
+                if (importError) {
+                    importError.innerText = data.error || "Failed to import configuration";
+                    importError.style.display = "block";
+                }
+            }
+        } catch (err) {
+            if (importError) {
+                importError.innerText = "Network error communicating with server";
+                importError.style.display = "block";
+            }
+        } finally {
+            if (btnConfirmImport) {
+                btnConfirmImport.disabled = false;
+                btnConfirmImport.innerHTML = `
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+                    <span>Import & Apply</span>
+                `;
+            }
+        }
+    });
+}
+
+
 // ── Real-time Failover & Probe Logs Stream ──
 let logFeedActive = true;
 const logConsole = document.getElementById("logConsole");

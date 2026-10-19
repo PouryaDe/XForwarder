@@ -1135,7 +1135,17 @@ body {
     margin-bottom: 22px;
     padding-bottom: 16px;
     border-bottom: 1px solid var(--border-color);
+    flex-wrap: wrap;
+    gap: 12px;
 }
+
+.panel-actions-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
 
 .panel-header h2 {
     font-size: 1.25rem;
@@ -1935,6 +1945,177 @@ select option {
     border-top: none;
 }
 
+/* ── Import Mode Selector ── */
+.import-mode-selector {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-top: 6px;
+}
+
+.import-mode-option {
+    cursor: pointer;
+    position: relative;
+    display: block;
+}
+
+.import-mode-option input[type="radio"] {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.import-mode-card {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 12px 14px;
+    border-radius: 12px;
+    background: var(--bg-surface);
+    border: 1px solid var(--border-color);
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    min-height: 76px;
+}
+
+.import-mode-option:hover .import-mode-card {
+    border-color: var(--border-active);
+    background: var(--bg-card-hover);
+}
+
+.import-mode-option input[type="radio"]:checked + .import-mode-card {
+    border-color: var(--accent-primary);
+    background: rgba(99, 102, 241, 0.08);
+    box-shadow: 0 0 0 1px var(--accent-primary);
+}
+
+[data-theme="light"] .import-mode-option input[type="radio"]:checked + .import-mode-card {
+    background: rgba(79, 70, 229, 0.06);
+}
+
+.import-mode-title {
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.import-mode-desc {
+    font-size: 0.74rem;
+    color: var(--text-secondary);
+    line-height: 1.35;
+}
+
+/* ── File Dropzone ── */
+.file-dropzone {
+    border: 2px dashed var(--border-color);
+    border-radius: 14px;
+    padding: 24px 18px;
+    text-align: center;
+    cursor: pointer;
+    background: rgba(255, 255, 255, 0.02);
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+[data-theme="light"] .file-dropzone {
+    background: rgba(15, 23, 42, 0.02);
+}
+
+.file-dropzone:hover,
+.file-dropzone.dragover {
+    border-color: var(--accent-primary);
+    background: rgba(99, 102, 241, 0.06);
+    transform: translateY(-1px);
+}
+
+.dropzone-inner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    pointer-events: none;
+}
+
+.dropzone-inner svg {
+    color: var(--accent-primary);
+    opacity: 0.9;
+}
+
+.dropzone-text {
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.dropzone-sub {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+}
+
+/* ── Import Preview Box ── */
+.import-preview-box {
+    margin-top: 14px;
+    padding: 14px 16px;
+    border-radius: 12px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+}
+
+.preview-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+    gap: 8px;
+}
+
+.preview-badge {
+    font-size: 0.72rem;
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: 6px;
+    background: rgba(16, 185, 129, 0.15);
+    color: var(--accent-emerald);
+    border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.preview-badge.badge-error {
+    background: rgba(239, 68, 68, 0.15);
+    color: var(--accent-rose);
+    border-color: rgba(239, 68, 68, 0.3);
+}
+
+.preview-filename {
+    font-size: 0.76rem;
+    color: var(--text-muted);
+}
+
+.preview-details {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    line-height: 1.45;
+}
+
+/* ── Text Toggle Button ── */
+.btn-text-toggle {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    font-size: 0.78rem;
+    font-weight: 500;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 0;
+    transition: color 0.18s ease;
+}
+
+.btn-text-toggle:hover {
+    color: var(--accent-primary);
+}
+
 /* ── Toasts ── */
 .toast-container {
     position: fixed;
@@ -2374,4 +2555,6 @@ select option {
     .rule-actions select { flex: 1; }
     .import-banner { flex-direction: column; align-items: stretch; }
     .import-banner-actions { justify-content: flex-end; }
+    .import-mode-selector { grid-template-columns: 1fr; }
 }
+

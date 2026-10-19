@@ -966,6 +966,150 @@ else:
     show_status
 }
 
+export_config_cli() {
+    check_root
+    local target_path="${1:-}"
+    if [[ -z "$target_path" ]]; then
+        local ts
+        ts=$(date +%Y%m%d_%H%M%S)
+        target_path="./xforwarder-backup-$ts.json"
+    fi
+
+    local active_cfg
+    active_cfg=$(resolve_active_config)
+    export XFWD_CONFIG_PATH="$active_cfg"
+
+    msg_info "Exporting configuration from $active_cfg..."
+    python3 -c "
+import sys, json, os
+sys.path.insert(0, '$INSTALL_DIR')
+from core.web_server import export_config_data
+try:
+    data = export_config_data()
+    out_dir = os.path.dirname(os.path.abspath('$target_path'))
+    if out_dir:
+        os.makedirs(out_dir, exist_ok=True)
+    with open('$target_path', 'w', encoding='utf-8') as f:
+        json.dump(data, f, indent=2, ensure_ascii=False)
+    rule_count = len(data.get('rules', []))
+    print(f'\033[0;32m[OK] Successfully exported configuration ({rule_count} rules) to $target_path\033[0m')
+except Exception as e:
+    print(f'\033[0;31m[ERROR] Failed to export configuration: {e}\033[0m', file=sys.stderr)
+    sys.exit(1)
+"
+}
+
+import_config_cli() {
+    check_root
+    local file_path="${1:-}"
+    local mode="${2:---merge}"
+
+    if [[ -z "$file_path" ]]; then
+        echo
+        printf "%bEnter path to backup JSON file to import:%b " "$YELLOW" "$NC"
+        read -r file_path
+    fi
+
+    if [[ ! -f "$file_path" ]]; then
+        msg_err "File not found: $file_path"
+        return 1
+    fi
+
+    local clean_mode="merge"
+    if [[ "$mode" == "--replace" || "$mode" == "replace" ]]; then
+        clean_mode="replace"
+    fi
+
+    local active_cfg
+    active_cfg=$(resolve_active_config)
+    export XFWD_CONFIG_PATH="$active_cfg"
+
+    msg_info "Importing configuration from $file_path (mode: $clean_mode)..."
+    python3 -c "
+import sys, json
+sys.path.insert(0, '$INSTALL_DIR')
+from core.web_server import import_config_data
+
+try:
+    with open('$file_path', 'r', encoding='utf-8') as f:
+        payload = json.load(f)
+except Exception as e:
+    print(f'\033[0;31m[ERROR] Failed to read JSON file: {e}\033[0m', file=sys.stderr)
+    sys.exit(1)
+
+ok, err, info = import_config_data(payload, mode='$clean_mode')
+if ok:
+    imported_cnt = info.get('imported_count', 0)
+    total_cnt = info.get('count', 0)
+    backup_file = info.get('backup', '')
+    print(f'\033[0;32m[OK] Successfully imported {imported_cnt} rule(s) in {info.get(\"mode\")} mode.\033[0m')
+    print(f'\033[0;32m[OK] Total active rules: {total_cnt}.\033[0m')
+    if backup_file:
+        print(f'\033[1;33m[INFO] Pre-restore atomic backup saved to: {backup_file}\033[0m')
+else:
+    print(f'\033[0;31m[ERROR] Import failed: {err}\033[0m', file=sys.stderr)
+    sys.exit(1)
+" || return 1
+
+    systemctl restart "$DAEMON_SERVICE" "$WEB_SERVICE" >/dev/null 2>&1 || true
+    msg_ok "XForwarder services restarted and synced with imported rules."
+    show_status
+}
+
+backup_restore_menu() {
+    clear
+    printf "%b=======================================================%b\n" "$CYAN" "$NC"
+    printf "%b   Backup & Restore (Export / Import Configuration)%b\n" "$BOLD" "$NC"
+    printf "%b=======================================================%b\n\n" "$CYAN" "$NC"
+
+    echo "1) Export Configuration to JSON file"
+    echo "2) Import Configuration (Merge mode - keeps existing non-conflicting rules)"
+    echo "3) Import Configuration (Replace mode - replaces all rules)"
+    echo "0) Back to Main Menu"
+    echo
+    read -r -p "Select an option [0-3]: " bchoice
+
+    case "$bchoice" in
+        1)
+            echo
+            printf "%bEnter export file path (leave empty for default timestamped file):%b " "$YELLOW" "$NC"
+            read -r dest
+            export_config_cli "$dest"
+            echo
+            read -r -p "Press Enter to continue..."
+            ;;
+        2)
+            echo
+            printf "%bEnter path to backup JSON file to import:%b " "$YELLOW" "$NC"
+            read -r src
+            import_config_cli "$src" "--merge"
+            echo
+            read -r -p "Press Enter to continue..."
+            ;;
+        3)
+            echo
+            printf "%bWARNING: Replace mode will replace all existing port rules!%b\n" "$RED" "$NC"
+            printf "%bEnter path to backup JSON file to import:%b " "$YELLOW" "$NC"
+            read -r src
+            printf "%bAre you sure you want to proceed with REPLACE mode? (y/N):%b " "$YELLOW" "$NC"
+            read -r confirm
+            if [[ "$confirm" =~ ^[Yy]$ ]]; then
+                import_config_cli "$src" "--replace"
+            else
+                msg_info "Import cancelled."
+            fi
+            echo
+            read -r -p "Press Enter to continue..."
+            ;;
+        0)
+            return 0
+            ;;
+        *)
+            msg_warn "Invalid selection."
+            ;;
+    esac
+}
+
 show_menu() {
     clear
     printf "%b=======================================================%b\n" "$CYAN" "$NC"
@@ -981,9 +1125,10 @@ show_menu() {
     echo "6) Update XForwarder (Auto-Migrate & Preserve Rules)"
     echo "7) Re-install / Full Setup Wizard"
     echo "8) Import Pre-existing HAProxy Rules (/etc/haproxy/)"
+    echo "9) Backup & Restore (Export / Import Settings JSON)"
     echo "0) Exit"
     echo
-    read -r -p "Select an option [0-8]: " choice
+    read -r -p "Select an option [0-9]: " choice
 
     case "$choice" in
         1) show_web_access_info ;;
@@ -994,6 +1139,7 @@ show_menu() {
         6) update_xforwarder ;;
         7) install_xforwarder ;;
         8) import_haproxy_rules ;;
+        9) backup_restore_menu ;;
         0) exit 0 ;;
         *) msg_warn "Invalid selection." ;;
     esac
@@ -1083,6 +1229,22 @@ case "${1:-}" in
         fi
         journalctl -u "$DAEMON_SERVICE" -f
         ;;
+    export|export-config)
+        if ! is_installed; then
+            msg_err "XForwarder is not installed. Please run installation first."
+            exit 1
+        fi
+        shift
+        export_config_cli "${1:-}"
+        ;;
+    import-config)
+        if ! is_installed; then
+            msg_err "XForwarder is not installed. Please run installation first."
+            exit 1
+        fi
+        shift
+        import_config_cli "$@"
+        ;;
     "")
         if ! is_installed; then
             echo
@@ -1096,7 +1258,7 @@ case "${1:-}" in
         fi
         ;;
     *)
-        echo "Usage: xforwarder {install|update|status|url|port|username|password|path|settings|restart|logs}"
+        echo "Usage: xforwarder {install|update|status|url|port|username|password|path|settings|export|import-config|restart|logs}"
         exit 1
         ;;
 esac

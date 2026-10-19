@@ -318,10 +318,20 @@
                             <h2>Port Routing & Multi-Path Matrix</h2>
                             <p class="section-desc">Each port routes user traffic through Priority 1 and automatically cascades to backup priorities on packet loss.</p>
                         </div>
-                        <button class="btn btn-primary" id="btnOpenAddModal">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                            <span>Add Port Rule</span>
-                        </button>
+                        <div class="panel-actions-group">
+                            <button class="btn btn-secondary btn-sm" id="btnExportConfig" title="Export Configuration Backup (JSON)">
+                                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                                <span>Export</span>
+                            </button>
+                            <button class="btn btn-secondary btn-sm" id="btnOpenImportModal" title="Import Configuration (JSON)">
+                                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                                <span>Import</span>
+                            </button>
+                            <button class="btn btn-primary" id="btnOpenAddModal">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                                <span>Add Port Rule</span>
+                            </button>
+                        </div>
                     </div>
 
                     <!-- Pre-existing HAProxy Discovered Alert Banner -->
@@ -718,6 +728,34 @@
                             </div>
                         </div>
                     </div>
+
+                    <!-- Configuration Backup & Migration Card -->
+                    <div class="overview-card">
+                        <div class="overview-card-header">
+                            <div class="overview-card-title">
+                                <div class="stat-icon icon-cyan" style="width:36px;height:36px;">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                                </div>
+                                <div>
+                                    <h3>Backup & Migration</h3>
+                                    <span class="overview-card-sub">Export or import routing rules and server parameters</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="overview-card-body">
+                            <p class="section-desc" style="margin-bottom:14px;">Safely backup or restore your forwarding rules and operational parameters. Exported files are cryptographically sanitized to exclude administrative passwords.</p>
+                            <div class="quick-btn-grid" style="grid-template-columns: 1fr 1fr;">
+                                <button type="button" class="btn btn-secondary" id="btnExportConfigSec">
+                                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                                    <span>Export Backup JSON</span>
+                                </button>
+                                <button type="button" class="btn btn-primary" id="btnOpenImportModalSec">
+                                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                                    <span>Import Config</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </section>
 
@@ -884,6 +922,84 @@
                 <button type="button" class="btn btn-secondary" id="btnCancelConfirm">Cancel</button>
                 <button type="button" class="btn btn-danger" id="btnProceedConfirm">Delete Rule</button>
             </div>
+        </div>
+    </div>
+
+    <!-- Configuration Import / Restore Modal -->
+    <div class="modal-backdrop" id="importConfigModal">
+        <div class="modal-card">
+            <div class="modal-header">
+                <div>
+                    <h3>Import Configuration</h3>
+                    <p class="modal-subtitle">Upload or paste an XForwarder backup configuration JSON</p>
+                </div>
+                <button type="button" class="modal-close" id="btnCloseImportModal">&times;</button>
+            </div>
+            <form id="importConfigForm">
+                <!-- Import Mode Selection -->
+                <div class="form-group">
+                    <label>Import Mode</label>
+                    <div class="import-mode-selector">
+                        <label class="import-mode-option">
+                            <input type="radio" name="importMode" value="merge" checked>
+                            <div class="import-mode-card">
+                                <span class="import-mode-title">Merge (Recommended)</span>
+                                <span class="import-mode-desc">Appends and updates port rules. Preserves existing non-conflicting rules.</span>
+                            </div>
+                        </label>
+                        <label class="import-mode-option">
+                            <input type="radio" name="importMode" value="replace">
+                            <div class="import-mode-card">
+                                <span class="import-mode-title">Replace All Rules</span>
+                                <span class="import-mode-desc">Replaces all port rules with the imported set. Admin credentials and panel port remain safe.</span>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Dropzone / File Picker -->
+                <div class="form-group">
+                    <label>Configuration JSON File</label>
+                    <div class="file-dropzone" id="importDropzone">
+                        <input type="file" id="importFileInput" accept=".json,application/json" style="display:none;">
+                        <div class="dropzone-inner">
+                            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                            <span class="dropzone-text">Click or drag & drop backup JSON file here</span>
+                            <span class="dropzone-sub">Supports .json files exported from XForwarder</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Live Preview / Status Box -->
+                <div id="importPreviewBox" class="import-preview-box" style="display:none;">
+                    <div class="preview-header">
+                        <span class="preview-badge" id="importPreviewBadge">Valid Config</span>
+                        <span class="preview-filename font-mono" id="importPreviewFilename">backup.json</span>
+                    </div>
+                    <div class="preview-details" id="importPreviewDetails"></div>
+                </div>
+
+                <!-- Paste Raw JSON toggle -->
+                <div class="form-group" style="margin-top: 10px;">
+                    <button type="button" class="btn-text-toggle" id="btnTogglePasteJson">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+                        <span>Or paste raw JSON directly</span>
+                    </button>
+                    <div id="pasteJsonContainer" style="display:none; margin-top: 8px;">
+                        <textarea id="importJsonTextarea" class="form-control font-mono" rows="5" placeholder='{"rules": [ ... ]}' spellcheck="false"></textarea>
+                    </div>
+                </div>
+
+                <div id="importError" class="login-error" style="display:none;"></div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" id="btnCancelImportModal">Cancel</button>
+                    <button type="submit" class="btn btn-primary" id="btnConfirmImport" disabled>
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+                        <span>Import & Apply</span>
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 

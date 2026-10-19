@@ -60,6 +60,9 @@ except ImportError:
 
 
 def get_config_path() -> str:
+    env_override = os.environ.get("XFWD_CONFIG_PATH")
+    if env_override:
+        return env_override
     if os.path.exists(CONFIG_PATH):
         return CONFIG_PATH
     if os.path.exists(LEGACY_CONFIG_PATH):
@@ -117,6 +120,98 @@ def save_config(cfg: dict) -> bool:
     except Exception as e:
         print(f"[ERROR] Failed to save config: {e}", file=sys.stderr)
         return False
+
+
+def export_config_data(cfg: dict = None) -> dict:
+    """Returns a sanitized export representation of the configuration, omitting sensitive credentials."""
+    if cfg is None:
+        cfg = load_config()
+    return {
+        "_comment": "XForwarder Configuration Backup",
+        "exported_at": int(time.time()),
+        "version": cfg.get("schema_version", 2),
+        "wan_interface": cfg.get("wan_interface", "auto"),
+        "check_interval_seconds": cfg.get("check_interval_seconds", 8),
+        "failure_threshold": cfg.get("failure_threshold", 3),
+        "recovery_threshold": cfg.get("recovery_threshold", 3),
+        "rules": cfg.get("rules", [])
+    }
+
+
+def import_config_data(imported_raw: dict, mode: str = "merge") -> tuple:
+    """Validates, migrates, backs up, and applies an imported configuration dictionary.
+    Returns (success: bool, error_msg: str, info_dict: dict).
+    """
+    if mode not in ("merge", "replace"):
+        mode = "merge"
+
+    if not isinstance(imported_raw, dict):
+        return False, "Invalid configuration payload. Must be a JSON object.", {}
+
+    if migrate_config:
+        imported_cfg, _ = migrate_config(imported_raw)
+    else:
+        imported_cfg = imported_raw
+
+    imported_rules = imported_cfg.get("rules", [])
+    if not isinstance(imported_rules, list):
+        return False, "'rules' property must be a list", {}
+
+    validated_rules = []
+    seen_ports = set()
+    for r in imported_rules:
+        if not isinstance(r, dict):
+            continue
+        try:
+            port = int(r.get("port", 0))
+        except (ValueError, TypeError):
+            continue
+        if port <= 0 or port > 65535:
+            return False, f"Invalid port number: {port}", {}
+        if port in seen_ports:
+            return False, f"Duplicate port {port} found in imported rules", {}
+        seen_ports.add(port)
+        valid, err = validate_rule(r)
+        if not valid:
+            return False, f"Rule for port {port} is invalid: {err}", {}
+        validated_rules.append(r)
+
+    # Atomic Pre-Update Backup
+    cfg_path = get_config_path()
+    current_cfg = load_config()
+    bak_path = f"{cfg_path}.bak.{int(time.time())}"
+    try:
+        with open(bak_path, "w", encoding="utf-8") as bf:
+            json.dump(current_cfg, bf, indent=2, ensure_ascii=False)
+    except Exception as e:
+        print(f"[WARN] Failed to write pre-import backup {bak_path}: {e}", file=sys.stderr)
+
+    if mode == "replace":
+        current_cfg["rules"] = validated_rules
+        if "wan_interface" in imported_cfg and imported_cfg["wan_interface"]:
+            current_cfg["wan_interface"] = imported_cfg["wan_interface"]
+        if "check_interval_seconds" in imported_cfg:
+            current_cfg["check_interval_seconds"] = imported_cfg["check_interval_seconds"]
+        if "failure_threshold" in imported_cfg:
+            current_cfg["failure_threshold"] = imported_cfg["failure_threshold"]
+        if "recovery_threshold" in imported_cfg:
+            current_cfg["recovery_threshold"] = imported_cfg["recovery_threshold"]
+    else:  # merge
+        current_rules = current_cfg.get("rules", [])
+        rules_map = {r.get("port"): r for r in current_rules if isinstance(r, dict)}
+        for vr in validated_rules:
+            rules_map[vr["port"]] = vr
+        current_cfg["rules"] = list(rules_map.values())
+
+    if save_config(current_cfg):
+        return True, "", {
+            "mode": mode,
+            "count": len(current_cfg.get("rules", [])),
+            "imported_count": len(validated_rules),
+            "backup": os.path.basename(bak_path)
+        }
+    return False, "Failed to save configuration", {}
+
 
 
 def load_state() -> dict:
@@ -861,7 +956,20 @@ class XForwarderWebHandler(BaseHTTPRequestHandler):
                     "ports": [r["port"] for r in importable],
                     "rules": importable
                 })
+            elif subpath == "/api/config/export":
+                export_data = export_config_data()
+                now_str = time.strftime("%Y%m%d-%H%M%S")
+                body = json.dumps(export_data, indent=2, ensure_ascii=False).encode("utf-8")
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json; charset=utf-8")
+                self.send_header("Content-Disposition", f'attachment; filename="xforwarder-backup-{now_str}.json"')
+                self.send_header("Content-Length", str(len(body)))
+                self.send_header("Cache-Control", "no-store, no-cache, must-revalidate")
+                self.send_security_headers()
+                self.end_headers()
+                self.wfile.write(body)
                 return
+
             else:
                 self.send_error(404, "API endpoint not found")
                 return
@@ -1114,6 +1222,17 @@ class XForwarderWebHandler(BaseHTTPRequestHandler):
                 "imported_count": count,
                 "imported_ports": ports
             })
+
+        elif subpath == "/api/config/import":
+            imported_raw = body.get("config") if (isinstance(body, dict) and isinstance(body.get("config"), dict)) else body
+            mode = body.get("mode", "merge") if isinstance(body, dict) else "merge"
+            ok, err, info = import_config_data(imported_raw, mode=mode)
+            if ok:
+                self.send_json({"ok": True, **info})
+            else:
+                self.send_json({"ok": False, "error": err}, 400)
+            return
+
 
         else:
             self.send_error(404, "Not Found")
