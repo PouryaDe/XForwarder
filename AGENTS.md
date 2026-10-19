@@ -11,9 +11,9 @@ XForwarder/
 │   ├── engine.py          # Core failover engine daemon (<15MB RAM, socket health prober, firewall/proxy syncer)
 │   └── web_server.py      # Native Python 3 HTTP server (session auth, JSON REST API, static asset server)
 ├── web/
-│   ├── index.html         # Modern dark-mode dashboard with login card and rule management modals
-│   ├── style.css          # Glassmorphism aesthetic and responsive layouts
-│   └── app.js             # Vanilla JS state manager, auto-polling, and real-time UI renderer
+│   ├── index.html         # Modern panel dashboard with sidebar navigation, modular sections, and light/dark theme
+│   ├── style.css          # Glassmorphism aesthetic, light & dark theme design system, and responsive layout
+│   └── app.js             # Vanilla JS state manager, auto-polling, section switcher, and real-time UI renderer
 ├── config/
 │   └── config.json.example# Reference configuration schema
 ├── systemd/
@@ -23,7 +23,9 @@ XForwarder/
 ├── forward-manager.sh     # Backward compatibility wrapper for xforwarder.sh
 ├── tests/
 │   ├── test_migration.py  # Native Python unittest suite (schema migrations & edge cases)
-│   └── test_security.py   # Native Python unittest suite (PBKDF2 auth, rate limiting & input sanitization)
+│   ├── test_security.py   # Native Python unittest suite (PBKDF2 auth, rate limiting & input sanitization)
+│   ├── test_haproxy_parser.py # Native Python unittest suite (HAProxy config parser & importer)
+│   └── test_ui_and_api_edge_cases.py # Native Python unittest suite (UI, API edge cases & static asset integrity)
 ├── .agents/               # Antigravity agent configuration (constitution, rules, workflows, skills, scripts)
 │   ├── AGENTS.md          # Master architecture constitution
 │   ├── hooks.json         # Antigravity lifecycle hooks (pre-invocation and stop syntax checks)

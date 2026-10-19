@@ -11,7 +11,7 @@ Authoritative architectural rules and standard operating procedures for AI agent
 - **Core Engine Daemon:** `core/engine.py` (running 24/7 as `xforwarder.service`).
 - **Web UI Dashboard:** `core/web_server.py` + `web/` (running 24/7 as `xforwarder-web.service`).
 - **CLI Controller:** `xforwarder.sh` (aliased to `xforwarder` and `xfwd`).
-- **Test Suite:** `tests/test_migration.py` & `tests/test_security.py` (Native Python unittest covering migrations, security, PBKDF2 auth, and edge cases).
+- **Test Suite:** `tests/` (Native Python unittest covering migrations, security, PBKDF2 auth, HAProxy parser, UI, and edge cases).
 
 ---
 

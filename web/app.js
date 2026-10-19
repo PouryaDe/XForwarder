@@ -536,9 +536,36 @@ async function fetchStatus() {
         renderStats(currentRules, lastRuntime);
         renderSystemStats(data.system);
         renderRules(currentRules, lastRuntime);
+        trackFailoverEvents(currentRules, lastRuntime);
     } catch (err) {
         console.warn("Polling error:", err);
     }
+}
+
+let previousActivePriorities = {};
+let hasInitialLog = false;
+
+function trackFailoverEvents(rules, runtime) {
+    if (!rules || rules.length === 0) return;
+    if (!hasInitialLog && rules.length > 0) {
+        hasInitialLog = true;
+        addLogEntry("info", `Engine synced: ${rules.length} port forwarding rule(s) actively monitored.`);
+    }
+
+    rules.forEach(rule => {
+        const ruleId = String(rule.id || `rule-${rule.port}`);
+        const currentPrio = rule.active_priority || 1;
+        const prevPrio = previousActivePriorities[ruleId];
+
+        if (prevPrio !== undefined && prevPrio !== currentPrio) {
+            if (currentPrio > prevPrio) {
+                addLogEntry("fail", `Port :${rule.port} failover triggered! Cascaded from Priority ${prevPrio} to Priority ${currentPrio}`);
+            } else {
+                addLogEntry("probe", `Port :${rule.port} recovered! Restored to Priority ${currentPrio}`);
+            }
+        }
+        previousActivePriorities[ruleId] = currentPrio;
+    });
 }
 
 // Render Summary Metrics
@@ -759,7 +786,7 @@ function renderRules(rules, runtime) {
                     </div>
                     <div class="path-dest">
                         <span>${escapeHtml(String(dest.type || 'haproxy').toUpperCase())}: ${targetDisplay}:${escapeHtml(dest.port || rule.port)}</span>
-                        <button class="btn-copy" onclick="copyText('${escapeHtml(rawTarget)}')" title="Copy Destination IP">${copyPortSvg}</button>
+                        <button class="btn-copy" onclick="copyText(decodeURIComponent('${encodeURIComponent(rawTarget)}'))" title="Copy Destination IP">${copyPortSvg}</button>
                     </div>
                     <div class="path-meta">
                         <span>${escapeHtml(dest.comment || (isPrimary ? 'Primary uplink' : `Failover path ${prio}`))}</span>
@@ -774,11 +801,11 @@ function renderRules(rules, runtime) {
                 <div class="rule-top">
                     <div class="port-badge">
                         <span class="port-num">:${escapeHtml(rule.port)}</span>
-                        <button class="btn-copy" onclick="copyText('${escapeHtml(rule.port)}')" title="Copy Port Number">${copyPortSvg}</button>
+                        <button class="btn-copy" onclick="copyText(decodeURIComponent('${encodeURIComponent(rule.port)}'))" title="Copy Port Number">${copyPortSvg}</button>
                         <span class="proto-pill">${escapeHtml(String(rule.protocol || 'both').toUpperCase())}</span>
                     </div>
                     <div class="rule-actions">
-                        <select class="form-control" style="width:auto;padding:6px 12px;font-size:0.8rem;" onchange="handleOverrideChange(decodeURIComponent('${encodedId}'), this.value)">
+                        <select class="form-control override-select" onchange="handleOverrideChange(decodeURIComponent('${encodedId}'), this.value)">
                             ${overrideOptions.join('')}
                         </select>
                         <button class="btn btn-secondary btn-sm" onclick="editRule(decodeURIComponent('${encodedId}'))" title="Edit Rule">

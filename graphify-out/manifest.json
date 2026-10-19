@@ -12,9 +12,9 @@
     "semantic_hash": ""
   },
   "web/app.js": {
-    "mtime": 1792369723.966462,
-    "seen": 1792370224.3100321,
-    "ast_hash": "a67a7ea5901deab33196c735a824ef89",
+    "mtime": 1792370655.881367,
+    "seen": 1792371014.0772784,
+    "ast_hash": "40532719adf3f4e8ff8335fc8be9e17a",
     "semantic_hash": ""
   },
   ".agents/rules/01-architecture-and-failover.md": {
@@ -72,9 +72,9 @@
     "semantic_hash": ""
   },
   "AGENTS.md": {
-    "mtime": 1792361165.22816,
-    "seen": 1792361451.407031,
-    "ast_hash": "5c4c259ce77a95c943b324ad51da6f79",
+    "mtime": 1792370923.7722843,
+    "seen": 1792371014.0773034,
+    "ast_hash": "03a0ab0d2aa22838656fdc94407fed38",
     "semantic_hash": ""
   },
   "README.md": {
@@ -150,9 +150,9 @@
     "semantic_hash": ""
   },
   ".agents/AGENTS.md": {
-    "mtime": 1792361212.6138155,
-    "seen": 1792361451.4070077,
-    "ast_hash": "2f0af133e2fb715af431beb147443770",
+    "mtime": 1792370959.0133116,
+    "seen": 1792371014.0772803,
+    "ast_hash": "a8512d184f078ad706bdff91e2184d66",
     "semantic_hash": ""
   },
   ".agents/experiences/001-zero-collision-haproxy-nftables-failover.md": {
@@ -285,6 +285,12 @@
     "mtime": 1792365141.6325471,
     "seen": 1792365887.9901967,
     "ast_hash": "63ae3f16b11759f724658f594ef3507a",
+    "semantic_hash": ""
+  },
+  "tests/test_ui_and_api_edge_cases.py": {
+    "mtime": 1792370839.5083525,
+    "seen": 1792371014.0772772,
+    "ast_hash": "10bc968bca10a209106c0920e60775e0",
     "semantic_hash": ""
   }
 }
