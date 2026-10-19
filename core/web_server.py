@@ -165,6 +165,258 @@ def get_system_stats() -> dict:
     return stats
 
 
+_NET_CACHE: Dict[str, Any] = {"data": None, "expires": 0}
+_NET_LOCK = threading.Lock()
+
+
+def ping_target(target: str, iface: Optional[str] = None) -> Tuple[bool, Optional[float]]:
+    """Safe bounded ping probe with strict character whitelisting."""
+    if not target or not all(c in "0123456789abcdefABCDEF:.-" for c in target):
+        return False, None
+    try:
+        start = time.perf_counter()
+        if sys.platform == "win32":
+            cmd = ["ping", "-n", "1", "-w", "1000", target]
+        else:
+            cmd = ["ping", "-c", "1", "-W", "1"]
+            if iface:
+                cmd.extend(["-I", iface])
+            cmd.append(target)
+        res = subprocess.call(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        if res == 0:
+            elapsed = round((time.perf_counter() - start) * 1000, 1)
+            return True, elapsed
+    except Exception:
+        pass
+    return False, None
+
+
+def get_network_interfaces_info() -> Dict[str, Any]:
+    """
+    Discovers all network interfaces, identifying server WAN IPs and all tunnel/virtual interfaces
+    (e.g. ipip, gre, ftcp, awg, wireguard) with real-time ping probes and caching.
+    """
+    global _NET_CACHE
+    now = time.time()
+    with _NET_LOCK:
+        if _NET_CACHE["data"] and now < _NET_CACHE["expires"]:
+            return _NET_CACHE["data"]
+
+    server_ips: List[Dict[str, Any]] = []
+    tunnel_interfaces: List[Dict[str, Any]] = []
+    primary_iface = "eth0"
+
+    # 1. Detect primary WAN interface
+    cfg = load_config()
+    cfg_wan = cfg.get("wan_interface", "auto")
+    if cfg_wan and cfg_wan != "auto":
+        primary_iface = cfg_wan
+    elif sys.platform != "win32":
+        try:
+            out = subprocess.check_output(["ip", "-o", "route", "show", "default"], text=True, stderr=subprocess.DEVNULL).strip()
+            parts = out.split()
+            if "dev" in parts:
+                idx = parts.index("dev")
+                if idx + 1 < len(parts):
+                    primary_iface = parts[idx + 1]
+        except Exception:
+            pass
+
+    # 2. Get interface list via ip -j addr show (modern iproute2)
+    if_data = []
+    if sys.platform != "win32":
+        try:
+            out = subprocess.check_output(["ip", "-j", "addr", "show"], text=True, stderr=subprocess.DEVNULL)
+            if_data = json.loads(out)
+        except Exception:
+            pass
+
+        # Fallback to ip -o addr show if ip -j failed
+        if not if_data:
+            try:
+                out = subprocess.check_output(["ip", "-o", "addr", "show"], text=True, stderr=subprocess.DEVNULL)
+                for line in out.splitlines():
+                    tokens = line.split()
+                    if len(tokens) >= 4:
+                        ifname = tokens[1].strip()
+                        if ifname == "lo":
+                            continue
+                        family = tokens[2].strip()
+                        if family not in ("inet", "inet6"):
+                            continue
+                        local = ""
+                        peer = ""
+                        if "peer" in tokens:
+                            p_idx = tokens.index("peer")
+                            local = tokens[p_idx - 1].split("/")[0]
+                            peer = tokens[p_idx + 1].split("/")[0]
+                        else:
+                            local = tokens[3].split("/")[0]
+
+                        found = next((x for x in if_data if x["ifname"] == ifname), None)
+                        if not found:
+                            found = {"ifname": ifname, "flags": ["UP"], "operstate": "UP", "addr_info": []}
+                            if_data.append(found)
+                        found["addr_info"].append({
+                            "family": family,
+                            "local": local,
+                            "address": peer,
+                            "scope": "global" if "scope global" in line else "local"
+                        })
+            except Exception:
+                pass
+
+    # Collect known rule destination targets to match unpeered tunnels
+    known_targets = []
+    for r in cfg.get("rules", []):
+        for d in r.get("destinations", []):
+            t = str(d.get("target", "")).strip()
+            if t and t not in known_targets:
+                known_targets.append(t)
+
+    # Process discovered interfaces
+    for item in if_data:
+        ifname = item.get("ifname", "")
+        if not ifname or ifname == "lo":
+            continue
+
+        flags = item.get("flags", [])
+        is_up = ("UP" in flags) or (item.get("operstate", "").upper() == "UP")
+        addr_info = item.get("addr_info", [])
+
+        # Filter and categorize
+        if ifname == primary_iface:
+            # Server WAN interface IP(s)
+            for a in addr_info:
+                ip = a.get("local", "")
+                family = a.get("family", "")
+                scope = a.get("scope", "")
+                if ip and scope == "global" and not ip.startswith("fe80:") and not ip.startswith("127."):
+                    server_ips.append({
+                        "ip": ip,
+                        "version": 6 if family == "inet6" else 4,
+                        "interface": ifname,
+                        "is_primary": True
+                    })
+        else:
+            # Secondary / Tunnel Interface
+            local_ip = ""
+            peer_ip = ""
+            ip_version = 4
+            for a in addr_info:
+                if a.get("scope") == "global" or not local_ip:
+                    local_ip = a.get("local", "")
+                    addr = a.get("address", "")
+                    if addr and addr != local_ip:
+                        peer_ip = addr
+                    if a.get("family") == "inet6":
+                        ip_version = 6
+
+            # Determine tunnel friendly type
+            link_type = item.get("link_type", "")
+            lower_name = ifname.lower()
+            if "ipip" in lower_name or link_type == "ipip":
+                friendly_type = "IPIP Tunnel"
+            elif "gre" in lower_name or link_type == "gre":
+                friendly_type = "GRE Tunnel"
+            elif "ftcp" in lower_name:
+                friendly_type = "FakeTCP Tunnel"
+            elif "awg" in lower_name:
+                friendly_type = "AmneziaWG Tunnel"
+            elif "wg" in lower_name or link_type == "wireguard":
+                friendly_type = "WireGuard Tunnel"
+            elif "tun" in lower_name:
+                friendly_type = "L3 Tunnel"
+            elif "tap" in lower_name:
+                friendly_type = "L2 TAP"
+            elif "gnv" in lower_name or "geneve" in link_type:
+                friendly_type = "Geneve Tunnel"
+            elif "vxlan" in lower_name or "vxlan" in link_type:
+                friendly_type = "VXLAN Tunnel"
+            else:
+                friendly_type = "Virtual / Tunnel"
+
+            # Determine best ping target
+            target_to_ping = peer_ip
+            if not target_to_ping and local_ip:
+                parts = local_ip.split(".")
+                if len(parts) == 4:
+                    prefix = f"{parts[0]}.{parts[1]}.{parts[2]}."
+                    matched = next((kt for kt in known_targets if kt.startswith(prefix) and kt != local_ip), None)
+                    if matched:
+                        target_to_ping = matched
+                    else:
+                        try:
+                            last_octet = int(parts[3])
+                            peer_octet = last_octet + 1 if (last_octet % 2 == 1) else last_octet - 1
+                            if 1 <= peer_octet <= 254:
+                                target_to_ping = f"{prefix}{peer_octet}"
+                        except Exception:
+                            pass
+
+            tunnel_interfaces.append({
+                "name": ifname,
+                "ip": local_ip or "No IP assigned",
+                "peer_ip": peer_ip,
+                "version": ip_version,
+                "state": "UP" if is_up else "DOWN",
+                "type": friendly_type,
+                "mtu": item.get("mtu", 1500),
+                "target_to_ping": target_to_ping,
+                "reachable": False,
+                "latency_ms": None
+            })
+
+    # Ping tunnels in parallel (bounded timeout)
+    threads = []
+    def do_ping(tunnel):
+        target = tunnel.get("target_to_ping")
+        if target and tunnel.get("state") == "UP":
+            ok, lat = ping_target(target, tunnel.get("name"))
+            tunnel["reachable"] = ok
+            tunnel["latency_ms"] = lat
+        else:
+            tunnel["reachable"] = False
+            tunnel["latency_ms"] = None
+
+    for t_info in tunnel_interfaces:
+        th = threading.Thread(target=do_ping, args=(t_info,), daemon=True)
+        threads.append(th)
+        th.start()
+
+    for th in threads:
+        th.join(timeout=1.2)
+
+    # Fallback if no server IPs detected (e.g. local dev environment)
+    if not server_ips:
+        try:
+            hostname = socket.gethostname()
+            host_ips = socket.gethostbyname_ex(hostname)[2]
+            for hip in host_ips:
+                if not hip.startswith("127.") and not hip.startswith("169.254."):
+                    server_ips.append({
+                        "ip": hip,
+                        "version": 4,
+                        "interface": primary_iface,
+                        "is_primary": True
+                    })
+        except Exception:
+            pass
+
+    result = {
+        "primary_interface": primary_iface,
+        "server_ips": server_ips,
+        "tunnel_interfaces": tunnel_interfaces,
+        "updated_at": now
+    }
+
+    with _NET_LOCK:
+        _NET_CACHE["data"] = result
+        _NET_CACHE["expires"] = now + 6.0  # 6-second cache TTL
+
+    return result
+
+
 PBKDF2_ITERATIONS = 100000
 
 
@@ -591,8 +843,12 @@ class XForwarderWebHandler(BaseHTTPRequestHandler):
                     "config": cfg,
                     "runtime": state.get("runtime", {}),
                     "system": get_system_stats(),
+                    "network": get_network_interfaces_info(),
                     "server_time": time.time()
                 })
+                return
+            elif subpath == "/api/network/interfaces":
+                self.send_json(get_network_interfaces_info())
                 return
             elif subpath == "/api/import/discover":
                 cfg = load_config()
