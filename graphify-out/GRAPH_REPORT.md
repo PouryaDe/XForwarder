@@ -1,17 +1,17 @@
 # Graph Report - Forward-Manager  (2026-10-19)
 
 ## Corpus Check
-- 48 files · ~32,718 words
+- 48 files · ~32,752 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 8 file(s) not represented in the graph (top: .service 4, (none) 2, .example 1)
 
 ## Summary
-- 536 nodes · 907 edges · 34 communities (28 shown, 6 thin omitted)
-- Extraction: 97% EXTRACTED · 3% INFERRED · 0% AMBIGUOUS · INFERRED: 24 edges (avg confidence: 0.93)
+- 536 nodes · 908 edges · 34 communities (28 shown, 6 thin omitted)
+- Extraction: 97% EXTRACTED · 3% INFERRED · 0% AMBIGUOUS · INFERRED: 25 edges (avg confidence: 0.93)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `14e33aab`
+- Built from commit: `204ae3d5`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -57,9 +57,9 @@
 3. `check_root()` - 14 edges
 4. `modify_web_settings_menu()` - 14 edges
 5. `show_web_access_info()` - 14 edges
-6. `XForwarderWebHandler` - 13 edges
-7. `TestXForwarderSecurity` - 13 edges
-8. `validate_rule()` - 13 edges
+6. `validate_rule()` - 13 edges
+7. `XForwarderWebHandler` - 13 edges
+8. `TestXForwarderSecurity` - 13 edges
 9. `msg_ok()` - 13 edges
 10. `resolve_active_config()` - 13 edges
 
@@ -72,6 +72,8 @@
   tests/test_migration.py → core/engine.py
 - `TestXForwarderSecurity` --uses--> `XForwarderWebServer`  [INFERRED]
   tests/test_security.py → core/web_server.py
+- `TestUIAndAPIEdgeCases` --uses--> `XForwarderWebServer`  [INFERRED]
+  tests/test_ui_and_api_edge_cases.py → core/web_server.py
 
 ## Import Cycles
 - None detected.
@@ -191,7 +193,7 @@ Cohesion: 0.50
 Nodes (5): addDestinationRow(), editRule(), removeDestinationRow(), renderDestinationsList(), syncDestinationsFromDom()
 
 ## Knowledge Gaps
-- **196 isolated node(s):** `1. Project Overview & Terminology`, `3. Specialized Skills Index (Progressive Disclosure)`, `4. Active Workspace Rules (Conditional Disclosure)`, `5. Workflows & Automation Scripts`, `6. Experiences Catalog` (+191 more)
+- **196 isolated node(s):** `basePath`, `currentRules`, `lastRuntime`, `loginScreen`, `dashboardScreen` (+191 more)
   These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 269 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
 - **6 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
@@ -200,7 +202,7 @@ _Questions this graph is uniquely positioned to answer:_
 
 - **Why does `XForwarderEngine` connect `XForwarderEngine` to `os`, `.migrate_and_normalize_config`, `web_server.py`, `.do_POST`?**
   _High betweenness centrality (0.144) - this node is a cross-community bridge._
-- **What connects `1. Project Overview & Terminology`, `3. Specialized Skills Index (Progressive Disclosure)`, `4. Active Workspace Rules (Conditional Disclosure)` to the rest of the system?**
+- **What connects `basePath`, `currentRules`, `lastRuntime` to the rest of the system?**
   _196 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `os` be split into smaller, more focused modules?**
   _Cohesion score 0.06696428571428571 - nodes in this community are weakly interconnected._
