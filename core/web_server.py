@@ -12,6 +12,7 @@ import hashlib
 import hmac
 import secrets
 import socket
+import ssl
 import subprocess
 import threading
 import ipaddress
@@ -404,8 +405,13 @@ class XForwarderWebHandler(BaseHTTPRequestHandler):
         )
         self.send_header("Cache-Control", "no-store, no-cache, must-revalidate")
 
-        is_https = self.headers.get("X-Forwarded-Proto") == "https"
+        is_https = self.headers.get("X-Forwarded-Proto") == "https" or (
+            hasattr(self, "server_instance") and getattr(self.server_instance, "is_ssl", False)
+        )
         secure_flag = "; Secure" if is_https else ""
+
+        if is_https:
+            self.send_header("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
 
         if cookie_token:
             self.send_header("Set-Cookie", f"xfwd_session={cookie_token}; Path=/; HttpOnly; SameSite=Strict{secure_flag}")
@@ -888,6 +894,9 @@ class XForwarderWebServer:
         web_cfg = cfg.get("web", {})
         self.port = port or int(web_cfg.get("port", 8090))
         self.bind_host = bind_host or web_cfg.get("bind_host", "0.0.0.0")
+        self.ssl_cert = str(web_cfg.get("ssl_cert", "") or "").strip()
+        self.ssl_key = str(web_cfg.get("ssl_key", "") or "").strip()
+        self.is_ssl = False
         self.httpd: Optional[ThreadingHTTPServer] = None
         self.is_running = False
 
@@ -898,9 +907,29 @@ class XForwarderWebServer:
         self.httpd = ThreadingHTTPServer((self.bind_host, self.port), handler_class)
         self.is_running = True
 
+        # Wrap with SSL/TLS if certificates are configured and accessible
+        if self.ssl_cert and self.ssl_key:
+            if os.path.exists(self.ssl_cert) and os.path.exists(self.ssl_key):
+                try:
+                    ssl_ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+                    ssl_ctx.load_cert_chain(certfile=self.ssl_cert, keyfile=self.ssl_key)
+                    self.httpd.socket = ssl_ctx.wrap_socket(self.httpd.socket, server_side=True)
+                    self.is_ssl = True
+                except Exception as e:
+                    print(f"[WARN] Failed to initialize SSL/TLS ({e}). Falling back to HTTP.")
+            else:
+                missing = []
+                if not os.path.exists(self.ssl_cert):
+                    missing.append(f"cert: '{self.ssl_cert}'")
+                if not os.path.exists(self.ssl_key):
+                    missing.append(f"key: '{self.ssl_key}'")
+                print(f"[WARN] SSL files missing ({', '.join(missing)}). Falling back to HTTP.")
+
+        scheme = "https" if self.is_ssl else "http"
         print(f"\n=======================================================")
         print(f"  XForwarder Web Panel Started (Always-Online)")
-        print(f"  Access URL: http://{self.bind_host}:{self.port}/")
+        print(f"  Access URL: {scheme}://{self.bind_host}:{self.port}/")
+        print(f"  SSL/TLS: {'Enabled (HTTPS)' if self.is_ssl else 'Disabled (HTTP)'}")
         print(f"=======================================================\n")
 
         try:

@@ -6,15 +6,15 @@
     "semantic_hash": ""
   },
   "core/web_server.py": {
-    "mtime": 1792365521.1186347,
-    "seen": 1792365887.990196,
-    "ast_hash": "ade094da844a8512872d47dd9067e560",
+    "mtime": 1792366146.999457,
+    "seen": 1792366975.4749615,
+    "ast_hash": "31da7536a418d8e6ab7e26f7bb948492",
     "semantic_hash": ""
   },
   "web/app.js": {
-    "mtime": 1792365810.463887,
-    "seen": 1792365887.9901998,
-    "ast_hash": "254d589fe7cd70580a28950d90248415",
+    "mtime": 1792366851.28694,
+    "seen": 1792366975.4749653,
+    "ast_hash": "2a6ddddb63535001597d3c171ef8890b",
     "semantic_hash": ""
   },
   ".agents/rules/01-architecture-and-failover.md": {
@@ -84,9 +84,9 @@
     "semantic_hash": ""
   },
   "web/index.html": {
-    "mtime": 1792365725.1678138,
-    "seen": 1792365887.9902263,
-    "ast_hash": "45e8af851ae1c27f06d3e55f4dcb5fe4",
+    "mtime": 1792366215.573295,
+    "seen": 1792366975.4749935,
+    "ast_hash": "205a587a7d7996ae64be4a082fe50916",
     "semantic_hash": ""
   },
   "xforwarder.sh": {
@@ -264,9 +264,9 @@
     "semantic_hash": ""
   },
   "tests/test_security.py": {
-    "mtime": 1792361031.712911,
-    "seen": 1792361451.4070055,
-    "ast_hash": "df77338d56319a420ca24e63b0c2d347",
+    "mtime": 1792366935.133867,
+    "seen": 1792366975.4749644,
+    "ast_hash": "178567cdbc0ed844b5269c9731e69e37",
     "semantic_hash": ""
   },
   ".agents/experiences/005-pbkdf2-salted-auth-and-adaptive-rate-limiting.md": {

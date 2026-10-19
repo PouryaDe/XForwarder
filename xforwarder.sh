@@ -189,6 +189,48 @@ install_xforwarder() {
         user_secret=$(echo "$user_secret" | sed -e 's/^[ \t\/]*//' -e 's/[ \t\/]*$//')
         user_secret="${user_secret:-xfwd-admin}"
 
+        echo
+        local user_ssl_cert=""
+        local user_ssl_key=""
+        read -r -p "Enable SSL/TLS (HTTPS) for Web Panel? [y/N]: " ask_ssl
+        if [[ "$ask_ssl" =~ ^[Yy]$ ]]; then
+            while true; do
+                read -r -p "SSL Certificate Path (e.g. /etc/letsencrypt/live/domain/fullchain.pem): " user_ssl_cert
+                user_ssl_cert=$(echo "$user_ssl_cert" | tr -d '[:space:]')
+                if [[ -z "$user_ssl_cert" ]]; then
+                    msg_warn "Certificate path cannot be empty if SSL is enabled."
+                    continue
+                fi
+                if [[ ! -f "$user_ssl_cert" ]]; then
+                    msg_warn "File '$user_ssl_cert' does not exist on this server right now."
+                    read -r -p "Save path anyway? [y/N]: " confirm_cert
+                    if [[ "$confirm_cert" =~ ^[Yy]$ ]]; then
+                        break
+                    fi
+                else
+                    break
+                fi
+            done
+
+            while true; do
+                read -r -p "SSL Private Key Path (e.g. /etc/letsencrypt/live/domain/privkey.pem): " user_ssl_key
+                user_ssl_key=$(echo "$user_ssl_key" | tr -d '[:space:]')
+                if [[ -z "$user_ssl_key" ]]; then
+                    msg_warn "Private key path cannot be empty if SSL is enabled."
+                    continue
+                fi
+                if [[ ! -f "$user_ssl_key" ]]; then
+                    msg_warn "File '$user_ssl_key' does not exist on this server right now."
+                    read -r -p "Save path anyway? [y/N]: " confirm_key
+                    if [[ "$confirm_key" =~ ^[Yy]$ ]]; then
+                        break
+                    fi
+                else
+                    break
+                fi
+            done
+        fi
+
         local pass_hash
         pass_hash=$(python3 -c "import sys, hashlib, secrets; salt = secrets.token_hex(16); derived = hashlib.pbkdf2_hmac('sha256', sys.argv[1].encode('utf-8'), bytes.fromhex(salt), 100000).hex(); print(f'pbkdf2:sha256:100000\${salt}\${derived}')" "$user_pass")
 
@@ -202,6 +244,8 @@ install_xforwarder() {
     "bind_host": "0.0.0.0",
     "port": $user_port,
     "secret_path": "$user_secret",
+    "ssl_cert": "$user_ssl_cert",
+    "ssl_key": "$user_ssl_key",
     "auth": {
       "username": "$user_name",
       "password_hash": "$pass_hash"
@@ -529,6 +573,121 @@ PYEOF
     show_web_access_info
 }
 
+change_web_ssl() {
+    check_root
+    local active_cfg
+    active_cfg=$(resolve_active_config)
+    if [[ ! -f "$active_cfg" ]]; then
+        msg_err "Configuration not found. Please install first."
+        return 1
+    fi
+
+    local current_cert current_key
+    current_cert=$(python3 -c "import json; print(json.load(open('$active_cfg')).get('web', {}).get('ssl_cert', ''))" 2>/dev/null || echo "")
+    current_key=$(python3 -c "import json; print(json.load(open('$active_cfg')).get('web', {}).get('ssl_key', ''))" 2>/dev/null || echo "")
+
+    echo
+    printf "%b=======================================================%b\n" "$CYAN" "$NC"
+    printf "%b   Configure SSL/TLS (HTTPS) for Web Panel%b\n" "$BOLD" "$NC"
+    printf "%b=======================================================%b\n" "$CYAN" "$NC"
+    printf "Enter paths to your SSL certificate (fullchain.pem / cert.crt)\nand private key (privkey.pem / server.key).\n\n"
+
+    local new_cert new_key
+    while true; do
+        read -r -p "SSL Certificate File Path [${current_cert:-/etc/letsencrypt/live/domain/fullchain.pem}]: " new_cert
+        new_cert="${new_cert:-$current_cert}"
+        new_cert=$(echo "$new_cert" | tr -d '[:space:]')
+        if [[ -z "$new_cert" ]]; then
+            msg_warn "Certificate path cannot be empty."
+            continue
+        fi
+        if [[ ! -f "$new_cert" ]]; then
+            msg_warn "File '$new_cert' does not exist on this server right now."
+            read -r -p "Save path anyway? [y/N]: " confirm_cert
+            if [[ "$confirm_cert" =~ ^[Yy]$ ]]; then
+                break
+            fi
+        else
+            break
+        fi
+    done
+
+    while true; do
+        read -r -p "SSL Private Key File Path [${current_key:-/etc/letsencrypt/live/domain/privkey.pem}]: " new_key
+        new_key="${new_key:-$current_key}"
+        new_key=$(echo "$new_key" | tr -d '[:space:]')
+        if [[ -z "$new_key" ]]; then
+            msg_warn "Private key path cannot be empty."
+            continue
+        fi
+        if [[ ! -f "$new_key" ]]; then
+            msg_warn "File '$new_key' does not exist on this server right now."
+            read -r -p "Save path anyway? [y/N]: " confirm_key
+            if [[ "$confirm_key" =~ ^[Yy]$ ]]; then
+                break
+            fi
+        else
+            break
+        fi
+    done
+
+    python3 - "$active_cfg" "$new_cert" "$new_key" << 'PYEOF'
+import sys, json, os
+
+cfg_path = sys.argv[1]
+cert = sys.argv[2].strip()
+key = sys.argv[3].strip()
+
+with open(cfg_path, 'r', encoding='utf-8') as f:
+    cfg = json.load(f)
+
+if 'web' not in cfg:
+    cfg['web'] = {}
+cfg['web']['ssl_cert'] = cert
+cfg['web']['ssl_key'] = key
+
+tmp_path = f"{cfg_path}.tmp.{os.getpid()}"
+with open(tmp_path, 'w', encoding='utf-8') as f:
+    json.dump(cfg, f, indent=2, ensure_ascii=False)
+os.replace(tmp_path, cfg_path)
+PYEOF
+
+    systemctl restart "$WEB_SERVICE"
+    msg_ok "SSL/TLS certificates configured successfully. Web service restarted."
+    show_web_access_info
+}
+
+disable_web_ssl() {
+    check_root
+    local active_cfg
+    active_cfg=$(resolve_active_config)
+    if [[ ! -f "$active_cfg" ]]; then
+        msg_err "Configuration not found. Please install first."
+        return 1
+    fi
+
+    python3 - "$active_cfg" << 'PYEOF'
+import sys, json, os
+
+cfg_path = sys.argv[1]
+with open(cfg_path, 'r', encoding='utf-8') as f:
+    cfg = json.load(f)
+
+if 'web' in cfg:
+    cfg['web']['ssl_cert'] = ""
+    cfg['web']['ssl_key'] = ""
+
+tmp_path = f"{cfg_path}.tmp.{os.getpid()}"
+with open(tmp_path, 'w', encoding='utf-8') as f:
+    json.dump(cfg, f, indent=2, ensure_ascii=False)
+os.replace(tmp_path, cfg_path)
+PYEOF
+
+    systemctl restart "$WEB_SERVICE"
+    msg_ok "SSL/TLS disabled. Web panel reverted to HTTP."
+    show_web_access_info
+}
+
 change_all_web_settings() {
     check_root
     local active_cfg
@@ -538,10 +697,12 @@ change_all_web_settings() {
         return 1
     fi
 
-    local current_port current_user current_secret
+    local current_port current_user current_secret current_cert current_key
     current_port=$(python3 -c "import json; print(json.load(open('$active_cfg')).get('web', {}).get('port', 8090))" 2>/dev/null || echo "8090")
     current_user=$(python3 -c "import json; print(json.load(open('$active_cfg')).get('web', {}).get('auth', {}).get('username', 'admin'))" 2>/dev/null || echo "admin")
     current_secret=$(python3 -c "import json; print(json.load(open('$active_cfg')).get('web', {}).get('secret_path', 'xfwd-admin'))" 2>/dev/null || echo "xfwd-admin")
+    current_cert=$(python3 -c "import json; print(json.load(open('$active_cfg')).get('web', {}).get('ssl_cert', ''))" 2>/dev/null || echo "")
+    current_key=$(python3 -c "import json; print(json.load(open('$active_cfg')).get('web', {}).get('ssl_key', ''))" 2>/dev/null || echo "")
 
     echo
     printf "%b=======================================================%b\n" "$CYAN" "$NC"
@@ -576,7 +737,18 @@ change_all_web_settings() {
     new_secret=$(echo "$new_secret" | sed -e 's/^[ \t\/]*//' -e 's/[ \t\/]*$//')
     new_secret="${new_secret:-xfwd-admin}"
 
-    python3 - "$active_cfg" "$new_port" "$new_user" "$new_pass" "$new_secret" << 'PYEOF'
+    local new_cert="$current_cert"
+    local new_key="$current_key"
+    echo
+    read -r -p "Configure SSL/TLS (HTTPS) Certificates? [y/N]: " ask_ssl_wiz
+    if [[ "$ask_ssl_wiz" =~ ^[Yy]$ ]]; then
+        read -r -p "SSL Certificate Path [${current_cert}]: " input_cert
+        new_cert="${input_cert:-$current_cert}"
+        read -r -p "SSL Private Key Path [${current_key}]: " input_key
+        new_key="${input_key:-$current_key}"
+    fi
+
+    python3 - "$active_cfg" "$new_port" "$new_user" "$new_pass" "$new_secret" "$new_cert" "$new_key" << 'PYEOF'
 import sys, json, hashlib, secrets, os
 
 cfg_path = sys.argv[1]
@@ -584,6 +756,8 @@ port = int(sys.argv[2])
 user = sys.argv[3]
 password = sys.argv[4]
 secret = sys.argv[5].strip().strip('/')
+cert = sys.argv[6].strip()
+key = sys.argv[7].strip()
 
 with open(cfg_path, 'r', encoding='utf-8') as f:
     cfg = json.load(f)
@@ -592,6 +766,8 @@ if 'web' not in cfg:
     cfg['web'] = {}
 cfg['web']['port'] = port
 cfg['web']['secret_path'] = secret
+cfg['web']['ssl_cert'] = cert
+cfg['web']['ssl_key'] = key
 if 'auth' not in cfg['web']:
     cfg['web']['auth'] = {}
 cfg['web']['auth']['username'] = user
@@ -620,10 +796,18 @@ modify_web_settings_menu() {
         return 1
     fi
 
-    local current_port current_user current_secret
+    local current_port current_user current_secret current_cert current_key current_ssl_status
     current_port=$(python3 -c "import json; print(json.load(open('$active_cfg')).get('web', {}).get('port', 8090))" 2>/dev/null || echo "8090")
     current_user=$(python3 -c "import json; print(json.load(open('$active_cfg')).get('web', {}).get('auth', {}).get('username', 'admin'))" 2>/dev/null || echo "admin")
     current_secret=$(python3 -c "import json; print(json.load(open('$active_cfg')).get('web', {}).get('secret_path', 'xfwd-admin'))" 2>/dev/null || echo "xfwd-admin")
+    current_cert=$(python3 -c "import json; print(json.load(open('$active_cfg')).get('web', {}).get('ssl_cert', ''))" 2>/dev/null || echo "")
+    current_key=$(python3 -c "import json; print(json.load(open('$active_cfg')).get('web', {}).get('ssl_key', ''))" 2>/dev/null || echo "")
+
+    if [[ -n "$current_cert" && -n "$current_key" ]]; then
+        current_ssl_status="Enabled (HTTPS)"
+    else
+        current_ssl_status="Disabled (HTTP)"
+    fi
 
     echo
     printf "%b=======================================================%b\n" "$CYAN" "$NC"
@@ -632,22 +816,31 @@ modify_web_settings_menu() {
     printf "  %bCurrent Port:%b          %s\n" "$BOLD" "$NC" "$current_port"
     printf "  %bCurrent Username:%b      %s\n" "$BOLD" "$NC" "$current_user"
     printf "  %bCurrent Security Path:%b /%s/\n" "$BOLD" "$NC" "${current_secret:-}"
+    printf "  %bCurrent SSL/TLS:%b       %s\n" "$BOLD" "$NC" "$current_ssl_status"
+    if [[ -n "$current_cert" ]]; then
+        printf "  %bSSL Cert File:%b         %s\n" "$BOLD" "$NC" "$current_cert"
+        printf "  %bSSL Key File:%b          %s\n" "$BOLD" "$NC" "$current_key"
+    fi
     printf "%b-------------------------------------------------------%b\n" "$CYAN" "$NC"
     echo "1) Change Web Port"
     echo "2) Change Admin Username"
     echo "3) Change Admin Password"
     echo "4) Change Security Path (Secret URL Slug)"
-    echo "5) Change All 4 Settings (Interactive Wizard)"
+    echo "5) Configure SSL/TLS Certificates (Enable HTTPS)"
+    echo "6) Disable SSL/TLS (Revert to HTTP)"
+    echo "7) Change All Web Settings (Interactive Wizard)"
     echo "0) Return to Main Menu"
     echo
-    read -r -p "Select an option [0-5]: " web_choice
+    read -r -p "Select an option [0-7]: " web_choice
 
     case "$web_choice" in
         1) change_web_port ;;
         2) change_web_username ;;
         3) change_web_password ;;
         4) change_web_secret_path ;;
-        5) change_all_web_settings ;;
+        5) change_web_ssl ;;
+        6) disable_web_ssl ;;
+        7) change_all_web_settings ;;
         0) return 0 ;;
         *) msg_warn "Invalid selection." ;;
     esac
@@ -665,18 +858,25 @@ show_web_access_info() {
         return 1
     fi
 
-    local port username secret_path wan_ip
+    local port username secret_path wan_ip cert key scheme
     port=$(python3 -c "import json; print(json.load(open('$active_cfg')).get('web', {}).get('port', 8090))" 2>/dev/null || echo "8090")
     username=$(python3 -c "import json; print(json.load(open('$active_cfg')).get('web', {}).get('auth', {}).get('username', 'admin'))" 2>/dev/null || echo "admin")
     secret_path=$(python3 -c "import json; print(json.load(open('$active_cfg')).get('web', {}).get('secret_path', 'xfwd-admin'))" 2>/dev/null || echo "xfwd-admin")
     secret_path=$(echo "$secret_path" | sed -e 's/^[ \t\/]*//' -e 's/[ \t\/]*$//')
+    cert=$(python3 -c "import json; print(json.load(open('$active_cfg')).get('web', {}).get('ssl_cert', ''))" 2>/dev/null || echo "")
+    key=$(python3 -c "import json; print(json.load(open('$active_cfg')).get('web', {}).get('ssl_key', ''))" 2>/dev/null || echo "")
     wan_ip=$(detect_wan_ip)
+
+    scheme="http"
+    if [[ -n "$cert" && -n "$key" ]]; then
+        scheme="https"
+    fi
 
     local access_url
     if [[ -n "$secret_path" ]]; then
-        access_url="http://${wan_ip}:${port}/${secret_path}/"
+        access_url="${scheme}://${wan_ip}:${port}/${secret_path}/"
     else
-        access_url="http://${wan_ip}:${port}/"
+        access_url="${scheme}://${wan_ip}:${port}/"
     fi
 
     echo
@@ -687,6 +887,7 @@ show_web_access_info() {
     printf "  %bPort:%b          %s\n" "$BOLD" "$NC" "$port"
     printf "  %bSecurity Path:%b /%s/\n" "$BOLD" "$NC" "${secret_path:-}"
     printf "  %bUsername:%b      %s\n" "$BOLD" "$NC" "$username"
+    printf "  %bSSL/TLS:%b       %s\n" "$BOLD" "$NC" "$([[ "$scheme" == "https" ]] && echo "Enabled (HTTPS)" || echo "Disabled (HTTP)")"
     printf "  %bStatus:%b        Active (24/7 Enabled)\n" "$BOLD" "$NC"
     printf "%b===============================================================%b\n\n" "$GREEN" "$NC"
 }
@@ -774,7 +975,7 @@ show_menu() {
 
     echo "1) Show Web Dashboard Access URL"
     echo "2) Show Status & Active Port Routes"
-    echo "3) Web Panel Settings (Port, Username, Password, Security Path)"
+    echo "3) Web Panel Settings (Port, Username, Password, Secret Path, SSL/TLS)"
     echo "4) Restart XForwarder Services"
     echo "5) View Core Engine Live Logs"
     echo "6) Update XForwarder (Auto-Migrate & Preserve Rules)"

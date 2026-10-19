@@ -212,6 +212,16 @@ class TestXForwarderSecurity(unittest.TestCase):
         # Non-integer priority string
         self.assertFalse(validate_rule({"port": 443, "destinations": [{"priority": "first", "target": "1.1.1.1"}]})[0])
 
+    def test_web_server_ssl_initialization(self):
+        """Verifies that XForwarderWebServer parses ssl_cert and ssl_key attributes."""
+        from core.web_server import XForwarderWebServer
+        server = XForwarderWebServer(port=8999, bind_host="127.0.0.1")
+        self.assertEqual(server.port, 8999)
+        self.assertEqual(server.bind_host, "127.0.0.1")
+        self.assertIsInstance(server.ssl_cert, str)
+        self.assertIsInstance(server.ssl_key, str)
+        self.assertFalse(server.is_ssl)
+
 
 if __name__ == "__main__":
     unittest.main()

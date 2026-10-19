@@ -24,8 +24,8 @@
   "22": "Intermediate Relay VPS Constraints Rule (XForwarder)",
   "23": "showToast",
   "24": ".do_POST",
-  "25": "Interactive Requirements Clarification (Reverse Prompt Engineering)",
+  "25": "renderDestinationRow",
   "26": "Session State & Task Handoff Rule (XForwarder)",
   "27": "haproxy_parser.py",
-  "28": "Any"
+  "28": "renderDestinationsList"
 }

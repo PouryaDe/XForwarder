@@ -91,7 +91,9 @@ class XForwarderEngine:
         web_defaults = {
             "bind_host": "0.0.0.0",
             "port": 8090,
-            "secret_path": "xfwd-admin"
+            "secret_path": "xfwd-admin",
+            "ssl_cert": "",
+            "ssl_key": ""
         }
         for k, v in web_defaults.items():
             if k not in web:
@@ -112,6 +114,17 @@ class XForwarderEngine:
                 modified = True
         except (ValueError, TypeError):
             web["port"] = 8090
+            modified = True
+
+        # Normalize SSL cert/key paths
+        clean_cert = str(web.get("ssl_cert", "") or "").strip()
+        if web.get("ssl_cert") != clean_cert:
+            web["ssl_cert"] = clean_cert
+            modified = True
+
+        clean_key = str(web.get("ssl_key", "") or "").strip()
+        if web.get("ssl_key") != clean_key:
+            web["ssl_key"] = clean_key
             modified = True
 
         if "auth" not in web or not isinstance(web["auth"], dict):

@@ -188,6 +188,24 @@ class TestXForwarderMigration(unittest.TestCase):
         migrated2, _ = XForwarderEngine.migrate_and_normalize_config(cfg_empty)
         self.assertEqual(migrated2["web"]["secret_path"], "xfwd-admin")
 
+    def test_ssl_configuration_migration_and_normalization(self):
+        """Verifies that ssl_cert and ssl_key are normalized and preserved across migrations."""
+        cfg_with_ssl = {
+            "web": {
+                "ssl_cert": "  /etc/letsencrypt/live/example.com/fullchain.pem  ",
+                "ssl_key": "  /etc/letsencrypt/live/example.com/privkey.pem  "
+            }
+        }
+        migrated, modified = XForwarderEngine.migrate_and_normalize_config(cfg_with_ssl)
+        self.assertTrue(modified)
+        self.assertEqual(migrated["web"]["ssl_cert"], "/etc/letsencrypt/live/example.com/fullchain.pem")
+        self.assertEqual(migrated["web"]["ssl_key"], "/etc/letsencrypt/live/example.com/privkey.pem")
+
+        # Missing SSL keys default to empty strings
+        migrated_empty, _ = XForwarderEngine.migrate_and_normalize_config({})
+        self.assertEqual(migrated_empty["web"]["ssl_cert"], "")
+        self.assertEqual(migrated_empty["web"]["ssl_key"], "")
+
 
 if __name__ == "__main__":
     unittest.main()
