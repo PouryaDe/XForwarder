@@ -117,16 +117,37 @@ function fallbackCopy(text) {
     showToast(`Copied: ${text}`);
 }
 
-// Latency Badge Formatter
+// Latency Badge Formatter (suppress when 0ms or not healthy)
 function formatLatencyBadge(stat) {
-    if (!stat || stat.status !== 'healthy' || stat.latency_ms === undefined || stat.latency_ms === null || stat.latency_ms <= 0) {
+    if (!stat || stat.status !== 'healthy' || stat.latency_ms === undefined || stat.latency_ms === null) {
         return '';
     }
-    const ms = stat.latency_ms;
+    const ms = parseFloat(stat.latency_ms);
+    if (isNaN(ms) || ms <= 0) {
+        return '';
+    }
     let cls = "latency-good";
     if (ms > 150) cls = "latency-bad";
     else if (ms > 70) cls = "latency-medium";
     return `<span class="latency-pill ${cls}"><span class="latency-dot"></span>${ms} ms</span>`;
+}
+
+// Concise Failure Reason Formatter
+function formatConciseReason(rawReason) {
+    if (!rawReason) return '';
+    const r = String(rawReason).trim();
+    if (/routes via WAN|WAN leak/i.test(r)) {
+        const m = r.match(/\b(ens\w+|eth\w+|enp\w+|wlan\w+)\b/i);
+        return m ? `WAN Leak (${m[1]})` : 'WAN Leak';
+    }
+    if (/missing or down/i.test(r)) return 'Interface Down';
+    if (/kernel fallback/i.test(r)) return 'Invalid Device';
+    if (/No route/i.test(r)) return 'No Route';
+    if (/Connection refused|ECONNREFUSED/i.test(r)) return 'Conn Refused';
+    if (/timed out|timeout/i.test(r)) return 'Timeout';
+    if (/unreachable/i.test(r)) return 'Unreachable';
+    if (r.length > 28) return r.substring(0, 26) + '...';
+    return r;
 }
 
 // Security: HTML sanitization to prevent Stored XSS
@@ -954,7 +975,7 @@ function renderNetworkTopology(network) {
                 let pingClass = "lat-down";
                 let pingText = "Interface Down";
                 if (isUp) {
-                    if (t.reachable && t.latency_ms !== null) {
+                    if (t.reachable && t.latency_ms !== null && t.latency_ms > 0) {
                         pingClass = t.latency_ms < 60 ? "lat-good" : (t.latency_ms < 150 ? "lat-mid" : "lat-high");
                         pingText = `${t.latency_ms} ms`;
                     } else if (t.target_to_ping) {
@@ -1106,9 +1127,9 @@ function renderRules(rules, runtime) {
             const isForcedThis = (forceOverride === p);
             const dType = escapeHtml(String(d.type || 'haproxy').toUpperCase());
             modeButtonsHtml.push(`
-                <button type="button" class="btn-mode-pill ${isForcedThis ? 'is-active forced' : ''}" onclick="handleOverrideChange(decodeURIComponent('${encodedId}'), ${p})" title="Manually force Priority ${p} (${dType}) for testing">
+                <button type="button" class="btn-mode-pill ${isForcedThis ? 'is-active forced' : ''}" onclick="handleOverrideChange(decodeURIComponent('${encodedId}'), ${p})" title="Manually force #${p} (${dType}) for testing">
                     <span class="pill-dot"></span>
-                    <span>Force P${p}</span>
+                    <span>Force #${p}</span>
                 </button>
             `);
         });
@@ -1152,19 +1173,21 @@ function renderRules(rules, runtime) {
                 `;
             } else if (!isActive) {
                 pathActionHtml = `
-                    <button type="button" class="btn-path-test" onclick="handleOverrideChange(decodeURIComponent('${encodedId}'), ${prio})" title="Click to manually force Priority ${prio} for testing">
+                    <button type="button" class="btn-path-test" onclick="handleOverrideChange(decodeURIComponent('${encodedId}'), ${prio})" title="Click to manually force #${prio} for testing">
                         <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-                        <span>Force P${prio}</span>
+                        <span>Force #${prio}</span>
                     </button>
                 `;
             }
 
             // Concise meta text (concise reason when down, or comment)
-            const reasonText = (stat.reason && isDown) ? escapeHtml(stat.reason) : '';
+            const fullReason = (stat.reason && isDown) ? String(stat.reason) : '';
+            const conciseReason = fullReason ? formatConciseReason(fullReason) : '';
             const commentText = escapeHtml(dest.comment || '');
             let metaText = '';
-            if (reasonText) {
-                metaText = `<span class="text-amber" title="${reasonText}">${reasonText}</span>`;
+            if (conciseReason) {
+                const prefix = commentText ? `${commentText} · ` : '';
+                metaText = `<span class="text-amber" title="${escapeHtml(fullReason)}">${prefix}${escapeHtml(conciseReason)}</span>`;
             } else if (commentText) {
                 metaText = commentText;
             }
@@ -1173,16 +1196,16 @@ function renderRules(rules, runtime) {
                 <div class="path-box ${isActive ? (isFailover ? 'is-failover' : 'is-active') : ''}"
                      draggable="true"
                      ondragstart="handlePathDragStart(event, decodeURIComponent('${encodedId}'), ${destIndex})"
-                     ondragover="handlePathDragOver(event)"
+                     ondragover="handlePathDragOver(event, decodeURIComponent('${encodedId}'), ${destIndex})"
                      ondragleave="handlePathDragLeave(event)"
                      ondrop="handlePathDrop(event, decodeURIComponent('${encodedId}'), ${destIndex})"
                      ondragend="handlePathDragEnd(event)">
                     <div class="path-header">
                         <div class="path-header-left">
-                            <span class="drag-handle" title="Drag to reorder priority" draggable="false">
+                            <span class="drag-handle" title="Drag to reorder priority">
                                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="9" cy="6" r="1.5"/><circle cx="15" cy="6" r="1.5"/><circle cx="9" cy="12" r="1.5"/><circle cx="15" cy="12" r="1.5"/><circle cx="9" cy="18" r="1.5"/><circle cx="15" cy="18" r="1.5"/></svg>
                             </span>
-                            <span class="path-tag ${tagClass}">P${prio}</span>
+                            <span class="path-tag ${tagClass}">#${prio}</span>
                             <span class="path-status ${statusClass}">
                                 <span class="status-indicator"></span>
                                 ${statusLabel}
@@ -1240,10 +1263,14 @@ function renderRules(rules, runtime) {
     }).join("");
 }
 
-// ── Drag & Drop Priority Reordering Handlers ──
+// ── Drag & Drop Priority Reordering Handlers (Rules List) ──
 let draggedPathInfo = null;
 
 function handlePathDragStart(e, ruleId, index) {
+    if (e.target.closest("button, .btn-copy, .btn-path-test, input, select, a")) {
+        e.preventDefault();
+        return;
+    }
     draggedPathInfo = { ruleId, index };
     e.dataTransfer.effectAllowed = "move";
     try {
@@ -1255,18 +1282,23 @@ function handlePathDragStart(e, ruleId, index) {
     }, 0);
 }
 
-function handlePathDragOver(e) {
+function handlePathDragOver(e, ruleId, index) {
     e.preventDefault();
     e.dataTransfer.dropEffect = "move";
-    const box = e.currentTarget;
-    if (box && !box.classList.contains("is-dragging")) {
-        box.classList.add("drag-over");
+    if (!draggedPathInfo) return;
+    if (draggedPathInfo.ruleId === ruleId && draggedPathInfo.index !== index) {
+        const box = e.currentTarget;
+        if (box && !box.classList.contains("drag-over")) {
+            box.classList.add("drag-over");
+        }
     }
 }
 
 function handlePathDragLeave(e) {
     const box = e.currentTarget;
-    if (box) box.classList.remove("drag-over");
+    if (box && !box.contains(e.relatedTarget)) {
+        box.classList.remove("drag-over");
+    }
 }
 
 function handlePathDragEnd(e) {
@@ -1292,10 +1324,12 @@ async function handlePathDrop(e, ruleId, toIndex) {
 
     if (fromRuleId !== ruleId || fromIndex === toIndex) return;
 
-    const rule = currentRules.find(r => r.id === ruleId);
+    const rule = currentRules.find(r => String(r.id || `rule-${r.port}`) === ruleId);
     if (!rule || !rule.destinations) return;
 
     const dests = [...rule.destinations].sort((a, b) => (a.priority || 1) - (b.priority || 1));
+    if (fromIndex < 0 || toIndex < 0 || fromIndex >= dests.length || toIndex >= dests.length) return;
+
     const moved = dests.splice(fromIndex, 1)[0];
     dests.splice(toIndex, 0, moved);
     dests.forEach((d, i) => d.priority = i + 1);
@@ -1312,7 +1346,7 @@ async function handlePathDrop(e, ruleId, toIndex) {
         });
         const data = await res.json().catch(() => ({}));
         if (res.ok && data.ok) {
-            showToast(`Reordered: P${fromIndex + 1} ➔ P${toIndex + 1}`, "success");
+            showToast(`Reordered: #${fromIndex + 1} ➔ #${toIndex + 1}`, "success");
             if (data.sync_errors && data.sync_errors.length > 0) {
                 showSyncErrorAlert(data.sync_errors);
             }
@@ -1410,9 +1444,9 @@ async function handleOverrideChange(ruleId, val) {
         const data = await res.json().catch(() => ({}));
         if (res.ok && data.ok) {
             if (prioVal === 0) {
-                showToast("Automatic priority failover enabled", "success");
+                showToast("Auto failover enabled", "success");
             } else {
-                showToast(`Manual Test: Forced Priority ${prioVal} enabled`, "info");
+                showToast(`Forced #${prioVal} enabled`, "info");
             }
             if (data.sync_errors && data.sync_errors.length > 0) {
                 showSyncErrorAlert(data.sync_errors);
@@ -1433,8 +1467,8 @@ batchSelect.addEventListener("change", async () => {
     if (val === "") return;
     const modeLabels = {
         "0": "Restore All to Auto Failover",
-        "1": "Force All to Priority 1 (Primary)",
-        "2": "Force All to Priority 2 (Backup Tunnel)"
+        "1": "Force All to #1 (Primary)",
+        "2": "Force All to #2 (Backup)"
     };
     const confirmed = await askConfirm(
         "Apply Emergency Batch Action?",
@@ -1527,6 +1561,69 @@ function moveDestinationRow(index, direction) {
     renderDestinationsList();
 }
 
+// ── Drag & Drop Priority Reordering Handlers (Modal) ──
+let draggedModalPrioIndex = null;
+
+function handleModalPrioDragStart(e, index) {
+    if (e.target.closest("input, select, textarea, button, .btn-prio-move, .btn-remove-prio")) {
+        e.preventDefault();
+        return;
+    }
+    syncDestinationsFromDom();
+    draggedModalPrioIndex = index;
+    e.dataTransfer.effectAllowed = "move";
+    try {
+        e.dataTransfer.setData("text/plain", String(index));
+    } catch (_) {}
+    const box = e.currentTarget;
+    setTimeout(() => {
+        if (box) box.classList.add("is-dragging");
+    }, 0);
+}
+
+function handleModalPrioDragOver(e, index) {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+    if (draggedModalPrioIndex === null || draggedModalPrioIndex === index) return;
+    const box = e.currentTarget;
+    if (box && !box.classList.contains("drag-over")) {
+        box.classList.add("drag-over");
+    }
+}
+
+function handleModalPrioDragLeave(e) {
+    const box = e.currentTarget;
+    if (box && !box.contains(e.relatedTarget)) {
+        box.classList.remove("drag-over");
+    }
+}
+
+function handleModalPrioDragEnd(e) {
+    document.querySelectorAll(".priority-box").forEach(el => {
+        el.classList.remove("is-dragging");
+        el.classList.remove("drag-over");
+    });
+    draggedModalPrioIndex = null;
+}
+
+function handleModalPrioDrop(e, toIndex) {
+    e.preventDefault();
+    e.stopPropagation();
+    document.querySelectorAll(".priority-box").forEach(el => {
+        el.classList.remove("is-dragging");
+        el.classList.remove("drag-over");
+    });
+    if (draggedModalPrioIndex === null || draggedModalPrioIndex === toIndex) return;
+    syncDestinationsFromDom();
+    const fromIndex = draggedModalPrioIndex;
+    draggedModalPrioIndex = null;
+    if (fromIndex < 0 || fromIndex >= currentModalDestinations.length || toIndex < 0 || toIndex >= currentModalDestinations.length) return;
+    const moved = currentModalDestinations.splice(fromIndex, 1)[0];
+    currentModalDestinations.splice(toIndex, 0, moved);
+    currentModalDestinations.forEach((d, i) => d.priority = i + 1);
+    renderDestinationsList();
+}
+
 function renderDestinationRow(dest, index, totalCount) {
     const prio = index + 1;
     const isPrimary = prio === 1;
@@ -1539,12 +1636,21 @@ function renderDestinationRow(dest, index, totalCount) {
     const div = document.createElement("div");
     div.className = `priority-box priority-${prio}`;
     div.dataset.index = index;
+    div.draggable = true;
+    div.ondragstart = (e) => handleModalPrioDragStart(e, index);
+    div.ondragover = (e) => handleModalPrioDragOver(e, index);
+    div.ondragleave = (e) => handleModalPrioDragLeave(e);
+    div.ondrop = (e) => handleModalPrioDrop(e, index);
+    div.ondragend = (e) => handleModalPrioDragEnd(e);
 
     div.innerHTML = `
         <div class="priority-header">
             <div class="prio-title-group">
-                <span class="prio-tag ${getPrioTagClass(prio)}">Priority ${prio} ${isPrimary ? "(Primary)" : "(Failover)"}</span>
-                <span class="prio-sub">${getPrioSubtitle(prio)}</span>
+                <span class="drag-handle" title="Drag to reorder priority">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="9" cy="6" r="1.5"/><circle cx="15" cy="6" r="1.5"/><circle cx="9" cy="12" r="1.5"/><circle cx="15" cy="12" r="1.5"/><circle cx="9" cy="18" r="1.5"/><circle cx="15" cy="18" r="1.5"/></svg>
+                </span>
+                <span class="prio-tag ${getPrioTagClass(prio)}">#${prio}</span>
+                <span class="prio-sub">${isPrimary ? "Primary Path" : "Backup Path"}</span>
             </div>
             <div class="prio-header-actions">
                 <button type="button" class="btn-prio-move" title="Move Priority Up" ${index === 0 ? "disabled" : ""} onclick="moveDestinationRow(${index}, -1)">
@@ -1660,7 +1766,7 @@ async function testModalDestination(index) {
         const data = await res.json().catch(() => ({}));
         if (res.ok && data.ok) {
             if (data.healthy) {
-                const latStr = data.latency_ms !== null && data.latency_ms !== undefined ? ` (${data.latency_ms}ms)` : "";
+                const latStr = (data.latency_ms !== null && data.latency_ms !== undefined && data.latency_ms > 0) ? ` (${data.latency_ms}ms)` : "";
                 if (resEl) resEl.innerHTML = `<span class="badge-probe text-emerald" style="display:inline-flex;align-items:center;gap:4px;font-size:0.75rem;">✓ Reachable${latStr}</span>`;
                 showToast(`Destination [${target}]:${port} is reachable${latStr}`);
             } else {
@@ -1703,7 +1809,7 @@ function addDestinationRow() {
         type: nextPrio % 2 === 0 ? "nftables" : "haproxy",
         target: "",
         port: listenPort || "",
-        comment: `Backup Priority ${nextPrio}`
+        comment: `Backup Path #${nextPrio}`
     });
     renderDestinationsList();
 }
@@ -1826,7 +1932,7 @@ ruleForm.addEventListener("submit", async (e) => {
     for (let i = 0; i < currentModalDestinations.length; i++) {
         const d = currentModalDestinations[i];
         if (!d.target || !d.target.trim()) {
-            showToast(`Target IP/Host for Priority ${i + 1} is required`, "error");
+            showToast(`Target IP/Host for #${i + 1} is required`, "error");
             return;
         }
     }

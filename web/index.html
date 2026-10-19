@@ -1,12 +1,13 @@
 <!DOCTYPE html>
 <html lang="en" data-theme="dark">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>XForwarder - Multi-Path Relay Dashboard</title>
     <!-- Prevent Theme Flicker Pre-Hydration -->
     <script>
-        (function() {
+        (function () {
             try {
                 var saved = localStorage.getItem("xfwd_theme");
                 if (saved === "light" || (!saved && window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches)) {
@@ -14,23 +15,41 @@
                 } else {
                     document.documentElement.setAttribute("data-theme", "dark");
                 }
-            } catch (e) {}
+            } catch (e) { }
         })();
     </script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap"
+        rel="stylesheet">
     <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
     <!-- Login Screen (Displayed when unauthenticated) -->
     <div class="login-wrapper" id="loginScreen">
         <!-- Top Theme Toggle for Login Screen -->
         <div class="login-top-bar">
-            <button type="button" class="theme-toggle-btn login-theme-toggle" id="btnLoginThemeToggle" title="Toggle Light / Dark Theme">
+            <button type="button" class="theme-toggle-btn login-theme-toggle" id="btnLoginThemeToggle"
+                title="Toggle Light / Dark Theme">
                 <span class="theme-toggle-icon">
-                    <svg class="sun-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
-                    <svg class="moon-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+                    <svg class="sun-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2">
+                        <circle cx="12" cy="12" r="5" />
+                        <line x1="12" y1="1" x2="12" y2="3" />
+                        <line x1="12" y1="21" x2="12" y2="23" />
+                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
+                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
+                        <line x1="1" y1="12" x2="3" y2="12" />
+                        <line x1="21" y1="12" x2="23" y2="12" />
+                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
+                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
+                    </svg>
+                    <svg class="moon-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+                    </svg>
                 </span>
                 <span class="theme-name" id="loginThemeName">Theme</span>
             </button>
@@ -39,7 +58,8 @@
         <div class="login-card">
             <div class="login-header">
                 <div class="logo-orb login-logo" title="XForwarder">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                        stroke-linecap="round" stroke-linejoin="round">
                         <polyline points="13 17 18 12 13 7"></polyline>
                         <polyline points="6 17 11 12 6 7"></polyline>
                     </svg>
@@ -54,7 +74,10 @@
             <!-- Lockout Alert Banner -->
             <div id="lockoutAlert" class="lockout-alert" style="display:none;">
                 <div class="lockout-header">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10" />
+                        <polyline points="12 6 12 12 16 14" />
+                    </svg>
                     <span>Security Lockout Active</span>
                 </div>
                 <p id="lockoutText">Too many failed login attempts.</p>
@@ -65,22 +88,43 @@
                 <div class="form-group">
                     <label for="loginUsername">Username</label>
                     <div class="input-with-icon">
-                        <svg class="input-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-                        <input type="text" id="loginUsername" class="form-control" placeholder="admin" required autocomplete="username">
+                        <svg class="input-icon" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2">
+                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                            <circle cx="12" cy="7" r="4" />
+                        </svg>
+                        <input type="text" id="loginUsername" class="form-control" placeholder="admin" required
+                            autocomplete="username">
                     </div>
                 </div>
 
                 <div class="form-group">
                     <label for="loginPassword">Password</label>
                     <div class="input-with-icon">
-                        <svg class="input-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-                        <input type="password" id="loginPassword" class="form-control" placeholder="••••••••" required autocomplete="current-password">
-                        <button type="button" class="btn-toggle-pwd" id="btnToggleLoginPwd" title="Show/Hide Password" tabindex="-1">
-                            <svg id="eyeIconLogin" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                        <svg class="input-icon" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2">
+                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                            <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                        </svg>
+                        <input type="password" id="loginPassword" class="form-control" placeholder="••••••••" required
+                            autocomplete="current-password">
+                        <button type="button" class="btn-toggle-pwd" id="btnToggleLoginPwd" title="Show/Hide Password"
+                            tabindex="-1">
+                            <svg id="eyeIconLogin" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                                stroke="currentColor" stroke-width="2">
+                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                                <circle cx="12" cy="12" r="3" />
+                            </svg>
                         </button>
                     </div>
                     <div id="capsLockWarning" class="caps-warning" style="display:none;">
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <path
+                                d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                            <line x1="12" y1="9" x2="12" y2="13" />
+                            <line x1="12" y1="17" x2="12.01" y2="17" />
+                        </svg>
                         Caps Lock is ON
                     </div>
                 </div>
@@ -88,7 +132,11 @@
                 <div id="loginError" class="login-error" style="display:none;"></div>
 
                 <button type="submit" class="btn btn-primary btn-block" id="btnLogin">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
+                        <polyline points="10 17 15 12 10 7" />
+                        <line x1="15" y1="12" x2="3" y2="12" />
+                    </svg>
                     <span>Sign In to Dashboard</span>
                 </button>
             </form>
@@ -120,7 +168,8 @@
             <div class="sidebar-header">
                 <div class="brand">
                     <div class="logo-orb" title="XForwarder">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                             <polyline points="13 17 18 12 13 7"></polyline>
                             <polyline points="6 17 11 12 6 7"></polyline>
                         </svg>
@@ -131,7 +180,10 @@
                     </div>
                 </div>
                 <button class="btn-sidebar-close" id="btnCloseSidebar" title="Close Menu">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18" />
+                        <line x1="6" y1="6" x2="18" y2="18" />
+                    </svg>
                 </button>
             </div>
 
@@ -140,29 +192,49 @@
                 <div class="nav-section-label">MAIN NAVIGATION</div>
 
                 <button class="nav-item active" data-section="rules" id="navItemRules">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"/><rect x="2" y="14" width="20" height="8" rx="2" ry="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="2" y="2" width="20" height="8" rx="2" ry="2" />
+                        <rect x="2" y="14" width="20" height="8" rx="2" ry="2" />
+                        <line x1="6" y1="6" x2="6.01" y2="6" />
+                        <line x1="6" y1="18" x2="6.01" y2="18" />
+                    </svg>
                     <span class="nav-label">Port Matrix</span>
                     <span class="nav-badge" id="navRulesCount">0</span>
                 </button>
 
                 <button class="nav-item" data-section="overview" id="navItemOverview">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="3" y="3" width="7" height="7" />
+                        <rect x="14" y="3" width="7" height="7" />
+                        <rect x="14" y="14" width="7" height="7" />
+                        <rect x="3" y="14" width="7" height="7" />
+                    </svg>
                     <span class="nav-label">Overview & Health</span>
                 </button>
 
                 <button class="nav-item" data-section="services" id="navItemServices">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
+                    </svg>
                     <span class="nav-label">Relay Services</span>
                     <span class="nav-badge nav-badge-ok" id="navServicesBadge">SYNCED</span>
                 </button>
 
                 <button class="nav-item" data-section="security" id="navItemSecurity">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                    </svg>
                     <span class="nav-label">Security & Access</span>
                 </button>
 
                 <button class="nav-item" data-section="logs" id="navItemLogs">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                        <polyline points="14 2 14 8 20 8" />
+                        <line x1="16" y1="13" x2="8" y2="13" />
+                        <line x1="16" y1="17" x2="8" y2="17" />
+                        <polyline points="10 9 9 9 8 9" />
+                    </svg>
                     <span class="nav-label">Logs & Probes</span>
                 </button>
             </nav>
@@ -172,8 +244,22 @@
                 <!-- Theme Toggle Button -->
                 <button class="theme-toggle-btn" id="btnThemeToggle" title="Toggle Light / Dark Theme">
                     <div class="theme-toggle-icon">
-                        <svg class="sun-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
-                        <svg class="moon-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+                        <svg class="sun-icon" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="5" />
+                            <line x1="12" y1="1" x2="12" y2="3" />
+                            <line x1="12" y1="21" x2="12" y2="23" />
+                            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
+                            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
+                            <line x1="1" y1="12" x2="3" y2="12" />
+                            <line x1="21" y1="12" x2="23" y2="12" />
+                            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
+                            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
+                        </svg>
+                        <svg class="moon-icon" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2">
+                            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+                        </svg>
                     </div>
                     <span class="theme-toggle-label" id="themeToggleLabel">Light Mode</span>
                 </button>
@@ -181,14 +267,23 @@
                 <!-- Sidebar User Card -->
                 <div class="sidebar-user">
                     <div class="user-avatar">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                            <circle cx="12" cy="7" r="4" />
+                        </svg>
                     </div>
                     <div class="user-meta">
                         <span class="user-name" id="sidebarUsername">admin</span>
                         <span class="user-role">Administrator</span>
                     </div>
                     <button class="btn-sidebar-logout" id="btnSidebarLogout" title="Sign out">
-                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                            <polyline points="16 17 21 12 16 7" />
+                            <line x1="21" y1="12" x2="9" y2="12" />
+                        </svg>
                     </button>
                 </div>
             </div>
@@ -200,7 +295,12 @@
             <header class="topbar">
                 <div class="topbar-left">
                     <button class="btn-hamburger" id="btnToggleSidebar" title="Toggle Navigation Menu">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <line x1="3" y1="12" x2="21" y2="12" />
+                            <line x1="3" y1="6" x2="21" y2="6" />
+                            <line x1="3" y1="18" x2="21" y2="18" />
+                        </svg>
                     </button>
                     <div class="breadcrumb-container">
                         <span class="breadcrumb-root">Dashboard</span>
@@ -228,22 +328,50 @@
                         <span class="user-name" id="currentUsername">admin</span>
                     </div>
 
-                    <button class="btn btn-secondary btn-icon" id="btnHeaderThemeToggle" title="Toggle Light / Dark Theme">
-                        <svg class="sun-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
-                        <svg class="moon-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+                    <button class="btn btn-secondary btn-icon" id="btnHeaderThemeToggle"
+                        title="Toggle Light / Dark Theme">
+                        <svg class="sun-icon" width="15" height="15" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="5" />
+                            <line x1="12" y1="1" x2="12" y2="3" />
+                            <line x1="12" y1="21" x2="12" y2="23" />
+                            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
+                            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
+                            <line x1="1" y1="12" x2="3" y2="12" />
+                            <line x1="21" y1="12" x2="23" y2="12" />
+                            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
+                            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
+                        </svg>
+                        <svg class="moon-icon" width="15" height="15" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2">
+                            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+                        </svg>
                     </button>
 
                     <button class="btn btn-secondary btn-icon" id="btnManualRefresh" title="Refresh Now">
-                        <svg id="refreshIcon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+                        <svg id="refreshIcon" width="14" height="14" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2">
+                            <path d="M23 4v6h-6" />
+                            <path d="M1 20v-6h6" />
+                            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
+                        </svg>
                     </button>
 
                     <button class="btn btn-secondary btn-sm" id="btnOpenSecurityModal" title="Security & Credentials">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                        </svg>
                         <span>Security</span>
                     </button>
 
                     <button class="btn btn-secondary btn-sm" id="btnLogout" title="Sign out">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                            <polyline points="16 17 21 12 16 7" />
+                            <line x1="21" y1="12" x2="9" y2="12" />
+                        </svg>
                         <span>Logout</span>
                     </button>
                 </div>
@@ -253,7 +381,11 @@
             <section class="stats-grid">
                 <div class="stat-card">
                     <div class="stat-icon icon-cyan">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <path
+                                d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
+                        </svg>
                     </div>
                     <div class="stat-content">
                         <span class="stat-title">Forwarded Ports</span>
@@ -263,27 +395,39 @@
 
                 <div class="stat-card">
                     <div class="stat-icon icon-emerald">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+                        </svg>
                     </div>
                     <div class="stat-content">
-                        <span class="stat-title">Active Proxy (HA / Nginx)</span>
+                        <span class="stat-title">Active Proxy</span>
                         <span class="stat-number text-emerald" id="statActiveHaproxy">0</span>
                     </div>
                 </div>
 
                 <div class="stat-card">
                     <div class="stat-icon icon-amber">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"/><rect x="2" y="14" width="20" height="8" rx="2" ry="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg>
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <rect x="2" y="2" width="20" height="8" rx="2" ry="2" />
+                            <rect x="2" y="14" width="20" height="8" rx="2" ry="2" />
+                            <line x1="6" y1="6" x2="6.01" y2="6" />
+                            <line x1="6" y1="18" x2="6.01" y2="18" />
+                        </svg>
                     </div>
                     <div class="stat-content">
-                        <span class="stat-title">Active NFTables (Tunnel)</span>
+                        <span class="stat-title">Active NFTables</span>
                         <span class="stat-number text-amber" id="statActiveNftables">0</span>
                     </div>
                 </div>
 
                 <div class="stat-card">
                     <div class="stat-icon icon-indigo">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                        </svg>
                     </div>
                     <div class="stat-content">
                         <span class="stat-title">Kernel Engine</span>
@@ -295,7 +439,9 @@
             <!-- Host Services & Subsystems Health Bar -->
             <div class="services-status-bar" id="servicesStatusBar">
                 <div class="svc-bar-header">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
+                    </svg>
                     <span>Relay Engines:</span>
                 </div>
                 <div class="svc-status-pills">
@@ -326,16 +472,25 @@
             <div id="servicesWarningBanner" class="services-warning-banner" style="display: none;">
                 <div class="warning-banner-content">
                     <div class="warning-banner-icon">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <path
+                                d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                            <line x1="12" y1="9" x2="12" y2="13" />
+                            <line x1="12" y1="17" x2="12.01" y2="17" />
+                        </svg>
                     </div>
                     <div class="warning-banner-text">
                         <span class="warning-banner-title">Core Relay Packages Missing</span>
-                        <p id="servicesWarningText">One or more core forwarding services are not installed on this server.</p>
+                        <p id="servicesWarningText">One or more core forwarding services are not installed on this
+                            server.</p>
                     </div>
                 </div>
                 <div class="warning-banner-actions">
-                    <span class="terminal-cmd-hint" title="Command to install dependencies in Linux terminal">xfwd</span>
-                    <button type="button" class="btn btn-secondary btn-sm" id="btnDismissServicesWarning">Dismiss</button>
+                    <span class="terminal-cmd-hint"
+                        title="Command to install dependencies in Linux terminal">xfwd</span>
+                    <button type="button" class="btn btn-secondary btn-sm"
+                        id="btnDismissServicesWarning">Dismiss</button>
                 </div>
             </div>
 
@@ -346,21 +501,34 @@
                     <div class="network-card-header">
                         <div class="net-title-group">
                             <div class="stat-icon icon-cyan" style="width:36px;height:36px;">
-                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
+                                    <circle cx="12" cy="12" r="10" />
+                                    <line x1="2" y1="12" x2="22" y2="12" />
+                                    <path
+                                        d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+                                </svg>
                             </div>
                             <div>
                                 <div class="net-header-title">
                                     <h3>Server Network & Tunnel Topology</h3>
                                     <span class="net-pill-badge" id="netActiveTunnelsBadge">0 Tunnels</span>
                                 </div>
-                                <span class="net-subtitle">Server WAN public addresses, active tunnel interfaces, and real-time latency probes</span>
+                                <span class="net-subtitle">Server WAN public addresses, active tunnel interfaces, and
+                                    real-time latency probes</span>
                             </div>
                         </div>
 
                         <!-- Server Host WAN IPs -->
                         <div class="server-wan-box">
                             <div class="server-wan-header">
-                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"/><rect x="2" y="14" width="20" height="8" rx="2" ry="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg>
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
+                                    <rect x="2" y="2" width="20" height="8" rx="2" ry="2" />
+                                    <rect x="2" y="14" width="20" height="8" rx="2" ry="2" />
+                                    <line x1="6" y1="6" x2="6.01" y2="6" />
+                                    <line x1="6" y1="18" x2="6.01" y2="18" />
+                                </svg>
                                 <span>Server Host IP(s):</span>
                                 <span class="wan-iface-tag" id="wanIfaceTag">eth0</span>
                             </div>
@@ -380,19 +548,36 @@
                     <div class="panel-header">
                         <div>
                             <h2>Port Routing & Multi-Path Matrix</h2>
-                            <p class="section-desc">Each port routes user traffic through Priority 1 and automatically cascades to backup priorities on packet loss.</p>
+                            <p class="section-desc">Each port routes user traffic through Priority 1 and automatically
+                                cascades to backup priorities on packet loss.</p>
                         </div>
                         <div class="panel-actions-group">
-                            <button class="btn btn-secondary btn-sm" id="btnExportConfig" title="Export Configuration Backup (JSON)">
-                                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                            <button class="btn btn-secondary btn-sm" id="btnExportConfig"
+                                title="Export Configuration Backup (JSON)">
+                                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                                    <polyline points="7 10 12 15 17 10" />
+                                    <line x1="12" y1="15" x2="12" y2="3" />
+                                </svg>
                                 <span>Export</span>
                             </button>
-                            <button class="btn btn-secondary btn-sm" id="btnOpenImportModal" title="Import Configuration (JSON)">
-                                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                            <button class="btn btn-secondary btn-sm" id="btnOpenImportModal"
+                                title="Import Configuration (JSON)">
+                                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                                    <polyline points="17 8 12 3 7 8" />
+                                    <line x1="12" y1="3" x2="12" y2="15" />
+                                </svg>
                                 <span>Import</span>
                             </button>
                             <button class="btn btn-primary" id="btnOpenAddModal">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
+                                    <line x1="12" y1="5" x2="12" y2="19" />
+                                    <line x1="5" y1="12" x2="19" y2="12" />
+                                </svg>
                                 <span>Add Port Rule</span>
                             </button>
                         </div>
@@ -402,16 +587,26 @@
                     <div id="importBanner" class="import-banner" style="display:none;">
                         <div class="import-banner-content">
                             <div class="import-icon-orb">
-                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
+                                    <path
+                                        d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
+                                    <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
+                                    <line x1="12" y1="22.08" x2="12" y2="12" />
+                                </svg>
                             </div>
                             <div>
                                 <span class="import-title">Pre-existing HAProxy Forwarding Detected</span>
-                                <p id="importBannerText" class="import-desc">Discovered existing port forwarding rules on this server.</p>
+                                <p id="importBannerText" class="import-desc">Discovered existing port forwarding rules
+                                    on this server.</p>
                             </div>
                         </div>
                         <div class="import-banner-actions">
                             <button class="btn btn-primary btn-sm" id="btnImportHaproxy">
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
+                                    <polyline points="20 6 9 17 4 12" />
+                                </svg>
                                 <span>Import All Rules</span>
                             </button>
                             <button class="btn btn-secondary btn-sm" id="btnDismissImportBanner">Dismiss</button>
@@ -421,16 +616,27 @@
                     <!-- Search, Filters & Emergency Actions Toolbar -->
                     <div class="toolbar">
                         <div class="search-box">
-                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-                            <input type="text" id="searchInput" placeholder="Search ports, IPs, or comments (e.g. 2023, gre, ipv6)..." autocomplete="off">
-                            <button class="clear-btn" id="btnClearSearch" style="display:none;" title="Clear search">&times;</button>
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <circle cx="11" cy="11" r="8" />
+                                <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                            </svg>
+                            <input type="text" id="searchInput"
+                                placeholder="Search ports, IPs, or comments (e.g. 2023, gre, ipv6)..."
+                                autocomplete="off">
+                            <button class="clear-btn" id="btnClearSearch" style="display:none;"
+                                title="Clear search">&times;</button>
                         </div>
 
                         <div class="filter-group">
-                            <button type="button" class="filter-tab active" data-filter="all">All <span class="tab-badge" id="filterCountAll">0</span></button>
-                            <button type="button" class="filter-tab" data-filter="p1">Primary P1 <span class="tab-badge" id="filterCountP1">0</span></button>
-                            <button type="button" class="filter-tab" data-filter="p2">Failover P2+ <span class="tab-badge" id="filterCountP2">0</span></button>
-                            <button type="button" class="filter-tab" data-filter="down">Down / Standby <span class="tab-badge" id="filterCountDown">0</span></button>
+                            <button type="button" class="filter-tab active" data-filter="all">All <span
+                                    class="tab-badge" id="filterCountAll">0</span></button>
+                            <button type="button" class="filter-tab" data-filter="p1">Primary P1 <span class="tab-badge"
+                                    id="filterCountP1">0</span></button>
+                            <button type="button" class="filter-tab" data-filter="p2">Failover P2+ <span
+                                    class="tab-badge" id="filterCountP2">0</span></button>
+                            <button type="button" class="filter-tab" data-filter="down">Down / Standby <span
+                                    class="tab-badge" id="filterCountDown">0</span></button>
                         </div>
 
                         <div class="batch-actions">
@@ -458,7 +664,13 @@
                         <div class="overview-card-header">
                             <div class="overview-card-title">
                                 <div class="stat-icon icon-cyan" style="width:34px;height:34px;">
-                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"/><rect x="2" y="14" width="20" height="8" rx="2" ry="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg>
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                        stroke-width="2">
+                                        <rect x="2" y="2" width="20" height="8" rx="2" ry="2" />
+                                        <rect x="2" y="14" width="20" height="8" rx="2" ry="2" />
+                                        <line x1="6" y1="6" x2="6.01" y2="6" />
+                                        <line x1="6" y1="18" x2="6.01" y2="18" />
+                                    </svg>
                                 </div>
                                 <div>
                                     <h3>Server Host Health</h3>
@@ -505,7 +717,10 @@
                         <div class="overview-card-header">
                             <div class="overview-card-title">
                                 <div class="stat-icon icon-indigo" style="width:34px;height:34px;">
-                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                        stroke-width="2">
+                                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                                    </svg>
                                 </div>
                                 <div>
                                     <h3>Failover Engine Parameters</h3>
@@ -545,7 +760,10 @@
                         <div class="overview-card-header">
                             <div class="overview-card-title">
                                 <div class="stat-icon icon-emerald" style="width:34px;height:34px;">
-                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                        stroke-width="2">
+                                        <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+                                    </svg>
                                 </div>
                                 <div>
                                     <h3>Traffic Distribution</h3>
@@ -580,11 +798,15 @@
                         <div class="overview-card-header">
                             <div class="overview-card-title">
                                 <div class="stat-icon icon-cyan" style="width:34px;height:34px;">
-                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                        stroke-width="2">
+                                        <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
+                                    </svg>
                                 </div>
                                 <div>
                                     <h3>Server Relay Engines</h3>
-                                    <span class="overview-card-sub">NFTables kernel, HAProxy, and Nginx availability</span>
+                                    <span class="overview-card-sub">NFTables kernel, HAProxy, and Nginx
+                                        availability</span>
                                 </div>
                             </div>
                             <span class="stat-badge badge-active" id="ovEnginesSummaryBadge">READY</span>
@@ -616,7 +838,10 @@
                         <div class="overview-card-header">
                             <div class="overview-card-title">
                                 <div class="stat-icon icon-amber" style="width:34px;height:34px;">
-                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                        stroke-width="2">
+                                        <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+                                    </svg>
                                 </div>
                                 <div>
                                     <h3>Quick Control</h3>
@@ -627,15 +852,25 @@
                         <div class="overview-card-body">
                             <div class="quick-btn-grid">
                                 <button class="btn btn-primary" id="btnOvAddRule">
-                                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                        stroke-width="2">
+                                        <line x1="12" y1="5" x2="12" y2="19" />
+                                        <line x1="5" y1="12" x2="19" y2="12" />
+                                    </svg>
                                     <span>New Forwarding Rule</span>
                                 </button>
                                 <button class="btn btn-secondary" id="btnOvGotoServices">
-                                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+                                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                        stroke-width="2">
+                                        <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
+                                    </svg>
                                     <span>View Relay Services</span>
                                 </button>
                                 <button class="btn btn-secondary" id="btnOvGotoSecurity">
-                                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                        stroke-width="2">
+                                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                                    </svg>
                                     <span>Security Settings</span>
                                 </button>
                             </div>
@@ -652,7 +887,10 @@
                         <div class="overview-card-header">
                             <div class="overview-card-title">
                                 <div class="stat-icon icon-emerald" style="width:36px;height:36px;">
-                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                        stroke-width="2">
+                                        <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+                                    </svg>
                                 </div>
                                 <div>
                                     <h3>HAProxy Zero-Tunnel Engine</h3>
@@ -662,7 +900,8 @@
                             <span class="stat-badge badge-active" id="badgeHaproxyStatus">CHECKING</span>
                         </div>
                         <div class="overview-card-body">
-                            <p class="section-desc" style="margin-bottom:14px;">Direct IPv6 user-space relay without any encapsulation overhead. Non-disruptive reload on priority change.</p>
+                            <p class="section-desc" style="margin-bottom:14px;">Direct IPv6 user-space relay without any
+                                encapsulation overhead. Non-disruptive reload on priority change.</p>
                             <div class="overview-info-list">
                                 <div class="info-item">
                                     <span class="info-label">Config Location</span>
@@ -674,7 +913,8 @@
                                 </div>
                                 <div class="info-item">
                                     <span class="info-label">Service Status</span>
-                                    <span class="info-value text-emerald font-mono" id="svcHaproxyState">Checking...</span>
+                                    <span class="info-value text-emerald font-mono"
+                                        id="svcHaproxyState">Checking...</span>
                                 </div>
                                 <div class="info-item">
                                     <span class="info-label">Binary Version</span>
@@ -697,7 +937,13 @@
                         <div class="overview-card-header">
                             <div class="overview-card-title">
                                 <div class="stat-icon icon-amber" style="width:36px;height:36px;">
-                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"/><rect x="2" y="14" width="20" height="8" rx="2" ry="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg>
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                        stroke-width="2">
+                                        <rect x="2" y="2" width="20" height="8" rx="2" ry="2" />
+                                        <rect x="2" y="14" width="20" height="8" rx="2" ry="2" />
+                                        <line x1="6" y1="6" x2="6.01" y2="6" />
+                                        <line x1="6" y1="18" x2="6.01" y2="18" />
+                                    </svg>
                                 </div>
                                 <div>
                                     <h3>NFTables Kernel DNAT</h3>
@@ -707,7 +953,8 @@
                             <span class="stat-badge badge-active" id="badgeNftablesStatus">CHECKING</span>
                         </div>
                         <div class="overview-card-body">
-                            <p class="section-desc" style="margin-bottom:14px;">High-speed kernel DNAT over GRE, IPIP, FakeTCP, or AmneziaWG tunnels. Zero interference with system firewall.</p>
+                            <p class="section-desc" style="margin-bottom:14px;">High-speed kernel DNAT over GRE, IPIP,
+                                FakeTCP, or AmneziaWG tunnels. Zero interference with system firewall.</p>
                             <div class="overview-info-list">
                                 <div class="info-item">
                                     <span class="info-label">Isolated Table</span>
@@ -719,7 +966,8 @@
                                 </div>
                                 <div class="info-item">
                                     <span class="info-label">Kernel Status</span>
-                                    <span class="info-value text-emerald font-mono" id="svcNftablesKernel">Checking...</span>
+                                    <span class="info-value text-emerald font-mono"
+                                        id="svcNftablesKernel">Checking...</span>
                                 </div>
                                 <div class="info-item">
                                     <span class="info-label">Binary Version</span>
@@ -742,7 +990,12 @@
                         <div class="overview-card-header">
                             <div class="overview-card-title">
                                 <div class="stat-icon icon-cyan" style="width:36px;height:36px;">
-                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                        stroke-width="2">
+                                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                                        <line x1="3" y1="9" x2="21" y2="9" />
+                                        <line x1="9" y1="21" x2="9" y2="9" />
+                                    </svg>
                                 </div>
                                 <div>
                                     <h3>Nginx Stream Proxy Engine</h3>
@@ -752,7 +1005,8 @@
                             <span class="stat-badge badge-active" id="badgeNginxStatus">CHECKING</span>
                         </div>
                         <div class="overview-card-body">
-                            <p class="section-desc" style="margin-bottom:14px;">High-concurrency stream TCP/UDP proxy with epoll multi-accept architecture. Managed dynamically by XForwarder.</p>
+                            <p class="section-desc" style="margin-bottom:14px;">High-concurrency stream TCP/UDP proxy
+                                with epoll multi-accept architecture. Managed dynamically by XForwarder.</p>
                             <div class="overview-info-list">
                                 <div class="info-item">
                                     <span class="info-label">Config Location</span>
@@ -783,18 +1037,29 @@
                         <div class="overview-card-header">
                             <div class="overview-card-title">
                                 <div class="stat-icon icon-cyan" style="width:36px;height:36px;">
-                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                        stroke-width="2">
+                                        <path
+                                            d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
+                                        <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
+                                        <line x1="12" y1="22.08" x2="12" y2="12" />
+                                    </svg>
                                 </div>
                                 <div>
                                     <h3>Legacy HAProxy Forwarding Discovery</h3>
-                                    <span class="overview-card-sub">Import pre-existing port forwarding configurations into XForwarder</span>
+                                    <span class="overview-card-sub">Import pre-existing port forwarding configurations
+                                        into XForwarder</span>
                                 </div>
                             </div>
                             <button class="btn btn-secondary btn-sm" id="btnScanHaproxy">Scan Server</button>
                         </div>
                         <div class="overview-card-body">
-                            <p class="section-desc">If this server was previously configured with HAProxy forwarding ports, XForwarder can automatically detect the listen blocks, extract inbound ports, backends, and protocols, and import them as managed multi-priority rules with zero downtime.</p>
-                            <div id="serviceDiscoveryResult" style="margin-top:14px; font-size: 0.88rem; color: var(--text-secondary);">
+                            <p class="section-desc">If this server was previously configured with HAProxy forwarding
+                                ports, XForwarder can automatically detect the listen blocks, extract inbound ports,
+                                backends, and protocols, and import them as managed multi-priority rules with zero
+                                downtime.</p>
+                            <div id="serviceDiscoveryResult"
+                                style="margin-top:14px; font-size: 0.88rem; color: var(--text-secondary);">
                                 Click "Scan Server" to check for unmanaged HAProxy ports.
                             </div>
                         </div>
@@ -810,34 +1075,45 @@
                         <div class="overview-card-header">
                             <div class="overview-card-title">
                                 <div class="stat-icon icon-indigo" style="width:36px;height:36px;">
-                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                        stroke-width="2">
+                                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                                        <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                                    </svg>
                                 </div>
                                 <div>
                                     <h3>Admin Credentials</h3>
-                                    <span class="overview-card-sub">Change web dashboard administrator username and password</span>
+                                    <span class="overview-card-sub">Change web dashboard administrator username and
+                                        password</span>
                                 </div>
                             </div>
                         </div>
                         <div class="overview-card-body">
                             <form id="inlineSecurityForm">
                                 <div class="form-group">
-                                    <label for="secInlineCurrentPwd">Current Admin Password <span class="required">*</span></label>
-                                    <input type="password" id="secInlineCurrentPwd" class="form-control" placeholder="Current password" required autocomplete="current-password">
+                                    <label for="secInlineCurrentPwd">Current Admin Password <span
+                                            class="required">*</span></label>
+                                    <input type="password" id="secInlineCurrentPwd" class="form-control"
+                                        placeholder="Current password" required autocomplete="current-password">
                                 </div>
                                 <div class="form-group">
                                     <label for="secInlineNewUser">New Username (optional)</label>
-                                    <input type="text" id="secInlineNewUser" class="form-control" placeholder="Leave empty to keep current" autocomplete="off">
+                                    <input type="text" id="secInlineNewUser" class="form-control"
+                                        placeholder="Leave empty to keep current" autocomplete="off">
                                 </div>
                                 <div class="form-group">
                                     <label for="secInlineNewPwd">New Password (optional)</label>
-                                    <input type="password" id="secInlineNewPwd" class="form-control" placeholder="Minimum 8 characters" autocomplete="new-password">
+                                    <input type="password" id="secInlineNewPwd" class="form-control"
+                                        placeholder="Minimum 8 characters" autocomplete="new-password">
                                 </div>
                                 <div class="form-group">
                                     <label for="secInlineConfirmPwd">Confirm New Password</label>
-                                    <input type="password" id="secInlineConfirmPwd" class="form-control" placeholder="Repeat new password" autocomplete="new-password">
+                                    <input type="password" id="secInlineConfirmPwd" class="form-control"
+                                        placeholder="Repeat new password" autocomplete="new-password">
                                 </div>
                                 <div id="secInlineError" class="login-error" style="display:none;"></div>
-                                <button type="submit" class="btn btn-primary" id="btnSaveSecurityInline">Update Credentials</button>
+                                <button type="submit" class="btn btn-primary" id="btnSaveSecurityInline">Update
+                                    Credentials</button>
                             </form>
                         </div>
                     </div>
@@ -847,7 +1123,10 @@
                         <div class="overview-card-header">
                             <div class="overview-card-title">
                                 <div class="stat-icon icon-emerald" style="width:36px;height:36px;">
-                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                        stroke-width="2">
+                                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                                    </svg>
                                 </div>
                                 <div>
                                     <h3>Cryptographic Shielding</h3>
@@ -891,23 +1170,41 @@
                         <div class="overview-card-header">
                             <div class="overview-card-title">
                                 <div class="stat-icon icon-cyan" style="width:36px;height:36px;">
-                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                        stroke-width="2">
+                                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                                        <polyline points="7 10 12 15 17 10" />
+                                        <line x1="12" y1="15" x2="12" y2="3" />
+                                    </svg>
                                 </div>
                                 <div>
                                     <h3>Backup & Migration</h3>
-                                    <span class="overview-card-sub">Export or import routing rules and server parameters</span>
+                                    <span class="overview-card-sub">Export or import routing rules and server
+                                        parameters</span>
                                 </div>
                             </div>
                         </div>
                         <div class="overview-card-body">
-                            <p class="section-desc" style="margin-bottom:14px;">Safely backup or restore your forwarding rules and operational parameters. Exported files are cryptographically sanitized to exclude administrative passwords.</p>
+                            <p class="section-desc" style="margin-bottom:14px;">Safely backup or restore your forwarding
+                                rules and operational parameters. Exported files are cryptographically sanitized to
+                                exclude administrative passwords.</p>
                             <div class="quick-btn-grid" style="grid-template-columns: 1fr 1fr;">
                                 <button type="button" class="btn btn-secondary" id="btnExportConfigSec">
-                                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                        stroke-width="2">
+                                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                                        <polyline points="7 10 12 15 17 10" />
+                                        <line x1="12" y1="15" x2="12" y2="3" />
+                                    </svg>
                                     <span>Export Backup JSON</span>
                                 </button>
                                 <button type="button" class="btn btn-primary" id="btnOpenImportModalSec">
-                                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                        stroke-width="2">
+                                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                                        <polyline points="17 8 12 3 7 8" />
+                                        <line x1="12" y1="3" x2="12" y2="15" />
+                                    </svg>
                                     <span>Import Config</span>
                                 </button>
                             </div>
@@ -922,7 +1219,8 @@
                     <div class="panel-header">
                         <div>
                             <h2>Real-time Failover & Probe Logs</h2>
-                            <p class="section-desc">Live timeline of socket health checks, priority transitions, and failover triggers.</p>
+                            <p class="section-desc">Live timeline of socket health checks, priority transitions, and
+                                failover triggers.</p>
                         </div>
                         <div style="display:flex; gap:10px;">
                             <button class="btn btn-secondary btn-sm" id="btnClearLogs">Clear Log</button>
@@ -936,8 +1234,13 @@
                     <!-- Log Filter Toolbar -->
                     <div class="toolbar" style="margin-bottom: 14px;">
                         <div class="search-box" style="max-width: 400px;">
-                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-                            <input type="text" id="logSearchInput" placeholder="Filter logs by port, IP, or event..." autocomplete="off">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <circle cx="11" cy="11" r="8" />
+                                <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                            </svg>
+                            <input type="text" id="logSearchInput" placeholder="Filter logs by port, IP, or event..."
+                                autocomplete="off">
                         </div>
                     </div>
 
@@ -946,7 +1249,8 @@
                         <div class="log-entry log-entry-info">
                             <span class="log-time">[System]</span>
                             <span class="log-badge badge-info">INFO</span>
-                            <span class="log-msg">Dashboard connected to failover engine. Monitoring multi-path probes.</span>
+                            <span class="log-msg">Dashboard connected to failover engine. Monitoring multi-path
+                                probes.</span>
                         </div>
                     </div>
                 </main>
@@ -967,7 +1271,8 @@
                 <div class="form-row">
                     <div class="form-group flex-1">
                         <label for="formPort">Inbound Listening Port</label>
-                        <input type="number" id="formPort" class="form-control" placeholder="e.g. 2023" required min="1" max="65535">
+                        <input type="number" id="formPort" class="form-control" placeholder="e.g. 2023" required min="1"
+                            max="65535">
                     </div>
                     <div class="form-group flex-1">
                         <label for="formProto">Transport Protocol</label>
@@ -983,7 +1288,8 @@
                     <div class="destinations-section-header">
                         <div>
                             <span class="destinations-label">Failover Priority Chain</span>
-                            <span class="destinations-sub">Traffic cascades in order from Priority 1 to 2, 3, etc. on failure</span>
+                            <span class="destinations-sub">Traffic cascades in order from Priority 1 to 2, 3, etc. on
+                                failure</span>
                         </div>
                     </div>
 
@@ -993,7 +1299,11 @@
                     </div>
 
                     <button type="button" class="btn btn-secondary btn-block add-prio-btn" id="btnAddDestination">
-                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <line x1="12" y1="5" x2="12" y2="19" />
+                            <line x1="5" y1="12" x2="19" y2="12" />
+                        </svg>
                         <span>+ Add Another Failover Priority</span>
                     </button>
                 </div>
@@ -1020,31 +1330,53 @@
                 <div class="form-group">
                     <label for="secCurrentPwd">Current Admin Password <span class="required">*</span></label>
                     <div class="input-with-icon">
-                        <svg class="input-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-                        <input type="password" id="secCurrentPwd" class="form-control" placeholder="Current password" required autocomplete="current-password">
+                        <svg class="input-icon" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2">
+                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                            <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                        </svg>
+                        <input type="password" id="secCurrentPwd" class="form-control" placeholder="Current password"
+                            required autocomplete="current-password">
                     </div>
                 </div>
 
                 <div class="form-group">
                     <label for="secNewUser">New Username (optional)</label>
                     <div class="input-with-icon">
-                        <svg class="input-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-                        <input type="text" id="secNewUser" class="form-control" placeholder="Leave empty to keep current" autocomplete="off">
+                        <svg class="input-icon" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2">
+                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                            <circle cx="12" cy="7" r="4" />
+                        </svg>
+                        <input type="text" id="secNewUser" class="form-control"
+                            placeholder="Leave empty to keep current" autocomplete="off">
                     </div>
                 </div>
 
                 <div class="form-group">
                     <label for="secNewPwd">New Password (optional)</label>
                     <div class="input-with-icon">
-                        <svg class="input-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 2l-2 2m-1.5 1.5L16 7l-4 4-2-2-4 4 2 2-4 4 2 2 4-4 2 2 4-4 1.5-1.5L22 4l-1-2z"/></svg>
-                        <input type="password" id="secNewPwd" class="form-control" placeholder="Leave empty to keep current (min 8 chars)" autocomplete="new-password">
-                        <button type="button" class="btn-toggle-pwd" id="btnToggleSecPwd" title="Show/Hide Password" tabindex="-1">
-                            <svg id="eyeIconSec" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                        <svg class="input-icon" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2">
+                            <path
+                                d="M21 2l-2 2m-1.5 1.5L16 7l-4 4-2-2-4 4 2 2-4 4 2 2 4-4 2 2 4-4 1.5-1.5L22 4l-1-2z" />
+                        </svg>
+                        <input type="password" id="secNewPwd" class="form-control"
+                            placeholder="Leave empty to keep current (min 8 chars)" autocomplete="new-password">
+                        <button type="button" class="btn-toggle-pwd" id="btnToggleSecPwd" title="Show/Hide Password"
+                            tabindex="-1">
+                            <svg id="eyeIconSec" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                                stroke="currentColor" stroke-width="2">
+                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                                <circle cx="12" cy="12" r="3" />
+                            </svg>
                         </button>
                     </div>
                     <!-- Password Strength Meter -->
                     <div class="pwd-strength-container" id="pwdStrengthContainer" style="display:none;">
-                        <div class="pwd-strength-bar"><div class="pwd-strength-fill" id="pwdStrengthFill"></div></div>
+                        <div class="pwd-strength-bar">
+                            <div class="pwd-strength-fill" id="pwdStrengthFill"></div>
+                        </div>
                         <span class="pwd-strength-label" id="pwdStrengthLabel">Strength: --</span>
                     </div>
                 </div>
@@ -1052,8 +1384,12 @@
                 <div class="form-group">
                     <label for="secConfirmPwd">Confirm New Password</label>
                     <div class="input-with-icon">
-                        <svg class="input-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
-                        <input type="password" id="secConfirmPwd" class="form-control" placeholder="Repeat new password" autocomplete="new-password">
+                        <svg class="input-icon" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2">
+                            <polyline points="20 6 9 17 4 12" />
+                        </svg>
+                        <input type="password" id="secConfirmPwd" class="form-control" placeholder="Repeat new password"
+                            autocomplete="new-password">
                     </div>
                 </div>
 
@@ -1071,10 +1407,16 @@
     <div class="modal-backdrop" id="confirmModal">
         <div class="modal-card modal-confirm">
             <div class="confirm-icon">
-                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path
+                        d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                    <line x1="12" y1="9" x2="12" y2="13" />
+                    <line x1="12" y1="17" x2="12.01" y2="17" />
+                </svg>
             </div>
             <h3 id="confirmTitle">Delete Port Forwarding Rule?</h3>
-            <p id="confirmMessage">Are you sure you want to delete this forwarding rule? Traffic routing on this port will stop immediately.</p>
+            <p id="confirmMessage">Are you sure you want to delete this forwarding rule? Traffic routing on this port
+                will stop immediately.</p>
             <div class="modal-footer confirm-footer">
                 <button type="button" class="btn btn-secondary" id="btnCancelConfirm">Cancel</button>
                 <button type="button" class="btn btn-danger" id="btnProceedConfirm">Delete Rule</button>
@@ -1086,15 +1428,26 @@
     <div class="modal-backdrop" id="syncErrorModal">
         <div class="modal-card modal-confirm" style="max-width: 540px;">
             <div class="confirm-icon" style="background: rgba(245, 158, 11, 0.15); color: var(--accent-amber);">
-                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path
+                        d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                    <line x1="12" y1="9" x2="12" y2="13" />
+                    <line x1="12" y1="17" x2="12.01" y2="17" />
+                </svg>
             </div>
             <h3>Server Synchronization Notice</h3>
-            <p id="syncErrorMessage" style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:12px;">Configuration was saved, but one or more server commands reported an issue:</p>
-            <div id="syncErrorList" class="font-mono" style="text-align:left; max-height:180px; overflow-y:auto; background:var(--bg-card); border:1px solid var(--border-color); border-radius:8px; padding:10px 12px; font-size:0.78rem; color:var(--accent-rose); line-height:1.45; margin-bottom:16px;"></div>
+            <p id="syncErrorMessage" style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:12px;">
+                Configuration was saved, but one or more server commands reported an issue:</p>
+            <div id="syncErrorList" class="font-mono"
+                style="text-align:left; max-height:180px; overflow-y:auto; background:var(--bg-card); border:1px solid var(--border-color); border-radius:8px; padding:10px 12px; font-size:0.78rem; color:var(--accent-rose); line-height:1.45; margin-bottom:16px;">
+            </div>
             <div class="modal-footer confirm-footer">
                 <button type="button" class="btn btn-secondary" id="btnDismissSyncError">Dismiss</button>
                 <button type="button" class="btn btn-primary" id="btnRetrySyncModal">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="23 4 23 10 17 10" />
+                        <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
+                    </svg>
                     <span>Retry Server Sync</span>
                 </button>
             </div>
@@ -1120,14 +1473,16 @@
                             <input type="radio" name="importMode" value="merge" checked>
                             <div class="import-mode-card">
                                 <span class="import-mode-title">Merge (Recommended)</span>
-                                <span class="import-mode-desc">Appends and updates port rules. Preserves existing non-conflicting rules.</span>
+                                <span class="import-mode-desc">Appends and updates port rules. Preserves existing
+                                    non-conflicting rules.</span>
                             </div>
                         </label>
                         <label class="import-mode-option">
                             <input type="radio" name="importMode" value="replace">
                             <div class="import-mode-card">
                                 <span class="import-mode-title">Replace All Rules</span>
-                                <span class="import-mode-desc">Replaces all port rules with the imported set. Admin credentials and panel port remain safe.</span>
+                                <span class="import-mode-desc">Replaces all port rules with the imported set. Admin
+                                    credentials and panel port remain safe.</span>
                             </div>
                         </label>
                     </div>
@@ -1139,7 +1494,12 @@
                     <div class="file-dropzone" id="importDropzone">
                         <input type="file" id="importFileInput" accept=".json,application/json" style="display:none;">
                         <div class="dropzone-inner">
-                            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                                <polyline points="17 8 12 3 7 8" />
+                                <line x1="12" y1="3" x2="12" y2="15" />
+                            </svg>
                             <span class="dropzone-text">Click or drag & drop backup JSON file here</span>
                             <span class="dropzone-sub">Supports .json files exported from XForwarder</span>
                         </div>
@@ -1158,11 +1518,15 @@
                 <!-- Paste Raw JSON toggle -->
                 <div class="form-group" style="margin-top: 10px;">
                     <button type="button" class="btn-text-toggle" id="btnTogglePasteJson">
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <polyline points="6 9 12 15 18 9" />
+                        </svg>
                         <span>Or paste raw JSON directly</span>
                     </button>
                     <div id="pasteJsonContainer" style="display:none; margin-top: 8px;">
-                        <textarea id="importJsonTextarea" class="form-control font-mono" rows="5" placeholder='{"rules": [ ... ]}' spellcheck="false"></textarea>
+                        <textarea id="importJsonTextarea" class="form-control font-mono" rows="5"
+                            placeholder='{"rules": [ ... ]}' spellcheck="false"></textarea>
                     </div>
                 </div>
 
@@ -1171,7 +1535,10 @@
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" id="btnCancelImportModal">Cancel</button>
                     <button type="submit" class="btn btn-primary" id="btnConfirmImport" disabled>
-                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <polyline points="20 6 9 17 4 12" />
+                        </svg>
                         <span>Import & Apply</span>
                     </button>
                 </div>
@@ -1184,4 +1551,5 @@
 
     <script src="app.js"></script>
 </body>
+
 </html>

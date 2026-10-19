@@ -452,7 +452,7 @@ class XForwarderEngine:
                         return {
                             "healthy": False,
                             "latency_ms": None,
-                            "reason": f"No tunnel iface (WAN leak via {wan_iface})"
+                            "reason": f"WAN leak via {wan_iface}"
                         }
                     if route_iface in ("lo", "gre0", "gretap0", "erspan0", "tunl0", "sit0", "ip6tnl0", "ip6gre0", "dummy0"):
                         return {

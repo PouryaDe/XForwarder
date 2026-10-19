@@ -329,6 +329,107 @@ class TestUIAndAPIEdgeCases(unittest.TestCase):
             server.shutdown()
             server.server_close()
 
+    def test_frontend_css_no_hover_motion_transforms(self):
+        """Verifies that style.css contains zero hover transform animations (pure subtle color transitions)."""
+        css_path = os.path.join(REPO_ROOT, "web", "style.css")
+        with open(css_path, "r", encoding="utf-8") as f:
+            css = f.read()
+
+        hover_blocks = re.findall(r'([^{}]*?:hover[^{}]*?\{[^}]*?\})', css, re.DOTALL)
+        for block in hover_blocks:
+            clean_block = " ".join(block.split())
+            self.assertNotIn("transform", clean_block, f"Hover block must not contain transform motion: {clean_block}")
+            self.assertNotIn("translateY", clean_block, f"Hover block must not jump vertically: {clean_block}")
+            self.assertNotIn("scale", clean_block, f"Hover block must not scale: {clean_block}")
+
+    def test_frontend_js_latency_and_priority_shortening(self):
+        """Verifies that app.js suppresses 0ms latency and formats concise reasons and #num priorities."""
+        js_path = os.path.join(REPO_ROOT, "web", "app.js")
+        with open(js_path, "r", encoding="utf-8") as f:
+            js = f.read()
+
+        # formatLatencyBadge must strictly check for <= 0
+        self.assertIn("formatLatencyBadge", js)
+        self.assertIn("formatConciseReason", js)
+        self.assertIn("ms <= 0", js)
+        self.assertIn("#${prio}", js)
+        self.assertNotIn("PRIMARY ACTIVE · P1", js)
+
+    def test_drag_and_drop_priority_reordering_integrity(self):
+        """Verifies that both rules list and modal support priority drag-and-drop reordering with valid handles."""
+        js_path = os.path.join(REPO_ROOT, "web", "app.js")
+        css_path = os.path.join(REPO_ROOT, "web", "style.css")
+        with open(js_path, "r", encoding="utf-8") as f:
+            js = f.read()
+        with open(css_path, "r", encoding="utf-8") as f:
+            css = f.read()
+
+        # 1. Rules list drag-and-drop handlers
+        self.assertIn("handlePathDragStart", js)
+        self.assertIn("handlePathDragOver", js)
+        self.assertIn("handlePathDragLeave", js)
+        self.assertIn("handlePathDrop", js)
+        self.assertIn("handlePathDragEnd", js)
+
+        # 2. Modal drag-and-drop handlers
+        self.assertIn("handleModalPrioDragStart", js)
+        self.assertIn("handleModalPrioDragOver", js)
+        self.assertIn("handleModalPrioDragLeave", js)
+        self.assertIn("handleModalPrioDrop", js)
+        self.assertIn("handleModalPrioDragEnd", js)
+
+        # 3. Handle must not be marked draggable="false"
+        self.assertNotIn('class="drag-handle" title="Drag to reorder priority" draggable="false"', js)
+        self.assertIn('class="drag-handle" title="Drag to reorder priority"', js)
+
+        # 4. Drag-handle SVG pointer events none to ensure grab event propagation
+        self.assertIn(".drag-handle svg", css)
+        self.assertIn("pointer-events: none", css)
+
+        # 5. CSS classes for drag state
+        self.assertIn(".path-box.is-dragging", css)
+        self.assertIn(".path-box.drag-over", css)
+        self.assertIn(".priority-box.is-dragging", css)
+        self.assertIn(".priority-box.drag-over", css)
+
+    def test_drag_and_drop_edge_cases_and_reorder_logic(self):
+        """Verifies edge case handling for priority reordering: click isolation, rule scoping, and index bounds."""
+        js_path = os.path.join(REPO_ROOT, "web", "app.js")
+        with open(js_path, "r", encoding="utf-8") as f:
+            js = f.read()
+
+        # 1. Verify click-target isolation: prevents drag start on interactive controls (buttons, copy icon, inputs)
+        self.assertIn('e.target.closest("button, .btn-copy, .btn-path-test, input, select, a")', js)
+
+        # 2. Verify within-rule drag scoping: drop target highlight only allowed within the same rule
+        self.assertIn("draggedPathInfo.ruleId === ruleId && draggedPathInfo.index !== index", js)
+
+        # 3. Verify lower & upper bounds check before array mutation in both list and modal
+        self.assertIn("fromIndex < 0 || toIndex < 0 || fromIndex >= dests.length || toIndex >= dests.length", js)
+        self.assertIn("fromIndex < 0 || fromIndex >= currentModalDestinations.length || toIndex < 0 || toIndex >= currentModalDestinations.length", js)
+
+        # 4. Verify fallback rule ID resolution for legacy rules lacking explicit 'id'
+        self.assertIn("String(r.id || `rule-${r.port}`) === ruleId", js)
+
+        # 5. Verify backend validate_rule accepts reordered destinations with contiguous priorities
+        reordered_rule = {
+            "id": "rule-4433",
+            "port": 4433,
+            "protocol": "both",
+            "active_priority": 1,
+            "force_override": 0,
+            "destinations": [
+                {"priority": 1, "type": "nftables", "target": "10.88.2.2", "port": 4433, "comment": "Now Primary"},
+                {"priority": 2, "type": "haproxy", "target": "2001:cafe::1", "port": 4433, "comment": "Now Backup"}
+            ]
+        }
+        valid, err = validate_rule(reordered_rule)
+        self.assertTrue(valid, f"Reordered destination chain should pass validation: {err}")
+        self.assertEqual(reordered_rule["destinations"][0]["priority"], 1)
+        self.assertEqual(reordered_rule["destinations"][1]["priority"], 2)
+
 
 if __name__ == "__main__":
     unittest.main()
+
+
