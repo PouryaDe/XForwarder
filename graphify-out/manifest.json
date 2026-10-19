@@ -6,9 +6,9 @@
     "semantic_hash": ""
   },
   "core/web_server.py": {
-    "mtime": 1792405813.9650404,
-    "seen": 1792406133.452613,
-    "ast_hash": "0fd25f6107d2a910cb94ba6d96b32f04",
+    "mtime": 1792406375.9857657,
+    "seen": 1792406449.1714363,
+    "ast_hash": "09244b99f62c296dee1b8fc7e85d5930",
     "semantic_hash": ""
   },
   "web/app.js": {
