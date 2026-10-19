@@ -72,6 +72,15 @@ ensure_dependencies() {
     command -v curl >/dev/null 2>&1 || pkgs+=(curl)
     command -v git >/dev/null 2>&1 || pkgs+=(git)
 
+    # Ensure Layer 4 stream proxy module is installed for Nginx
+    if command -v apt-get >/dev/null 2>&1; then
+        dpkg -s libnginx-mod-stream >/dev/null 2>&1 || pkgs+=(libnginx-mod-stream)
+    elif command -v dnf >/dev/null 2>&1; then
+        rpm -q nginx-mod-stream >/dev/null 2>&1 || pkgs+=(nginx-mod-stream)
+    elif command -v yum >/dev/null 2>&1; then
+        rpm -q nginx-mod-stream >/dev/null 2>&1 || pkgs+=(nginx-mod-stream)
+    fi
+
     if [[ ${#pkgs[@]} -gt 0 ]]; then
         msg_info "Installing missing dependencies: ${pkgs[*]}..."
         if command -v apt-get >/dev/null 2>&1; then
@@ -99,8 +108,8 @@ ensure_dependencies() {
     # Disable system nftables service to prevent boot-time flush conflicts with XForwarder
     systemctl disable --now nftables >/dev/null 2>&1 || true
 
-    # Ensure runtime directories exist
-    mkdir -p /run/haproxy /run/xforwarder
+    # Ensure runtime and configuration directories exist
+    mkdir -p /run/haproxy /run/xforwarder /etc/nginx/modules-enabled /etc/nginx/conf.d /var/log/nginx
 
     # Enable proxy services so they are active on system boot
     if command -v haproxy >/dev/null 2>&1; then
@@ -111,7 +120,7 @@ ensure_dependencies() {
     fi
 
     # Unlink default Nginx welcome site to prevent it from holding port 80
-    rm -f /etc/nginx/sites-enabled/default >/dev/null 2>&1 || true
+    rm -f /etc/nginx/sites-enabled/default /etc/nginx/conf.d/default.conf >/dev/null 2>&1 || true
 
     # Verification of Core Relay Dependencies
     if command -v nft >/dev/null 2>&1; then
@@ -194,7 +203,7 @@ install_xforwarder() {
     fi
 
     # Unlink default Nginx welcome site to prevent it from holding port 80
-    rm -f /etc/nginx/sites-enabled/default >/dev/null 2>&1 || true
+    rm -f /etc/nginx/sites-enabled/default /etc/nginx/conf.d/default.conf >/dev/null 2>&1 || true
 
     # Migrate legacy config if exists
     if [[ ! -f "$CONFIG_FILE" && -f "$LEGACY_CONFIG_FILE" ]]; then
@@ -395,7 +404,7 @@ update_xforwarder() {
     fi
 
     # Unlink default Nginx welcome site to prevent it from holding port 80
-    rm -f /etc/nginx/sites-enabled/default >/dev/null 2>&1 || true
+    rm -f /etc/nginx/sites-enabled/default /etc/nginx/conf.d/default.conf >/dev/null 2>&1 || true
 
     # Execute automated Python schema migration & normalization
     if [[ -f "$active_cfg" ]]; then

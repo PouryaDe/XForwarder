@@ -1792,7 +1792,8 @@ async function testModalDestination(index) {
             body: JSON.stringify({
                 target: target,
                 port: parseInt(port),
-                type: dest.type || "haproxy"
+                type: dest.type || "haproxy",
+                protocol: document.getElementById("formProtocol") ? document.getElementById("formProtocol").value : "both"
             })
         });
         const data = await res.json().catch(() => ({}));

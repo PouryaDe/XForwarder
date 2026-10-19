@@ -1,20 +1,20 @@
 {
   "core/engine.py": {
-    "mtime": 1792440348.0224268,
-    "seen": 1792441800.3299387,
-    "ast_hash": "9c20979e6cc427cf1d24c4b783f9aa76",
+    "mtime": 1792445114.5257819,
+    "seen": 1792445495.0366724,
+    "ast_hash": "92c69c6437657a6cd162c7eb5fe18c30",
     "semantic_hash": ""
   },
   "core/web_server.py": {
-    "mtime": 1792427346.6340868,
-    "seen": 1792427441.6853046,
-    "ast_hash": "d6e66cdaf5643e946e9711349034b140",
+    "mtime": 1792445145.3588657,
+    "seen": 1792445495.0366747,
+    "ast_hash": "b750f078584ae13851dd83c14d6384ab",
     "semantic_hash": ""
   },
   "web/app.js": {
-    "mtime": 1792443361.5543475,
-    "seen": 1792443632.9593403,
-    "ast_hash": "6c42433f9094b87adff0501e156f69be",
+    "mtime": 1792445177.7357576,
+    "seen": 1792445495.036684,
+    "ast_hash": "43ff6bc6c7e37edac8e5984f4a2563e5",
     "semantic_hash": ""
   },
   ".agents/rules/01-architecture-and-failover.md": {
@@ -90,9 +90,9 @@
     "semantic_hash": ""
   },
   "xforwarder.sh": {
-    "mtime": 1792426152.503505,
-    "seen": 1792427441.6853113,
-    "ast_hash": "f525136e73f1504bca0026dc9734884a",
+    "mtime": 1792445332.3654697,
+    "seen": 1792445495.0366852,
+    "ast_hash": "7e73500be373b0020d8f3b449563645d",
     "semantic_hash": ""
   },
   ".agents/skills/xfwd-ops/SKILL.md": {
@@ -288,9 +288,9 @@
     "semantic_hash": ""
   },
   "tests/test_ui_and_api_edge_cases.py": {
-    "mtime": 1792442412.3421054,
-    "seen": 1792442569.037347,
-    "ast_hash": "75642c4b4a2e5f04e7f467fdda49fde9",
+    "mtime": 1792443709.786849,
+    "seen": 1792445495.036683,
+    "ast_hash": "ef4dc5280ff63cf14e3d6ddd78edd27c",
     "semantic_hash": ""
   },
   "tests/test_network_interfaces.py": {
@@ -321,6 +321,12 @@
     "mtime": 1792427495.2058067,
     "seen": 1792441800.3299553,
     "ast_hash": "bbbc8ae91daf3db6fff175b0ad90209b",
+    "semantic_hash": ""
+  },
+  "tests/test_nginx_stream.py": {
+    "mtime": 1792445411.8899505,
+    "seen": 1792445495.0366812,
+    "ast_hash": "c72079115aa9000d186e72f62dfabde3",
     "semantic_hash": ""
   }
 }

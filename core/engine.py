@@ -412,11 +412,12 @@ class XForwarderEngine:
             return ""
         return ""
 
-    def check_destination(self, dest: Dict[str, Any], rule_port: Optional[int] = None) -> Dict[str, Any]:
+    def check_destination(self, dest: Dict[str, Any], rule_port: Optional[int] = None, protocol: Optional[str] = None) -> Dict[str, Any]:
         """Perform a low-overhead health check on a target destination with strict route and interface isolation."""
         target = str(dest.get("target", "")).strip().strip("[]")
         port = int(dest.get("port") or rule_port or 0)
         dest_type = dest.get("type", "haproxy")
+        proto = str(dest.get("protocol") or protocol or "both").lower()
         tunnel_iface = str(dest.get("tunnel_iface", "")).strip()
         start_time = time.perf_counter()
         healthy = False
@@ -428,8 +429,8 @@ class XForwarderEngine:
         wan_iface = self._detect_wan_interface()
         target_is_private = is_private_or_tunnel_target(target)
 
-        # 1. Interface & Route Validation for Tunnel/NFTables destinations
-        if dest_type == "nftables" or tunnel_iface:
+        # 1. Interface & Route Validation for Tunnel, NFTables, and Nginx destinations
+        if dest_type in ("nftables", "nginx") or tunnel_iface:
             if tunnel_iface:
                 # Explicit tunnel interface specified - verify it exists and is UP
                 if not self._is_interface_up(tunnel_iface):
@@ -468,24 +469,25 @@ class XForwarderEngine:
                         }
                     tunnel_iface = route_iface
 
-        # 2. Socket TCP probe (low-overhead connect)
-        try:
-            family = socket.AF_INET6 if ":" in target else socket.AF_INET
-            with socket.socket(family, socket.SOCK_STREAM) as s:
-                s.settimeout(2.0)
-                if tunnel_iface and sys.platform != "win32":
-                    try:
-                        s.setsockopt(socket.SOL_SOCKET, 25, tunnel_iface.encode())
-                    except Exception:
-                        pass
-                res = s.connect_ex((target, port))
-                healthy = (res == 0)
-        except Exception as e:
-            healthy = False
-            fail_reason = str(e)
+        # 2. Socket TCP probe (low-overhead connect) - skipped when strictly UDP-only
+        if proto != "udp":
+            try:
+                family = socket.AF_INET6 if ":" in target else socket.AF_INET
+                with socket.socket(family, socket.SOCK_STREAM) as s:
+                    s.settimeout(2.0)
+                    if tunnel_iface and sys.platform != "win32":
+                        try:
+                            s.setsockopt(socket.SOL_SOCKET, 25, tunnel_iface.encode())
+                        except Exception:
+                            pass
+                    res = s.connect_ex((target, port))
+                    healthy = (res == 0)
+            except Exception as e:
+                healthy = False
+                fail_reason = str(e)
 
-        # 3. ICMP Ping fallback probe for NFTables destinations
-        if not healthy and dest_type == "nftables":
+        # 3. ICMP Ping probe (fallback for UDP services, tunnel destinations, or when TCP connect fails)
+        if not healthy:
             try:
                 # Safe ping probe without shell injection
                 if all(c in "0123456789abcdefABCDEF:.-" for c in target):
@@ -499,9 +501,11 @@ class XForwarderEngine:
                     healthy = (subprocess.call(ping_cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL) == 0)
                     if not healthy and not fail_reason:
                         fail_reason = "Ping probe unreachable"
+                    elif healthy:
+                        fail_reason = ""
             except Exception as e:
-                healthy = False
-                fail_reason = str(e)
+                if not fail_reason:
+                    fail_reason = str(e)
 
         latency_ms = round((time.perf_counter() - start_time) * 1000, 1)
         res_dict = {
@@ -540,7 +544,7 @@ class XForwarderEngine:
                 }
 
             stat = rule_state["dest_stats"][dest_key]
-            check_res = self.check_destination(dest, rule_port=rule.get("port"))
+            check_res = self.check_destination(dest, rule_port=rule.get("port"), protocol=rule.get("protocol"))
             stat["latency_ms"] = check_res["latency_ms"]
             if "reason" in check_res:
                 stat["reason"] = check_res["reason"]
@@ -639,26 +643,43 @@ class XForwarderEngine:
                     )
                 if proto in ("udp", "both"):
                     # Use Nginx stream for UDP forwarding of HAProxy rules
+                    pp_ngx = " proxy_protocol on;" if send_proxy else ""
+                    udp_listens = [f"listen {port} udp reuseport;"]
+                    if self._is_ipv6_supported():
+                        udp_listens.append(f"listen [::]:{port} udp ipv6only=on reuseport;")
+                    udp_listens_str = " ".join(udp_listens)
                     nginx_entries.append(
                         f"    # [UDP for HAProxy {comment_clean}]\n"
-                        f"    server {{ listen {port} udp reuseport; proxy_pass {target_str}; }}"
+                        f"    server {{ {udp_listens_str} proxy_pass {target_str};{pp_ngx} }}"
                     )
             elif dest_type == "nginx":
                 # Nginx Stream TCP/UDP Forwarding (XManager Standard)
+                send_proxy = bool(dest.get("proxy_protocol", False) or dest.get("send_proxy", False))
+                pp_ngx = " proxy_protocol on;" if send_proxy else ""
+
+                tcp_listens = [f"listen {port} reuseport so_keepalive=on;"]
+                udp_listens = [f"listen {port} udp reuseport;"]
+                if self._is_ipv6_supported():
+                    tcp_listens.append(f"listen [::]:{port} ipv6only=on reuseport so_keepalive=on;")
+                    udp_listens.append(f"listen [::]:{port} udp ipv6only=on reuseport;")
+
                 if proto in ("both", ""):
+                    listens_str = " ".join(tcp_listens + udp_listens)
                     nginx_entries.append(
                         f"    # [{comment_clean}]\n"
-                        f"    server {{ listen {port} reuseport; listen {port} udp; proxy_pass {target_str}; }}"
+                        f"    server {{ {listens_str} proxy_pass {target_str};{pp_ngx} }}"
                     )
                 elif proto == "tcp":
+                    listens_str = " ".join(tcp_listens)
                     nginx_entries.append(
                         f"    # [{comment_clean}]\n"
-                        f"    server {{ listen {port} reuseport; proxy_pass {target_str}; }}"
+                        f"    server {{ {listens_str} proxy_pass {target_str};{pp_ngx} }}"
                     )
                 elif proto == "udp":
+                    listens_str = " ".join(udp_listens)
                     nginx_entries.append(
                         f"    # [{comment_clean}]\n"
-                        f"    server {{ listen {port} udp reuseport; proxy_pass {target_str}; }}"
+                        f"    server {{ {listens_str} proxy_pass {target_str};{pp_ngx} }}"
                     )
             elif dest_type == "nftables":
                 # NFTables DNAT in IPv4 table expects valid IPv4 tunnel target
@@ -820,11 +841,50 @@ defaults
 
         stream_body = "\n".join(nginx_entries) if nginx_entries else "    # No active Nginx stream servers"
 
+        # Determine user safely to avoid getpwnam failures on non-Debian distributions
+        user_line = ""
+        for u in ("www-data", "nginx"):
+            try:
+                with open("/etc/passwd", "r", encoding="utf-8") as pf:
+                    if any(line.startswith(f"{u}:") for line in pf):
+                        user_line = f"user {u};"
+                        break
+            except Exception:
+                pass
+
+        # Determine module loading safely
+        modules_line = ""
+        if os.path.isdir("/etc/nginx/modules-enabled"):
+            modules_line = "include /etc/nginx/modules-enabled/*.conf;"
+        elif os.path.exists("/usr/lib/nginx/modules/ngx_stream_module.so"):
+            modules_line = "load_module /usr/lib/nginx/modules/ngx_stream_module.so;"
+        elif os.path.exists("/usr/lib64/nginx/modules/ngx_stream_module.so"):
+            modules_line = "load_module /usr/lib64/nginx/modules/ngx_stream_module.so;"
+
+        # Determine safe log directory
+        log_dir = "/var/log/nginx"
+        error_log_line = "error_log /var/log/nginx/error.log warn;"
+        if not os.path.exists(log_dir):
+            try:
+                os.makedirs(log_dir, exist_ok=True)
+            except Exception:
+                error_log_line = "error_log /dev/null crit;"
+
+        # Determine safe http includes (only existing directories/files)
+        http_includes = []
+        if os.path.exists("/etc/nginx/mime.types"):
+            http_includes.append("    include /etc/nginx/mime.types;")
+        if os.path.isdir("/etc/nginx/conf.d"):
+            http_includes.append("    include /etc/nginx/conf.d/*.conf;")
+        if os.path.isdir("/etc/nginx/sites-enabled"):
+            http_includes.append("    include /etc/nginx/sites-enabled/*;")
+        http_includes_block = ("\n" + "\n".join(http_includes)) if http_includes else ""
+
         nginx_content = f"""# Generated by XForwarder Engine (XManager Standard)
-user www-data;
+{user_line}
 worker_processes auto;
 pid /run/nginx.pid;
-include /etc/nginx/modules-enabled/*.conf;
+{modules_line}
 
 worker_rlimit_nofile 300000;
 
@@ -837,14 +897,12 @@ events {{
 
 stream {{
     access_log off;
-    error_log /dev/null crit;
+    {error_log_line}
 
     proxy_connect_timeout 5s;
-    proxy_timeout 10m;
+    proxy_timeout 1h;
     proxy_socket_keepalive on;
     tcp_nodelay on;
-
-    proxy_responses 1;
 
 {stream_body}
 }}
@@ -852,21 +910,23 @@ stream {{
 http {{
     sendfile on;
     tcp_nopush on;
-    types_hash_max_size 2048;
-    include /etc/nginx/mime.types;
+    types_hash_max_size 2048;{http_includes_block}
     default_type application/octet-stream;
     ssl_protocols TLSv1.2 TLSv1.3;
     ssl_prefer_server_ciphers on;
     access_log off;
     error_log off;
     gzip on;
-    include /etc/nginx/conf.d/*.conf;
-    include /etc/nginx/sites-enabled/*;
 }}
 """
         try:
             if not os.path.exists(nginx_dir):
                 os.makedirs(nginx_dir, exist_ok=True)
+            if not os.path.exists("/etc/nginx/modules-enabled"):
+                try:
+                    os.makedirs("/etc/nginx/modules-enabled", exist_ok=True)
+                except Exception:
+                    pass
             tmp_nginx = f"{NGINX_CONF_PATH}.tmp.{os.getpid()}"
             with open(tmp_nginx, "w", encoding="utf-8") as f:
                 f.write(nginx_content)

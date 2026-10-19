@@ -12,9 +12,9 @@
     "semantic_hash": ""
   },
   "web/app.js": {
-    "mtime": 1792442353.88522,
-    "seen": 1792442569.0373478,
-    "ast_hash": "0187cdcfbc10637a4c9666cc4c783638",
+    "mtime": 1792443361.5543475,
+    "seen": 1792443632.9593403,
+    "ast_hash": "6c42433f9094b87adff0501e156f69be",
     "semantic_hash": ""
   },
   ".agents/rules/01-architecture-and-failover.md": {
@@ -84,9 +84,9 @@
     "semantic_hash": ""
   },
   "web/index.html": {
-    "mtime": 1792438531.958863,
-    "seen": 1792441800.3299756,
-    "ast_hash": "5a935d7d8fdb1456fd548aa756dc0b38",
+    "mtime": 1792443584.7071524,
+    "seen": 1792443632.9593687,
+    "ast_hash": "12ae9ac62402a42278b55cee5483317c",
     "semantic_hash": ""
   },
   "xforwarder.sh": {

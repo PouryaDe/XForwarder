@@ -1523,10 +1523,11 @@ class XForwarderWebHandler(BaseHTTPRequestHandler):
                 return
 
             dest_type = str(body.get("type", "haproxy")).lower()
+            protocol = str(body.get("protocol", "both")).lower()
             try:
                 from core.engine import XForwarderEngine
                 engine = XForwarderEngine(config_path=get_config_path())
-                probe_res = engine.check_destination({"target": target, "port": port, "type": dest_type})
+                probe_res = engine.check_destination({"target": target, "port": port, "type": dest_type}, protocol=protocol)
                 self.send_json({
                     "ok": True,
                     "healthy": probe_res.get("healthy", False),
