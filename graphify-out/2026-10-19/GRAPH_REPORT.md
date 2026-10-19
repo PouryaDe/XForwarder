@@ -1,17 +1,17 @@
 # Graph Report - Forward-Manager  (2026-10-19)
 
 ## Corpus Check
-- 47 files · ~32,038 words
+- 48 files · ~32,718 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 8 file(s) not represented in the graph (top: .service 4, (none) 2, .example 1)
 
 ## Summary
-- 517 nodes · 868 edges · 29 communities
-- Extraction: 97% EXTRACTED · 3% INFERRED · 0% AMBIGUOUS · INFERRED: 24 edges (avg confidence: 0.93)
+- 536 nodes · 908 edges · 34 communities (28 shown, 6 thin omitted)
+- Extraction: 97% EXTRACTED · 3% INFERRED · 0% AMBIGUOUS · INFERRED: 25 edges (avg confidence: 0.93)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `baf0815b`
+- Built from commit: `91b54bde`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -43,20 +43,25 @@
 - .do_POST
 - renderDestinationRow
 - Session State & Task Handoff Rule (XForwarder)
-- haproxy_parser.py
+- validate_rule
 - renderDestinationsList
+- TestXForwarderSecurity
+- verify_password
+- XForwarderWebServer
+- is_port_in_use_by_external_service
+- is_valid_target
 
 ## God Nodes (most connected - your core abstractions)
-1. `XForwarderEngine` - 22 edges
+1. `XForwarderEngine` - 23 edges
 2. `xforwarder.sh script` - 15 edges
 3. `check_root()` - 14 edges
 4. `modify_web_settings_menu()` - 14 edges
 5. `show_web_access_info()` - 14 edges
-6. `XForwarderWebHandler` - 13 edges
-7. `TestXForwarderSecurity` - 13 edges
-8. `msg_ok()` - 13 edges
-9. `resolve_active_config()` - 13 edges
-10. `msg_err()` - 12 edges
+6. `validate_rule()` - 13 edges
+7. `XForwarderWebHandler` - 13 edges
+8. `TestXForwarderSecurity` - 13 edges
+9. `msg_ok()` - 13 edges
+10. `resolve_active_config()` - 13 edges
 
 ## Surprising Connections (you probably didn't know these)
 - `4. Invariants & Rules for AI Agents` --references--> `hash_password()`  [INFERRED]
@@ -67,31 +72,33 @@
   tests/test_migration.py → core/engine.py
 - `TestXForwarderSecurity` --uses--> `XForwarderWebServer`  [INFERRED]
   tests/test_security.py → core/web_server.py
+- `TestUIAndAPIEdgeCases` --uses--> `XForwarderWebServer`  [INFERRED]
+  tests/test_ui_and_api_edge_cases.py → core/web_server.py
 
 ## Import Cycles
 - None detected.
 
-## Communities (29 total, 0 thin omitted)
+## Communities (34 total, 6 thin omitted)
 
 ### Community 0 - "os"
-Cohesion: 0.11
-Nodes (17): check_file(), main(), get_next_number(), main(), slugify(), load_state(), main(), save_state() (+9 more)
+Cohesion: 0.07
+Nodes (24): check_file(), main(), get_next_number(), main(), slugify(), load_state(), main(), save_state() (+16 more)
 
 ### Community 1 - "app.js"
 Cohesion: 0.02
-Nodes (80): basePath, batchSelect, btnAddDestination, btnCancelModal, btnCancelSecurity, btnClearLogs, btnClearSearch, btnCloseModal (+72 more)
+Nodes (81): basePath, batchSelect, btnAddDestination, btnCancelModal, btnCancelSecurity, btnClearLogs, btnClearSearch, btnCloseModal (+73 more)
 
 ### Community 2 - "XForwarderEngine"
 Cohesion: 0.08
 Nodes (17): 1. Native Python 3 Standard Library Only, 2. Thread Safety & Atomic File Operations, 3. Network Probing Standards, 4. Signal & Process Lifecycle, Python Core Standards (`core/engine.py` & `core/web_server.py`), 1. High-Risk Core Components, 2. Constitution Check Gate, Pre-Execution Blast Radius & Impact Analysis Rule (XForwarder) (+9 more)
 
 ### Community 3 - "fetchStatus"
-Cohesion: 0.22
-Nodes (10): checkAuth(), checkImportableRules(), closeMobileSidebar(), fetchStatus(), handleOverrideChange(), renderStats(), renderSystemStats(), showDashboard() (+2 more)
+Cohesion: 0.25
+Nodes (9): checkAuth(), checkImportableRules(), closeMobileSidebar(), fetchStatus(), renderStats(), renderSystemStats(), showDashboard(), showLogin() (+1 more)
 
 ### Community 4 - "web_server.py"
-Cohesion: 0.06
-Nodes (11): check_rate_limit(), hash_password(), is_haproxy_listening(), is_port_in_use_by_external_service(), is_valid_target(), record_failed_login(), reset_rate_limit(), validate_rule() (+3 more)
+Cohesion: 0.19
+Nodes (3): check_rate_limit(), hash_password(), record_failed_login()
 
 ### Community 5 - "🌐 XForwarder"
 Cohesion: 0.14
@@ -166,47 +173,44 @@ Cohesion: 0.40
 Nodes (4): 1. Strict Resource Ceilings, 2. Non-Blocking Probing & Socket Safety, 3. Kernel Isolation, Intermediate Relay VPS Constraints Rule (XForwarder)
 
 ### Community 23 - "showToast"
-Cohesion: 0.25
-Nodes (9): applyTheme(), askConfirm(), copyText(), deleteRule(), fallbackCopy(), initTheme(), showToast(), startLockoutTimer() (+1 more)
+Cohesion: 0.22
+Nodes (10): applyTheme(), askConfirm(), copyText(), deleteRule(), fallbackCopy(), handleOverrideChange(), initTheme(), showToast() (+2 more)
 
 ### Community 24 - ".do_POST"
 Cohesion: 0.18
 Nodes (6): get_config_path(), get_system_stats(), load_config(), load_state(), save_config(), XForwarderWebHandler
 
 ### Community 25 - "renderDestinationRow"
-Cohesion: 0.33
-Nodes (7): addLogEntry(), escapeHtml(), formatLatencyBadge(), getPrioSubtitle(), getPrioTagClass(), renderDestinationRow(), renderRules()
+Cohesion: 0.29
+Nodes (8): addLogEntry(), escapeHtml(), formatLatencyBadge(), getPrioSubtitle(), getPrioTagClass(), renderDestinationRow(), renderRules(), trackFailoverEvents()
 
 ### Community 26 - "Session State & Task Handoff Rule (XForwarder)"
 Cohesion: 0.50
 Nodes (3): 1. Structure & Storage, 2. Managing Session State via CLI, Session State & Task Handoff Rule (XForwarder)
-
-### Community 27 - "haproxy_parser.py"
-Cohesion: 0.15
-Nodes (7): _build_xforwarder_rule(), discover_importable_rules(), find_candidate_haproxy_files(), import_haproxy_rules_into_config(), parse_haproxy_content(), parse_haproxy_file(), TestHAProxyParser
 
 ### Community 28 - "renderDestinationsList"
 Cohesion: 0.50
 Nodes (5): addDestinationRow(), editRule(), removeDestinationRow(), renderDestinationsList(), syncDestinationsFromDom()
 
 ## Knowledge Gaps
-- **195 isolated node(s):** `basePath`, `currentRules`, `lastRuntime`, `loginScreen`, `dashboardScreen` (+190 more)
-  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 260 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
+- **196 isolated node(s):** `basePath`, `currentRules`, `lastRuntime`, `loginScreen`, `dashboardScreen` (+191 more)
+  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 269 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
+- **6 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
 - **Why does `XForwarderEngine` connect `XForwarderEngine` to `os`, `.migrate_and_normalize_config`, `web_server.py`, `.do_POST`?**
-  _High betweenness centrality (0.132) - this node is a cross-community bridge._
+  _High betweenness centrality (0.144) - this node is a cross-community bridge._
 - **What connects `basePath`, `currentRules`, `lastRuntime` to the rest of the system?**
-  _195 weakly-connected nodes found - possible documentation gaps or missing edges._
+  _196 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `os` be split into smaller, more focused modules?**
-  _Cohesion score 0.10931174089068826 - nodes in this community are weakly interconnected._
-- **Why does `hash_password()` connect `web_server.py` to `.do_POST`, `experiences/README.md`, `XForwarderEngine`?**
-  _High betweenness centrality (0.083) - this node is a cross-community bridge._
-- **Should `app.js` be split into smaller, more focused modules?**
-  _Cohesion score 0.022988505747126436 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.06696428571428571 - nodes in this community are weakly interconnected._
 - **Why does `XForwarder Master Architecture Constitution` connect `.migrate_and_normalize_config` to `.agents/AGENTS.md`?**
-  _High betweenness centrality (0.083) - this node is a cross-community bridge._
+  _High betweenness centrality (0.088) - this node is a cross-community bridge._
+- **Should `app.js` be split into smaller, more focused modules?**
+  _Cohesion score 0.022727272727272728 - nodes in this community are weakly interconnected._
 - **Should `XForwarderEngine` be split into smaller, more focused modules?**
   _Cohesion score 0.07682926829268293 - nodes in this community are weakly interconnected._
+- **Should `🌐 XForwarder` be split into smaller, more focused modules?**
+  _Cohesion score 0.14285714285714285 - nodes in this community are weakly interconnected._

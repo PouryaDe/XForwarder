@@ -26,6 +26,11 @@
   "24": ".do_POST",
   "25": "renderDestinationRow",
   "26": "Session State & Task Handoff Rule (XForwarder)",
-  "27": "haproxy_parser.py",
-  "28": "renderDestinationsList"
+  "27": "validate_rule",
+  "28": "renderDestinationsList",
+  "29": "TestXForwarderSecurity",
+  "30": "verify_password",
+  "31": "XForwarderWebServer",
+  "32": "is_port_in_use_by_external_service",
+  "33": "is_valid_target"
 }
