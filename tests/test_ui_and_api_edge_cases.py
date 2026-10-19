@@ -161,10 +161,19 @@ class TestUIAndAPIEdgeCases(unittest.TestCase):
             "searchInput",
             "batchOverrideSelect",
             "btnThemeToggle",
+            "btnLoginThemeToggle",
+            "loginThemeName",
+            "loginScreen",
             "logConsole"
         ]
         for cid in critical_ids:
             self.assertIn(f'id="{cid}"', index_content, f"Missing critical DOM ID: {cid}")
+
+        # 7. Verify unified login screen styling and light theme card shadow in style.css
+        self.assertIn('.login-top-bar', style_content)
+        self.assertIn('.login-logo', style_content)
+        self.assertIn('[data-theme="light"] .login-card', style_content)
+
 
 
 if __name__ == "__main__":

@@ -73,7 +73,25 @@ body {
     min-height: 100vh;
     align-items: center;
     justify-content: center;
-    padding: 20px;
+    padding: 24px 20px;
+    position: relative;
+}
+
+.login-top-bar {
+    position: absolute;
+    top: 24px;
+    right: 24px;
+    z-index: 10;
+}
+
+.login-theme-toggle {
+    width: auto;
+    height: 38px;
+    padding: 0 14px;
+    border-radius: 10px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    box-shadow: var(--card-shadow);
 }
 
 .login-card {
@@ -81,15 +99,18 @@ body {
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
     border: 1px solid var(--border-color);
-    border-radius: 24px;
+    border-radius: 20px;
     padding: 36px 32px;
     width: 100%;
     max-width: 420px;
     box-shadow: var(--card-shadow);
+    transition: background-color 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
 }
 
 [data-theme="light"] .login-card {
-    box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.08), 0 8px 10px -6px rgba(15, 23, 42, 0.04);
+    background: #FFFFFF;
+    border-color: var(--border-color);
+    box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.05), 0 1px 3px 0 rgba(15, 23, 42, 0.03);
 }
 
 .login-header {
@@ -97,17 +118,39 @@ body {
     margin-bottom: 28px;
 }
 
-.login-header h2 {
-    font-size: 1.5rem;
+.login-logo {
+    width: 48px;
+    height: 48px;
+    border-radius: 14px;
+    margin: 0 auto 14px auto;
+    display: inline-flex;
+    box-shadow: 0 8px 20px rgba(99, 102, 241, 0.35);
+}
+
+[data-theme="light"] .login-logo {
+    box-shadow: 0 4px 12px rgba(79, 70, 229, 0.22);
+}
+
+.login-brand-meta {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 4px;
+}
+
+.login-brand-meta h2 {
+    font-size: 1.45rem;
     font-weight: 700;
     color: var(--text-primary);
     letter-spacing: -0.02em;
+    margin: 0;
 }
 
-.login-header p {
+.login-subtitle {
     font-size: 0.82rem;
     color: var(--text-secondary);
-    margin-top: 6px;
+    margin-top: 2px;
 }
 
 .login-error {
@@ -120,6 +163,7 @@ body {
     margin-bottom: 16px;
     text-align: center;
 }
+
 
 /* ── Panel Dashboard Layout ── */
 .app-layout {
@@ -2556,5 +2600,8 @@ select option {
     .import-banner { flex-direction: column; align-items: stretch; }
     .import-banner-actions { justify-content: flex-end; }
     .import-mode-selector { grid-template-columns: 1fr; }
+    .login-wrapper { padding: 70px 16px 24px 16px; }
+    .login-top-bar { top: 16px; right: 16px; }
 }
+
 

@@ -1356,6 +1356,10 @@ function applyTheme(theme) {
     if (label) {
         label.innerText = (theme === "light") ? "Dark Mode" : "Light Mode";
     }
+    const loginLabel = document.getElementById("loginThemeName");
+    if (loginLabel) {
+        loginLabel.innerText = (theme === "light") ? "Dark Mode" : "Light Mode";
+    }
 }
 
 function toggleTheme() {
@@ -1370,6 +1374,10 @@ if (btnThemeToggle) btnThemeToggle.addEventListener("click", toggleTheme);
 
 const btnHeaderThemeToggle = document.getElementById("btnHeaderThemeToggle");
 if (btnHeaderThemeToggle) btnHeaderThemeToggle.addEventListener("click", toggleTheme);
+
+const btnLoginThemeToggle = document.getElementById("btnLoginThemeToggle");
+if (btnLoginThemeToggle) btnLoginThemeToggle.addEventListener("click", toggleTheme);
+
 
 // ── Panel Navigation & Section Switcher ──
 const SECTIONS = ["rules", "overview", "services", "security", "logs"];
