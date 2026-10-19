@@ -280,6 +280,37 @@ def get_system_stats() -> dict:
 _NET_CACHE: Dict[str, Any] = {"data": None, "expires": 0}
 _NET_LOCK = threading.Lock()
 
+# Linux kernel fallback devices and container bridges that must never appear in topology
+DEFAULT_IGNORED_INTERFACES = frozenset({
+    "lo",
+    # Linux kernel fallback tunnel devices (created automatically on module load)
+    "gre0",
+    "gretap0",
+    "erspan0",
+    "tunl0",
+    "sit0",
+    "ip6tnl0",
+    "ip6gre0",
+    "ip6erspan0",
+    # System dummy / traffic control fallback devices
+    "dummy0",
+    "teql0",
+})
+
+
+def is_ignored_interface(ifname: str) -> bool:
+    """Returns True if the interface is a system loopback, default kernel fallback tunnel, or container bridge."""
+    if not ifname:
+        return True
+    lower = ifname.lower().strip()
+    if not lower:
+        return True
+    if lower in DEFAULT_IGNORED_INTERFACES:
+        return True
+    if lower.startswith(("docker", "veth", "virbr", "br-")):
+        return True
+    return False
+
 
 def ping_target(target: str, iface: Optional[str] = None) -> Tuple[bool, Optional[float]]:
     """Safe bounded ping probe with strict character whitelisting."""
@@ -351,7 +382,7 @@ def get_network_interfaces_info() -> Dict[str, Any]:
                     tokens = line.split()
                     if len(tokens) >= 4:
                         ifname = tokens[1].strip()
-                        if ifname == "lo":
+                        if is_ignored_interface(ifname):
                             continue
                         family = tokens[2].strip()
                         if family not in ("inet", "inet6"):
@@ -389,7 +420,7 @@ def get_network_interfaces_info() -> Dict[str, Any]:
     # Process discovered interfaces
     for item in if_data:
         ifname = item.get("ifname", "")
-        if not ifname or ifname == "lo":
+        if is_ignored_interface(ifname):
             continue
 
         flags = item.get("flags", [])
@@ -465,6 +496,10 @@ def get_network_interfaces_info() -> Dict[str, Any]:
                                 target_to_ping = f"{prefix}{peer_octet}"
                         except Exception:
                             pass
+
+            # Skip unconfigured inactive interfaces with no IP and state DOWN
+            if not local_ip and not peer_ip and not is_up:
+                continue
 
             tunnel_interfaces.append({
                 "name": ifname,

@@ -6,15 +6,15 @@
     "semantic_hash": ""
   },
   "core/web_server.py": {
-    "mtime": 1792406375.9857657,
-    "seen": 1792406449.1714363,
-    "ast_hash": "09244b99f62c296dee1b8fc7e85d5930",
+    "mtime": 1792409036.5686536,
+    "seen": 1792409117.3101707,
+    "ast_hash": "e2754207640c01be951057306f032af7",
     "semantic_hash": ""
   },
   "web/app.js": {
-    "mtime": 1792407313.2296624,
-    "seen": 1792407821.2028413,
-    "ast_hash": "bd76ea688db16b9ecd19e2781f2ee4eb",
+    "mtime": 1792408933.1200073,
+    "seen": 1792409117.3101773,
+    "ast_hash": "40996b3fcbf874056e6409e924a2dbc1",
     "semantic_hash": ""
   },
   ".agents/rules/01-architecture-and-failover.md": {
@@ -30,9 +30,9 @@
     "semantic_hash": ""
   },
   ".agents/rules/03-networking-and-kernel.md": {
-    "mtime": 1792348002.5309405,
-    "seen": 1792348157.385479,
-    "ast_hash": "a37cd15c8bead77f11f43685590cdbbe",
+    "mtime": 1792409092.9265769,
+    "seen": 1792409117.3101861,
+    "ast_hash": "31391b9670909471335206c5a18ee3ba",
     "semantic_hash": ""
   },
   ".agents/rules/04-web-dashboard-and-security.md": {
@@ -294,9 +294,9 @@
     "semantic_hash": ""
   },
   "tests/test_network_interfaces.py": {
-    "mtime": 1792402577.1056042,
-    "seen": 1792403312.8122663,
-    "ast_hash": "92ae7b405566a03c246b9a2ac3186726",
+    "mtime": 1792408997.757817,
+    "seen": 1792409117.3101747,
+    "ast_hash": "7f6813ba5ace5fe85cdaeaace5479974",
     "semantic_hash": ""
   },
   "tests/test_export_import.py": {

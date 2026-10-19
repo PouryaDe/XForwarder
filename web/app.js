@@ -687,7 +687,21 @@ function renderNetworkTopology(network) {
     // 2. Tunnel interfaces list/grid
     const tunnelGrid = document.getElementById("tunnelGrid");
     const activeBadge = document.getElementById("netActiveTunnelsBadge");
-    const tunnels = network.tunnel_interfaces || [];
+    const rawTunnels = network.tunnel_interfaces || [];
+
+    // Filter out Linux kernel default/fallback interfaces and container bridges
+    const ignoredIfaces = new Set([
+        "lo", "gre0", "gretap0", "erspan0", "tunl0", "sit0",
+        "ip6tnl0", "ip6gre0", "ip6erspan0", "dummy0", "teql0"
+    ]);
+    const tunnels = rawTunnels.filter(t => {
+        if (!t || !t.name) return false;
+        const name = String(t.name).toLowerCase().trim();
+        if (ignoredIfaces.has(name)) return false;
+        if (name.startsWith("docker") || name.startsWith("veth") || name.startsWith("virbr") || name.startsWith("br-")) return false;
+        if ((!t.ip || t.ip === "No IP assigned") && !t.peer_ip && t.state !== "UP") return false;
+        return true;
+    });
 
     if (activeBadge) {
         const onlineCount = tunnels.filter(t => t.state === "UP").length;
