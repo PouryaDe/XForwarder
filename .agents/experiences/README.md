@@ -11,3 +11,4 @@ Records of architectural decisions, critical invariants, and lessons learned dur
 | `005` | [PBKDF2 Salted Auth and Adaptive Rate Limiting](005-pbkdf2-salted-auth-and-adaptive-rate-limiting.md) | `security` | 2026-10-18 |
 | `006` | [Host Subsystem Inspection and Drag-Drop Priority Reordering](006-host-subsystem-inspection-and-drag-drop-priorities.md) | `Networking & UI` | 2026-10-19 |
 | `007` | [Fix HAProxy Silent Drop and State Wipeout](007-fix-haproxy-silent-drop-and-state-wipeout.md) | `Networking` | 2026-10-19 |
+| `008` | [Full-Stack Performance Optimization & Fast IPC](008-full-stack-performance-and-fast-ipc.md) | `Performance & IPC` | 2026-10-20 |

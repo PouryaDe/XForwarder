@@ -29,6 +29,7 @@ Authoritative architectural rules and standard operating procedures for AI agent
 11. **Backward Compatibility & Automated Migrations (Mandatory):** All software updates and schema changes must remain 100% backward compatible. Never drop or overwrite existing rules, custom ports, or admin credentials. Always perform atomic pre-update backup and automatic self-healing schema normalization via `migrate_and_normalize_config()`.
 12. **Multi-Layer Web Security & PBKDF2 Auth (Mandatory):** Admin credentials must use salted PBKDF2-HMAC-SHA256 (100,000 iterations + 16-byte random salt). All mutating endpoints verify origin. Login endpoints enforce adaptive rate limiting (5 attempts in 5 minutes triggers 15-minute lockout). All responses enforce OWASP security headers (CSP, X-Frame-Options DENY, SameSite=Strict cookies).
 13. **Clean TCP Stream by Default & Live State Preservation:** HAProxy rules stream clean raw TCP by default without hardcoding `send-proxy-v2`. PROXY protocol v2 is strictly opt-in per destination. Ad-hoc synchronizations from the web server must merge and preserve live `rules_state` metrics without resetting `state.json`.
+14. **High-Performance HTTP, Asset Caching & Fast IPC:** Web server provides native Gzip compression on JSON/static assets (>512B), ETag conditional 304 handling, and in-memory caching with mtime invalidation. Daemons perform content-diffing to skip redundant service reloads, and use SIGUSR1 IPC to wake the engine loop immediately upon changes.
 
 ---
 

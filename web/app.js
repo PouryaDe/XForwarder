@@ -228,6 +228,18 @@ function showDashboard(username) {
     }
 }
 
+// ── Smart Visibility-Aware Polling (Throttles to 15s in background, immediate refresh on return) ──
+document.addEventListener("visibilitychange", () => {
+    if (!dashboardScreen || dashboardScreen.style.display === "none") return;
+    if (pollTimer) clearInterval(pollTimer);
+    if (document.hidden) {
+        pollTimer = setInterval(fetchStatus, 15000);
+    } else {
+        fetchStatus();
+        pollTimer = setInterval(fetchStatus, 3000);
+    }
+});
+
 // ── Pre-existing HAProxy Rules Discovery & 1-Click Import ──
 async function checkImportableRules() {
     try {
@@ -1101,9 +1113,30 @@ function copyIpToClipboard(ipText, btnEl) {
     });
 }
 
+let lastRenderedRulesFingerprint = "";
+
+function computeRulesFingerprint(filteredRules, rulesState) {
+    return filteredRules.map(r => {
+        const rId = String(r.id || `rule-${r.port}`);
+        const rState = rulesState[rId] || {};
+        const destStats = rState.dest_stats || {};
+        const destsStr = (r.destinations || []).map(d => {
+            const p = d.priority || 1;
+            const st = destStats[`prio_${p}`] || {};
+            return `${p}:${d.type}:${d.target}:${d.port}:${d.proxy_protocol}:${d.comment || ''}:${st.status}:${st.latency_ms}:${st.packet_loss}:${st.reason || ''}`;
+        }).join(";");
+        return `${rId}|${r.port}|${r.protocol}|${r.comment || ''}|${r.active_priority}|${r.force_override}|${destsStr}`;
+    }).join("##") + `__f:${activeFilter}__s:${searchQuery}`;
+}
+
 // Render Rule Cards with Filtering and Search
 function renderRules(rules, runtime) {
+    if (draggedPathInfo !== null) {
+        return; // Don't interrupt user during drag & drop priority reordering
+    }
+
     if (!rules || rules.length === 0) {
+        lastRenderedRulesFingerprint = "__empty__";
         rulesContainer.innerHTML = `
             <div style="text-align:center;padding:48px 20px;color:var(--text-secondary);border:1px dashed var(--border-color);border-radius:14px;">
                 <p style="font-size:1.1rem;margin-bottom:8px;">No port forwarding rules configured yet.</p>
@@ -1155,6 +1188,7 @@ function renderRules(rules, runtime) {
     });
 
     if (filtered.length === 0) {
+        lastRenderedRulesFingerprint = `__nofilter__${activeFilter}__${searchQuery}`;
         rulesContainer.innerHTML = `
             <div style="text-align:center;padding:40px 20px;color:var(--text-secondary);border:1px dashed var(--border-color);border-radius:14px;">
                 <p style="font-size:1rem;margin-bottom:6px;">No rules matching your search or active filter.</p>
@@ -1163,6 +1197,13 @@ function renderRules(rules, runtime) {
         `;
         return;
     }
+
+    // Smart Fingerprint Check: If rules and stats haven't changed, skip DOM recreation
+    const currentFingerprint = computeRulesFingerprint(filtered, rulesState);
+    if (currentFingerprint === lastRenderedRulesFingerprint) {
+        return;
+    }
+    lastRenderedRulesFingerprint = currentFingerprint;
 
     rulesContainer.innerHTML = filtered.map(rule => {
         const ruleId = String(rule.id || `rule-${rule.port}`);
@@ -1296,7 +1337,7 @@ function renderRules(rules, runtime) {
         }).join('');
 
         return `
-            <div class="rule-card">
+            <div class="rule-card" id="rule-card-${encodedId}">
                 <div class="rule-top">
                     <div class="port-badge">
                         <span class="port-num">:${escapeHtml(rule.port)}</span>
@@ -1568,14 +1609,19 @@ batchSelect.addEventListener("change", async () => {
     batchSelect.value = "";
 });
 
-// Search and Filter Listeners
+// Search and Filter Listeners with 120ms Debounce
+let searchDebounceTimer = null;
 searchInput.addEventListener("input", () => {
     searchQuery = searchInput.value.trim().toLowerCase();
     btnClearSearch.style.display = searchQuery ? "block" : "none";
-    renderRules(currentRules, lastRuntime);
+    clearTimeout(searchDebounceTimer);
+    searchDebounceTimer = setTimeout(() => {
+        renderRules(currentRules, lastRuntime);
+    }, 120);
 });
 
 btnClearSearch.addEventListener("click", () => {
+    clearTimeout(searchDebounceTimer);
     searchInput.value = "";
     searchQuery = "";
     btnClearSearch.style.display = "none";
@@ -1960,13 +2006,30 @@ function editRule(ruleId) {
     ruleModal.classList.add("show");
 }
 
-// Delete Rule with Custom Glass Confirm Modal
+// Delete Rule with Custom Glass Confirm Modal & Optimistic UI
 async function deleteRule(ruleId) {
     const confirmed = await askConfirm(
         "Delete Port Forwarding Rule?",
         `Are you sure you want to delete forwarding rule '${ruleId}'? Routing on this port will stop immediately.`
     );
     if (!confirmed) return;
+
+    // Optimistic UI Update: Animate out card instantly
+    const cardEl = document.getElementById(`rule-card-${encodeURIComponent(ruleId)}`) || document.getElementById(`rule-card-${ruleId}`);
+    if (cardEl) {
+        cardEl.classList.add("is-deleting");
+    }
+
+    const previousRules = [...currentRules];
+    currentRules = currentRules.filter(r => String(r.id || `rule-${r.port}`) !== ruleId);
+    renderStats(currentRules, lastRuntime);
+
+    // After animation finishes, clean up DOM node if still present
+    const cleanupTimer = setTimeout(() => {
+        if (cardEl && cardEl.parentNode) {
+            cardEl.remove();
+        }
+    }, 280);
 
     try {
         const res = await fetch(`${API_BASE}/rule/${encodeURIComponent(ruleId)}`, { method: "DELETE" });
@@ -1976,11 +2039,21 @@ async function deleteRule(ruleId) {
             if (data.sync_errors && data.sync_errors.length > 0) {
                 showSyncErrorAlert(data.sync_errors);
             }
-            fetchStatus();
         } else {
+            // Rollback on server failure
+            clearTimeout(cleanupTimer);
+            currentRules = previousRules;
+            lastRenderedRulesFingerprint = "";
+            renderRules(currentRules, lastRuntime);
+            renderStats(currentRules, lastRuntime);
             showToast(data.error || "Error deleting rule", "error");
         }
     } catch (err) {
+        clearTimeout(cleanupTimer);
+        currentRules = previousRules;
+        lastRenderedRulesFingerprint = "";
+        renderRules(currentRules, lastRuntime);
+        renderStats(currentRules, lastRuntime);
         showToast("Error deleting rule", "error");
     }
 }

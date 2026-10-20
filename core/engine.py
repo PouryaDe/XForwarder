@@ -16,6 +16,7 @@ import signal
 import ipaddress
 import shutil
 import re
+import tempfile
 from typing import Dict, List, Any, Optional, Tuple
 
 DEFAULT_CONFIG_PATH = "/etc/xforwarder/config.json"
@@ -26,6 +27,12 @@ LEGACY_STATE_FILE_PATH = "/run/forward-manager/state.json"
 HAPROXY_CONF_PATH = "/etc/haproxy/haproxy.cfg"
 UDP_CONF_PATH = "/etc/haproxy/forwarder-udp.conf"
 NGINX_CONF_PATH = "/etc/nginx/nginx.conf"
+
+PID_FILE_CANDIDATES = [
+    "/run/xforwarder/engine.pid",
+    "/run/forward-manager/engine.pid",
+    os.path.join(tempfile.gettempdir(), "xforwarder_engine.pid"),
+]
 
 
 def is_private_or_tunnel_target(target: str) -> bool:
@@ -60,6 +67,9 @@ class XForwarderEngine:
         }
         self._load_initial_runtime_state()
         self._last_applied_rules: Optional[str] = None
+        self._wake_event = threading.Event()
+        self._last_nft_content: Optional[str] = None
+        self._pid_path: Optional[str] = None
         self.load_config()
 
     @property
@@ -823,6 +833,10 @@ table ip xfwd_orchestrator {{
         if not shutil.which("nft"):
             return True, None
 
+        if hasattr(self, "_last_nft_content") and self._last_nft_content == nft_content:
+            self.runtime_state["active_services"]["nftables"] = bool(dnat_rules)
+            return True, None
+
         try:
             # Clean up legacy table if exists
             subprocess.run(["nft", "delete", "table", "ip", "fwdman_orchestrator"],
@@ -837,6 +851,7 @@ table ip xfwd_orchestrator {{
                     print(f"[WARN] NFTables apply failed: {err_msg}", file=sys.stderr)
                     return False, f"NFTables apply: {err_msg}"
                 self.runtime_state["active_services"]["nftables"] = bool(dnat_rules)
+                self._last_nft_content = nft_content
                 return True, None
             else:
                 err_msg = err.strip() if err else "NFTables validation check failed"
@@ -891,6 +906,15 @@ defaults
 
 """ + "\n".join(active_entries)
 
+        if os.path.exists(HAPROXY_CONF_PATH):
+            try:
+                with open(HAPROXY_CONF_PATH, "r", encoding="utf-8") as f_curr:
+                    if f_curr.read() == base_haproxy:
+                        self.runtime_state["active_services"]["haproxy"] = bool(haproxy_entries)
+                        return True, None
+            except Exception:
+                pass
+
         try:
             if not os.path.exists(haproxy_dir):
                 os.makedirs(haproxy_dir, exist_ok=True)
@@ -910,9 +934,11 @@ defaults
             os.replace(tmp_haproxy, HAPROXY_CONF_PATH)
 
             if shutil.which("systemctl"):
-                res = subprocess.run("systemctl reload haproxy >/dev/null 2>&1 || systemctl restart haproxy >/dev/null 2>&1", shell=True)
+                res = subprocess.run(["systemctl", "reload", "haproxy"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
                 if res.returncode != 0:
-                    return False, "HAProxy service reload/restart failed"
+                    res = subprocess.run(["systemctl", "restart", "haproxy"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                    if res.returncode != 0:
+                        return False, "HAProxy service reload/restart failed"
 
             self.runtime_state["active_services"]["haproxy"] = bool(haproxy_entries)
             return True, None
@@ -1004,6 +1030,19 @@ http {{
     gzip on;
 }}
 """
+        if not nginx_entries and not os.path.exists(NGINX_CONF_PATH):
+            self.runtime_state["active_services"]["nginx"] = False
+            return True, None
+
+        if os.path.exists(NGINX_CONF_PATH):
+            try:
+                with open(NGINX_CONF_PATH, "r", encoding="utf-8") as f_curr:
+                    if f_curr.read() == nginx_content:
+                        self.runtime_state["active_services"]["nginx"] = bool(nginx_entries)
+                        return True, None
+            except Exception:
+                pass
+
         try:
             if not os.path.exists(nginx_dir):
                 os.makedirs(nginx_dir, exist_ok=True)
@@ -1027,9 +1066,11 @@ http {{
                 if test_res.returncode == 0:
                     os.replace(tmp_nginx, NGINX_CONF_PATH)
                     if shutil.which("systemctl"):
-                        res = subprocess.run("systemctl reload nginx >/dev/null 2>&1 || systemctl restart nginx >/dev/null 2>&1", shell=True)
+                        res = subprocess.run(["systemctl", "reload", "nginx"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
                         if res.returncode != 0:
-                            return False, "Nginx service reload/restart failed"
+                            res = subprocess.run(["systemctl", "restart", "nginx"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                            if res.returncode != 0:
+                                return False, "Nginx service reload/restart failed"
                     self.runtime_state["active_services"]["nginx"] = bool(nginx_entries)
                     return True, None
                 else:
@@ -1087,47 +1128,84 @@ http {{
         except Exception:
             pass
 
+    def _write_pid_file(self) -> None:
+        """Persists current engine PID to candidate paths to enable instant IPC wakeups."""
+        for candidate in PID_FILE_CANDIDATES:
+            try:
+                os.makedirs(os.path.dirname(candidate), exist_ok=True)
+                with open(candidate, "w", encoding="utf-8") as pf:
+                    pf.write(str(os.getpid()))
+                self._pid_path = candidate
+                break
+            except Exception:
+                continue
+
+    def _remove_pid_file(self) -> None:
+        """Removes persisted engine PID file on process termination."""
+        if self._pid_path:
+            try:
+                if os.path.exists(self._pid_path):
+                    os.remove(self._pid_path)
+            except Exception:
+                pass
+            self._pid_path = None
+
     def run_loop(self) -> None:
         self.running = True
         print("[INFO] XForwarder Core Engine started.")
+        self._write_pid_file()
+
+        if hasattr(signal, "SIGUSR1"):
+            try:
+                signal.signal(signal.SIGUSR1, lambda sig, frame: self._wake_event.set())
+            except Exception:
+                pass
+
         self.sync_firewall_and_proxies()
 
-        while self.running:
-            try:
-                self.load_config()
-                rules = self.config.get("rules", [])
+        try:
+            while self.running:
+                try:
+                    self.load_config()
+                    rules = self.config.get("rules", [])
 
-                # Clean up deleted rules from runtime state
-                current_rule_ids = {r.get("id") for r in rules if r.get("id")}
-                stale_ids = [rid for rid in self.runtime_state["rules_state"] if rid not in current_rule_ids]
-                for rid in stale_ids:
-                    del self.runtime_state["rules_state"][rid]
+                    # Clean up deleted rules from runtime state
+                    current_rule_ids = {r.get("id") for r in rules if r.get("id")}
+                    stale_ids = [rid for rid in self.runtime_state["rules_state"] if rid not in current_rule_ids]
+                    for rid in stale_ids:
+                        del self.runtime_state["rules_state"][rid]
 
-                state_changed = False
-                for rule in rules:
-                    if self.evaluate_rule(rule):
-                        state_changed = True
+                    state_changed = False
+                    for rule in rules:
+                        if self.evaluate_rule(rule):
+                            state_changed = True
 
-                self.runtime_state["last_check_timestamp"] = time.time()
+                    self.runtime_state["last_check_timestamp"] = time.time()
 
-                config_changed = (self._get_rules_fingerprint() != self._last_applied_rules)
+                    config_changed = (self._get_rules_fingerprint() != self._last_applied_rules)
 
-                if state_changed or config_changed:
-                    print("[INFO] Routing state or configuration change detected. Synchronizing routing layer...")
-                    if state_changed:
-                        self.save_config()
-                    self.sync_firewall_and_proxies()
-                else:
-                    self._save_state_file()
+                    if state_changed or config_changed:
+                        print("[INFO] Routing state or configuration change detected. Synchronizing routing layer...")
+                        if state_changed:
+                            self.save_config()
+                        self.sync_firewall_and_proxies()
+                    else:
+                        self._save_state_file()
 
-                interval = int(self.config.get("check_interval_seconds", 8))
-                time.sleep(max(3, interval))
-            except Exception as e:
-                print(f"[ERROR] Exception in xforwarder loop: {e}", file=sys.stderr)
-                time.sleep(5)
+                    interval = int(self.config.get("check_interval_seconds", 8))
+                    self._wake_event.wait(timeout=max(3, interval))
+                    self._wake_event.clear()
+                except Exception as e:
+                    print(f"[ERROR] Exception in xforwarder loop: {e}", file=sys.stderr)
+                    self._wake_event.wait(timeout=5)
+                    self._wake_event.clear()
+        finally:
+            self._remove_pid_file()
 
     def stop(self) -> None:
         self.running = False
+        self._wake_event.set()
+        self._remove_pid_file()
 
 
 def sync_system_rules(max_retries: int = 2, delay_between_retries: float = 0.5, config_path: Optional[str] = None) -> Tuple[bool, List[str]]:

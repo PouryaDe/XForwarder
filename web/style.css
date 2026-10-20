@@ -1538,6 +1538,21 @@ body {
     box-shadow: var(--card-shadow);
     display: flex;
     flex-direction: column;
+    contain: layout style;
+    will-change: transform, opacity;
+    transition: transform 0.22s ease, opacity 0.22s ease, box-shadow 0.22s ease;
+}
+
+.rule-card.is-deleting {
+    transition: all 0.28s cubic-bezier(0.16, 1, 0.3, 1) !important;
+    opacity: 0 !important;
+    transform: scale(0.95) !important;
+    max-height: 0 !important;
+    margin: 0 !important;
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+    overflow: hidden !important;
+    border-color: transparent !important;
 }
 
 .rule-top {

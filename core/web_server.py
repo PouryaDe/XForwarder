@@ -18,9 +18,47 @@ import threading
 import ipaddress
 import re
 import shutil
+import gzip
+import signal
+import tempfile
 from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
 from urllib.parse import urlparse
 from typing import Optional, Dict, Tuple, Any, List
+
+_STATIC_CACHE: Dict[str, dict] = {}
+_STATIC_LOCK = threading.Lock()
+_VERSION_CACHE: Dict[str, str] = {}
+
+PID_FILE_CANDIDATES = [
+    "/run/xforwarder/engine.pid",
+    "/run/forward-manager/engine.pid",
+    os.path.join(tempfile.gettempdir(), "xforwarder_engine.pid"),
+]
+
+
+def notify_engine_wakeup():
+    """Signals core engine to immediately evaluate routing changes without waiting for interval."""
+    if hasattr(signal, "SIGUSR1"):
+        for pid_file in PID_FILE_CANDIDATES:
+            if os.path.exists(pid_file):
+                try:
+                    with open(pid_file, "r", encoding="utf-8") as f:
+                        pid = int(f.read().strip())
+                    os.kill(pid, signal.SIGUSR1)
+                    break
+                except Exception:
+                    pass
+
+
+def sync_rules_and_notify(max_retries: int = 2) -> Tuple[bool, List[str]]:
+    try:
+        from engine import sync_system_rules
+    except ImportError:
+        from core.engine import sync_system_rules
+    res = sync_system_rules(max_retries=max_retries)
+    notify_engine_wakeup()
+    return res
+
 
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -324,13 +362,18 @@ def get_services_status() -> Dict[str, Any]:
 
     if nft_bin:
         status["nftables"]["installed"] = True
-        try:
-            res_v = subprocess.run([nft_bin, "--version"], capture_output=True, text=True, timeout=1.0)
-            if res_v.returncode == 0:
-                v_line = res_v.stdout.strip().split("\n")[0]
-                status["nftables"]["version"] = v_line.replace("nftables", "").strip().split()[0]
-        except Exception:
-            pass
+        if "nftables" in _VERSION_CACHE:
+            status["nftables"]["version"] = _VERSION_CACHE["nftables"]
+        else:
+            try:
+                res_v = subprocess.run([nft_bin, "--version"], capture_output=True, text=True, timeout=1.0)
+                if res_v.returncode == 0:
+                    v_line = res_v.stdout.strip().split("\n")[0]
+                    v_val = v_line.replace("nftables", "").strip().split()[0]
+                    status["nftables"]["version"] = v_val
+                    _VERSION_CACHE["nftables"] = v_val
+            except Exception:
+                pass
 
         try:
             res_t = subprocess.run([nft_bin, "list", "tables"], capture_output=True, text=True, timeout=1.0)
@@ -358,14 +401,19 @@ def get_services_status() -> Dict[str, Any]:
 
     if haproxy_bin:
         status["haproxy"]["installed"] = True
-        try:
-            res_v = subprocess.run([haproxy_bin, "-v"], capture_output=True, text=True, timeout=1.0)
-            if res_v.returncode == 0:
-                line = res_v.stdout.strip().split("\n")[0]
-                if "version" in line:
-                    status["haproxy"]["version"] = line.split("version")[1].strip().split()[0]
-        except Exception:
-            pass
+        if "haproxy" in _VERSION_CACHE:
+            status["haproxy"]["version"] = _VERSION_CACHE["haproxy"]
+        else:
+            try:
+                res_v = subprocess.run([haproxy_bin, "-v"], capture_output=True, text=True, timeout=1.0)
+                if res_v.returncode == 0:
+                    line = res_v.stdout.strip().split("\n")[0]
+                    if "version" in line:
+                        v_val = line.split("version")[1].strip().split()[0]
+                        status["haproxy"]["version"] = v_val
+                        _VERSION_CACHE["haproxy"] = v_val
+            except Exception:
+                pass
 
         is_active = False
         try:
@@ -399,13 +447,18 @@ def get_services_status() -> Dict[str, Any]:
 
     if nginx_bin:
         status["nginx"]["installed"] = True
-        try:
-            res_v = subprocess.run([nginx_bin, "-v"], capture_output=True, text=True, timeout=1.0)
-            v_text = (res_v.stderr or res_v.stdout or "").strip()
-            if "nginx/" in v_text:
-                status["nginx"]["version"] = v_text.split("nginx/")[1].strip().split()[0]
-        except Exception:
-            pass
+        if "nginx" in _VERSION_CACHE:
+            status["nginx"]["version"] = _VERSION_CACHE["nginx"]
+        else:
+            try:
+                res_v = subprocess.run([nginx_bin, "-v"], capture_output=True, text=True, timeout=1.0)
+                v_text = (res_v.stderr or res_v.stdout or "").strip()
+                if "nginx/" in v_text:
+                    v_val = v_text.split("nginx/")[1].strip().split()[0]
+                    status["nginx"]["version"] = v_val
+                    _VERSION_CACHE["nginx"] = v_val
+            except Exception:
+                pass
 
         is_active = False
         try:
@@ -710,7 +763,7 @@ def get_network_interfaces_info() -> Dict[str, Any]:
 
     with _NET_LOCK:
         _NET_CACHE["data"] = result
-        _NET_CACHE["expires"] = now + 6.0  # 6-second cache TTL
+        _NET_CACHE["expires"] = now + 20.0  # 20-second cache TTL
 
     return result
 
@@ -947,7 +1000,7 @@ class XForwarderWebHandler(BaseHTTPRequestHandler):
     server_version = "XForwarder-Shield/2.0"
     sys_version = ""
 
-    def apply_security_headers(self, cookie_token: Optional[str] = None):
+    def apply_security_headers(self, cookie_token: Optional[str] = None, include_cache_control: bool = True):
         """Applies comprehensive OWASP recommended security headers."""
         self.send_header("X-Content-Type-Options", "nosniff")
         self.send_header("X-Frame-Options", "DENY")
@@ -964,7 +1017,8 @@ class XForwarderWebHandler(BaseHTTPRequestHandler):
             "img-src 'self' data:; connect-src 'self'; "
             "frame-ancestors 'none'; form-action 'self'; base-uri 'self'"
         )
-        self.send_header("Cache-Control", "no-store, no-cache, must-revalidate")
+        if include_cache_control:
+            self.send_header("Cache-Control", "no-store, no-cache, must-revalidate")
 
         is_https = self.headers.get("X-Forwarded-Proto") == "https" or (
             hasattr(self, "server_instance") and getattr(self.server_instance, "is_ssl", False)
@@ -982,8 +1036,15 @@ class XForwarderWebHandler(BaseHTTPRequestHandler):
 
     def send_json(self, data: dict, status: int = 200, cookie_token: Optional[str] = None):
         body = json.dumps(data).encode("utf-8")
+        accept_encoding = self.headers.get("Accept-Encoding", "")
+        use_gzip = "gzip" in accept_encoding and len(body) > 512
+        if use_gzip:
+            body = gzip.compress(body)
+
         self.send_response(status)
         self.send_header("Content-Type", "application/json; charset=utf-8")
+        if use_gzip:
+            self.send_header("Content-Encoding", "gzip")
         self.send_header("Content-Length", str(len(body)))
         if status == 429 and isinstance(data, dict) and "remaining_seconds" in data:
             self.send_header("Retry-After", str(data["remaining_seconds"]))
@@ -995,15 +1056,53 @@ class XForwarderWebHandler(BaseHTTPRequestHandler):
         if not os.path.exists(file_path):
             self.send_error(404, "File Not Found")
             return
-        with open(file_path, "rb") as f:
-            content = f.read()
+
+        stat = os.stat(file_path)
+        mtime = int(stat.st_mtime)
+        size = stat.st_size
+        etag = f'W/"{mtime}-{size}"'
+
+        # Conditional request (ETag / 304 Not Modified)
+        if_none_match = self.headers.get("If-None-Match", "").strip()
+        if if_none_match and if_none_match == etag:
+            self.send_response(304)
+            self.send_header("ETag", etag)
+            self.send_header("Cache-Control", "no-cache, no-store, must-revalidate")
+            self.send_header("Pragma", "no-cache")
+            self.apply_security_headers(include_cache_control=False)
+            self.end_headers()
+            return
+
+        # In-memory cached asset retrieval
+        with _STATIC_LOCK:
+            entry = _STATIC_CACHE.get(file_path)
+            if not entry or entry["mtime"] != mtime:
+                with open(file_path, "rb") as f:
+                    raw_content = f.read()
+                gz_content = gzip.compress(raw_content) if len(raw_content) > 512 else None
+                entry = {
+                    "mtime": mtime,
+                    "etag": etag,
+                    "content": raw_content,
+                    "gz_content": gz_content
+                }
+                _STATIC_CACHE[file_path] = entry
+
+        accept_encoding = self.headers.get("Accept-Encoding", "")
+        can_gzip = "gzip" in accept_encoding and entry["gz_content"] is not None
+
+        content = entry["gz_content"] if can_gzip else entry["content"]
+
         self.send_response(200)
         self.send_header("Content-Type", content_type)
+        if can_gzip:
+            self.send_header("Content-Encoding", "gzip")
         self.send_header("Content-Length", str(len(content)))
+        self.send_header("ETag", etag)
         self.send_header("Cache-Control", "no-cache, no-store, must-revalidate")
         self.send_header("Pragma", "no-cache")
         self.send_header("Expires", "0")
-        self.apply_security_headers()
+        self.apply_security_headers(include_cache_control=False)
         self.end_headers()
         self.wfile.write(content)
 
@@ -1377,8 +1476,7 @@ class XForwarderWebHandler(BaseHTTPRequestHandler):
 
             cfg["rules"] = rules
             if save_config(cfg):
-                from core.engine import sync_system_rules
-                sync_ok, sync_errors = sync_system_rules(max_retries=2)
+                sync_ok, sync_errors = sync_rules_and_notify(max_retries=2)
                 self.send_json({
                     "ok": True,
                     "rule": body,
@@ -1428,8 +1526,7 @@ class XForwarderWebHandler(BaseHTTPRequestHandler):
                 return
 
             if save_config(cfg):
-                from core.engine import sync_system_rules
-                sync_ok, sync_errors = sync_system_rules(max_retries=2)
+                sync_ok, sync_errors = sync_rules_and_notify(max_retries=2)
                 self.send_json({
                     "ok": True,
                     "sync_ok": sync_ok,
@@ -1472,8 +1569,7 @@ class XForwarderWebHandler(BaseHTTPRequestHandler):
                     r["active_priority"] = chosen if chosen is not None else (dests[0].get("priority", 1) if dests else 1)
 
             if save_config(cfg):
-                from core.engine import sync_system_rules
-                sync_ok, sync_errors = sync_system_rules(max_retries=2)
+                sync_ok, sync_errors = sync_rules_and_notify(max_retries=2)
                 self.send_json({
                     "ok": True,
                     "count": len(rules),
@@ -1485,8 +1581,7 @@ class XForwarderWebHandler(BaseHTTPRequestHandler):
                 self.send_json({"ok": False, "error": "Save failed"}, 500)
 
         elif subpath == "/api/sync":
-            from core.engine import sync_system_rules
-            sync_ok, sync_errors = sync_system_rules(max_retries=2)
+            sync_ok, sync_errors = sync_rules_and_notify(max_retries=2)
             self.send_json({
                 "ok": sync_ok,
                 "sync_ok": sync_ok,
@@ -1497,8 +1592,7 @@ class XForwarderWebHandler(BaseHTTPRequestHandler):
             from core.haproxy_parser import import_haproxy_rules_into_config
             cfg_path = get_config_path()
             count, ports = import_haproxy_rules_into_config(cfg_path)
-            from core.engine import sync_system_rules
-            sync_ok, sync_errors = sync_system_rules(max_retries=2)
+            sync_ok, sync_errors = sync_rules_and_notify(max_retries=2)
             self.send_json({
                 "ok": True,
                 "imported_count": count,
@@ -1512,8 +1606,7 @@ class XForwarderWebHandler(BaseHTTPRequestHandler):
             mode = body.get("mode", "merge") if isinstance(body, dict) else "merge"
             ok, err, info = import_config_data(imported_raw, mode=mode)
             if ok:
-                from core.engine import sync_system_rules
-                sync_ok, sync_errors = sync_system_rules(max_retries=2)
+                sync_ok, sync_errors = sync_rules_and_notify(max_retries=2)
                 self.send_json({"ok": True, "sync_ok": sync_ok, "sync_errors": sync_errors, **info})
         elif subpath == "/api/test-target":
             target = str(body.get("target", "")).strip().strip("[]")
@@ -1577,8 +1670,7 @@ class XForwarderWebHandler(BaseHTTPRequestHandler):
             cfg = load_config()
             cfg["rules"] = [r for r in cfg.get("rules", []) if r.get("id") != rule_id]
             if save_config(cfg):
-                from core.engine import sync_system_rules
-                sync_ok, sync_errors = sync_system_rules(max_retries=2)
+                sync_ok, sync_errors = sync_rules_and_notify(max_retries=2)
                 self.send_json({
                     "ok": True,
                     "deleted": rule_id,

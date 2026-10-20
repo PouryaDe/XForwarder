@@ -79,6 +79,12 @@ XForwarder/
    - Live health checks must strictly test the specific destination and port (falling back to rule port if omitted) and provide real-time diagnostic reporting via `POST /api/test-target`.
    - Ad-hoc sync calls (`sync_system_rules()`) from the web server must never erase live `rules_state` metrics in `/run/xforwarder/state.json`.
 
+9. **High-Performance HTTP, In-Memory Asset Caching & Fast IPC (Mandatory)**:
+   - Web server provides native Gzip compression on JSON responses and static assets (>512B) with correct Content-Length framing.
+   - Enforce ETag conditional requests (`304 Not Modified`) and in-memory static caching (`_STATIC_CACHE`) with mtime invalidation for instant panel responsiveness.
+   - Selective service reloads: HAProxy, Nginx, and NFTables rules are compared before issuing reloads, preventing redundant service signals.
+   - Fast IPC: Core engine uses `SIGUSR1` signal wake-up via candidate PID files for instant evaluation when the web dashboard commits changes.
+
 ---
 
 ## 🔍 Codebase Knowledge Graph (graphify)

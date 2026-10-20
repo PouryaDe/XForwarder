@@ -1,20 +1,20 @@
 {
   "core/engine.py": {
-    "mtime": 1792497740.5912037,
-    "seen": 1792497838.3258271,
-    "ast_hash": "2c414f10683575ec9d50644e06a86737",
+    "mtime": 1792510914.154286,
+    "seen": 1792511499.3389459,
+    "ast_hash": "a6774ee5d0aa0759485f9310bf46d0fa",
     "semantic_hash": ""
   },
   "core/web_server.py": {
-    "mtime": 1792497019.465675,
-    "seen": 1792497838.3258293,
-    "ast_hash": "619a4846067fda36db309c3503463202",
+    "mtime": 1792510935.0882812,
+    "seen": 1792511499.3389482,
+    "ast_hash": "a2afb7e0e8a117313ae6a1e1ad559d61",
     "semantic_hash": ""
   },
   "web/app.js": {
-    "mtime": 1792499914.189822,
-    "seen": 1792500342.8345926,
-    "ast_hash": "bba6e6c0720f24cdd34cf62cbc62562d",
+    "mtime": 1792510670.558796,
+    "seen": 1792511499.338957,
+    "ast_hash": "f496aa934b54ca2ee8132ae921a1ac54",
     "semantic_hash": ""
   },
   ".agents/rules/01-architecture-and-failover.md": {
@@ -72,9 +72,9 @@
     "semantic_hash": ""
   },
   "AGENTS.md": {
-    "mtime": 1792437548.641563,
-    "seen": 1792441800.329974,
-    "ast_hash": "d1cc0d07f818bcad2988cbf28c2ffeb3",
+    "mtime": 1792511383.2258792,
+    "seen": 1792511499.3389845,
+    "ast_hash": "d8e645d70a8978a54c0da8933c88cd2d",
     "semantic_hash": ""
   },
   "README.md": {
@@ -144,15 +144,15 @@
     "semantic_hash": ""
   },
   ".agents/session-state.json": {
-    "mtime": 1792455765.9784646,
-    "seen": 1792455992.458287,
-    "ast_hash": "060e70394ba2610703d87a9d8bdadde2",
+    "mtime": 1792511478.2251315,
+    "seen": 1792511499.3389444,
+    "ast_hash": "83875a77539436b4d5118ace620b7ba9",
     "semantic_hash": ""
   },
   ".agents/AGENTS.md": {
-    "mtime": 1792437595.5746095,
-    "seen": 1792441800.3299496,
-    "ast_hash": "3f757faf759426b4914985b217711dfc",
+    "mtime": 1792511396.6339054,
+    "seen": 1792511499.3389587,
+    "ast_hash": "2ca0ef0d35dad2b46a90700d8f01a1bf",
     "semantic_hash": ""
   },
   ".agents/experiences/001-zero-collision-haproxy-nftables-failover.md": {
@@ -174,9 +174,9 @@
     "semantic_hash": ""
   },
   ".agents/experiences/README.md": {
-    "mtime": 1792427456.2008567,
-    "seen": 1792441800.3299563,
-    "ast_hash": "ce4db5e594355b90b9a39dd0792f87bc",
+    "mtime": 1792511454.5443006,
+    "seen": 1792511499.3389664,
+    "ast_hash": "8c4d3b927b5706adb7fed21554090078",
     "semantic_hash": ""
   },
   ".agents/rules/blast-radius-analysis.md": {
@@ -327,6 +327,18 @@
     "mtime": 1792450710.0151825,
     "seen": 1792450768.5439858,
     "ast_hash": "00b84fc987c55c289831f14348b9012b",
+    "semantic_hash": ""
+  },
+  "tests/test_performance_and_optimizations.py": {
+    "mtime": 1792511290.955384,
+    "seen": 1792511499.3389544,
+    "ast_hash": "f9143d699ff773e15fe06ae80739d914",
+    "semantic_hash": ""
+  },
+  ".agents/experiences/008-full-stack-performance-and-fast-ipc.md": {
+    "mtime": 1792511442.1318328,
+    "seen": 1792511499.3389654,
+    "ast_hash": "b5271979cf0fcd179ad2e70c7f9ca03a",
     "semantic_hash": ""
   }
 }
