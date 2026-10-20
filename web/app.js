@@ -810,6 +810,18 @@ function renderServicesStatus(services) {
         }
     }
 
+    // Top Relay Active Badge in 2-column header
+    const topRelayBadge = document.getElementById("topRelayActiveBadge");
+    if (topRelayBadge) {
+        if (missing.length > 0) {
+            topRelayBadge.className = "stat-badge badge-warn";
+            topRelayBadge.innerText = `${3 - missing.length}/3 ACTIVE`;
+        } else {
+            topRelayBadge.className = "stat-badge badge-active";
+            topRelayBadge.innerText = "ALL ACTIVE";
+        }
+    }
+
     // 3. Section 2 Overview Card items
     const ovNftStatus = document.getElementById("ovNftStatus");
     if (ovNftStatus) {

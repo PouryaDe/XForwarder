@@ -597,6 +597,29 @@ class TestUIAndAPIEdgeCases(unittest.TestCase):
         self.assertIn("initDiagPacketLossTool", js)
         self.assertIn("btn-path-test", js)
 
+    def test_topology_and_engines_grid_layout(self):
+        """Verifies that Server Network & Tunnel Topology and Relay Engines are structured in a 2-column balanced grid."""
+        html_path = os.path.join(REPO_ROOT, "web", "index.html")
+        css_path = os.path.join(REPO_ROOT, "web", "style.css")
+
+        with open(html_path, "r", encoding="utf-8") as f:
+            html = f.read()
+        with open(css_path, "r", encoding="utf-8") as f:
+            css = f.read()
+
+        # HTML has 2-column container
+        self.assertIn('class="topology-engines-grid"', html)
+        self.assertIn('class="network-card" id="networkCard"', html)
+        self.assertIn('class="engines-card" id="servicesStatusBar"', html)
+        self.assertIn('class="engine-item" id="svcPillNft"', html)
+        self.assertIn('class="engine-item" id="svcPillHaproxy"', html)
+        self.assertIn('class="engine-item" id="svcPillNginx"', html)
+
+        # CSS has grid and responsive collapse
+        self.assertIn(".topology-engines-grid", css)
+        self.assertIn("grid-template-columns: minmax(0, 1.25fr) minmax(0, 0.75fr)", css)
+        self.assertIn(".engine-item", css)
+
 
 if __name__ == "__main__":
     unittest.main()

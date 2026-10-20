@@ -825,60 +825,171 @@ body {
     border: 1px solid rgba(239, 68, 68, 0.3);
 }
 
-/* ── Host Services & Relay Engines Status Bar ── */
-.services-status-bar {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 16px;
-    flex-wrap: wrap;
-    background: var(--bg-card);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border: 1px solid var(--border-color);
-    border-radius: 12px;
-    padding: 10px 18px;
-    margin-bottom: 20px;
-    box-shadow: var(--card-shadow);
-    transition: all 0.2s ease;
+/* ── Server Network & Relay Engines 2-Column Responsive Grid ── */
+.topology-engines-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.25fr) minmax(0, 0.75fr);
+    gap: 18px;
+    align-items: stretch;
+    margin-bottom: 24px;
 }
 
+/* Base styling shared by both cards */
+.network-card,
+.engines-card,
+.services-status-bar {
+    background: var(--bg-card);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    padding: 18px 20px;
+    box-shadow: var(--card-shadow);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    margin-bottom: 0;
+}
+
+.network-card:hover,
+.engines-card:hover,
 .services-status-bar:hover {
     border-color: var(--border-active);
 }
 
-.svc-bar-header {
+/* Relay Engines Card Elements */
+.engines-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border-color);
+    margin-bottom: 12px;
+}
+
+.engines-title-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.engines-header-title {
     display: flex;
     align-items: center;
     gap: 8px;
-    font-size: 0.78rem;
+}
+
+.engines-header-title h3 {
+    font-size: 1.05rem;
     font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    color: var(--text-secondary);
+    color: var(--text-primary);
+    margin: 0;
+    letter-spacing: -0.01em;
 }
 
-.svc-bar-header svg {
-    color: var(--accent-primary);
+.engines-subtitle {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    display: block;
+    margin-top: 1px;
 }
 
-.svc-status-pills {
+.engines-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    flex: 1;
+    justify-content: center;
+}
+
+.engine-item {
     display: flex;
     align-items: center;
+    justify-content: space-between;
     gap: 12px;
-    flex-wrap: wrap;
+    padding: 9px 12px;
+    background: var(--bg-surface);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    transition: all 0.2s ease;
+}
+
+.engine-item:hover {
+    border-color: var(--border-active);
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.engine-item-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+}
+
+.engine-sub-icon {
+    width: 28px;
+    height: 28px;
+    min-width: 28px;
+    border-radius: 7px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.engine-info {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.engine-name {
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    line-height: 1.2;
+}
+
+.engine-desc {
+    font-size: 0.68rem;
+    color: var(--text-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.engines-footer {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 12px;
+    padding-top: 10px;
+    border-top: 1px solid var(--border-color);
+    font-size: 0.73rem;
+    color: var(--accent-emerald);
+    font-weight: 600;
+}
+
+.engines-footer-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--accent-emerald);
 }
 
 .svc-status-pill {
-    display: flex;
+    display: inline-flex;
     align-items: center;
-    gap: 7px;
+    gap: 6px;
     background: rgba(255, 255, 255, 0.03);
     border: 1px solid var(--border-color);
     border-radius: 20px;
-    padding: 5px 12px;
-    font-size: 0.8rem;
+    padding: 4px 10px;
+    font-size: 0.78rem;
     transition: all 0.2s ease;
+    flex-shrink: 0;
 }
 
 [data-theme="light"] .svc-status-pill {
@@ -1022,42 +1133,26 @@ body {
 }
 
 /* ── Server Network & Tunnel Topology Card ── */
-.network-card {
-    background: var(--bg-card);
-    backdrop-filter: blur(14px);
-    -webkit-backdrop-filter: blur(14px);
-    border: 1px solid var(--border-color);
-    border-radius: 16px;
-    padding: 20px 22px;
-    margin-bottom: 24px;
-    box-shadow: var(--card-shadow);
-    transition: border-color 0.2s ease;
-}
-
-.network-card:hover {
-    border-color: var(--border-active);
-}
-
 .network-card-header {
     display: flex;
     justify-content: space-between;
-    align-items: flex-start;
-    gap: 16px;
-    flex-wrap: wrap;
-    padding-bottom: 14px;
+    align-items: center;
+    gap: 12px;
+    padding-bottom: 12px;
     border-bottom: 1px solid var(--border-color);
+    margin-bottom: 12px;
 }
 
 .net-title-group {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 10px;
 }
 
 .net-header-title {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 8px;
 }
 
 .net-header-title h3 {
@@ -1065,6 +1160,7 @@ body {
     font-weight: 700;
     color: var(--text-primary);
     letter-spacing: -0.01em;
+    margin: 0;
 }
 
 .net-pill-badge {
@@ -1084,9 +1180,9 @@ body {
 }
 
 .net-subtitle {
-    font-size: 0.78rem;
+    font-size: 0.75rem;
     color: var(--text-muted);
-    margin-top: 2px;
+    margin-top: 1px;
     display: block;
 }
 
@@ -1094,13 +1190,15 @@ body {
 .server-wan-box {
     display: flex;
     flex-direction: column;
-    align-items: flex-end;
     gap: 6px;
+    margin-bottom: 14px;
+    width: 100%;
 }
 
 .server-wan-header {
     display: flex;
     align-items: center;
+    justify-content: space-between;
     gap: 6px;
     font-size: 0.75rem;
     font-weight: 600;
@@ -1122,7 +1220,7 @@ body {
     align-items: center;
     gap: 8px;
     flex-wrap: wrap;
-    justify-content: flex-end;
+    justify-content: flex-start;
 }
 
 .server-ip-pill {
@@ -3200,6 +3298,11 @@ select option {
         grid-template-columns: 1fr;
     }
 
+    .topology-engines-grid {
+        grid-template-columns: 1fr;
+        gap: 16px;
+    }
+
     .network-card-header {
         flex-direction: column;
         align-items: stretch;
@@ -3444,6 +3547,23 @@ select option {
     .priority-header {
         flex-wrap: wrap;
         gap: 6px;
+    }
+
+    .engine-item {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 8px;
+    }
+
+    .engine-item .svc-status-pill {
+        align-self: flex-start;
+    }
+
+    .engines-card-header,
+    .network-card-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
     }
 }
 

@@ -1,20 +1,20 @@
 {
   "core/engine.py": {
-    "mtime": 1792450638.631665,
-    "seen": 1792450768.5439782,
-    "ast_hash": "a7f98838f8e51fa60004c2c3e9efe422",
+    "mtime": 1792497740.5912037,
+    "seen": 1792497838.3258271,
+    "ast_hash": "2c414f10683575ec9d50644e06a86737",
     "semantic_hash": ""
   },
   "core/web_server.py": {
-    "mtime": 1792445145.3588657,
-    "seen": 1792445495.0366747,
-    "ast_hash": "b750f078584ae13851dd83c14d6384ab",
+    "mtime": 1792497019.465675,
+    "seen": 1792497838.3258293,
+    "ast_hash": "619a4846067fda36db309c3503463202",
     "semantic_hash": ""
   },
   "web/app.js": {
-    "mtime": 1792455367.026881,
-    "seen": 1792455992.4582975,
-    "ast_hash": "53ed008b6507b7bc162833674127cb21",
+    "mtime": 1792497435.240429,
+    "seen": 1792497838.3258371,
+    "ast_hash": "f17614c421c26a1c51f506211bbd10f2",
     "semantic_hash": ""
   },
   ".agents/rules/01-architecture-and-failover.md": {
@@ -84,15 +84,15 @@
     "semantic_hash": ""
   },
   "web/index.html": {
-    "mtime": 1792454019.8650477,
-    "seen": 1792454871.990703,
-    "ast_hash": "20fe7d49be672db2d2c2fac98c38f262",
+    "mtime": 1792497149.9478438,
+    "seen": 1792497838.325865,
+    "ast_hash": "b1359fbb7fe1822b7b0d96a39a21c5c9",
     "semantic_hash": ""
   },
   "xforwarder.sh": {
-    "mtime": 1792450352.6767278,
-    "seen": 1792450403.972886,
-    "ast_hash": "bc425dc01ebffd852e1e42c9579c8a1b",
+    "mtime": 1792497051.760581,
+    "seen": 1792497838.3258379,
+    "ast_hash": "30b04a6a390b437ba6ab0b747ddb6f66",
     "semantic_hash": ""
   },
   ".agents/skills/xfwd-ops/SKILL.md": {
@@ -288,9 +288,9 @@
     "semantic_hash": ""
   },
   "tests/test_ui_and_api_edge_cases.py": {
-    "mtime": 1792455460.873301,
-    "seen": 1792455992.458297,
-    "ast_hash": "e9f2d57e68dd699760ef35b80dc21995",
+    "mtime": 1792497783.6417508,
+    "seen": 1792497838.325836,
+    "ast_hash": "930ce59961c98127f213f5fd01e2a0ac",
     "semantic_hash": ""
   },
   "tests/test_network_interfaces.py": {
