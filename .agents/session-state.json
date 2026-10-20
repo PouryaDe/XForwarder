@@ -21,8 +21,11 @@
     "Added modal priority reordering drag-and-drop support alongside existing move buttons",
     "Added comprehensive edge case unit tests verifying bounds checking, within-rule drag scoping, and destination normalization",
     "Added cross-distro package dependency manager (apt, dnf, yum, pacman, apk), option 10, and check-deps command in xforwarder.sh",
-    "Added comprehensive unit tests for services inspection API, DOM element bindings, and probe latency dynamics"
+    "Added comprehensive unit tests for services inspection API, DOM element bindings, and probe latency dynamics",
+    "Fixed Nginx stream UDP/TCP proxy timeout, dropped sessions, and protocol badge label TCP+UDP",
+    "Fixed NFTables wildcard interface set byteorder endianness mismatch using distinct rules",
+    "Implemented multi-tier responsive system across topbar, stats grid, rules matrix, and mobile drawer with zero squish"
   ],
   "next_steps": [],
-  "notes": "All changes are fully verified with 56 unit tests passing, zero anti-patterns, and Graphify updated."
+  "notes": "All changes are fully verified with 66 unit tests passing, zero anti-patterns, and Graphify updated."
 }

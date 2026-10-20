@@ -86,12 +86,18 @@ Authoritative visual guidelines, design tokens, and aesthetic rules for **all** 
 ## 7. Strict Vanilla Technology Stack
 - **Zero Third-Party Build Tools:** Pure HTML5, CSS3, and ES6+ JavaScript. No Webpack, Vite, Node.js, or NPM dependencies.
 - **Debounced Live Polling:** 3-second auto-refresh cycles must debounce to prevent request stacking.
-- **Mobile Responsive:** Breakpoints at `900px` (drawer sidebar) and `768px` (stacked grids, toolbar, and mobile login padding).
+- **Multi-Tier Mobile Responsive Architecture:**
+  - Ultra-Wide (`> 1560px`): Max width 1600px, 3-column rules grid.
+  - Balanced Stats Grid (`<= 1350px`): Perfectly balanced 2x2 stats grid.
+  - Topbar Condensation (`<= 1280px`): Automatic metric compression (`.ram-short`), `.btn-text` hidden turning actions into uniform 36px icon buttons to prevent topbar squish.
+  - Tablet & Mobile Drawer (`<= 1024px`): Off-canvas mobile drawer with `#btnToggleSidebar`, auto-close on navigation item click, and single-column full-width rules matrix.
+  - Mobile & Small Tablet (`<= 768px`): 2-row stacked topbar, mobile toolbar, touch-scrollable filter tabs, full-width actions, and mobile modal layout.
+  - Extra-Small Devices (`<= 480px`): Compact stat cards, full-width info items, and touch-optimized padding.
 
 ---
 
 ## 8. Rule Matrix & Card Layout Architecture
-- **2-Column Port Cards Grid (`.rules-container`):** Port rule cards are arranged in a clean, balanced 2-column layout on desktops (`grid-template-columns: repeat(2, minmax(0, 1fr))`) and single-column on mobile viewports (`@media (max-width: 992px)`).
+- **Multi-Tier Port Cards Grid (`.rules-container`):** Port rule cards are arranged in 3 columns on ultra-wide screens (`> 1560px`), 2 columns on standard desktops (`1025px - 1560px`), and single full-width column on tablet/mobile (`<= 1024px`).
 - **Vertical Path Stacking (`.paths-grid`):** Inside each port card, forwarding priorities MUST be stacked strictly in vertical order (Priority 1 on top, Priority 2 directly underneath, Priority 3 below). Never use horizontal wrapping grids for priority paths.
 - **Manual Forwarding Mode & Test Controller (`.rule-test-bar`):**
   - Every port card features a prominent segmented test controller:

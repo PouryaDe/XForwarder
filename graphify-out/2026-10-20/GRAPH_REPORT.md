@@ -1,13 +1,13 @@
 # Graph Report - Forward-Manager  (2026-10-20)
 
 ## Corpus Check
-- 54 files · ~49,157 words
+- 54 files · ~49,299 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 8 file(s) not represented in the graph (top: .service 4, (none) 2, .example 1)
 
 ## Summary
-- 715 nodes · 1239 edges · 41 communities (33 shown, 8 thin omitted)
-- Extraction: 96% EXTRACTED · 4% INFERRED · 0% AMBIGUOUS · INFERRED: 52 edges (avg confidence: 0.93)
+- 716 nodes · 1241 edges · 42 communities (32 shown, 10 thin omitted)
+- Extraction: 96% EXTRACTED · 4% INFERRED · 0% AMBIGUOUS · INFERRED: 51 edges (avg confidence: 0.94)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
@@ -18,7 +18,7 @@
 ## Community Hubs (Navigation)
 - test_security.py
 - app.js
-- XForwarderEngine
+- 3. Architecture & Solution Implemented
 - showDashboard
 - validate_rule
 - 🌐 XForwarder
@@ -42,26 +42,27 @@
 - renderDestinationRow
 - showToast
 - fetchStatus
-- sync_system_rules
+- TestEngineProbes
 - Interactive Requirements Clarification (Reverse Prompt Engineering)
 - verify_password
-- .do_POST
+- web_server.py
 - XForwarderWebServer
 - XForwarder Master Architecture Constitution
 - Python Core Standards (`core/engine.py` & `core/web_server.py`)
 - XForwarder Operations Runbook
 - is_valid_target
 - Session State & Task Handoff Rule (XForwarder)
-- web_server.py
+- os
 - get_network_interfaces_info
 - TestNginxStreamEngine
-- hash_password
+- XForwarderEngine
+- .sync_firewall_and_proxies
 
 ## God Nodes (most connected - your core abstractions)
 1. `XForwarderEngine` - 39 edges
 2. `load_config()` - 19 edges
-3. `xforwarder.sh script` - 19 edges
-4. `TestUIAndAPIEdgeCases` - 18 edges
+3. `TestUIAndAPIEdgeCases` - 19 edges
+4. `xforwarder.sh script` - 19 edges
 5. `XForwarderWebHandler` - 18 edges
 6. `check_root()` - 18 edges
 7. `import_config_data()` - 15 edges
@@ -70,21 +71,21 @@
 10. `resolve_active_config()` - 15 edges
 
 ## Surprising Connections (you probably didn't know these)
+- `2. Root Cause / Core Dynamics` --references--> `XForwarderEngine`  [INFERRED]
+  .agents/experiences/007-fix-haproxy-silent-drop-and-state-wipeout.md → core/engine.py
+- `⚡ Core Rules & Constraints` --references--> `sync_system_rules()`  [INFERRED]
+  AGENTS.md → core/engine.py
 - `2. Core Dynamics & Low-Resource Relay Safeguards` --references--> `sync_system_rules()`  [INFERRED]
   .agents/experiences/006-host-subsystem-inspection-and-drag-drop-priorities.md → core/engine.py
 - `4. Invariants & Rules for AI Agents` --references--> `sync_system_rules()`  [INFERRED]
   .agents/experiences/006-host-subsystem-inspection-and-drag-drop-priorities.md → core/engine.py
 - `2. Root Cause / Core Dynamics` --references--> `sync_system_rules()`  [INFERRED]
   .agents/experiences/007-fix-haproxy-silent-drop-and-state-wipeout.md → core/engine.py
-- `4. Topology & Interface Discovery Standards (`get_network_interfaces_info`)` --references--> `get_network_interfaces_info()`  [INFERRED]
-  .agents/rules/03-networking-and-kernel.md → core/web_server.py
-- `3. Architecture & Solution Implemented` --references--> `get_services_status()`  [INFERRED]
-  .agents/experiences/006-host-subsystem-inspection-and-drag-drop-priorities.md → core/web_server.py
 
 ## Import Cycles
 - None detected.
 
-## Communities (41 total, 8 thin omitted)
+## Communities (42 total, 10 thin omitted)
 
 ### Community 0 - "test_security.py"
 Cohesion: 0.20
@@ -94,9 +95,9 @@ Nodes (4): check_rate_limit(), record_failed_login(), reset_rate_limit(), TestXF
 Cohesion: 0.02
 Nodes (106): basePath, batchSelect, btnAddDestination, btnCancelImportModal, btnCancelModal, btnCancelSecurity, btnClearLogs, btnClearSearch (+98 more)
 
-### Community 2 - "XForwarderEngine"
-Cohesion: 0.05
-Nodes (16): 2. Non-Negotiable Architectural Constraints, 1. Context & Motivation, 2. Root Cause / Core Dynamics, 3. Architecture & Solution Implemented, 4. Invariants & Rules for AI Agents, 5. Verification & Testing, Experience 007: Fix HAProxy Silent Drop and State Wipeout, 3. Network Probing Standards (+8 more)
+### Community 2 - "3. Architecture & Solution Implemented"
+Cohesion: 0.16
+Nodes (10): 2. Non-Negotiable Architectural Constraints, 1. Context & Motivation, 2. Root Cause / Core Dynamics, 3. Architecture & Solution Implemented, 4. Invariants & Rules for AI Agents, 5. Verification & Testing, Experience 007: Fix HAProxy Silent Drop and State Wipeout, is_haproxy_listening() (+2 more)
 
 ### Community 3 - "showDashboard"
 Cohesion: 0.33
@@ -115,12 +116,12 @@ Cohesion: 0.29
 Nodes (6): Step 1: Backup Configuration, Step 2: Copy Updated Files to Installation Directory, Step 3: Syntax Verification, Step 4: Restart Daemons, Step 5: Post-Deployment Health Check, Workflow: Deploy & Update Services
 
 ### Community 8 - ".migrate_and_normalize_config"
-Cohesion: 0.07
-Nodes (13): 1. Context & Motivation, 2. Root Cause / Core Dynamics, 3. Architecture & Solution Implemented, 4. Invariants & Rules for AI Agents, 5. Verification & Testing, Experience 004: Backward Compatibility and Automated Schema Migrations, 1. Prime Directive: Zero Data Loss Across Updates, 2. Mandatory Pre-Update Atomic Backup (+5 more)
+Cohesion: 0.06
+Nodes (18): 🔍 Codebase Knowledge Graph (graphify), ⚡ Core Rules & Constraints, 1. Context & Motivation, 2. Root Cause / Core Dynamics, 3. Architecture & Solution Implemented, 4. Invariants & Rules for AI Agents, 5. Verification & Testing, Experience 004: Backward Compatibility and Automated Schema Migrations (+10 more)
 
 ### Community 9 - "experiences/README.md"
-Cohesion: 0.07
-Nodes (22): 1. Context & Motivation, 2. Root Cause / Core Dynamics, 3. Architecture & Solution Implemented, 4. Invariants & Rules for AI Agents, 5. Verification & Testing, Experience 001: Zero-Collision HAProxy and NFTables Failover, 1. Context & Motivation, 2. Root Cause / Core Dynamics (+14 more)
+Cohesion: 0.05
+Nodes (32): 1. Context & Motivation, 2. Root Cause / Core Dynamics, 3. Architecture & Solution Implemented, 4. Invariants & Rules for AI Agents, 5. Verification & Testing, Experience 001: Zero-Collision HAProxy and NFTables Failover, 1. Context & Motivation, 2. Root Cause / Core Dynamics (+24 more)
 
 ### Community 10 - "Mandatory Task Completion & Verification Workflow (XForwarder)"
 Cohesion: 0.18
@@ -178,25 +179,21 @@ Nodes (9): applyTheme(), copyIpToClipboard(), copyText(), fallbackCopy(), handle
 Cohesion: 0.14
 Nodes (20): addLogEntry(), askConfirm(), deleteRule(), escapeHtml(), fetchStatus(), formatConciseReason(), formatEngineVersion(), formatLatencyBadge() (+12 more)
 
-### Community 26 - "sync_system_rules"
-Cohesion: 0.12
-Nodes (13): 🔍 Codebase Knowledge Graph (graphify), ⚡ Core Rules & Constraints, 1. Context & Motivation, 2. Core Dynamics & Low-Resource Relay Safeguards, 3. Architecture & Solution Implemented, 4. Invariants & Rules for AI Agents, 5. Verification & Testing, Experience 006: Host Subsystem Inspection and Drag-Drop Priority Reordering (+5 more)
-
 ### Community 27 - "Interactive Requirements Clarification (Reverse Prompt Engineering)"
 Cohesion: 0.50
 Nodes (3): 1. Zero-Assumption Policy & Triggers, 2. Rules of Engagement, Interactive Requirements Clarification (Reverse Prompt Engineering)
 
-### Community 29 - ".do_POST"
-Cohesion: 0.12
-Nodes (8): export_config_data(), get_config_path(), import_config_data(), load_config(), load_state(), save_config(), XForwarderWebHandler, TestExportImport
+### Community 29 - "web_server.py"
+Cohesion: 0.05
+Nodes (18): 1. Context & Motivation, 2. Core Dynamics & Low-Resource Relay Safeguards, 3. Architecture & Solution Implemented, 4. Invariants & Rules for AI Agents, 5. Verification & Testing, Experience 006: Host Subsystem Inspection and Drag-Drop Priority Reordering, handle_sig(), sync_system_rules() (+10 more)
 
 ### Community 31 - "XForwarder Master Architecture Constitution"
 Cohesion: 0.33
 Nodes (6): 1. Project Overview & Terminology, 3. Specialized Skills Index (Progressive Disclosure), 4. Active Workspace Rules (Conditional Disclosure), 5. Workflows & Automation Scripts, 6. Experiences Catalog, XForwarder Master Architecture Constitution
 
 ### Community 32 - "Python Core Standards (`core/engine.py` & `core/web_server.py`)"
-Cohesion: 0.40
-Nodes (4): 1. Native Python 3 Standard Library Only, 2. Thread Safety & Atomic File Operations, 4. Signal & Process Lifecycle, Python Core Standards (`core/engine.py` & `core/web_server.py`)
+Cohesion: 0.33
+Nodes (5): 1. Native Python 3 Standard Library Only, 2. Thread Safety & Atomic File Operations, 3. Network Probing Standards, 4. Signal & Process Lifecycle, Python Core Standards (`core/engine.py` & `core/web_server.py`)
 
 ### Community 33 - "XForwarder Operations Runbook"
 Cohesion: 0.40
@@ -206,37 +203,37 @@ Nodes (5): Configuration Schema (`/etc/xforwarder/config.json`), Health Check Si
 Cohesion: 0.50
 Nodes (3): 1. Structure & Storage, 2. Managing Session State via CLI, Session State & Task Handoff Rule (XForwarder)
 
-### Community 36 - "web_server.py"
-Cohesion: 0.05
-Nodes (27): check_file(), main(), get_next_number(), main(), slugify(), load_state(), main(), save_state() (+19 more)
+### Community 36 - "os"
+Cohesion: 0.08
+Nodes (23): check_file(), main(), get_next_number(), main(), slugify(), load_state(), main(), save_state() (+15 more)
 
 ### Community 37 - "get_network_interfaces_info"
 Cohesion: 0.15
-Nodes (9): 1. Table Isolation in NFTables, 2. HAProxy Zero-Tunnel Relay, 3. Kernel Forwarding Requirements, 4. Topology & Interface Discovery Standards (`get_network_interfaces_info`), Networking & Kernel Standards (XForwarder), get_network_interfaces_info(), do_ping(), is_ignored_interface() (+1 more)
+Nodes (10): 1. Table Isolation in NFTables, 2. HAProxy Zero-Tunnel Relay, 3. Kernel Forwarding Requirements, 4. Topology & Interface Discovery Standards (`get_network_interfaces_info`), Networking & Kernel Standards (XForwarder), get_network_interfaces_info(), do_ping(), is_ignored_interface() (+2 more)
 
-### Community 40 - "hash_password"
-Cohesion: 0.15
-Nodes (10): 1. Context & Motivation, 2. Root Cause / Core Dynamics, 3. Architecture & Solution Implemented, 4. Invariants & Rules for AI Agents, 5. Verification & Testing, Experience 005: PBKDF2 Salted Auth and Adaptive Rate Limiting, 1. Absolute Prohibition of Duplicated Logic, 2. Mandatory Helper Centralization (+2 more)
+### Community 41 - ".sync_firewall_and_proxies"
+Cohesion: 0.28
+Nodes (3): 1. High-Risk Core Components, 2. Constitution Check Gate, Pre-Execution Blast Radius & Impact Analysis Rule (XForwarder)
 
 ## Knowledge Gaps
-- **232 isolated node(s):** `basePath`, `batchSelect`, `btnAddDestination`, `btnCancelImportModal`, `btnCancelModal` (+227 more)
+- **232 isolated node(s):** `basePath`, `currentRules`, `lastRuntime`, `loginScreen`, `dashboardScreen` (+227 more)
   These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 359 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
-- **8 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **10 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `XForwarderEngine` connect `XForwarderEngine` to `web_server.py`, `TestNginxStreamEngine`, `.migrate_and_normalize_config`, `sync_system_rules`, `.do_POST`?**
-  _High betweenness centrality (0.185) - this node is a cross-community bridge._
+- **Why does `XForwarderEngine` connect `XForwarderEngine` to `3. Architecture & Solution Implemented`, `TestNginxStreamEngine`, `.check_destination`, `.migrate_and_normalize_config`, `.sync_firewall_and_proxies`, `TestEngineProbes`, `web_server.py`?**
+  _High betweenness centrality (0.186) - this node is a cross-community bridge._
 - **Are the 5 inferred relationships involving `XForwarderEngine` (e.g. with `2. Root Cause / Core Dynamics` and `XForwarderWebHandler`) actually correct?**
   _`XForwarderEngine` has 5 INFERRED edges - model-reasoned connections that need verification._
-- **What connects `basePath`, `batchSelect`, `btnAddDestination` to the rest of the system?**
+- **What connects `basePath`, `currentRules`, `lastRuntime` to the rest of the system?**
   _232 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `app.js` be split into smaller, more focused modules?**
   _Cohesion score 0.01652892561983471 - nodes in this community are weakly interconnected._
-- **Why does `XForwarder Master Architecture Constitution` connect `XForwarder Master Architecture Constitution` to `XForwarderEngine`, `.agents/AGENTS.md`?**
+- **Why does `XForwarder Master Architecture Constitution` connect `XForwarder Master Architecture Constitution` to `3. Architecture & Solution Implemented`, `.agents/AGENTS.md`?**
   _High betweenness centrality (0.083) - this node is a cross-community bridge._
-- **Should `XForwarderEngine` be split into smaller, more focused modules?**
-  _Cohesion score 0.053551912568306013 - nodes in this community are weakly interconnected._
-- **Why does `2. Non-Negotiable Architectural Constraints` connect `XForwarderEngine` to `.migrate_and_normalize_config`, `XForwarder Master Architecture Constitution`?**
-  _High betweenness centrality (0.080) - this node is a cross-community bridge._
+- **Are the 2 inferred relationships involving `TestUIAndAPIEdgeCases` (e.g. with `XForwarderWebHandler` and `XForwarderWebServer`) actually correct?**
+  _`TestUIAndAPIEdgeCases` has 2 INFERRED edges - model-reasoned connections that need verification._
+- **Should `validate_rule` be split into smaller, more focused modules?**
+  _Cohesion score 0.11764705882352941 - nodes in this community are weakly interconnected._

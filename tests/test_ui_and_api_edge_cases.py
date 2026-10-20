@@ -475,9 +475,12 @@ class TestUIAndAPIEdgeCases(unittest.TestCase):
         self.assertIn("closeMobileSidebar();", js)
 
         # 3. CSS breakpoints & flex constraints
+        self.assertIn("@media (min-width: 1560px)", css)
+        self.assertIn("@media (max-width: 1350px)", css)
         self.assertIn("@media (max-width: 1280px)", css)
         self.assertIn("@media (max-width: 1024px)", css)
         self.assertIn("@media (max-width: 768px)", css)
+        self.assertIn("@media (max-width: 580px)", css)
         self.assertIn("@media (max-width: 480px)", css)
         self.assertIn(".sys-pill", css)
         self.assertIn("white-space: nowrap", css)
@@ -485,6 +488,12 @@ class TestUIAndAPIEdgeCases(unittest.TestCase):
         self.assertIn(".ram-short", css)
         self.assertIn("grid-template-columns: repeat(4, 1fr)", css)
         self.assertIn("grid-template-columns: repeat(2, 1fr)", css)
+
+        # 4. Metric sanitization edge case protection
+        self.assertIn("Number(sys.ram_used_mb)", js)
+        self.assertIn("Number(sys.ram_total_mb)", js)
+        self.assertIn("Number(sys.ram_percent)", js)
+        self.assertIn("Number(sys.cpu_percent)", js)
 
 
 if __name__ == "__main__":

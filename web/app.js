@@ -675,18 +675,22 @@ function renderStats(rules, runtime) {
 function renderSystemStats(sys) {
     if (!sys) return;
     if (sys.ram_total_mb > 0) {
-        ramText.innerHTML = `<span class="ram-full">RAM: ${sys.ram_used_mb}MB / ${sys.ram_total_mb}MB (${sys.ram_percent}%)</span><span class="ram-short">RAM: ${sys.ram_percent}%</span>`;
+        const used = Number(sys.ram_used_mb) || 0;
+        const total = Number(sys.ram_total_mb) || 0;
+        const pct = Number(sys.ram_percent) || 0;
+        ramText.innerHTML = `<span class="ram-full">RAM: ${used}MB / ${total}MB (${pct}%)</span><span class="ram-short">RAM: ${pct}%</span>`;
         const ovRamText = document.getElementById("ovRamText");
         const ovRamBar = document.getElementById("ovRamBar");
-        if (ovRamText) ovRamText.innerText = `${sys.ram_used_mb} / ${sys.ram_total_mb} MB (${sys.ram_percent}%)`;
-        if (ovRamBar) ovRamBar.style.width = `${Math.min(100, Math.max(0, sys.ram_percent))}%`;
+        if (ovRamText) ovRamText.innerText = `${used} / ${total} MB (${pct}%)`;
+        if (ovRamBar) ovRamBar.style.width = `${Math.min(100, Math.max(0, pct))}%`;
     }
     if (sys.cpu_percent !== undefined) {
-        cpuText.innerText = `CPU: ${sys.cpu_percent}%`;
+        const cpuPct = Number(sys.cpu_percent) || 0;
+        cpuText.innerText = `CPU: ${cpuPct}%`;
         const ovCpuText = document.getElementById("ovCpuText");
         const ovCpuBar = document.getElementById("ovCpuBar");
-        if (ovCpuText) ovCpuText.innerText = `${sys.cpu_percent}%`;
-        if (ovCpuBar) ovCpuBar.style.width = `${Math.min(100, Math.max(0, sys.cpu_percent))}%`;
+        if (ovCpuText) ovCpuText.innerText = `${cpuPct}%`;
+        if (ovCpuBar) ovCpuBar.style.width = `${Math.min(100, Math.max(0, cpuPct))}%`;
     }
 }
 

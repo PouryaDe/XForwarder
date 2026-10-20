@@ -576,6 +576,7 @@ body {
     gap: 8px;
 }
 
+/* Responsive text toggles for tight viewports */
 .ram-full { display: inline; }
 .ram-short { display: none; }
 .btn-text { display: inline; }
