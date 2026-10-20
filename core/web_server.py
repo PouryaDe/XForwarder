@@ -1000,6 +1000,9 @@ class XForwarderWebHandler(BaseHTTPRequestHandler):
         self.send_response(200)
         self.send_header("Content-Type", content_type)
         self.send_header("Content-Length", str(len(content)))
+        self.send_header("Cache-Control", "no-cache, no-store, must-revalidate")
+        self.send_header("Pragma", "no-cache")
+        self.send_header("Expires", "0")
         self.apply_security_headers()
         self.end_headers()
         self.wfile.write(content)
@@ -1525,13 +1528,27 @@ class XForwarderWebHandler(BaseHTTPRequestHandler):
             dest_type = str(body.get("type", "haproxy")).lower()
             protocol = str(body.get("protocol", "both")).lower()
             try:
+                packets = int(body.get("packets", 4))
+            except (ValueError, TypeError):
+                packets = 4
+            packets = max(1, min(packets, 10))
+
+            try:
                 from core.engine import XForwarderEngine
                 engine = XForwarderEngine(config_path=get_config_path())
-                probe_res = engine.check_destination({"target": target, "port": port, "type": dest_type}, protocol=protocol)
+                probe_res = engine.check_destination(
+                    {"target": target, "port": port, "type": dest_type},
+                    rule_port=port,
+                    protocol=protocol,
+                    count=packets
+                )
                 self.send_json({
                     "ok": True,
                     "healthy": probe_res.get("healthy", False),
                     "latency_ms": probe_res.get("latency_ms"),
+                    "packet_loss": probe_res.get("packet_loss", 0 if probe_res.get("healthy") else 100),
+                    "packets_sent": probe_res.get("packets_sent", packets),
+                    "packets_received": probe_res.get("packets_received", packets if probe_res.get("healthy") else 0),
                     "reason": probe_res.get("reason", "")
                 })
             except Exception as e:

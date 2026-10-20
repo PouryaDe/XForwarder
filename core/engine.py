@@ -15,6 +15,7 @@ import threading
 import signal
 import ipaddress
 import shutil
+import re
 from typing import Dict, List, Any, Optional, Tuple
 
 DEFAULT_CONFIG_PATH = "/etc/xforwarder/config.json"
@@ -412,7 +413,7 @@ class XForwarderEngine:
             return ""
         return ""
 
-    def check_destination(self, dest: Dict[str, Any], rule_port: Optional[int] = None, protocol: Optional[str] = None) -> Dict[str, Any]:
+    def check_destination(self, dest: Dict[str, Any], rule_port: Optional[int] = None, protocol: Optional[str] = None, count: int = 1) -> Dict[str, Any]:
         """Perform a low-overhead health check on a target destination with strict route and interface isolation."""
         target = str(dest.get("target", "")).strip().strip("[]")
         port = int(dest.get("port") or rule_port or 0)
@@ -424,7 +425,7 @@ class XForwarderEngine:
         fail_reason = ""
 
         if not target or port <= 0:
-            return {"healthy": False, "latency_ms": None, "reason": "Invalid target/port"}
+            return {"healthy": False, "latency_ms": None, "packet_loss": 100, "reason": "Invalid target/port"}
 
         wan_iface = self._detect_wan_interface()
         target_is_private = is_private_or_tunnel_target(target)
@@ -437,6 +438,7 @@ class XForwarderEngine:
                     return {
                         "healthy": False,
                         "latency_ms": None,
+                        "packet_loss": 100,
                         "reason": f"Tunnel interface '{tunnel_iface}' is missing or down"
                     }
             elif target_is_private:
@@ -446,6 +448,7 @@ class XForwarderEngine:
                     return {
                         "healthy": False,
                         "latency_ms": None,
+                        "packet_loss": 100,
                         "reason": f"No route to destination {target}"
                     }
                 elif route_iface:
@@ -453,22 +456,92 @@ class XForwarderEngine:
                         return {
                             "healthy": False,
                             "latency_ms": None,
+                            "packet_loss": 100,
                             "reason": f"WAN leak via {wan_iface}"
                         }
                     if route_iface in ("lo", "gre0", "gretap0", "erspan0", "tunl0", "sit0", "ip6tnl0", "ip6gre0", "dummy0"):
                         return {
                             "healthy": False,
                             "latency_ms": None,
+                            "packet_loss": 100,
                             "reason": f"Destination {target} routes to kernel fallback device {route_iface}"
                         }
                     if not self._is_interface_up(route_iface):
                         return {
                             "healthy": False,
                             "latency_ms": None,
+                            "packet_loss": 100,
                             "reason": f"Interface {route_iface} for {target} is down"
                         }
                     tunnel_iface = route_iface
 
+        # Multi-sample packet loss test when count > 1
+        if count > 1:
+            sent = max(1, min(count, 10))
+            successes = 0
+            latencies = []
+
+            # 1. Socket connects
+            if proto != "udp":
+                for _ in range(sent):
+                    t_sample = time.perf_counter()
+                    try:
+                        family = socket.AF_INET6 if ":" in target else socket.AF_INET
+                        with socket.socket(family, socket.SOCK_STREAM) as s:
+                            s.settimeout(1.5)
+                            if tunnel_iface and sys.platform != "win32":
+                                try:
+                                    s.setsockopt(socket.SOL_SOCKET, 25, tunnel_iface.encode())
+                                except Exception:
+                                    pass
+                            if s.connect_ex((target, port)) == 0:
+                                successes += 1
+                                latencies.append(round((time.perf_counter() - t_sample) * 1000, 1))
+                    except Exception as e:
+                        if not fail_reason:
+                            fail_reason = str(e)
+
+            # 2. ICMP Ping probe if socket had 0 successes or proto is UDP
+            if successes == 0 and all(c in "0123456789abcdefABCDEF:.-" for c in target):
+                try:
+                    if sys.platform == "win32":
+                        ping_cmd = ["ping", "-n", str(sent), "-w", "1000", target]
+                    else:
+                        ping_cmd = ["ping", "-c", str(sent), "-W", "2"]
+                        if tunnel_iface:
+                            ping_cmd.extend(["-I", tunnel_iface])
+                        ping_cmd.append(target)
+                    proc = subprocess.run(ping_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, timeout=sent * 2 + 2)
+                    out = proc.stdout
+                    m = re.search(r'(\d+)%\s+(?:packet\s+)?loss', out, re.IGNORECASE)
+                    if m:
+                        loss_pct = int(m.group(1))
+                        successes = round(sent * (1 - loss_pct / 100.0))
+                    elif proc.returncode == 0:
+                        successes = sent
+
+                    m_lat = re.search(r'Average\s*=\s*(\d+)ms', out, re.IGNORECASE) or re.search(r'min/avg/max(?:/mdev)?\s*=\s*[\d.]+/([\d.]+)', out)
+                    if m_lat:
+                        latencies.append(float(m_lat.group(1)))
+                except Exception as e:
+                    if not fail_reason:
+                        fail_reason = str(e)
+
+            loss_pct = round(((sent - successes) / sent) * 100) if sent > 0 else 100
+            avg_lat = round(sum(latencies) / len(latencies), 1) if latencies else None
+            healthy = (successes > 0)
+            res_dict = {
+                "healthy": healthy,
+                "latency_ms": avg_lat,
+                "packet_loss": loss_pct,
+                "packets_sent": sent,
+                "packets_received": successes
+            }
+            if not healthy and fail_reason:
+                res_dict["reason"] = fail_reason
+            return res_dict
+
+        # Single-sample probe (default daemon health check)
         # 2. Socket TCP probe (low-overhead connect) - skipped when strictly UDP-only
         if proto != "udp":
             try:
@@ -510,7 +583,8 @@ class XForwarderEngine:
         latency_ms = round((time.perf_counter() - start_time) * 1000, 1)
         res_dict = {
             "healthy": healthy,
-            "latency_ms": latency_ms if healthy else None
+            "latency_ms": latency_ms if healthy else None,
+            "packet_loss": 0 if healthy else 100
         }
         if not healthy and fail_reason:
             res_dict["reason"] = fail_reason
@@ -540,7 +614,8 @@ class XForwarderEngine:
                     "consecutive_fails": 0,
                     "consecutive_success": 0,
                     "status": "unknown",
-                    "latency_ms": None
+                    "latency_ms": None,
+                    "packet_loss": 0
                 }
 
             stat = rule_state["dest_stats"][dest_key]
@@ -549,16 +624,21 @@ class XForwarderEngine:
             if "reason" in check_res:
                 stat["reason"] = check_res["reason"]
 
+            fail_thresh = self.config.get("failure_threshold", 3)
             if check_res["healthy"]:
                 stat["consecutive_fails"] = 0
                 stat["consecutive_success"] += 1
                 if stat["consecutive_success"] >= self.config.get("recovery_threshold", 3):
                     stat["status"] = "healthy"
+                stat["packet_loss"] = 0
             else:
                 stat["consecutive_success"] = 0
                 stat["consecutive_fails"] += 1
-                if stat["consecutive_fails"] >= self.config.get("failure_threshold", 3):
+                if stat["consecutive_fails"] >= fail_thresh:
                     stat["status"] = "failed"
+                    stat["packet_loss"] = 100
+                else:
+                    stat["packet_loss"] = round((stat["consecutive_fails"] / fail_thresh) * 100)
 
             dest_results[prio] = (stat["status"] == "healthy")
 

@@ -495,6 +495,108 @@ class TestUIAndAPIEdgeCases(unittest.TestCase):
         self.assertIn("Number(sys.ram_percent)", js)
         self.assertIn("Number(sys.cpu_percent)", js)
 
+    def test_packet_loss_calculation_and_probes(self):
+        """Verifies that engine.check_destination calculates packet_loss metrics properly."""
+        engine = XForwarderEngine()
+
+        # Invalid target must return 100% loss
+        res_invalid = engine.check_destination({"target": "", "port": 0})
+        self.assertFalse(res_invalid["healthy"])
+        self.assertEqual(res_invalid["packet_loss"], 100)
+
+        from unittest.mock import patch, MagicMock
+        # Mock unreachable socket and ping
+        with patch("socket.socket") as mock_sock, patch("subprocess.call", return_value=1), patch("subprocess.run") as mock_run:
+            mock_s = MagicMock()
+            mock_s.connect_ex.return_value = 111
+            mock_sock.return_value.__enter__.return_value = mock_s
+            mock_proc = MagicMock()
+            mock_proc.returncode = 1
+            mock_proc.stdout = "100% packet loss"
+            mock_run.return_value = mock_proc
+
+            # Single probe failure returns 100% loss and healthy=False
+            res_single = engine.check_destination({"target": "192.0.2.1", "port": 443, "type": "haproxy"}, protocol="tcp")
+            self.assertIn("packet_loss", res_single)
+            self.assertEqual(res_single["packet_loss"], 100)
+            self.assertFalse(res_single["healthy"])
+
+            # Multi-probe test (count=3) returns sent and received metrics
+            res_multi = engine.check_destination({"target": "192.0.2.1", "port": 443, "type": "haproxy"}, protocol="tcp", count=3)
+            self.assertIn("packet_loss", res_multi)
+            self.assertEqual(res_multi["packets_sent"], 3)
+            self.assertEqual(res_multi["packets_received"], 0)
+            self.assertEqual(res_multi["packet_loss"], 100)
+
+        # Mock reachable socket
+        with patch("socket.socket") as mock_sock:
+            mock_s = MagicMock()
+            mock_s.connect_ex.return_value = 0
+            mock_sock.return_value.__enter__.return_value = mock_s
+
+            res_healthy = engine.check_destination({"target": "192.0.2.1", "port": 443, "type": "haproxy"}, protocol="tcp")
+            self.assertTrue(res_healthy["healthy"])
+            self.assertEqual(res_healthy["packet_loss"], 0)
+
+            res_healthy_multi = engine.check_destination({"target": "192.0.2.1", "port": 443, "type": "haproxy"}, protocol="tcp", count=4)
+            self.assertTrue(res_healthy_multi["healthy"])
+            self.assertEqual(res_healthy_multi["packet_loss"], 0)
+            self.assertEqual(res_healthy_multi["packets_received"], 4)
+
+    def test_static_asset_cache_control_and_versioning(self):
+        """Verifies that static assets have cache-busting headers and query parameters."""
+        html_path = os.path.join(REPO_ROOT, "web", "index.html")
+        web_server_path = os.path.join(REPO_ROOT, "core", "web_server.py")
+
+        with open(html_path, "r", encoding="utf-8") as f:
+            html = f.read()
+        with open(web_server_path, "r", encoding="utf-8") as f:
+            web_code = f.read()
+
+        # HTML has query versioning
+        self.assertIn("style.css?v=", html)
+        self.assertIn("app.js?v=", html)
+
+        # web_server sends Cache-Control: no-cache, no-store
+        self.assertIn('self.send_header("Cache-Control", "no-cache, no-store, must-revalidate")', web_code)
+        self.assertIn('self.send_header("Pragma", "no-cache")', web_code)
+
+    def test_tcp_udp_protocol_formatting_and_no_both(self):
+        """Verifies that BOTH is replaced by TCP + UDP across the frontend."""
+        html_path = os.path.join(REPO_ROOT, "web", "index.html")
+        js_path = os.path.join(REPO_ROOT, "web", "app.js")
+
+        with open(html_path, "r", encoding="utf-8") as f:
+            html = f.read()
+        with open(js_path, "r", encoding="utf-8") as f:
+            js = f.read()
+
+        # HTML select option
+        self.assertIn('value="both">TCP + UDP (Recommended)', html)
+
+        # JS formatProtoBadge returns TCP + UDP
+        self.assertIn('return "TCP + UDP"', js)
+
+    def test_packet_loss_diagnostic_tool_elements(self):
+        """Verifies that packet loss UI tool and functions exist in frontend."""
+        html_path = os.path.join(REPO_ROOT, "web", "index.html")
+        js_path = os.path.join(REPO_ROOT, "web", "app.js")
+
+        with open(html_path, "r", encoding="utf-8") as f:
+            html = f.read()
+        with open(js_path, "r", encoding="utf-8") as f:
+            js = f.read()
+
+        # HTML diagnostic elements
+        self.assertIn('id="diagTargetInput"', html)
+        self.assertIn('id="btnRunDiagTest"', html)
+        self.assertIn('id="diagResultContainer"', html)
+
+        # JS diagnostic handlers
+        self.assertIn("runLivePacketLossTest", js)
+        self.assertIn("initDiagPacketLossTool", js)
+        self.assertIn("btn-path-test", js)
+
 
 if __name__ == "__main__":
     unittest.main()

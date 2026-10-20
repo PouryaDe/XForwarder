@@ -117,19 +117,25 @@ function fallbackCopy(text) {
     showToast(`Copied: ${text}`);
 }
 
-// Latency Badge Formatter (suppress when 0ms or not healthy)
+// Latency Badge Formatter (shows latency and packet loss)
 function formatLatencyBadge(stat) {
-    if (!stat || stat.status !== 'healthy' || stat.latency_ms === undefined || stat.latency_ms === null) {
-        return '';
+    if (!stat) return '';
+    const isHealthy = (stat.status === 'healthy');
+    const loss = stat.packet_loss !== undefined && stat.packet_loss !== null ? parseInt(stat.packet_loss) : (isHealthy ? 0 : 100);
+
+    if (!isHealthy) {
+        return `<span class="latency-pill latency-bad" title="${loss}% Packet Loss"><span class="latency-dot"></span>${loss}% loss</span>`;
     }
+
     const ms = parseFloat(stat.latency_ms);
     if (isNaN(ms) || ms <= 0) {
-        return '';
+        return `<span class="latency-pill latency-good" title="0% Packet Loss"><span class="latency-dot"></span>0% loss</span>`;
     }
     let cls = "latency-good";
-    if (ms > 150) cls = "latency-bad";
-    else if (ms > 70) cls = "latency-medium";
-    return `<span class="latency-pill ${cls}"><span class="latency-dot"></span>${ms} ms</span>`;
+    if (loss > 50 || ms > 150) cls = "latency-bad";
+    else if (loss > 0 || ms > 70) cls = "latency-medium";
+
+    return `<span class="latency-pill ${cls}" title="Latency: ${ms} ms · Packet Loss: ${loss}%"><span class="latency-dot"></span>${ms} ms · ${loss}% loss</span>`;
 }
 
 // Concise Failure Reason Formatter
@@ -702,10 +708,10 @@ function formatEngineVersion(rawVer) {
     return base ? `v${base}` : str;
 }
 
-// Helper to format user-friendly protocol badges ('both' -> 'TCP+UDP')
+// Helper to format user-friendly protocol badges ('both' -> 'TCP + UDP')
 function formatProtoBadge(proto) {
     const p = String(proto || "both").toLowerCase().trim();
-    if (p === "both") return "TCP+UDP";
+    if (p === "both" || p === "tcp+udp" || p === "tcp/udp") return "TCP + UDP";
     if (p === "tcp") return "TCP";
     if (p === "udp") return "UDP";
     return p.toUpperCase();
@@ -1258,6 +1264,10 @@ function renderRules(rules, runtime) {
                             </span>
                         </div>
                         <div class="path-header-right">
+                            <button type="button" class="btn-path-test" onclick="runLivePacketLossTest('${encodedId}', '${escapeHtml(rawTarget)}', ${dest.port || rule.port}, '${dest.type || 'haproxy'}', this)" title="Test live ping, latency and packet loss to this destination">
+                                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+                                <span>Test Loss</span>
+                            </button>
                             ${pathActionHtml}
                         </div>
                     </div>
@@ -1807,18 +1817,20 @@ async function testModalDestination(index) {
                 target: target,
                 port: parseInt(port),
                 type: dest.type || "haproxy",
-                protocol: document.getElementById("formProtocol") ? document.getElementById("formProtocol").value : "both"
+                protocol: document.getElementById("formProto") ? document.getElementById("formProto").value : "both",
+                packets: 4
             })
         });
         const data = await res.json().catch(() => ({}));
         if (res.ok && data.ok) {
+            const loss = data.packet_loss !== undefined ? data.packet_loss : (data.healthy ? 0 : 100);
             if (data.healthy) {
-                const latStr = (data.latency_ms !== null && data.latency_ms !== undefined && data.latency_ms > 0) ? ` (${data.latency_ms}ms)` : "";
+                const latStr = (data.latency_ms !== null && data.latency_ms !== undefined && data.latency_ms > 0) ? ` (${data.latency_ms}ms · ${loss}% loss)` : ` (${loss}% loss)`;
                 if (resEl) resEl.innerHTML = `<span class="badge-probe text-emerald" style="display:inline-flex;align-items:center;gap:4px;font-size:0.75rem;">✓ Reachable${latStr}</span>`;
-                showToast(`Destination [${target}]:${port} is reachable${latStr}`);
+                showToast(`Destination [${target}]:${port} reachable${latStr}`);
             } else {
                 const reason = data.reason ? `: ${data.reason}` : "";
-                if (resEl) resEl.innerHTML = `<span class="badge-fail text-rose" style="display:inline-flex;align-items:center;gap:4px;font-size:0.75rem;" title="${escapeHtml(data.reason || '')}">✗ Unreachable${escapeHtml(reason)}</span>`;
+                if (resEl) resEl.innerHTML = `<span class="badge-fail text-rose" style="display:inline-flex;align-items:center;gap:4px;font-size:0.75rem;" title="${escapeHtml(data.reason || '')}">✗ Unreachable (100% loss${escapeHtml(reason)})</span>`;
                 showToast(`Destination [${target}]:${port} unreachable${reason}`, "error");
             }
         } else {
@@ -2611,6 +2623,177 @@ if (logSearchInput) {
     });
 }
 
+// ── Live On-Demand Packet Loss Test Handler (Rule Cards) ──
+async function runLivePacketLossTest(encodedRuleId, rawTarget, port, destType, btnEl) {
+    const cleanTarget = (rawTarget || "").trim().replace(/^\[|\]$/g, '');
+    if (!cleanTarget || !port) {
+        showToast("Invalid destination target or port", "warn");
+        return;
+    }
+    const originalHtml = btnEl ? btnEl.innerHTML : "";
+    if (btnEl) {
+        btnEl.classList.add("is-testing");
+        btnEl.innerHTML = `<span class="btn-spinner" style="width:10px;height:10px;display:inline-block;vertical-align:middle;"></span> <span>Pinging...</span>`;
+    }
+
+    try {
+        const res = await fetch(`${API_BASE}/test-target`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                target: cleanTarget,
+                port: parseInt(port),
+                type: destType || "haproxy",
+                protocol: "both",
+                packets: 4
+            })
+        });
+        const data = await res.json().catch(() => ({}));
+        if (res.ok && data.ok) {
+            const loss = data.packet_loss !== undefined ? data.packet_loss : (data.healthy ? 0 : 100);
+            const lat = data.latency_ms !== null && data.latency_ms !== undefined ? `${data.latency_ms}ms` : "";
+            const pkts = `${data.packets_received || 0}/${data.packets_sent || 4} pkts`;
+            if (data.healthy) {
+                showToast(`✓ [${cleanTarget}]:${port} Reachable · ${lat} · ${loss}% loss (${pkts})`, "info");
+                if (btnEl) {
+                    btnEl.classList.remove("is-testing");
+                    btnEl.classList.add("is-success");
+                    btnEl.innerHTML = `<span>✓ ${lat || 'OK'} · ${loss}% loss</span>`;
+                }
+                appendLogEntry("probe", `[Manual Probe] [${cleanTarget}]:${port} Reachable — ${lat}, ${loss}% loss (${pkts})`);
+            } else {
+                const reason = data.reason ? ` (${data.reason})` : "";
+                showToast(`✗ [${cleanTarget}]:${port} Unreachable · 100% loss${reason}`, "error");
+                if (btnEl) {
+                    btnEl.classList.remove("is-testing");
+                    btnEl.classList.add("is-fail");
+                    btnEl.innerHTML = `<span>✗ 100% loss</span>`;
+                }
+                appendLogEntry("fail", `[Manual Probe] [${cleanTarget}]:${port} Unreachable — 100% loss${reason}`);
+            }
+        } else {
+            showToast(data.error || "Packet loss test failed", "error");
+            if (btnEl) {
+                btnEl.classList.remove("is-testing");
+                btnEl.innerHTML = originalHtml;
+            }
+        }
+    } catch (err) {
+        showToast("Network error executing packet loss test", "error");
+        if (btnEl) {
+            btnEl.classList.remove("is-testing");
+            btnEl.innerHTML = originalHtml;
+        }
+    } finally {
+        setTimeout(() => {
+            if (btnEl) {
+                btnEl.classList.remove("is-success", "is-fail", "is-testing");
+                btnEl.innerHTML = originalHtml;
+            }
+        }, 4500);
+    }
+}
+
+// ── Instant Live Packet Loss Diagnostic Tool (Logs Section) ──
+function initDiagPacketLossTool() {
+    const btnRun = document.getElementById("btnRunDiagTest");
+    const targetInput = document.getElementById("diagTargetInput");
+    const portInput = document.getElementById("diagPortInput");
+    const packetsSelect = document.getElementById("diagPacketsSelect");
+    const protoSelect = document.getElementById("diagProtoSelect");
+    const resultBox = document.getElementById("diagResultContainer");
+
+    if (!btnRun || !targetInput) return;
+
+    btnRun.addEventListener("click", async () => {
+        const target = targetInput.value.trim().replace(/^\[|\]$/g, '');
+        const port = parseInt(portInput.value || "443");
+        const packets = parseInt(packetsSelect.value || "4");
+        const proto = protoSelect.value || "both";
+
+        if (!target) {
+            showToast("Please enter target IP or hostname to test", "warn");
+            targetInput.focus();
+            return;
+        }
+
+        const originalBtnHtml = btnRun.innerHTML;
+        btnRun.disabled = true;
+        btnRun.innerHTML = `<span class="btn-spinner" style="width:12px;height:12px;display:inline-block;vertical-align:middle;"></span> <span>Sending ${packets} Probes...</span>`;
+        if (resultBox) {
+            resultBox.style.display = "block";
+            resultBox.innerHTML = `<span class="text-muted" style="font-size:0.82rem;"><span class="btn-spinner" style="width:11px;height:11px;display:inline-block;vertical-align:middle;"></span> Measuring ICMP ping & TCP round-trip latency to [${escapeHtml(target)}]:${port}...</span>`;
+        }
+
+        try {
+            const res = await fetch(`${API_BASE}/test-target`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    target: target,
+                    port: port,
+                    type: "haproxy",
+                    protocol: proto,
+                    packets: packets
+                })
+            });
+            const data = await res.json().catch(() => ({}));
+            if (res.ok && data.ok) {
+                const loss = data.packet_loss !== undefined ? data.packet_loss : (data.healthy ? 0 : 100);
+                const lat = data.latency_ms !== null && data.latency_ms !== undefined ? `${data.latency_ms} ms` : "N/A";
+                const sent = data.packets_sent || packets;
+                const rec = data.packets_received !== undefined ? data.packets_received : (data.healthy ? packets : 0);
+                const isHealthy = data.healthy;
+                const lossClass = loss === 0 ? "text-emerald" : (loss <= 40 ? "text-amber" : "text-rose");
+                const statusBadge = isHealthy ? `<span class="latency-pill latency-good">HEALTHY</span>` : `<span class="latency-pill latency-bad">UNREACHABLE</span>`;
+
+                resultBox.innerHTML = `
+                    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:10px;">
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            ${statusBadge}
+                            <span class="font-mono" style="font-size:0.9rem; font-weight:700;">[${escapeHtml(target)}]:${port}</span>
+                        </div>
+                        <span style="font-size:0.75rem; color:var(--text-muted);">${new Date().toLocaleTimeString()}</span>
+                    </div>
+                    <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                        <div class="loss-stat-pill">
+                            <span style="color:var(--text-muted);">Packet Loss:</span>
+                            <span class="${lossClass}" style="font-weight:700;">${loss}%</span>
+                        </div>
+                        <div class="loss-stat-pill">
+                            <span style="color:var(--text-muted);">Round-Trip Latency:</span>
+                            <span class="text-cyan font-mono" style="font-weight:700;">${lat}</span>
+                        </div>
+                        <div class="loss-stat-pill">
+                            <span style="color:var(--text-muted);">Packets:</span>
+                            <span class="font-mono">${rec} / ${sent} received</span>
+                        </div>
+                    </div>
+                    ${data.reason ? `<div style="margin-top:8px; font-size:0.75rem; color:var(--accent-rose);">${escapeHtml(data.reason)}</div>` : ''}
+                `;
+
+                if (isHealthy) {
+                    showToast(`✓ [${target}]:${port} — ${lat}, ${loss}% loss`, "info");
+                    appendLogEntry("probe", `[Diagnostic Test] [${target}]:${port} — Latency: ${lat}, Loss: ${loss}%, Received: ${rec}/${sent}`);
+                } else {
+                    showToast(`✗ [${target}]:${port} — 100% packet loss`, "error");
+                    appendLogEntry("fail", `[Diagnostic Test] [${target}]:${port} — Unreachable (100% loss) ${data.reason || ''}`);
+                }
+            } else {
+                resultBox.innerHTML = `<span class="text-rose" style="font-size:0.82rem;">✗ Test failed: ${escapeHtml(data.error || 'Server error')}</span>`;
+                showToast(data.error || "Diagnostic test failed", "error");
+            }
+        } catch (e) {
+            resultBox.innerHTML = `<span class="text-rose" style="font-size:0.82rem;">✗ Network error contacting server</span>`;
+            showToast("Network error contacting server", "error");
+        } finally {
+            btnRun.disabled = false;
+            btnRun.innerHTML = originalBtnHtml;
+        }
+    });
+}
+
 // Initialize on page load
 initTheme();
+initDiagPacketLossTool();
 checkAuth();

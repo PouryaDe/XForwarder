@@ -23,7 +23,7 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap"
         rel="stylesheet">
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="style.css?v=2.5.0">
 </head>
 
 <body>
@@ -1244,6 +1244,57 @@
                         </div>
                     </div>
 
+                    <!-- Instant Live Packet Loss & Ping Diagnostic Tool -->
+                    <div class="card-loss-tool" style="background:var(--bg-card); border:1px solid var(--border-color); border-radius:14px; padding:16px 18px; margin-bottom:16px;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:12px;">
+                            <div style="display:flex; align-items:center; gap:8px;">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-cyan">
+                                    <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
+                                </svg>
+                                <span style="font-size:0.92rem; font-weight:700; color:var(--text-primary);">Packet Loss & Target Probing Tool</span>
+                            </div>
+                            <span style="font-size:0.75rem; color:var(--text-muted);">Real-time multi-sample latency & packet loss calculator</span>
+                        </div>
+                        <div class="loss-tool-inputs" style="display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end;">
+                            <div class="form-group" style="flex:2; min-width:180px; margin-bottom:0;">
+                                <label for="diagTargetInput" style="font-size:0.75rem; margin-bottom:4px; display:block;">Target IP or Host</label>
+                                <input type="text" id="diagTargetInput" class="form-control" placeholder="e.g. 1.1.1.1 or 2001:4ba0::1" autocomplete="off" style="font-size:0.85rem; height:38px;">
+                            </div>
+                            <div class="form-group" style="flex:1; min-width:90px; margin-bottom:0;">
+                                <label for="diagPortInput" style="font-size:0.75rem; margin-bottom:4px; display:block;">Port</label>
+                                <input type="number" id="diagPortInput" class="form-control" placeholder="443" min="1" max="65535" value="443" style="font-size:0.85rem; height:38px;">
+                            </div>
+                            <div class="form-group" style="flex:1; min-width:110px; margin-bottom:0;">
+                                <label for="diagPacketsSelect" style="font-size:0.75rem; margin-bottom:4px; display:block;">Packets</label>
+                                <select id="diagPacketsSelect" class="form-control" style="font-size:0.85rem; height:38px;">
+                                    <option value="4" selected>4 Packets</option>
+                                    <option value="6">6 Packets</option>
+                                    <option value="8">8 Packets</option>
+                                    <option value="10">10 Packets</option>
+                                </select>
+                            </div>
+                            <div class="form-group" style="flex:1; min-width:130px; margin-bottom:0;">
+                                <label for="diagProtoSelect" style="font-size:0.75rem; margin-bottom:4px; display:block;">Protocol</label>
+                                <select id="diagProtoSelect" class="form-control" style="font-size:0.85rem; height:38px;">
+                                    <option value="both" selected>TCP + UDP</option>
+                                    <option value="tcp">TCP Only</option>
+                                    <option value="udp">UDP Only</option>
+                                </select>
+                            </div>
+                            <div style="flex:0 0 auto;">
+                                <button type="button" class="btn btn-primary" id="btnRunDiagTest" style="height:38px; display:inline-flex; align-items:center; gap:6px;">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+                                    </svg>
+                                    <span>Test Packet Loss</span>
+                                </button>
+                            </div>
+                        </div>
+                        <div id="diagResultContainer" style="display:none; margin-top:12px; padding:12px 14px; background:var(--bg-surface); border:1px solid var(--border-color); border-radius:10px;">
+                            <!-- Populated dynamically by app.js -->
+                        </div>
+                    </div>
+
                     <!-- Log Output Stream -->
                     <div class="log-console" id="logConsole">
                         <div class="log-entry log-entry-info">
@@ -1549,7 +1600,7 @@
     <!-- Notification Toast Container -->
     <div class="toast-container" id="toastContainer"></div>
 
-    <script src="app.js"></script>
+    <script src="app.js?v=2.5.0"></script>
 </body>
 
 </html>

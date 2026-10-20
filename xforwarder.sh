@@ -12,7 +12,7 @@ if [[ ! -t 0 && -e /dev/tty ]]; then
     exec < /dev/tty 2>/dev/null || true
 fi
 
-SCRIPT_VERSION="1.3.0"
+SCRIPT_VERSION="1.3.1"
 INSTALL_DIR="/opt/xforwarder"
 CONFIG_DIR="/etc/xforwarder"
 CONFIG_FILE="$CONFIG_DIR/config.json"
@@ -360,17 +360,18 @@ update_xforwarder() {
     script_dir=$(dirname "$(readlink -f "$0")")
     local cleanup_tmp=""
 
-    if [[ ! -d "$script_dir/core" || ! -d "$script_dir/web" ]]; then
-        msg_info "Remote execution detected. Fetching latest XForwarder repository..."
+    # If running from installed location (/opt/xforwarder) or a non-git directory, always clone fresh from GitHub
+    if [[ "$script_dir" == "$INSTALL_DIR" || ! -d "$script_dir/core" || ! -d "$script_dir/web" ]] || ! (command -v git >/dev/null 2>&1 && git -C "$script_dir" rev-parse --is-inside-work-tree >/dev/null 2>&1); then
+        msg_info "Fetching latest XForwarder release from GitHub..."
         local tmp_clone
         tmp_clone=$(mktemp -d /tmp/xfwd_update.XXXXXX)
         git clone --depth 1 https://github.com/PouryaDe/XForwarder.git "$tmp_clone"
         script_dir="$tmp_clone"
         cleanup_tmp="$tmp_clone"
-    elif command -v git >/dev/null 2>&1 && git -C "$script_dir" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
-        msg_info "Checking for remote updates via Git..."
+    else
+        msg_info "Checking for remote updates via Git in $script_dir..."
         if git -C "$script_dir" remote >/dev/null 2>&1; then
-            git -C "$script_dir" pull --rebase >/dev/null 2>&1 || msg_warn "Could not fetch remote updates; proceeding with current local source files."
+            git -C "$script_dir" pull --rebase origin main >/dev/null 2>&1 || msg_warn "Could not pull updates; proceeding with current source files."
         fi
     fi
 
@@ -447,6 +448,10 @@ update_xforwarder() {
         msg_ok "XForwarder updated successfully! All services are active and running."
     else
         msg_warn "Services restarted, but status check reported a potential issue. Run: xfwd status"
+    fi
+
+    if [[ -n "$cleanup_tmp" && -d "$cleanup_tmp" ]]; then
+        rm -rf "$cleanup_tmp"
     fi
 
     show_web_access_info
