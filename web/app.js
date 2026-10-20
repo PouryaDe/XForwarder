@@ -675,7 +675,7 @@ function renderStats(rules, runtime) {
 function renderSystemStats(sys) {
     if (!sys) return;
     if (sys.ram_total_mb > 0) {
-        ramText.innerText = `RAM: ${sys.ram_used_mb}MB / ${sys.ram_total_mb}MB (${sys.ram_percent}%)`;
+        ramText.innerHTML = `<span class="ram-full">RAM: ${sys.ram_used_mb}MB / ${sys.ram_total_mb}MB (${sys.ram_percent}%)</span><span class="ram-short">RAM: ${sys.ram_percent}%</span>`;
         const ovRamText = document.getElementById("ovRamText");
         const ovRamBar = document.getElementById("ovRamBar");
         if (ovRamText) ovRamText.innerText = `${sys.ram_used_mb} / ${sys.ram_total_mb} MB (${sys.ram_percent}%)`;
@@ -2139,6 +2139,9 @@ document.querySelectorAll(".sidebar-nav .nav-item").forEach(item => {
     item.addEventListener("click", () => {
         const sec = item.getAttribute("data-section");
         if (sec) switchSection(sec);
+        if (window.innerWidth <= 1024) {
+            closeMobileSidebar();
+        }
     });
 });
 

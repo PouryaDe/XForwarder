@@ -450,6 +450,42 @@ class TestUIAndAPIEdgeCases(unittest.TestCase):
         # 4. Mobile responsive layout
         self.assertIn("@media (max-width: 480px)", css)
 
+    def test_full_responsive_system_integrity(self):
+        """Verifies multi-tier responsive system: topbar condensation, drawer breakpoint, and balanced grids."""
+        html_path = os.path.join(REPO_ROOT, "web", "index.html")
+        js_path = os.path.join(REPO_ROOT, "web", "app.js")
+        css_path = os.path.join(REPO_ROOT, "web", "style.css")
+
+        with open(html_path, "r", encoding="utf-8") as f:
+            html = f.read()
+        with open(js_path, "r", encoding="utf-8") as f:
+            js = f.read()
+        with open(css_path, "r", encoding="utf-8") as f:
+            css = f.read()
+
+        # 1. HTML responsive classes
+        self.assertIn('class="ram-full"', html)
+        self.assertIn('class="ram-short"', html)
+        self.assertIn('class="btn-text">Security<', html)
+        self.assertIn('class="btn-text">Logout<', html)
+
+        # 2. JS responsive metric injection & drawer auto-close
+        self.assertIn('<span class="ram-full">', js)
+        self.assertIn('<span class="ram-short">', js)
+        self.assertIn("closeMobileSidebar();", js)
+
+        # 3. CSS breakpoints & flex constraints
+        self.assertIn("@media (max-width: 1280px)", css)
+        self.assertIn("@media (max-width: 1024px)", css)
+        self.assertIn("@media (max-width: 768px)", css)
+        self.assertIn("@media (max-width: 480px)", css)
+        self.assertIn(".sys-pill", css)
+        self.assertIn("white-space: nowrap", css)
+        self.assertIn(".ram-full", css)
+        self.assertIn(".ram-short", css)
+        self.assertIn("grid-template-columns: repeat(4, 1fr)", css)
+        self.assertIn("grid-template-columns: repeat(2, 1fr)", css)
+
 
 if __name__ == "__main__":
     unittest.main()
