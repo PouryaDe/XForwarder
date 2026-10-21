@@ -857,9 +857,10 @@ class TestUIAndAPIEdgeCases(unittest.TestCase):
         with open(css_path, "r", encoding="utf-8") as f:
             css = f.read()
 
-        # 1. Dark Mode Primary Button: signature mint-to-violet with dark charcoal text
-        self.assertIn("background: linear-gradient(135deg, var(--accent-mint), var(--accent-violet));", css)
-        self.assertIn("color: #0B0E14 !important;", css)
+        # 1. Dark Mode Primary Button: royal violet gradient with crisp pure white text
+        self.assertIn("linear-gradient(135deg, #7C3AED, #6366F1)", css)
+        self.assertIn(".btn-primary svg {", css)
+        self.assertIn(".btn-primary {\n    background: linear-gradient(135deg, #7C3AED, #6366F1);\n    color: #FFFFFF !important;", css)
 
         # 2. Light Mode Primary Button: royal violet gradient with crisp pure white text
         self.assertIn('[data-theme="light"] .btn-primary {', css)
