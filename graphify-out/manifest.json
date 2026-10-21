@@ -1,20 +1,20 @@
 {
   "core/engine.py": {
-    "mtime": 1792568446.835995,
-    "seen": 1792568680.3331013,
-    "ast_hash": "afc0d5aa6e0f4a283203d2681bd8f0a6",
+    "mtime": 1792584794.184055,
+    "seen": 1792589450.491885,
+    "ast_hash": "573f391eabed701fa3e9daa8be8ecad5",
     "semantic_hash": ""
   },
   "core/web_server.py": {
-    "mtime": 1792567966.1476195,
-    "seen": 1792568113.3051407,
-    "ast_hash": "1af49805909fce88c5ffed05aa1eeb04",
+    "mtime": 1792585382.7355976,
+    "seen": 1792589450.491911,
+    "ast_hash": "5a0cb9ca13f5c87e078e9c0fbcc8a0bc",
     "semantic_hash": ""
   },
   "web/app.js": {
-    "mtime": 1792567569.9735906,
-    "seen": 1792568113.3051503,
-    "ast_hash": "e39a65d9f7e2f0bd3df94a672aea00e4",
+    "mtime": 1792589373.73006,
+    "seen": 1792589450.4919202,
+    "ast_hash": "ca29e7204396ff0829ddfc771e740360",
     "semantic_hash": ""
   },
   ".agents/rules/01-architecture-and-failover.md": {
@@ -84,9 +84,9 @@
     "semantic_hash": ""
   },
   "web/index.html": {
-    "mtime": 1792566779.93243,
-    "seen": 1792568113.30518,
-    "ast_hash": "d32a70940e75ed3f65d4635320140597",
+    "mtime": 1792589321.9746118,
+    "seen": 1792589450.4919498,
+    "ast_hash": "186de23f8842fb07f7afc8bdb4c4debb",
     "semantic_hash": ""
   },
   "xforwarder.sh": {
@@ -144,9 +144,9 @@
     "semantic_hash": ""
   },
   ".agents/session-state.json": {
-    "mtime": 1792568100.684668,
-    "seen": 1792568113.305137,
-    "ast_hash": "1f750a5d8409608132d9f4a564b16b81",
+    "mtime": 1792585511.6584003,
+    "seen": 1792589450.4918838,
+    "ast_hash": "fb0e872b7331f6752359d55c6b63a2eb",
     "semantic_hash": ""
   },
   ".agents/AGENTS.md": {
@@ -288,9 +288,9 @@
     "semantic_hash": ""
   },
   "tests/test_ui_and_api_edge_cases.py": {
-    "mtime": 1792500196.5942464,
-    "seen": 1792500342.8345912,
-    "ast_hash": "73a324ceb21387d7db29f2b6b82c1ddd",
+    "mtime": 1792585416.7105794,
+    "seen": 1792589450.4919193,
+    "ast_hash": "e8db7caf5cf4f12ef18eedbd42978365",
     "semantic_hash": ""
   },
   "tests/test_network_interfaces.py": {
@@ -342,9 +342,9 @@
     "semantic_hash": ""
   },
   "tests/test_fast_failover_and_antiflap.py": {
-    "mtime": 1792568478.879702,
-    "seen": 1792568680.3331063,
-    "ast_hash": "8190ff49602daca7fc713e32b546f5e5",
+    "mtime": 1792573980.0554686,
+    "seen": 1792589450.4919138,
+    "ast_hash": "050a5c3b2d84730af105474b2d2926d0",
     "semantic_hash": ""
   },
   ".agents/experiences/009-fast-failover-multi-metric-and-anti-flapping.md": {

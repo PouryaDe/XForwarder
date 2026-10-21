@@ -136,8 +136,8 @@ function formatLatencyBadge(stat) {
     }
 
     let cls = "latency-good";
-    if (isDegraded || loss > 25 || ms > 150) cls = "latency-bad";
-    else if (loss > 0 || ms > 70) cls = "latency-medium";
+    if (isDegraded || loss > 25 || ms > 250) cls = "latency-bad";
+    else if (loss > 0 || ms > 150) cls = "latency-medium";
 
     const label = isDegraded ? `${loss}% loss (Degraded)` : (loss > 0 ? `${ms} ms · ${loss}% loss` : `${ms} ms`);
     return `<span class="latency-pill ${cls}" title="Latency: ${ms} ms · Packet Loss: ${loss}%${scoreText}"><span class="latency-dot"></span>${label}</span>`;
@@ -794,12 +794,12 @@ function renderServicesStatus(services) {
             const nftVerShort = formatEngineVersion(nft.version);
             const verStr = nftVerShort ? ` (${nftVerShort})` : "";
             valNft.innerText = nft.table_active ? `Active & Synced${verStr}` : `Active${verStr}`;
-            valNft.className = "svc-pill-val text-emerald";
+            valNft.className = "svc-pill-val";
             valNft.title = nft.version || "";
         } else {
             dotNft.className = "svc-pill-dot dot-amber";
             valNft.innerText = "Inactive";
-            valNft.className = "svc-pill-val text-amber";
+            valNft.className = "svc-pill-val text-muted";
             valNft.title = "";
         }
     }
@@ -816,12 +816,12 @@ function renderServicesStatus(services) {
         } else if (ha.active) {
             dotHa.className = "svc-pill-dot dot-emerald";
             valHa.innerText = haVerShort ? `Running (${haVerShort})` : "Running";
-            valHa.className = "svc-pill-val text-emerald";
+            valHa.className = "svc-pill-val";
             valHa.title = ha.version || "";
         } else {
             dotHa.className = "svc-pill-dot dot-amber";
             valHa.innerText = haVerShort ? `Standby (${haVerShort})` : "Standby";
-            valHa.className = "svc-pill-val text-amber";
+            valHa.className = "svc-pill-val text-muted";
             valHa.title = ha.version || "";
         }
     }
@@ -838,12 +838,12 @@ function renderServicesStatus(services) {
         } else if (ngx.active) {
             dotNgx.className = "svc-pill-dot dot-emerald";
             valNgx.innerText = ngxVerShort ? `Running (${ngxVerShort})` : "Running";
-            valNgx.className = "svc-pill-val text-emerald";
+            valNgx.className = "svc-pill-val";
             valNgx.title = ngx.version || "";
         } else {
             dotNgx.className = "svc-pill-dot dot-amber";
             valNgx.innerText = ngxVerShort ? `Standby (${ngxVerShort})` : "Standby";
-            valNgx.className = "svc-pill-val text-amber";
+            valNgx.className = "svc-pill-val text-muted";
             valNgx.title = ngx.version || "";
         }
     }

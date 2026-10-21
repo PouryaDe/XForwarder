@@ -1,8 +1,8 @@
 {
   "core/engine.py": {
-    "mtime": 1792567517.8886771,
-    "seen": 1792568113.3051383,
-    "ast_hash": "acc7c8a68037e0a0bc79c4dd4d1f69e4",
+    "mtime": 1792568446.835995,
+    "seen": 1792568680.3331013,
+    "ast_hash": "afc0d5aa6e0f4a283203d2681bd8f0a6",
     "semantic_hash": ""
   },
   "core/web_server.py": {
@@ -18,9 +18,9 @@
     "semantic_hash": ""
   },
   ".agents/rules/01-architecture-and-failover.md": {
-    "mtime": 1792410608.1268153,
-    "seen": 1792410633.464492,
-    "ast_hash": "180b020196bce8f5fd3fd005f60640dd",
+    "mtime": 1792568661.0792608,
+    "seen": 1792568680.3331227,
+    "ast_hash": "8bdd9a0460dd67e7e7f3263ae32e213a",
     "semantic_hash": ""
   },
   ".agents/rules/02-python-core-standards.md": {
@@ -72,9 +72,9 @@
     "semantic_hash": ""
   },
   "AGENTS.md": {
-    "mtime": 1792511383.2258792,
-    "seen": 1792511499.3389845,
-    "ast_hash": "d8e645d70a8978a54c0da8933c88cd2d",
+    "mtime": 1792568602.746139,
+    "seen": 1792568680.3331401,
+    "ast_hash": "9256d6945b2f3021e4cb93939604f79b",
     "semantic_hash": ""
   },
   "README.md": {
@@ -150,9 +150,9 @@
     "semantic_hash": ""
   },
   ".agents/AGENTS.md": {
-    "mtime": 1792511396.6339054,
-    "seen": 1792511499.3389587,
-    "ast_hash": "2ca0ef0d35dad2b46a90700d8f01a1bf",
+    "mtime": 1792568633.5922723,
+    "seen": 1792568680.3331141,
+    "ast_hash": "3241179bf389a7ece983e6d5a56a45e6",
     "semantic_hash": ""
   },
   ".agents/experiences/001-zero-collision-haproxy-nftables-failover.md": {
@@ -342,9 +342,9 @@
     "semantic_hash": ""
   },
   "tests/test_fast_failover_and_antiflap.py": {
-    "mtime": 1792566888.6929078,
-    "seen": 1792568113.3051436,
-    "ast_hash": "4fa7fd0ebe5fb6dc5ad4ab634e6e7b35",
+    "mtime": 1792568478.879702,
+    "seen": 1792568680.3331063,
+    "ast_hash": "8190ff49602daca7fc713e32b546f5e5",
     "semantic_hash": ""
   },
   ".agents/experiences/009-fast-failover-multi-metric-and-anti-flapping.md": {
