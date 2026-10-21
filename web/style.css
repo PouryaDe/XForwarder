@@ -1,4 +1,5 @@
 :root, [data-theme="dark"] {
+    color-scheme: dark;
     --bg-base: #0B0F19;
     --bg-surface: #111827;
     --bg-card: rgba(17, 24, 39, 0.78);
@@ -25,6 +26,7 @@
 }
 
 [data-theme="light"] {
+    color-scheme: light;
     --bg-base: #F8FAFC;
     --bg-surface: #FFFFFF;
     --bg-card: #FFFFFF;
@@ -163,6 +165,79 @@ body {
     margin-bottom: 16px;
     text-align: center;
 }
+
+/* Login Form Controls & Inputs (Dark & Light Theme) */
+.login-card .form-group {
+    margin-bottom: 20px;
+    text-align: left;
+}
+
+.login-card .form-group label {
+    display: block;
+    font-size: 0.82rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    margin-bottom: 7px;
+}
+
+.login-card .form-control {
+    background: rgba(15, 23, 42, 0.75);
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
+    border-radius: 10px;
+    height: 44px;
+    font-size: 0.92rem;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+}
+
+.login-card .form-control:focus {
+    background: rgba(17, 24, 39, 0.95);
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.25);
+    color: var(--text-primary);
+}
+
+.login-card .form-control::placeholder {
+    color: var(--text-muted);
+    opacity: 0.7;
+}
+
+[data-theme="light"] .login-card .form-control {
+    background: #F8FAFC;
+    border-color: var(--border-color);
+    color: var(--text-primary);
+}
+
+[data-theme="light"] .login-card .form-control:focus {
+    background: #FFFFFF;
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15);
+}
+
+/* Universal Browser Autofill Styling - Prevents White Box in Dark Theme */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+    -webkit-box-shadow: 0 0 0 1000px #0F172A inset !important;
+    box-shadow: 0 0 0 1000px #0F172A inset !important;
+    -webkit-text-fill-color: #F3F4F6 !important;
+    caret-color: #F3F4F6 !important;
+    border-color: var(--border-color) !important;
+    transition: background-color 50000s ease-in-out 0s;
+}
+
+[data-theme="light"] input:-webkit-autofill,
+[data-theme="light"] input:-webkit-autofill:hover,
+[data-theme="light"] input:-webkit-autofill:focus,
+[data-theme="light"] input:-webkit-autofill:active {
+    -webkit-box-shadow: 0 0 0 1000px #F8FAFC inset !important;
+    box-shadow: 0 0 0 1000px #F8FAFC inset !important;
+    -webkit-text-fill-color: #0F172A !important;
+    caret-color: #0F172A !important;
+    border-color: var(--border-color) !important;
+}
+
 
 
 /* ── Panel Dashboard Layout ── */
@@ -2323,7 +2398,12 @@ body {
     font-size: 0.9rem;
     outline: none;
     box-sizing: border-box;
-    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+}
+
+.form-control::placeholder {
+    color: var(--text-muted);
+    opacity: 0.7;
 }
 
 .form-control:focus {
