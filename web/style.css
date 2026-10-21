@@ -63,7 +63,7 @@
     --mint: #059669;
     --violet: #8B5CF6;
     --amber: #D97706;
-    --red: #FB7185;
+    --red: #E11D48;
 
     --accent-primary: #8B5CF6;
     --accent-primary-hover: #7C3AED;
@@ -72,7 +72,7 @@
     --accent-mint: #059669;
     --accent-violet: #8B5CF6;
     --accent-amber: #D97706;
-    --accent-rose: #FB7185;
+    --accent-rose: #E11D48;
 
     /* Nova aurora ambient blobs (light) */
     --blob-1: #c9dcfb;
@@ -910,6 +910,67 @@ input:-webkit-autofill:active {
 
 .btn-danger:hover:not(:disabled) {
     background: rgba(251, 113, 133, 0.16);
+}
+
+.btn-primary .btn-spinner {
+    border-color: rgba(11, 14, 20, 0.35);
+    border-top-color: #0B0E14;
+}
+
+/* ── Light Mode Button Styles & High-Contrast Harmonization ── */
+[data-theme="light"] .btn-primary {
+    background: linear-gradient(135deg, #7C3AED, #6366F1);
+    color: #FFFFFF !important;
+    box-shadow: 0 4px 14px rgba(124, 58, 237, 0.32);
+}
+
+[data-theme="light"] .btn-primary svg {
+    color: #FFFFFF !important;
+    stroke: #FFFFFF !important;
+}
+
+[data-theme="light"] .btn-primary:hover:not(:disabled) {
+    filter: brightness(1.05);
+    box-shadow: 0 2px 10px rgba(124, 58, 237, 0.25);
+}
+
+[data-theme="light"] .btn-primary.is-success {
+    background: linear-gradient(135deg, #059669, #047857);
+    color: #FFFFFF !important;
+    box-shadow: 0 4px 14px rgba(5, 150, 105, 0.32);
+}
+
+[data-theme="light"] .btn-primary.is-success svg {
+    color: #FFFFFF !important;
+    stroke: #FFFFFF !important;
+}
+
+[data-theme="light"] .btn-primary .btn-spinner {
+    border-color: rgba(255, 255, 255, 0.35);
+    border-top-color: #FFFFFF;
+}
+
+[data-theme="light"] .btn-secondary {
+    background: #FFFFFF;
+    color: #1E293B;
+    border: 1px solid rgba(20, 25, 45, 0.12);
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
+}
+
+[data-theme="light"] .btn-secondary:hover:not(:disabled) {
+    background: #F8FAFC;
+    color: #0F172A;
+}
+
+[data-theme="light"] .btn-danger {
+    background: rgba(225, 29, 72, 0.08);
+    color: #E11D48;
+    border: 1px solid rgba(225, 29, 72, 0.22);
+}
+
+[data-theme="light"] .btn-danger:hover:not(:disabled) {
+    background: rgba(225, 29, 72, 0.14);
+    color: #BE123C;
 }
 
 .btn-spinner {
@@ -1981,6 +2042,13 @@ input:-webkit-autofill:active {
     box-shadow: 0 1px 3px rgba(245, 158, 11, 0.1);
 }
 
+[data-theme="light"] .btn-mode-pill.is-active.forced {
+    background: rgba(217, 119, 6, 0.12);
+    color: #B45309;
+    border-color: rgba(217, 119, 6, 0.3);
+    box-shadow: 0 1px 2px rgba(217, 119, 6, 0.08);
+}
+
 .btn-mode-pill .pill-dot {
     width: 6px;
     height: 6px;
@@ -2125,6 +2193,36 @@ input:-webkit-autofill:active {
     border-color: var(--accent-rose);
     color: var(--accent-rose);
     background: rgba(239, 68, 68, 0.08);
+}
+
+[data-theme="light"] .btn-path-test {
+    background: #FFFFFF;
+    border-color: rgba(20, 25, 45, 0.12);
+    color: var(--text-secondary);
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+
+[data-theme="light"] .btn-path-test.is-forced {
+    background: rgba(217, 119, 6, 0.1);
+    border-color: rgba(217, 119, 6, 0.3);
+    color: #B45309;
+}
+
+[data-theme="light"] .btn-path-test.is-forced:hover {
+    background: rgba(225, 29, 72, 0.12);
+    color: #E11D48;
+}
+
+[data-theme="light"] .btn-path-test.is-success {
+    border-color: rgba(5, 150, 105, 0.35);
+    color: #047857;
+    background: rgba(5, 150, 105, 0.08);
+}
+
+[data-theme="light"] .btn-path-test.is-fail {
+    border-color: rgba(225, 29, 72, 0.35);
+    color: #E11D48;
+    background: rgba(225, 29, 72, 0.08);
 }
 
 .card-loss-tool {
@@ -2851,6 +2949,17 @@ select option {
     background: rgba(167, 139, 250, 0.08);
 }
 
+[data-theme="light"] .btn-test-dest {
+    background: #FFFFFF;
+    color: var(--text-secondary);
+    border-color: rgba(20, 25, 45, 0.12);
+}
+
+[data-theme="light"] .btn-test-dest:hover {
+    color: #6D28D9;
+    background: rgba(124, 58, 237, 0.08);
+}
+
 .test-dest-result {
     font-size: 0.75rem;
     font-family: var(--font-mono);
@@ -2870,6 +2979,13 @@ select option {
 .prio-tag-4 { background: rgba(168, 85, 247, 0.2); color: #C084FC; }
 .prio-tag-5 { background: rgba(236, 72, 153, 0.2); color: #F472B6; }
 .prio-tag-n { background: rgba(156, 163, 175, 0.2); color: var(--text-secondary); }
+
+[data-theme="light"] .prio-tag-1 { background: rgba(124, 58, 237, 0.1); color: #6D28D9; border: 1px solid rgba(124, 58, 237, 0.25); }
+[data-theme="light"] .prio-tag-2 { background: rgba(217, 119, 6, 0.12); color: #B45309; }
+[data-theme="light"] .prio-tag-3 { background: rgba(2, 132, 199, 0.12); color: #0284C7; }
+[data-theme="light"] .prio-tag-4 { background: rgba(147, 51, 234, 0.12); color: #7E22CE; }
+[data-theme="light"] .prio-tag-5 { background: rgba(219, 39, 119, 0.12); color: #BE185D; }
+[data-theme="light"] .prio-tag-n { background: rgba(100, 116, 139, 0.12); color: #475569; }
 .prio-sub { font-size: 0.75rem; color: var(--text-muted); margin-left: 8px; }
 
 .destinations-section {
@@ -2928,6 +3044,17 @@ select option {
     background: rgba(167, 139, 250, 0.12);
 }
 
+[data-theme="light"] .add-prio-btn {
+    border-color: rgba(124, 58, 237, 0.35);
+    background: rgba(124, 58, 237, 0.06);
+    color: #6D28D9;
+}
+
+[data-theme="light"] .add-prio-btn:hover {
+    background: rgba(124, 58, 237, 0.12);
+    color: #5B21B6;
+}
+
 .prio-header-actions {
     display: flex;
     align-items: center;
@@ -2958,6 +3085,17 @@ select option {
     cursor: not-allowed;
 }
 
+[data-theme="light"] .btn-prio-move {
+    background: #FFFFFF;
+    color: var(--text-secondary);
+    border-color: rgba(20, 25, 45, 0.12);
+}
+
+[data-theme="light"] .btn-prio-move:hover:not(:disabled) {
+    color: #6D28D9;
+    background: #F8FAFC;
+}
+
 .btn-remove-prio {
     background: rgba(239, 68, 68, 0.12);
     border: 1px solid rgba(239, 68, 68, 0.3);
@@ -2977,6 +3115,17 @@ select option {
 .btn-remove-prio:hover {
     background: rgba(239, 68, 68, 0.22);
     color: var(--accent-rose);
+}
+
+[data-theme="light"] .btn-remove-prio {
+    background: rgba(225, 29, 72, 0.08);
+    border-color: rgba(225, 29, 72, 0.22);
+    color: #E11D48;
+}
+
+[data-theme="light"] .btn-remove-prio:hover {
+    background: rgba(225, 29, 72, 0.15);
+    color: #BE123C;
 }
 
 /* ── Modals ── */
@@ -3384,6 +3533,17 @@ select option {
 
 .preset-chip:hover {
     background: rgba(167, 139, 250, 0.15);
+}
+
+[data-theme="light"] .preset-chip {
+    border-color: rgba(124, 58, 237, 0.22);
+    background: rgba(124, 58, 237, 0.07);
+    color: #6D28D9;
+}
+
+[data-theme="light"] .preset-chip:hover {
+    background: rgba(124, 58, 237, 0.13);
+    color: #5B21B6;
 }
 
 /* 1-Click Copy & Latency Pills */

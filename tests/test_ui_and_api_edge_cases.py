@@ -851,6 +851,35 @@ class TestUIAndAPIEdgeCases(unittest.TestCase):
         self.assertIn('id="lockoutAlert"', html)
         self.assertIn('id="lockoutTimer"', html)
 
+    def test_dark_and_light_theme_button_color_harmonization(self):
+        """Verifies that buttons across dark and light themes enforce high contrast, readability, and harmonious styling."""
+        css_path = os.path.join(REPO_ROOT, "web", "style.css")
+        with open(css_path, "r", encoding="utf-8") as f:
+            css = f.read()
+
+        # 1. Dark Mode Primary Button: signature mint-to-violet with dark charcoal text
+        self.assertIn("background: linear-gradient(135deg, var(--accent-mint), var(--accent-violet));", css)
+        self.assertIn("color: #0B0E14 !important;", css)
+
+        # 2. Light Mode Primary Button: royal violet gradient with crisp pure white text
+        self.assertIn('[data-theme="light"] .btn-primary {', css)
+        self.assertIn("background: linear-gradient(135deg, #7C3AED, #6366F1);", css)
+        self.assertIn('[data-theme="light"] .btn-primary svg {', css)
+
+        # 3. Light Mode Secondary Button: solid white tactile card
+        self.assertIn('[data-theme="light"] .btn-secondary {', css)
+        self.assertIn("color: #1E293B;", css)
+
+        # 4. Light Mode Danger Button: accessible crimson rose
+        self.assertIn('[data-theme="light"] .btn-danger {', css)
+        self.assertIn("color: #E11D48;", css)
+
+        # 5. Light Mode Priority & Chips: deep legible violet
+        self.assertIn('[data-theme="light"] .add-prio-btn {', css)
+        self.assertIn('[data-theme="light"] .preset-chip {', css)
+        self.assertIn('[data-theme="light"] .btn-path-test {', css)
+        self.assertIn('[data-theme="light"] .prio-tag-1 {', css)
+
 
 if __name__ == "__main__":
     unittest.main()
