@@ -286,6 +286,33 @@ def load_state() -> dict:
     return {}
 
 
+def update_state_rules(rule_updates: Dict[str, dict]) -> None:
+    """Synchronizes active_priority and force_override in state.json atomically."""
+    for path in [STATE_FILE_PATH, LEGACY_STATE_FILE_PATH]:
+        s_dir = os.path.dirname(path)
+        if not os.path.exists(path) and not os.path.exists(s_dir):
+            continue
+        try:
+            st = {}
+            if os.path.exists(path):
+                with open(path, "r", encoding="utf-8") as f:
+                    st = json.load(f)
+            if not isinstance(st, dict):
+                st = {}
+            rt = st.setdefault("runtime", {})
+            rs = rt.setdefault("rules_state", {})
+            for r_id, vals in rule_updates.items():
+                r_entry = rs.setdefault(r_id, {})
+                r_entry.update(vals)
+            tmp_p = f"{path}.tmp.{os.getpid()}"
+            with open(tmp_p, "w", encoding="utf-8") as tf:
+                json.dump(st, tf, indent=2, ensure_ascii=False)
+            os.replace(tmp_p, path)
+            break
+        except Exception:
+            pass
+
+
 def get_system_stats() -> dict:
     stats = {
         "ram_used_mb": 0,
@@ -1543,6 +1570,14 @@ class XForwarderWebHandler(BaseHTTPRequestHandler):
                 return
 
             if save_config(cfg):
+                update_state_rules({
+                    rule_id: {
+                        "active_priority": r["active_priority"],
+                        "last_force_override": override_prio,
+                        "last_switch_time": 0,
+                        "cooldown_remaining": 0
+                    }
+                })
                 sync_ok, sync_errors = sync_rules_and_notify(max_retries=2)
                 self.send_json({
                     "ok": True,
@@ -1599,6 +1634,15 @@ class XForwarderWebHandler(BaseHTTPRequestHandler):
                     r["active_priority"] = chosen if chosen is not None else (dests[0].get("priority", 1) if dests else 1)
 
             if save_config(cfg):
+                batch_updates = {
+                    r.get("id"): {
+                        "active_priority": r["active_priority"],
+                        "last_force_override": override_prio,
+                        "last_switch_time": 0,
+                        "cooldown_remaining": 0
+                    } for r in rules if r.get("id")
+                }
+                update_state_rules(batch_updates)
                 sync_ok, sync_errors = sync_rules_and_notify(max_retries=2)
                 self.send_json({
                     "ok": True,

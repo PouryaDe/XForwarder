@@ -495,6 +495,71 @@ class TestFastFailoverAndAntiFlap(unittest.TestCase):
             self.assertFalse(changed)
             self.assertEqual(rule["active_priority"], 1)
 
+    def test_forced_priority_down_falls_back_to_auto_mode(self):
+        """Verifies that if a rule has a manual force_override, and that destination goes down, it automatically falls back to Auto Failover."""
+        rule = {
+            "id": "rule-forced-fallback",
+            "port": 5050,
+            "protocol": "tcp",
+            "active_priority": 2,
+            "force_override": 2,
+            "destinations": [
+                {"priority": 1, "type": "haproxy", "target": "1.1.1.1", "port": 5050},
+                {"priority": 2, "type": "nftables", "target": "10.88.1.2", "port": 5050}
+            ]
+        }
+        self.engine.config["rules"] = [rule]
+        self.engine.runtime_state["rules_state"]["rule-forced-fallback"] = {
+            "active_priority": 2,
+            "last_force_override": 2,
+            "dest_stats": {}
+        }
+
+        # Destination 2 (forced) fails; Destination 1 is healthy
+        def mock_check(dest, rule_port=None, protocol=None):
+            if dest["priority"] == 2:
+                return {"healthy": False, "latency_ms": None, "packet_loss": 100, "reason": "Connection timed out"}
+            return {"healthy": True, "latency_ms": 25.0, "packet_loss": 0}
+
+        with patch.object(self.engine, "check_destination", side_effect=mock_check), \
+             patch.object(self.engine, "_fast_confirm_burst", return_value={"all_failed": True, "successes": 0}):
+            changed = self.engine.evaluate_rule(rule)
+            self.assertTrue(changed)
+            # Must fall back to Auto Failover (force_override -> 0)
+            self.assertEqual(rule["force_override"], 0)
+            # Must fail over to the healthy candidate (Priority 1)
+            self.assertEqual(rule["active_priority"], 1)
+
+    def test_forced_priority_stays_when_healthy(self):
+        """Verifies that a manual force_override is respected when the destination remains healthy."""
+        rule = {
+            "id": "rule-forced-healthy",
+            "port": 6060,
+            "protocol": "tcp",
+            "active_priority": 2,
+            "force_override": 2,
+            "destinations": [
+                {"priority": 1, "type": "haproxy", "target": "1.1.1.1", "port": 6060},
+                {"priority": 2, "type": "nftables", "target": "10.88.1.2", "port": 6060}
+            ]
+        }
+        self.engine.config["rules"] = [rule]
+        self.engine.runtime_state["rules_state"]["rule-forced-healthy"] = {
+            "active_priority": 2,
+            "last_force_override": 2,
+            "dest_stats": {}
+        }
+
+        def mock_check(dest, rule_port=None, protocol=None):
+            # Both destinations healthy; forced priority 2 must remain
+            return {"healthy": True, "latency_ms": 40.0, "packet_loss": 0}
+
+        with patch.object(self.engine, "check_destination", side_effect=mock_check):
+            changed = self.engine.evaluate_rule(rule)
+            self.assertFalse(changed)
+            self.assertEqual(rule["force_override"], 2)
+            self.assertEqual(rule["active_priority"], 2)
+
 
 if __name__ == "__main__":
     unittest.main()

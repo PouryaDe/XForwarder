@@ -586,6 +586,28 @@ async function fetchStatus() {
         lastRuntime = data.runtime || {};
         currentRules = cfg.rules || [];
 
+        // Reconcile pending optimistic overrides to prevent UI flicker during background polling
+        const now = Date.now();
+        currentRules.forEach(r => {
+            const ruleId = String(r.id || `rule-${r.port}`);
+            if (pendingOverrides.has(ruleId)) {
+                const pending = pendingOverrides.get(ruleId);
+                // Clear pending if server caught up or timeout exceeded (>6s)
+                if (r.force_override === pending.force_override || (now - pending.timestamp) > 6000) {
+                    pendingOverrides.delete(ruleId);
+                } else {
+                    // Server hasn't caught up yet: preserve optimistic state
+                    r.force_override = pending.force_override;
+                    if (pending.active_priority !== undefined) {
+                        r.active_priority = pending.active_priority;
+                    }
+                    if (lastRuntime.rules_state && lastRuntime.rules_state[ruleId]) {
+                        lastRuntime.rules_state[ruleId].active_priority = r.active_priority;
+                    }
+                }
+            }
+        });
+
         renderStats(currentRules, lastRuntime);
         renderSystemStats(data.system);
         renderServicesStatus(data.services);
@@ -1278,7 +1300,7 @@ function renderRules(rules, runtime) {
                 pathActionHtml = `
                     <button type="button" class="btn-path-test is-forced" onclick="handleOverrideChange(decodeURIComponent('${encodedId}'), 0)" title="Currently forced manually. Click to return to Automatic Failover.">
                         <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 14 14"/></svg>
-                        <span>Forced (Reset)</span>
+                        <span>Forced</span>
                     </button>
                 `;
             } else if (!isActive) {
@@ -1531,9 +1553,19 @@ if (btnRetrySyncModal) {
     });
 }
 
+// Pending override tracker to protect optimistic UI updates against polling races
+const pendingOverrides = new Map();
+
 // Override change handler (Auto Failover vs Manual Test Priority)
 async function handleOverrideChange(ruleId, val) {
     const prioVal = parseInt(val);
+
+    // Track pending override with timestamp
+    pendingOverrides.set(ruleId, {
+        force_override: prioVal,
+        active_priority: prioVal > 0 ? prioVal : undefined,
+        timestamp: Date.now()
+    });
 
     // Optimistic UI update so button doesn't remain stuck
     const rule = currentRules.find(x => x.id === ruleId);
@@ -1555,6 +1587,8 @@ async function handleOverrideChange(ruleId, val) {
                 }
             }
             rule.active_priority = best;
+            const pending = pendingOverrides.get(ruleId);
+            if (pending) pending.active_priority = best;
         }
         renderRules(currentRules, lastRuntime);
     }
@@ -1577,16 +1611,19 @@ async function handleOverrideChange(ruleId, val) {
             }
         } else {
             showToast(data.error || "Failed to update forwarding mode", "error");
+            pendingOverrides.delete(ruleId);
         }
     } catch (err) {
         showToast("Failed to update forwarding mode", "error");
+        pendingOverrides.delete(ruleId);
     } finally {
-        fetchStatus();
+        await fetchStatus();
     }
 }
 
 // Emergency Batch Override Action
 batchSelect.addEventListener("change", async () => {
+    pendingOverrides.clear();
     const val = batchSelect.value;
     if (val === "") return;
     const modeLabels = {

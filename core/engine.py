@@ -925,11 +925,24 @@ class XForwarderEngine:
 
         # Decision Logic:
         target_active = current_active
+        force_reset_occurred = False
         if force_override > 0:
-            target_active = force_override
-            rule_state["last_switch_time"] = 0  # Manual override clears cooldown
-            rule_state["cooldown_remaining"] = 0
-        else:
+            forced_stat = rule_state["dest_stats"].get(f"prio_{force_override}", {})
+            is_forced_down = (forced_stat.get("status") == "failed" or forced_stat.get("packet_loss", 0) >= 100)
+            if is_forced_down:
+                print(f"[WARN] Forced Priority #{force_override} for rule '{rule_id}' is down/disconnected. Falling back to Auto Failover.")
+                rule["force_override"] = 0
+                force_override = 0
+                rule_state["last_force_override"] = 0
+                rule_state["last_switch_time"] = 0
+                rule_state["cooldown_remaining"] = 0
+                force_reset_occurred = True
+            else:
+                target_active = force_override
+                rule_state["last_switch_time"] = 0  # Manual override clears cooldown
+                rule_state["cooldown_remaining"] = 0
+
+        if force_override == 0:
             curr_stat = rule_state["dest_stats"].get(f"prio_{current_active}", {})
             is_curr_hard_failed = (curr_stat.get("status") == "failed" or curr_stat.get("packet_loss", 0) >= 100)
             is_curr_degraded = (curr_stat.get("status") == "degraded")
@@ -1008,7 +1021,7 @@ class XForwarderEngine:
                 if best_alt is not None:
                     target_active = best_alt
 
-        state_changed = (target_active != current_active)
+        state_changed = (target_active != current_active) or force_reset_occurred
         if state_changed:
             rule_state["last_switch_time"] = now
             if "switch_history" not in rule_state or not isinstance(rule_state["switch_history"], list):
@@ -1546,6 +1559,7 @@ http {{
                         if state_changed:
                             self.save_config()
                         self.sync_firewall_and_proxies()
+                        self._save_state_file()
                     else:
                         self._save_state_file()
 

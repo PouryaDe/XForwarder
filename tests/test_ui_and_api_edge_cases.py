@@ -262,6 +262,9 @@ class TestUIAndAPIEdgeCases(unittest.TestCase):
         self.assertIn("function addLogEntry", app_content)
         self.assertIn("function appendLogEntry", app_content)
         self.assertIn("runLivePacketLossTest", app_content)
+        self.assertIn("pendingOverrides", app_content)
+        self.assertIn("<span>Forced</span>", app_content)
+        self.assertNotIn("<span>Forced (Reset)</span>", app_content)
 
         self.assertIn(".dest-proxy-proto", style_content)
         self.assertIn(".btn-test-dest", style_content)
