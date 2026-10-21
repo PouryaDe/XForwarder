@@ -16,6 +16,7 @@ import threading
 import urllib.request
 import urllib.error
 from http.server import HTTPServer
+from unittest.mock import patch, MagicMock
 
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if REPO_ROOT not in sys.path:
@@ -86,7 +87,7 @@ class TestUIAndAPIEdgeCases(unittest.TestCase):
         rule = {
             "port": 4444,
             "protocol": "udp",
-            "destinations": [{"priority": 1, "type": "haproxy", "target": "192.168.1.50"}]
+            "destinations": [{"priority": 1, "type": "haproxy", "target": "2001:db8::50"}]
         }
         valid, _ = validate_rule(rule)
         self.assertTrue(valid)
@@ -629,6 +630,85 @@ class TestUIAndAPIEdgeCases(unittest.TestCase):
         self.assertIn(".topology-engines-grid", css)
         self.assertIn("grid-template-columns: minmax(0, 1.25fr) minmax(0, 0.75fr)", css)
         self.assertIn(".engine-item", css)
+
+    def test_validate_rule_haproxy_requires_ipv6(self):
+        """Verifies that validate_rule strictly enforces that HAProxy destinations must be IPv6."""
+        # IPv4 targets must be rejected for HAProxy
+        ipv4_rule = {
+            "port": 8080,
+            "protocol": "tcp",
+            "destinations": [{"priority": 1, "type": "haproxy", "target": "1.2.3.4", "port": 8080}]
+        }
+        ok_v4, err_v4 = validate_rule(ipv4_rule)
+        self.assertFalse(ok_v4)
+        self.assertIn("must be a valid IPv6 address", err_v4)
+
+        # Hostnames must be rejected for HAProxy
+        host_rule = {
+            "port": 8080,
+            "protocol": "tcp",
+            "destinations": [{"priority": 1, "type": "haproxy", "target": "exit.node.com", "port": 8080}]
+        }
+        ok_host, err_host = validate_rule(host_rule)
+        self.assertFalse(ok_host)
+        self.assertIn("must be a valid IPv6 address", err_host)
+
+        # Valid IPv6 without brackets
+        v6_rule = {
+            "port": 8080,
+            "protocol": "tcp",
+            "destinations": [{"priority": 1, "type": "haproxy", "target": "2001:db8::1", "port": 8080}]
+        }
+        ok_v6, err_v6 = validate_rule(v6_rule)
+        self.assertTrue(ok_v6, f"Expected valid IPv6 to pass, got: {err_v6}")
+
+        # Valid IPv6 with brackets
+        v6_bracket_rule = {
+            "port": 8080,
+            "protocol": "tcp",
+            "destinations": [{"priority": 1, "type": "haproxy", "target": "[2001:db8::1]", "port": 8080}]
+        }
+        ok_b, err_b = validate_rule(v6_bracket_rule)
+        self.assertTrue(ok_b, f"Expected bracketed IPv6 to pass, got: {err_b}")
+
+    def test_nftables_dual_stack_rules_generation(self):
+        """Verifies that _apply_nftables generates isolated table ip and table ip6 for dual-stack forwarding."""
+        from core.engine import XForwarderEngine
+        engine = XForwarderEngine()
+
+        dnat_rules = [
+            '        iifname "eth0" tcp dport 8443 dnat to 10.88.1.2:8443',
+            '        iifname "eth0" udp dport 8443 dnat to 10.88.1.2:8443',
+            '        iifname "eth0" tcp dport 9443 dnat to [2001:db8::2]:9443',
+            '        iifname "eth0" udp dport 9443 dnat to [2001:db8::2]:9443'
+        ]
+
+        with patch("shutil.which", return_value="nft"), \
+             patch("subprocess.run") as mock_run, \
+             patch("subprocess.Popen") as mock_popen, \
+             patch.object(engine, "_is_ipv6_supported", return_value=True):
+            mock_proc = MagicMock()
+            mock_proc.communicate.return_value = ("", "")
+            mock_proc.returncode = 0
+            mock_popen.return_value = mock_proc
+
+            ok, err = engine._apply_nftables(dnat_rules)
+            self.assertTrue(ok)
+            self.assertIsNone(err)
+
+            sent_input = mock_proc.communicate.call_args_list[0][1]["input"]
+            # Verify IPv4 table exists and contains IPv4 rules
+            self.assertIn("table ip xfwd_orchestrator", sent_input)
+            self.assertIn('dnat to 10.88.1.2:8443', sent_input)
+
+            # Verify IPv6 table exists and contains IPv6 rules
+            self.assertIn("table ip6 xfwd_orchestrator", sent_input)
+            self.assertIn('dnat to [2001:db8::2]:9443', sent_input)
+
+            # Verify masquerade on tunnel interfaces exists in both
+            self.assertIn('oifname "gre*" masquerade', sent_input)
+            self.assertIn('oifname "wg*" masquerade', sent_input)
+            self.assertIn('oifname "tun*" masquerade', sent_input)
 
 
 if __name__ == "__main__":

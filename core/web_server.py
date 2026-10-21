@@ -413,7 +413,7 @@ def get_services_status() -> Dict[str, Any]:
                 status["nftables"]["active"] = True
                 if "xfwd_orchestrator" in res_t.stdout or "fwdman_orchestrator" in res_t.stdout:
                     status["nftables"]["table_active"] = True
-                    status["nftables"]["details"] = "Active (table ip xfwd_orchestrator loaded)"
+                    status["nftables"]["details"] = "Active (table ip/ip6 xfwd_orchestrator loaded)"
                 else:
                     status["nftables"]["details"] = "Kernel Ready (No active ruleset yet)"
             else:
@@ -961,10 +961,28 @@ def validate_rule(body: dict) -> Tuple[bool, str]:
         if not is_valid_target(target):
             return False, f"Invalid destination target '{target}'. Must be a valid IPv4, IPv6, or hostname"
 
-        d_type = str(d.get("type", "haproxy")).lower()
-        if d_type not in ("haproxy", "nftables", "nginx"):
+        d_type = str(d.get("type", "")).lower().strip()
+        if not d_type:
+            clean_t = target.strip("[]")
+            if ":" in clean_t:
+                d_type = "haproxy"
+            elif clean_t.startswith("10.") or clean_t.startswith("192.168.") or clean_t.startswith("172."):
+                d_type = "nftables"
+            else:
+                d_type = "nginx"
+            d["type"] = d_type
+        elif d_type not in ("haproxy", "nftables", "nginx"):
             return False, "Destination type must be 'haproxy', 'nftables', or 'nginx'"
         d["type"] = d_type
+
+        if d_type == "haproxy":
+            clean_target = target.strip("[]")
+            try:
+                ip_obj = ipaddress.ip_address(clean_target)
+                if ip_obj.version != 6:
+                    return False, f"HAProxy destination target must be a valid IPv6 address (got IPv4 '{target}')"
+            except ValueError:
+                return False, f"HAProxy destination target must be a valid IPv6 address (got '{target}')"
 
         d_port = d.get("port", port)
         try:
@@ -1692,7 +1710,20 @@ class XForwarderWebHandler(BaseHTTPRequestHandler):
                 self.send_json({"ok": False, "healthy": False, "error": "Invalid target IP/host or port"}, 400)
                 return
 
-            dest_type = str(body.get("type", "haproxy")).lower()
+            dest_type = str(body.get("type", "")).lower().strip()
+            if not dest_type:
+                dest_type = "haproxy" if ":" in target else "nginx"
+            if dest_type == "haproxy":
+                clean_target = target.strip("[]")
+                try:
+                    ip_obj = ipaddress.ip_address(clean_target)
+                    if ip_obj.version != 6:
+                        self.send_json({"ok": False, "healthy": False, "error": f"HAProxy destination target must be a valid IPv6 address (got IPv4 '{target}')"}, 400)
+                        return
+                except ValueError:
+                    self.send_json({"ok": False, "healthy": False, "error": f"HAProxy destination target must be a valid IPv6 address (got '{target}')"}, 400)
+                    return
+
             protocol = str(body.get("protocol", "both")).lower()
             try:
                 packets = int(body.get("packets", 4))

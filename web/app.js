@@ -975,7 +975,7 @@ function renderServicesStatus(services) {
     if (svcNftablesInstalled) svcNftablesInstalled.innerText = nft.installed ? "Installed" : "Not Installed";
     const svcNftablesKernel = document.getElementById("svcNftablesKernel");
     if (svcNftablesKernel) {
-        svcNftablesKernel.innerText = nft.active ? (nft.table_active ? "Active (table ip xfwd_orchestrator)" : "Active (Kernel ready)") : "Inactive";
+        svcNftablesKernel.innerText = nft.active ? (nft.table_active ? "Active (table ip/ip6 xfwd_orchestrator)" : "Active (Kernel ready)") : "Inactive";
         svcNftablesKernel.className = nft.active ? "info-value text-emerald font-mono" : "info-value text-amber font-mono";
     }
     const svcNftablesVersion = document.getElementById("svcNftablesVersion");
@@ -1825,6 +1825,10 @@ function renderDestinationRow(dest, index, totalCount) {
     div.ondrop = (e) => handleModalPrioDrop(e, index);
     div.ondragend = (e) => handleModalPrioDragEnd(e);
 
+    const targetPlaceholder = type === "haproxy"
+        ? "2001:4ba0:cafe:84e::1 (IPv6 only)"
+        : (type === "nftables" ? "10.88.1.2 (IPv4) or 2001:db8::2 (IPv6)" : "1.2.3.4 or 2001:db8::1");
+
     div.innerHTML = `
         <div class="priority-header">
             <div class="prio-title-group">
@@ -1850,7 +1854,7 @@ function renderDestinationRow(dest, index, totalCount) {
         <div class="form-row">
             <div class="form-group flex-1">
                 <label>Engine Type</label>
-                <select class="form-control dest-type">
+                <select class="form-control dest-type" onchange="handleDestTypeChange(this)">
                     <option value="haproxy" ${type === "haproxy" ? "selected" : ""}>HAProxy (Direct Zero-Tunnel IPv6)</option>
                     <option value="nginx" ${type === "nginx" ? "selected" : ""}>Nginx (Stream TCP/UDP Proxy)</option>
                     <option value="nftables" ${type === "nftables" ? "selected" : ""}>NFTables (Kernel Tunnel DNAT)</option>
@@ -1858,7 +1862,7 @@ function renderDestinationRow(dest, index, totalCount) {
             </div>
             <div class="form-group flex-2">
                 <label>Destination Target IP / Host</label>
-                <input type="text" class="form-control dest-target" placeholder="${isPrimary ? '2001:4ba0:cafe:84e::1' : '10.88.1.2'}" value="${escapeHtml(target)}" required>
+                <input type="text" class="form-control dest-target" placeholder="${targetPlaceholder}" value="${escapeHtml(target)}" required>
             </div>
             <div class="form-group flex-1">
                 <label>Target Port</label>
@@ -1884,6 +1888,21 @@ function renderDestinationRow(dest, index, totalCount) {
         </div>
     `;
     return div;
+}
+
+function handleDestTypeChange(selectEl) {
+    const row = selectEl.closest(".priority-box");
+    if (!row) return;
+    const targetInput = row.querySelector(".dest-target");
+    if (!targetInput) return;
+    const val = selectEl.value;
+    if (val === "haproxy") {
+        targetInput.placeholder = "2001:4ba0:cafe:84e::1 (IPv6 only)";
+    } else if (val === "nftables") {
+        targetInput.placeholder = "10.88.1.2 (IPv4) or 2001:db8::2 (IPv6)";
+    } else {
+        targetInput.placeholder = "1.2.3.4 or 2001:db8::1";
+    }
 }
 
 function syncDestinationsFromDom() {
@@ -1923,6 +1942,11 @@ async function testModalDestination(index) {
     if (!target) {
         showToast("Please enter a destination target IP or host", "warn");
         if (resEl) { resEl.innerHTML = '<span class="text-amber">Enter target IP</span>'; }
+        return;
+    }
+    if ((dest.type || "haproxy") === "haproxy" && !target.includes(':')) {
+        showToast("HAProxy destination target must be a valid IPv6 address", "warn");
+        if (resEl) { resEl.innerHTML = '<span class="text-amber">IPv6 required for HAProxy</span>'; }
         return;
     }
     if (!port) {
@@ -2145,6 +2169,12 @@ ruleForm.addEventListener("submit", async (e) => {
         const d = currentModalDestinations[i];
         if (!d.target || !d.target.trim()) {
             showToast(`Target IP/Host for #${i + 1} is required`, "error");
+            return;
+        }
+        const dtype = d.type || (i === 0 ? "haproxy" : "nftables");
+        const cleanTarget = d.target.trim().replace(/^\[|\]$/g, '');
+        if (dtype === "haproxy" && !cleanTarget.includes(':')) {
+            showToast(`HAProxy destination for #${i + 1} must be a valid IPv6 address`, "error");
             return;
         }
     }

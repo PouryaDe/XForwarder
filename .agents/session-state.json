@@ -26,8 +26,9 @@
     "Fixed NFTables wildcard interface set byteorder endianness mismatch using distinct rules",
     "Implemented multi-tier responsive system across topbar, stats grid, rules matrix, and mobile drawer with zero squish",
     "Implemented full-stack performance optimization: native Gzip compression, ETag/304 caching, in-memory static assets, selective service reload, removal of shell=True, IPC wake-up signal, smart DOM fingerprint diffing, debounced search, Page Visibility API polling, and optimistic UI delete",
-    "Implemented fast sub-second failover (<1s confirmation burst), multi-metric composite quality scoring (latency + packet loss), 10% hysteresis margin, anti-flapping route cooldown hold-down and flap damping, dynamic Nginx service lifecycle, and Web UI real-time badges"
+    "Implemented fast sub-second failover (<1s confirmation burst), multi-metric composite quality scoring (latency + packet loss), 10% hysteresis margin, anti-flapping route cooldown hold-down and flap damping, dynamic Nginx service lifecycle, and Web UI real-time badges",
+    "Added dual-stack NFTables forwarding support (table ip + table ip6 xfwd_orchestrator) and enforced IPv6 destination targets for HAProxy across API and Web UI"
   ],
   "next_steps": [],
-  "notes": "Fast failover and anti-flapping routing engine complete and verified with 93 unit tests passing, zero anti-patterns, and all pre-commit checks clean."
+  "notes": "NFTables dual-stack forwarding and HAProxy IPv6 enforcement complete and verified with 101 unit tests passing, zero anti-patterns, and all pre-commit checks clean."
 }
