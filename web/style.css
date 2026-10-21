@@ -868,6 +868,13 @@ input:-webkit-autofill:active {
 .stat-content { display: flex; flex-direction: column; }
 .stat-title { font-size: 0.8rem; color: var(--text-secondary); font-weight: 500; }
 .stat-number { font-size: 1.5rem; font-weight: 700; letter-spacing: -0.02em; color: var(--text-primary); }
+.stat-subtext {
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    font-weight: 500;
+    margin-top: 2px;
+    white-space: nowrap;
+}
 .text-emerald { color: var(--accent-emerald) !important; }
 .text-amber { color: var(--accent-amber) !important; }
 .text-rose { color: var(--accent-rose) !important; }

@@ -682,7 +682,23 @@ function renderStats(rules, runtime) {
         }
     });
 
-    statActiveHaproxy.innerText = nginxCount > 0 ? `${haproxyCount + nginxCount} (HA:${haproxyCount} / Ngx:${nginxCount})` : haproxyCount;
+    const totalProxies = haproxyCount + nginxCount;
+    statActiveHaproxy.innerText = totalProxies;
+    const proxyDetailEl = document.getElementById("statActiveProxyDetail");
+    if (proxyDetailEl) {
+        if (nginxCount > 0 && haproxyCount > 0) {
+            proxyDetailEl.innerText = `${haproxyCount} HA · ${nginxCount} Nginx`;
+            proxyDetailEl.style.display = "block";
+            statActiveHaproxy.title = `${haproxyCount} via HAProxy, ${nginxCount} via Nginx`;
+        } else if (nginxCount > 0) {
+            proxyDetailEl.innerText = `${nginxCount} Nginx`;
+            proxyDetailEl.style.display = "block";
+            statActiveHaproxy.title = `${nginxCount} via Nginx`;
+        } else {
+            proxyDetailEl.style.display = "none";
+            statActiveHaproxy.title = `${haproxyCount} via HAProxy`;
+        }
+    }
     statActiveNftables.innerText = nftablesCount;
 
     // Update filter badge counts
