@@ -141,12 +141,95 @@ class XForwarderEngine:
             "wan_interface": "auto",
             "check_interval_seconds": 8,
             "failure_threshold": 3,
-            "recovery_threshold": 3
+            "recovery_threshold": 3,
+            "fast_failover_enabled": True,
+            "max_acceptable_loss": 25,
+            "cooldown_seconds": 60,
+            "hysteresis_percent": 10,
+            "loss_penalty_weight": 10,
+            "fast_probe_burst": 3
         }
         for k, v in defaults.items():
             if k not in cfg:
                 cfg[k] = v
                 modified = True
+
+        # Normalize failover & anti-flap parameters
+        try:
+            val = max(2, min(int(cfg.get("check_interval_seconds", 8)), 120))
+            if cfg.get("check_interval_seconds") != val:
+                cfg["check_interval_seconds"] = val
+                modified = True
+        except (ValueError, TypeError):
+            cfg["check_interval_seconds"] = 8
+            modified = True
+
+        try:
+            val = max(1, min(int(cfg.get("failure_threshold", 3)), 10))
+            if cfg.get("failure_threshold") != val:
+                cfg["failure_threshold"] = val
+                modified = True
+        except (ValueError, TypeError):
+            cfg["failure_threshold"] = 3
+            modified = True
+
+        try:
+            val = max(1, min(int(cfg.get("recovery_threshold", 3)), 10))
+            if cfg.get("recovery_threshold") != val:
+                cfg["recovery_threshold"] = val
+                modified = True
+        except (ValueError, TypeError):
+            cfg["recovery_threshold"] = 3
+            modified = True
+
+        try:
+            val = max(5, min(int(cfg.get("max_acceptable_loss", 25)), 90))
+            if cfg.get("max_acceptable_loss") != val:
+                cfg["max_acceptable_loss"] = val
+                modified = True
+        except (ValueError, TypeError):
+            cfg["max_acceptable_loss"] = 25
+            modified = True
+
+        try:
+            val = max(10, min(int(cfg.get("cooldown_seconds", 60)), 600))
+            if cfg.get("cooldown_seconds") != val:
+                cfg["cooldown_seconds"] = val
+                modified = True
+        except (ValueError, TypeError):
+            cfg["cooldown_seconds"] = 60
+            modified = True
+
+        try:
+            val = max(0, min(float(cfg.get("hysteresis_percent", 10)), 50))
+            if cfg.get("hysteresis_percent") != val:
+                cfg["hysteresis_percent"] = val
+                modified = True
+        except (ValueError, TypeError):
+            cfg["hysteresis_percent"] = 10
+            modified = True
+
+        try:
+            val = max(1, min(int(cfg.get("loss_penalty_weight", 10)), 50))
+            if cfg.get("loss_penalty_weight") != val:
+                cfg["loss_penalty_weight"] = val
+                modified = True
+        except (ValueError, TypeError):
+            cfg["loss_penalty_weight"] = 10
+            modified = True
+
+        try:
+            val = max(1, min(int(cfg.get("fast_probe_burst", 3)), 5))
+            if cfg.get("fast_probe_burst") != val:
+                cfg["fast_probe_burst"] = val
+                modified = True
+        except (ValueError, TypeError):
+            cfg["fast_probe_burst"] = 3
+            modified = True
+
+        if not isinstance(cfg.get("fast_failover_enabled"), bool):
+            cfg["fast_failover_enabled"] = bool(cfg.get("fast_failover_enabled", True))
+            modified = True
 
         if "web" not in cfg or not isinstance(cfg["web"], dict):
             cfg["web"] = {}
@@ -332,6 +415,12 @@ class XForwarderEngine:
                         "check_interval_seconds": 8,
                         "failure_threshold": 3,
                         "recovery_threshold": 3,
+                        "fast_failover_enabled": True,
+                        "max_acceptable_loss": 25,
+                        "cooldown_seconds": 60,
+                        "hysteresis_percent": 10,
+                        "loss_penalty_weight": 10,
+                        "fast_probe_burst": 3,
                         "web": {
                             "bind_host": "0.0.0.0",
                             "port": 8090,
@@ -572,8 +661,8 @@ class XForwarderEngine:
         # 3. ICMP Ping probe (fallback for UDP services, tunnel destinations, or when TCP connect fails)
         if not healthy:
             try:
-                # Safe ping probe without shell injection
-                if all(c in "0123456789abcdefABCDEF:.-" for c in target):
+                # Safe ping probe without shell injection (IPv4, IPv6, and valid hostnames)
+                if all(c.isalnum() or c in ".:-" for c in target):
                     if sys.platform == "win32":
                         ping_cmd = ["ping", "-n", "1", "-w", "1000", target]
                     else:
@@ -600,6 +689,114 @@ class XForwarderEngine:
             res_dict["reason"] = fail_reason
         return res_dict
 
+    def _send_haproxy_runtime_cmd(self, cmd: str) -> Tuple[bool, str]:
+        """Communicates with HAProxy Runtime API via UNIX domain socket."""
+        sock_path = "/run/haproxy/admin.sock"
+        if not os.path.exists(sock_path):
+            return False, "admin.sock not found"
+        try:
+            with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as s:
+                s.settimeout(0.5)
+                s.connect(sock_path)
+                s.sendall(f"{cmd.strip()}\n".encode("utf-8"))
+                response = s.recv(4096).decode("utf-8", errors="replace")
+                return True, response
+        except Exception as e:
+            return False, str(e)
+
+    def _fast_confirm_burst(self, dest: Dict[str, Any], rule_port: Optional[int] = None, protocol: Optional[str] = "both", count: int = 3) -> Dict[str, Any]:
+        """
+        Executes a rapid, lightweight non-blocking burst of micro-probes (100ms interval, 250ms timeout)
+        to confirm destination outage in < 1 second without waiting for multiple full check intervals.
+        """
+        sent = max(1, min(count, 5))
+        successes = 0
+        latencies = []
+        target = str(dest.get("target", "")).strip().strip("[]")
+        port = dest.get("port", rule_port)
+        if not target or not port or port <= 0:
+            return {"all_failed": True, "successes": 0, "packet_loss": 100}
+
+        proto = str(protocol or "both").lower()
+        tunnel_iface = dest.get("tunnel_iface")
+
+        for i in range(sent):
+            if i > 0:
+                time.sleep(0.1)
+            t0 = time.perf_counter()
+            ok = False
+            if proto != "udp":
+                try:
+                    family = socket.AF_INET6 if ":" in target else socket.AF_INET
+                    with socket.socket(family, socket.SOCK_STREAM) as s:
+                        s.settimeout(0.25)
+                        if tunnel_iface and sys.platform != "win32":
+                            try:
+                                s.setsockopt(socket.SOL_SOCKET, 25, tunnel_iface.encode())
+                            except Exception:
+                                pass
+                        res = s.connect_ex((target, port))
+                        if res == 0:
+                            ok = True
+                            latencies.append(round((time.perf_counter() - t0) * 1000, 1))
+                except Exception:
+                    ok = False
+
+            if not ok and all(c.isalnum() or c in ".:-" for c in target):
+                try:
+                    if sys.platform == "win32":
+                        ping_cmd = ["ping", "-n", "1", "-w", "250", target]
+                    else:
+                        ping_cmd = ["ping", "-c", "1", "-W", "1"]
+                        if tunnel_iface:
+                            ping_cmd.extend(["-I", tunnel_iface])
+                        ping_cmd.append(target)
+                    proc = subprocess.run(ping_cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=0.5)
+                    if proc.returncode == 0:
+                        ok = True
+                        latencies.append(round((time.perf_counter() - t0) * 1000, 1))
+                except Exception:
+                    ok = False
+
+            if ok:
+                successes += 1
+
+        all_failed = (successes == 0)
+        loss_pct = round(((sent - successes) / sent) * 100) if sent > 0 else 100
+        avg_lat = round(sum(latencies) / len(latencies), 1) if latencies else None
+        return {
+            "all_failed": all_failed,
+            "successes": successes,
+            "packet_loss": loss_pct,
+            "avg_latency_ms": avg_lat
+        }
+
+    def _hot_toggle_rule_priority(self, rule: Dict[str, Any], old_prio: int, new_prio: int) -> None:
+        """
+        Executes an instant, in-memory hot toggle between priorities (< 2ms) using HAProxy Runtime API
+        and conntrack flushing before full configuration persistence.
+        """
+        port = rule.get("port")
+        if not port:
+            return
+
+        destinations = rule.get("destinations", [])
+        old_dest = next((d for d in destinations if d.get("priority") == old_prio), None)
+        new_dest = next((d for d in destinations if d.get("priority") == new_prio), None)
+
+        if old_dest and old_dest.get("type", "haproxy") == "haproxy" and new_dest and new_dest.get("type") != "haproxy":
+            self._send_haproxy_runtime_cmd(f"disable frontend fwd_{port}")
+
+        if new_dest and new_dest.get("type", "haproxy") == "haproxy":
+            self._send_haproxy_runtime_cmd(f"enable frontend fwd_{port}")
+
+        if shutil.which("conntrack"):
+            try:
+                subprocess.run(["conntrack", "-D", "-p", "tcp", "--dport", str(port)],
+                               stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False)
+            except Exception:
+                pass
+
     def evaluate_rule(self, rule: Dict[str, Any]) -> bool:
         rule_id = rule.get("id", f"rule-{rule.get('port')}")
         destinations = sorted(rule.get("destinations", []), key=lambda x: x.get("priority", 99))
@@ -609,13 +806,46 @@ class XForwarderEngine:
         if rule_id not in self.runtime_state["rules_state"]:
             self.runtime_state["rules_state"][rule_id] = {
                 "active_priority": rule.get("active_priority", 1),
-                "dest_stats": {}
+                "dest_stats": {},
+                "last_switch_time": 0,
+                "switch_history": [],
+                "is_flapping": False,
+                "cooldown_remaining": 0
             }
 
         rule_state = self.runtime_state["rules_state"][rule_id]
         force_override = rule.get("force_override", 0)
+        current_active = rule_state.get("active_priority", rule.get("active_priority", 1))
 
-        dest_results = {}
+        # Reset cooldown if admin changed the override mode (e.g. forced or restored to Auto)
+        prev_force_override = rule_state.get("last_force_override", force_override)
+        if prev_force_override != force_override:
+            rule_state["last_switch_time"] = 0
+            rule_state["cooldown_remaining"] = 0
+        rule_state["last_force_override"] = force_override
+
+        fast_failover = bool(self.config.get("fast_failover_enabled", True))
+        max_loss = int(self.config.get("max_acceptable_loss", 25))
+        fail_thresh = int(self.config.get("failure_threshold", 3))
+        recovery_thresh = int(self.config.get("recovery_threshold", 3))
+        loss_weight = int(self.config.get("loss_penalty_weight", 10))
+        cooldown = int(self.config.get("cooldown_seconds", 60))
+        hysteresis_pct = float(self.config.get("hysteresis_percent", 10))
+
+        now = time.time()
+        last_switch = float(rule_state.get("last_switch_time", 0))
+        in_cooldown = (now - last_switch < cooldown)
+        rule_state["cooldown_remaining"] = max(0, round(cooldown - (now - last_switch))) if in_cooldown else 0
+
+        # Prune old switch history (>10 minutes)
+        switches = [t for t in rule_state.get("switch_history", []) if now - t < 600]
+        rule_state["switch_history"] = switches
+        rule_state["is_flapping"] = (len(switches) >= 3)
+        if rule_state["is_flapping"]:
+            # If flapping, double the effective cooldown
+            in_cooldown = (now - last_switch < cooldown * 2)
+            rule_state["cooldown_remaining"] = max(0, round((cooldown * 2) - (now - last_switch))) if in_cooldown else 0
+
         for dest in destinations:
             prio = dest.get("priority", 1)
             dest_key = f"prio_{prio}"
@@ -625,54 +855,170 @@ class XForwarderEngine:
                     "consecutive_success": 0,
                     "status": "unknown",
                     "latency_ms": None,
-                    "packet_loss": 0
+                    "packet_loss": 0,
+                    "composite_score": 999.0,
+                    "history": []
                 }
 
             stat = rule_state["dest_stats"][dest_key]
             check_res = self.check_destination(dest, rule_port=rule.get("port"), protocol=rule.get("protocol"))
-            stat["latency_ms"] = check_res["latency_ms"]
+
+            # If active priority destination failed regular probe and fast failover is enabled:
+            # Run adaptive fast burst to confirm failure in < 1 second!
+            is_active_dest = (prio == current_active)
+            if is_active_dest and not check_res["healthy"] and fast_failover:
+                burst_res = self._fast_confirm_burst(dest, rule_port=rule.get("port"), protocol=rule.get("protocol"))
+                if burst_res["all_failed"]:
+                    check_res["healthy"] = False
+                    check_res["packet_loss"] = 100
+                    stat["consecutive_fails"] = max(stat["consecutive_fails"], fail_thresh)
+
             if "reason" in check_res:
                 stat["reason"] = check_res["reason"]
 
-            fail_thresh = self.config.get("failure_threshold", 3)
+            # Update sliding window history (up to 8 samples)
+            if "history" not in stat or not isinstance(stat["history"], list):
+                stat["history"] = []
+            stat["history"].append({
+                "healthy": check_res["healthy"],
+                "latency_ms": check_res.get("latency_ms"),
+                "ts": now
+            })
+            stat["history"] = stat["history"][-8:]
+
+            # Compute rolling metrics over window
+            tot_samples = len(stat["history"])
+            fail_samples = sum(1 for s in stat["history"] if not s["healthy"])
+            succ_latencies = [s["latency_ms"] for s in stat["history"] if s["healthy"] and s.get("latency_ms") is not None]
+
+            rolling_loss = round((fail_samples / tot_samples) * 100) if tot_samples > 0 else (0 if check_res["healthy"] else 100)
+            avg_lat = round(sum(succ_latencies) / len(succ_latencies), 1) if succ_latencies else check_res.get("latency_ms")
+
+            stat["packet_loss"] = rolling_loss
+            stat["latency_ms"] = avg_lat
+
+            # Determine consecutive success/fails and status
+            prev_status = stat.get("status", "unknown")
             if check_res["healthy"]:
                 stat["consecutive_fails"] = 0
-                stat["consecutive_success"] += 1
-                if stat["consecutive_success"] >= self.config.get("recovery_threshold", 3):
+                stat["consecutive_success"] = stat.get("consecutive_success", 0) + 1
+                if prev_status in ("unknown", ""):
                     stat["status"] = "healthy"
-                stat["packet_loss"] = 0
+                elif rolling_loss == 0 and stat["consecutive_success"] >= recovery_thresh:
+                    stat["status"] = "healthy"
+                elif rolling_loss > max_loss:
+                    stat["status"] = "degraded"
+                elif prev_status != "healthy" and stat["consecutive_success"] >= recovery_thresh:
+                    stat["status"] = "healthy"
             else:
                 stat["consecutive_success"] = 0
-                stat["consecutive_fails"] += 1
-                if stat["consecutive_fails"] >= fail_thresh:
+                stat["consecutive_fails"] = stat.get("consecutive_fails", 0) + 1
+                if stat["consecutive_fails"] >= fail_thresh or rolling_loss >= 100:
                     stat["status"] = "failed"
                     stat["packet_loss"] = 100
-                else:
-                    stat["packet_loss"] = round((stat["consecutive_fails"] / fail_thresh) * 100)
+                elif rolling_loss > max_loss:
+                    stat["status"] = "degraded"
 
-            dest_results[prio] = (stat["status"] == "healthy")
+            # Compute composite quality score: Score = Latency + (Loss% * LossWeight)
+            lat_val = avg_lat if avg_lat is not None else 800.0
+            stat["composite_score"] = round(lat_val + (stat["packet_loss"] * loss_weight), 1)
 
-        current_active = rule_state["active_priority"]
+        # Decision Logic:
         target_active = current_active
-
         if force_override > 0:
             target_active = force_override
+            rule_state["last_switch_time"] = 0  # Manual override clears cooldown
+            rule_state["cooldown_remaining"] = 0
         else:
-            chosen = None
-            for dest in destinations:
-                p = dest.get("priority", 1)
-                if dest_results.get(p, False):
-                    chosen = p
-                    break
+            curr_stat = rule_state["dest_stats"].get(f"prio_{current_active}", {})
+            is_curr_hard_failed = (curr_stat.get("status") == "failed" or curr_stat.get("packet_loss", 0) >= 100)
+            is_curr_degraded = (curr_stat.get("status") == "degraded")
 
-            if chosen is not None:
-                target_active = chosen
-            else:
+            if is_curr_hard_failed:
+                # Emergency Failover: Current route is dead!
+                # Bypass cooldown immediately and pick the best available candidate.
+                best_cand = None
+                best_cand_score = 999999.0
+                for d in destinations:
+                    p = d.get("priority", 1)
+                    if p == current_active:
+                        continue
+                    st = rule_state["dest_stats"].get(f"prio_{p}", {})
+                    if st.get("status") in ("healthy", "degraded", "unknown") and st.get("packet_loss", 100) < 100 and st.get("status") != "failed":
+                        score = st.get("composite_score", 999.0)
+                        if st.get("status") == "healthy":
+                            score -= 50.0  # Preference for healthy routes
+                        if score < best_cand_score:
+                            best_cand_score = score
+                            best_cand = p
+                if best_cand is not None:
+                    target_active = best_cand
+            elif in_cooldown:
+                # Anti-Flapping: Route is operative and cooldown timer is active.
+                # Hold active route to prevent ping-pong oscillation!
                 target_active = current_active
+            else:
+                # Cooldown expired and current route is running.
+                # Check if an alternative route is significantly better (10% Hysteresis).
+                curr_score = curr_stat.get("composite_score", 999.0)
+                best_alt = None
+                best_alt_score = curr_score
+
+                # Check Priority 1 recovery (Asymmetric Failback):
+                p1_stat = rule_state["dest_stats"].get("prio_1", {})
+                p1_eligible = (
+                    p1_stat.get("status") == "healthy"
+                    and p1_stat.get("packet_loss", 0) <= 5
+                    and p1_stat.get("consecutive_success", 0) >= recovery_thresh
+                )
+
+                if current_active > 1 and p1_eligible:
+                    # Priority 1 has recovered with sustained health!
+                    p1_score = p1_stat.get("composite_score", 999.0)
+                    if p1_score <= curr_score * 1.10:  # within 10% or better
+                        best_alt = 1
+                        best_alt_score = p1_score
+
+                if best_alt is None and is_curr_degraded:
+                    # Current route is degraded (loss > max_acceptable_loss). Look for healthy alternative.
+                    for d in destinations:
+                        p = d.get("priority", 1)
+                        if p == current_active:
+                            continue
+                        st = rule_state["dest_stats"].get(f"prio_{p}", {})
+                        if st.get("status") == "healthy":
+                            best_alt = p
+                            break
+
+                if best_alt is None:
+                    # Normal quality evaluation: Alternative must beat current by at least hysteresis_percent%
+                    for d in destinations:
+                        p = d.get("priority", 1)
+                        if p == current_active:
+                            continue
+                        st = rule_state["dest_stats"].get(f"prio_{p}", {})
+                        if st.get("status") == "healthy":
+                            cand_score = st.get("composite_score", 999.0)
+                            # 10% Hysteresis check
+                            if cand_score <= (curr_score * (1.0 - (hysteresis_pct / 100.0))) - 10.0:
+                                if cand_score < best_alt_score:
+                                    best_alt_score = cand_score
+                                    best_alt = p
+
+                if best_alt is not None:
+                    target_active = best_alt
 
         state_changed = (target_active != current_active)
-        rule_state["active_priority"] = target_active
-        rule["active_priority"] = target_active
+        if state_changed:
+            rule_state["last_switch_time"] = now
+            if "switch_history" not in rule_state or not isinstance(rule_state["switch_history"], list):
+                rule_state["switch_history"] = []
+            rule_state["switch_history"].append(now)
+            rule_state["active_priority"] = target_active
+            rule["active_priority"] = target_active
+            # Hot runtime toggle for HAProxy & NFTables if applicable
+            self._hot_toggle_rule_priority(rule, old_prio=current_active, new_prio=target_active)
+
         return state_changed
 
     def _get_rules_fingerprint(self) -> str:
@@ -1030,7 +1376,14 @@ http {{
     gzip on;
 }}
 """
-        if not nginx_entries and not os.path.exists(NGINX_CONF_PATH):
+        if not nginx_entries:
+            if shutil.which("nginx") and shutil.which("systemctl"):
+                try:
+                    chk = subprocess.run(["systemctl", "is-active", "--quiet", "nginx"])
+                    if chk.returncode == 0:
+                        subprocess.run(["systemctl", "stop", "nginx"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                except Exception:
+                    pass
             self.runtime_state["active_services"]["nginx"] = False
             return True, None
 
@@ -1066,7 +1419,11 @@ http {{
                 if test_res.returncode == 0:
                     os.replace(tmp_nginx, NGINX_CONF_PATH)
                     if shutil.which("systemctl"):
-                        res = subprocess.run(["systemctl", "reload", "nginx"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                        chk_active = subprocess.run(["systemctl", "is-active", "--quiet", "nginx"])
+                        if chk_active.returncode == 0:
+                            res = subprocess.run(["systemctl", "reload", "nginx"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                        else:
+                            res = subprocess.run(["systemctl", "start", "nginx"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
                         if res.returncode != 0:
                             res = subprocess.run(["systemctl", "restart", "nginx"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
                             if res.returncode != 0:

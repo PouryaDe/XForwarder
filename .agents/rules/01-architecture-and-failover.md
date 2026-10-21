@@ -29,11 +29,21 @@ A port must **NEVER** be bound by HAProxy and forwarded by NFTables DNAT at the 
 - **Detection Cycle**: Configurable via `check_interval_seconds` (default: 8s).
 - **Failure Threshold**: Configurable via `failure_threshold` (default: 3 consecutive failed probes before marking `failed`).
 - **Recovery Threshold**: Configurable via `recovery_threshold` (default: 3 consecutive healthy probes before marking `healthy`).
-- **Failback**: As soon as Priority 1 recovers, the engine automatically switches traffic back to Priority 1 (unless `force_override` is active).
+- **Sub-Second Fast Probe Burst**: Active route probe failures trigger an immediate 3-probe micro-burst (`_fast_confirm_burst`, 100ms interval, 250ms timeout) confirming failure in <1s.
+- **Multi-Metric Composite Scoring**: Destinations evaluate both latency and rolling packet loss over a sliding window ($W=8$):
+  $$\text{Composite Score} = \text{Avg Latency (ms)} + (\text{Loss Pct} \times 10)$$
+- **Max Acceptable Loss**: Routes exceeding `max_acceptable_loss` (default: 25%) are marked degraded and deprioritized.
+- **Anti-Flapping Route Damping & 10% Hysteresis**:
+  - Route switches require an alternative to be at least 10% better (`hysteresis_percent = 10%`).
+  - Active routes observe a hold-down cooldown (`cooldown_seconds = 60s`). Total failure (100% loss) bypasses cooldown immediately.
+  - $\ge 3$ switches within 10 minutes triggers flap damping, dynamically doubling the hold-down cooldown.
+- **Failback**: As soon as Priority 1 recovers with sustained clean health (0% loss, consecutive successes >= threshold), the engine switches back to Priority 1.
+- **Nginx Dynamic Lifecycle**: When 0 rules use Nginx, the daemon stops Nginx (`systemctl stop nginx`); starts/reloads Nginx when rules are active.
 - **Force Override Modes**:
   - `0`: Auto Failover (default)
   - `1`: Force Priority 1 (Primary)
   - `2`: Force Priority 2 (Backup)
+  - *Changing override mode immediately clears active cooldown hold-downs.*
 
 ## 4. State & Configuration Persistence
 - **Persistent Configuration**: `/etc/xforwarder/config.json` (fallback: `/etc/forward-manager/config.json` or `config/config.json`).

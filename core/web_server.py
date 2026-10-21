@@ -174,6 +174,12 @@ def export_config_data(cfg: dict = None) -> dict:
         "check_interval_seconds": cfg.get("check_interval_seconds", 8),
         "failure_threshold": cfg.get("failure_threshold", 3),
         "recovery_threshold": cfg.get("recovery_threshold", 3),
+        "fast_failover_enabled": cfg.get("fast_failover_enabled", True),
+        "max_acceptable_loss": cfg.get("max_acceptable_loss", 25),
+        "cooldown_seconds": cfg.get("cooldown_seconds", 60),
+        "hysteresis_percent": cfg.get("hysteresis_percent", 10),
+        "loss_penalty_weight": cfg.get("loss_penalty_weight", 10),
+        "fast_probe_burst": cfg.get("fast_probe_burst", 3),
         "rules": cfg.get("rules", [])
     }
 
@@ -246,12 +252,11 @@ def import_config_data(imported_raw, mode: str = "merge") -> tuple:
         current_cfg["rules"] = validated_rules
         if "wan_interface" in imported_cfg and imported_cfg["wan_interface"]:
             current_cfg["wan_interface"] = imported_cfg["wan_interface"]
-        if "check_interval_seconds" in imported_cfg:
-            current_cfg["check_interval_seconds"] = imported_cfg["check_interval_seconds"]
-        if "failure_threshold" in imported_cfg:
-            current_cfg["failure_threshold"] = imported_cfg["failure_threshold"]
-        if "recovery_threshold" in imported_cfg:
-            current_cfg["recovery_threshold"] = imported_cfg["recovery_threshold"]
+        for param in ("check_interval_seconds", "failure_threshold", "recovery_threshold",
+                      "fast_failover_enabled", "max_acceptable_loss", "cooldown_seconds",
+                      "hysteresis_percent", "loss_penalty_weight", "fast_probe_burst"):
+            if param in imported_cfg:
+                current_cfg[param] = imported_cfg[param]
     else:  # merge
         current_rules = current_cfg.get("rules", [])
         rules_map = {r.get("port"): r for r in current_rules if isinstance(r, dict)}
@@ -1506,18 +1511,30 @@ class XForwarderWebHandler(BaseHTTPRequestHandler):
                     if override_prio > 0:
                         r["active_priority"] = override_prio
                     else:
-                        # Auto Failover: immediately recalculate active_priority from healthy states
+                        # Auto Failover: immediately recalculate active_priority from healthy states & composite scores
                         state = load_state()
                         r_state = state.get("runtime", {}).get("rules_state", {}).get(rule_id, {})
+                        r_state["last_switch_time"] = 0
+                        r_state["cooldown_remaining"] = 0
                         dest_stats = r_state.get("dest_stats", {})
                         chosen = None
                         dests = sorted(r.get("destinations", []), key=lambda d: d.get("priority", 99))
                         for d in dests:
                             p = d.get("priority", 1)
                             st = dest_stats.get(f"prio_{p}", {})
-                            if st.get("status") == "healthy":
+                            if st.get("status") == "healthy" and st.get("packet_loss", 0) <= 25:
                                 chosen = p
                                 break
+                        if chosen is None:
+                            best_score = 999999.0
+                            for d in dests:
+                                p = d.get("priority", 1)
+                                st = dest_stats.get(f"prio_{p}", {})
+                                if st.get("packet_loss", 100) < 100:
+                                    sc = st.get("composite_score", 999.0)
+                                    if sc < best_score:
+                                        best_score = sc
+                                        chosen = p
                         r["active_priority"] = chosen if chosen is not None else (dests[0].get("priority", 1) if dests else 1)
                     found = True
                     break
@@ -1534,6 +1551,7 @@ class XForwarderWebHandler(BaseHTTPRequestHandler):
                 })
             else:
                 self.send_json({"ok": False, "error": "Save failed"}, 500)
+            return
 
         elif subpath == "/api/override/batch":
             try:
@@ -1552,20 +1570,32 @@ class XForwarderWebHandler(BaseHTTPRequestHandler):
             rules_state = state.get("runtime", {}).get("rules_state", {})
             for r in rules:
                 r["force_override"] = override_prio
+                r_id = r.get("id")
+                r_state = rules_state.get(r_id, {})
+                r_state["last_switch_time"] = 0
+                r_state["cooldown_remaining"] = 0
                 if override_prio > 0:
                     r["active_priority"] = override_prio
                 else:
-                    r_id = r.get("id")
-                    r_state = rules_state.get(r_id, {})
                     dest_stats = r_state.get("dest_stats", {})
                     chosen = None
                     dests = sorted(r.get("destinations", []), key=lambda d: d.get("priority", 99))
                     for d in dests:
                         p = d.get("priority", 1)
                         st = dest_stats.get(f"prio_{p}", {})
-                        if st.get("status") == "healthy":
+                        if st.get("status") == "healthy" and st.get("packet_loss", 0) <= 25:
                             chosen = p
                             break
+                    if chosen is None:
+                        best_score = 999999.0
+                        for d in dests:
+                            p = d.get("priority", 1)
+                            st = dest_stats.get(f"prio_{p}", {})
+                            if st.get("packet_loss", 100) < 100:
+                                sc = st.get("composite_score", 999.0)
+                                if sc < best_score:
+                                    best_score = sc
+                                    chosen = p
                     r["active_priority"] = chosen if chosen is not None else (dests[0].get("priority", 1) if dests else 1)
 
             if save_config(cfg):

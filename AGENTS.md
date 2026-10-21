@@ -85,6 +85,12 @@ XForwarder/
    - Selective service reloads: HAProxy, Nginx, and NFTables rules are compared before issuing reloads, preventing redundant service signals.
    - Fast IPC: Core engine uses `SIGUSR1` signal wake-up via candidate PID files for instant evaluation when the web dashboard commits changes.
 
+10. **Sub-Second Failover, Multi-Metric Routing & Anti-Flapping (Mandatory)**:
+    - Adaptive Fast Probing: Outages on active routes trigger rapid micro-probe bursts (`_fast_confirm_burst`) confirming failure in <1s.
+    - Multi-Metric Evaluation: Route selection balances latency and rolling packet loss via composite quality scoring (`Score = Latency + (Loss% * 10)`).
+    - Anti-Flapping Stability: Route switches require a 10% quality advantage margin (`hysteresis_percent = 10%`), hold-down cooldown (`cooldown_seconds = 60s`), and exponential flap damping on frequent oscillations.
+    - Zero-Interruption Hot Handover: Frontends are hot-toggled via HAProxy runtime socket (<2ms) and stale conntrack states are flushed. Nginx is stopped when 0 rules use Nginx.
+
 ---
 
 ## 🔍 Codebase Knowledge Graph (graphify)

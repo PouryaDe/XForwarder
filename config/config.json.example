@@ -4,6 +4,12 @@
   "check_interval_seconds": 8,
   "failure_threshold": 3,
   "recovery_threshold": 3,
+  "fast_failover_enabled": true,
+  "max_acceptable_loss": 25,
+  "cooldown_seconds": 60,
+  "hysteresis_percent": 10,
+  "loss_penalty_weight": 10,
+  "fast_probe_burst": 3,
   "web": {
     "bind_host": "0.0.0.0",
     "port": 8090,

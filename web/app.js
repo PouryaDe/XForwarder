@@ -117,25 +117,30 @@ function fallbackCopy(text) {
     showToast(`Copied: ${text}`);
 }
 
-// Latency Badge Formatter (shows latency and packet loss)
+// Latency & Quality Badge Formatter (shows latency, real packet loss %, and quality score)
 function formatLatencyBadge(stat) {
     if (!stat) return '';
     const isHealthy = (stat.status === 'healthy');
+    const isDegraded = (stat.status === 'degraded');
+    const isFailed = (stat.status === 'failed' || stat.status === 'down');
     const loss = stat.packet_loss !== undefined && stat.packet_loss !== null ? parseInt(stat.packet_loss) : (isHealthy ? 0 : 100);
+    const scoreText = stat.composite_score !== undefined ? ` · Quality Score: ${stat.composite_score}` : '';
 
-    if (!isHealthy) {
-        return `<span class="latency-pill latency-bad" title="${loss}% Packet Loss"><span class="latency-dot"></span>${loss}% loss</span>`;
+    if (isFailed || (!isHealthy && !isDegraded)) {
+        return `<span class="latency-pill latency-bad" title="${loss}% Packet Loss${scoreText}"><span class="latency-dot"></span>${loss}% loss</span>`;
     }
 
     const ms = parseFloat(stat.latency_ms);
     if (isNaN(ms) || ms <= 0) {
-        return `<span class="latency-pill latency-good" title="0% Packet Loss"><span class="latency-dot"></span>0% loss</span>`;
+        return `<span class="latency-pill latency-good" title="0% Packet Loss${scoreText}"><span class="latency-dot"></span>0% loss</span>`;
     }
+
     let cls = "latency-good";
-    if (loss > 50 || ms > 150) cls = "latency-bad";
+    if (isDegraded || loss > 25 || ms > 150) cls = "latency-bad";
     else if (loss > 0 || ms > 70) cls = "latency-medium";
 
-    return `<span class="latency-pill ${cls}" title="Latency: ${ms} ms · Packet Loss: ${loss}%"><span class="latency-dot"></span>${ms} ms · ${loss}% loss</span>`;
+    const label = isDegraded ? `${loss}% loss (Degraded)` : (loss > 0 ? `${ms} ms · ${loss}% loss` : `${ms} ms`);
+    return `<span class="latency-pill ${cls}" title="Latency: ${ms} ms · Packet Loss: ${loss}%${scoreText}"><span class="latency-dot"></span>${label}</span>`;
 }
 
 // Concise Failure Reason Formatter
@@ -1123,9 +1128,9 @@ function computeRulesFingerprint(filteredRules, rulesState) {
         const destsStr = (r.destinations || []).map(d => {
             const p = d.priority || 1;
             const st = destStats[`prio_${p}`] || {};
-            return `${p}:${d.type}:${d.target}:${d.port}:${d.proxy_protocol}:${d.comment || ''}:${st.status}:${st.latency_ms}:${st.packet_loss}:${st.reason || ''}`;
+            return `${p}:${d.type}:${d.target}:${d.port}:${d.proxy_protocol}:${d.comment || ''}:${st.status}:${st.latency_ms}:${st.packet_loss}:${st.composite_score || ''}:${st.reason || ''}`;
         }).join(";");
-        return `${rId}|${r.port}|${r.protocol}|${r.comment || ''}|${r.active_priority}|${r.force_override}|${destsStr}`;
+        return `${rId}|${r.port}|${r.protocol}|${r.comment || ''}|${r.active_priority}|${r.force_override}|${rState.cooldown_remaining || 0}|${rState.is_flapping || false}|${destsStr}`;
     }).join("##") + `__f:${activeFilter}__s:${searchQuery}`;
 }
 
@@ -1343,6 +1348,8 @@ function renderRules(rules, runtime) {
                         <span class="port-num">:${escapeHtml(rule.port)}</span>
                         <button class="btn-copy" onclick="copyText(decodeURIComponent('${encodeURIComponent(rule.port)}'))" title="Copy Port Number">${copyPortSvg}</button>
                         <span class="proto-pill">${escapeHtml(formatProtoBadge(rule.protocol))}</span>
+                        ${rState.cooldown_remaining > 0 ? `<span class="badge-cooldown" title="Anti-Flap Cooldown active (Route held stable)"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 14 14"/></svg>Hold ${rState.cooldown_remaining}s</span>` : ''}
+                        ${rState.is_flapping ? `<span class="badge-flapping" title="Repeated route flapping detected. Cooldown extended."><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>Flap Guard</span>` : ''}
                     </div>
                     <div class="rule-actions">
                         <button class="btn btn-secondary btn-sm" onclick="editRule(decodeURIComponent('${encodedId}'))" title="Edit Rule">

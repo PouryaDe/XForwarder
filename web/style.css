@@ -1575,6 +1575,32 @@ body {
     border: 1px solid rgba(6, 182, 212, 0.25);
 }
 
+.badge-cooldown {
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 6px;
+    background: rgba(14, 165, 233, 0.15);
+    color: #38bdf8;
+    border: 1px solid rgba(56, 189, 248, 0.3);
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.badge-flapping {
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 6px;
+    background: rgba(245, 158, 11, 0.15);
+    color: #fbbf24;
+    border: 1px solid rgba(251, 191, 36, 0.35);
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
 .rule-actions {
     display: flex;
     align-items: center;
