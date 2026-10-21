@@ -880,6 +880,15 @@ class TestUIAndAPIEdgeCases(unittest.TestCase):
         self.assertIn('[data-theme="light"] .btn-path-test {', css)
         self.assertIn('[data-theme="light"] .prio-tag-1 {', css)
 
+        # 6. Light Mode Brand & Avatar Elements: crisp white glyphs on royal violet gradient
+        self.assertIn('[data-theme="light"] .logo-orb {', css)
+        self.assertIn('[data-theme="light"] .logo-orb svg {', css)
+        self.assertIn('[data-theme="light"] .brand-badge {', css)
+        self.assertIn('[data-theme="light"] .user-avatar {', css)
+        self.assertIn('[data-theme="light"] .user-avatar svg {', css)
+        self.assertIn('[data-theme="light"] .sidebar-user {', css)
+        self.assertIn("-webkit-font-smoothing: antialiased;", css)
+
 
 if __name__ == "__main__":
     unittest.main()
