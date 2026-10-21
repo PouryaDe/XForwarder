@@ -1330,7 +1330,7 @@ function renderRules(rules, runtime) {
                             </span>
                         </div>
                         <div class="path-header-right">
-                            <button type="button" class="btn-path-test" onclick="runLivePacketLossTest('${encodedId}', '${escapeHtml(rawTarget)}', ${dest.port || rule.port}, '${dest.type || 'haproxy'}', this)" title="Test live ping, latency and packet loss to this destination">
+                            <button type="button" class="btn-path-test" onclick="runLivePacketLossTest(decodeURIComponent('${encodedId}'), decodeURIComponent('${encodeURIComponent(rawTarget)}'), ${dest.port || rule.port}, '${dest.type || 'haproxy'}', this)" title="Test live ping, latency and packet loss to this destination">
                                 <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
                                 <span>Test Loss</span>
                             </button>
@@ -2687,6 +2687,11 @@ function addLogEntry(type, message) {
     }
 }
 
+function appendLogEntry(type, message) {
+    addLogEntry(type, message);
+}
+
+
 if (btnClearLogs) {
     btnClearLogs.addEventListener("click", () => {
         if (logConsole) {
@@ -2760,7 +2765,7 @@ async function runLivePacketLossTest(encodedRuleId, rawTarget, port, destType, b
                     btnEl.classList.add("is-success");
                     btnEl.innerHTML = `<span>✓ ${lat || 'OK'} · ${loss}% loss</span>`;
                 }
-                appendLogEntry("probe", `[Manual Probe] [${cleanTarget}]:${port} Reachable — ${lat}, ${loss}% loss (${pkts})`);
+                addLogEntry("probe", `[Manual Probe] [${cleanTarget}]:${port} Reachable — ${lat}, ${loss}% loss (${pkts})`);
             } else {
                 const reason = data.reason ? ` (${data.reason})` : "";
                 showToast(`✗ [${cleanTarget}]:${port} Unreachable · 100% loss${reason}`, "error");
@@ -2769,7 +2774,7 @@ async function runLivePacketLossTest(encodedRuleId, rawTarget, port, destType, b
                     btnEl.classList.add("is-fail");
                     btnEl.innerHTML = `<span>✗ 100% loss</span>`;
                 }
-                appendLogEntry("fail", `[Manual Probe] [${cleanTarget}]:${port} Unreachable — 100% loss${reason}`);
+                addLogEntry("fail", `[Manual Probe] [${cleanTarget}]:${port} Unreachable — 100% loss${reason}`);
             }
         } else {
             showToast(data.error || "Packet loss test failed", "error");
@@ -2779,6 +2784,7 @@ async function runLivePacketLossTest(encodedRuleId, rawTarget, port, destType, b
             }
         }
     } catch (err) {
+        console.error("runLivePacketLossTest error:", err);
         showToast("Network error executing packet loss test", "error");
         if (btnEl) {
             btnEl.classList.remove("is-testing");
@@ -2874,10 +2880,10 @@ function initDiagPacketLossTool() {
 
                 if (isHealthy) {
                     showToast(`✓ [${target}]:${port} — ${lat}, ${loss}% loss`, "info");
-                    appendLogEntry("probe", `[Diagnostic Test] [${target}]:${port} — Latency: ${lat}, Loss: ${loss}%, Received: ${rec}/${sent}`);
+                    addLogEntry("probe", `[Diagnostic Test] [${target}]:${port} — Latency: ${lat}, Loss: ${loss}%, Received: ${rec}/${sent}`);
                 } else {
                     showToast(`✗ [${target}]:${port} — 100% packet loss`, "error");
-                    appendLogEntry("fail", `[Diagnostic Test] [${target}]:${port} — Unreachable (100% loss) ${data.reason || ''}`);
+                    addLogEntry("fail", `[Diagnostic Test] [${target}]:${port} — Unreachable (100% loss) ${data.reason || ''}`);
                 }
             } else {
                 resultBox.innerHTML = `<span class="text-rose" style="font-size:0.82rem;">✗ Test failed: ${escapeHtml(data.error || 'Server error')}</span>`;

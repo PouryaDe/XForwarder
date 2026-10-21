@@ -601,7 +601,7 @@ class XForwarderEngine:
                             fail_reason = str(e)
 
             # 2. ICMP Ping probe if socket had 0 successes or proto is UDP
-            if successes == 0 and all(c in "0123456789abcdefABCDEF:.-" for c in target):
+            if successes == 0 and all(c.isalnum() or c in ".:-" for c in target):
                 try:
                     if sys.platform == "win32":
                         ping_cmd = ["ping", "-n", str(sent), "-w", "1000", target]

@@ -259,6 +259,9 @@ class TestUIAndAPIEdgeCases(unittest.TestCase):
         self.assertIn("proxy_protocol", app_content)
         self.assertIn("testModalDestination", app_content)
         self.assertIn("/test-target", app_content)
+        self.assertIn("function addLogEntry", app_content)
+        self.assertIn("function appendLogEntry", app_content)
+        self.assertIn("runLivePacketLossTest", app_content)
 
         self.assertIn(".dest-proxy-proto", style_content)
         self.assertIn(".btn-test-dest", style_content)
