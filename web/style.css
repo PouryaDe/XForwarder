@@ -2476,6 +2476,41 @@ select option {
 .flex-1 { flex: 1; }
 .flex-2 { flex: 2; }
 
+/* Destination Form Row Proportions */
+.dest-form-row {
+    display: flex;
+    gap: 12px;
+}
+
+.dest-col-type {
+    flex: 0 0 190px;
+    min-width: 175px;
+}
+
+.dest-col-target {
+    flex: 1 1 auto;
+    min-width: 170px;
+}
+
+.dest-col-port {
+    flex: 0 0 115px;
+    min-width: 95px;
+}
+
+@media (max-width: 640px) {
+    .dest-form-row {
+        flex-direction: column;
+        gap: 8px;
+    }
+    .dest-col-type,
+    .dest-col-target,
+    .dest-col-port {
+        flex: 1 1 100%;
+        width: 100%;
+        min-width: 0;
+    }
+}
+
 /* Priority Box in Modal */
 .priority-box {
     border: 1px solid var(--border-color);
@@ -2695,7 +2730,7 @@ select option {
     border: 1px solid var(--border-color);
     border-radius: 20px;
     width: 100%;
-    max-width: 650px;
+    max-width: 720px;
     max-height: 90vh;
     overflow-y: auto;
     padding: 26px;

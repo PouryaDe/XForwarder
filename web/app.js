@@ -1851,22 +1851,22 @@ function renderDestinationRow(dest, index, totalCount) {
                 </button>` : ""}
             </div>
         </div>
-        <div class="form-row">
-            <div class="form-group flex-1">
+        <div class="dest-form-row">
+            <div class="form-group dest-col-type">
                 <label>Engine Type</label>
                 <select class="form-control dest-type" onchange="handleDestTypeChange(this)">
-                    <option value="haproxy" ${type === "haproxy" ? "selected" : ""}>HAProxy (Direct Zero-Tunnel IPv6)</option>
-                    <option value="nginx" ${type === "nginx" ? "selected" : ""}>Nginx (Stream TCP/UDP Proxy)</option>
-                    <option value="nftables" ${type === "nftables" ? "selected" : ""}>NFTables (Kernel Tunnel DNAT)</option>
+                    <option value="haproxy" ${type === "haproxy" ? "selected" : ""}>HAProxy (IPv6)</option>
+                    <option value="nginx" ${type === "nginx" ? "selected" : ""}>Nginx (Stream)</option>
+                    <option value="nftables" ${type === "nftables" ? "selected" : ""}>NFTables (Kernel)</option>
                 </select>
             </div>
-            <div class="form-group flex-2">
+            <div class="form-group dest-col-target">
                 <label>Destination Target IP / Host</label>
                 <input type="text" class="form-control dest-target" placeholder="${targetPlaceholder}" value="${escapeHtml(target)}" required>
             </div>
-            <div class="form-group flex-1">
+            <div class="form-group dest-col-port">
                 <label>Target Port</label>
-                <input type="number" class="form-control dest-port" placeholder="Same as listen" min="1" max="65535" value="${escapeHtml(port)}">
+                <input type="number" class="form-control dest-port" placeholder="Default" min="1" max="65535" value="${escapeHtml(port)}">
             </div>
         </div>
         <div class="form-group" style="margin-bottom:10px;">
