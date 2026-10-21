@@ -199,6 +199,10 @@ class TestUIAndAPIEdgeCases(unittest.TestCase):
         self.assertIn('btn-mode-pill', app_content)
         self.assertIn('btn-path-test', app_content)
 
+        # 10. Verify faded/dimmed styling for down priority paths
+        self.assertIn('.path-box.is-down', style_content)
+        self.assertIn("'is-down'", app_content)
+
     def test_services_status_api_and_dom(self):
         """Verifies get_services_status API structure and DOM presence for NFTables, HAProxy, and Nginx."""
         services = get_services_status()

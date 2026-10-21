@@ -1809,6 +1809,36 @@ input:-webkit-autofill:active {
     box-shadow: 0 0 16px -4px rgba(245, 158, 11, 0.25);
 }
 
+/* Faded/Dimmed styling for completely Down priorities */
+.path-box.is-down {
+    opacity: 0.48;
+    border-color: rgba(239, 68, 68, 0.22);
+    background: rgba(239, 68, 68, 0.02);
+    transition: opacity 0.2s ease, border-color 0.2s ease, background-color 0.2s ease;
+}
+
+.path-box.is-down:hover {
+    opacity: 0.85;
+}
+
+.path-box.is-down.is-active {
+    opacity: 0.78;
+    border-color: rgba(239, 68, 68, 0.5);
+    box-shadow: 0 0 16px -4px rgba(239, 68, 68, 0.25);
+}
+
+[data-theme="light"] .path-box.is-down {
+    opacity: 0.52;
+    border-color: rgba(220, 38, 38, 0.2);
+    background: rgba(220, 38, 38, 0.02);
+}
+
+[data-theme="light"] .path-box.is-down:hover {
+    opacity: 0.88;
+}
+
+
+
 .path-header {
     display: flex;
     justify-content: space-between;

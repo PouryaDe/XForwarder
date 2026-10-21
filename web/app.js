@@ -1253,7 +1253,7 @@ function renderRules(rules, runtime) {
 
             const stat = destStats[`prio_${prio}`] || {};
             const isHealthy = (stat.status === 'healthy');
-            const isDown = (stat.status === 'failed' || stat.status === 'down');
+            const isDown = (stat.status === 'failed' || stat.status === 'down' || (stat.packet_loss !== undefined && parseInt(stat.packet_loss) >= 100));
 
             let statusLabel = 'STANDBY';
             let statusClass = 'status-standby';
@@ -1302,8 +1302,16 @@ function renderRules(rules, runtime) {
                 metaText = commentText;
             }
 
+            const pathBoxClasses = ['path-box'];
+            if (isActive) {
+                pathBoxClasses.push(isFailover ? 'is-failover' : 'is-active');
+            }
+            if (isDown) {
+                pathBoxClasses.push('is-down');
+            }
+
             return `
-                <div class="path-box ${isActive ? (isFailover ? 'is-failover' : 'is-active') : ''}"
+                <div class="${pathBoxClasses.join(' ')}"
                      draggable="true"
                      ondragstart="handlePathDragStart(event, decodeURIComponent('${encodedId}'), ${destIndex})"
                      ondragover="handlePathDragOver(event, decodeURIComponent('${encodedId}'), ${destIndex})"
