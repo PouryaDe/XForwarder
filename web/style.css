@@ -4,7 +4,7 @@
     --bg-surface: #12151f;
     --bg-surface-2: #171b28;
     --bg-card: rgba(255, 255, 255, 0.045);
-    --bg-card-hover: rgba(255, 255, 255, 0.07);
+    --bg-card-hover: rgba(255, 255, 255, 0.065);
     --border-color: rgba(255, 255, 255, 0.08);
     --border-strong: rgba(255, 255, 255, 0.16);
     --border-active: rgba(167, 139, 250, 0.45);
@@ -51,7 +51,7 @@
     --bg-surface: #FFFFFF;
     --bg-surface-2: #F3F5FA;
     --bg-card: rgba(255, 255, 255, 0.65);
-    --bg-card-hover: rgba(255, 255, 255, 0.85);
+    --bg-card-hover: rgba(255, 255, 255, 0.80);
     --border-color: rgba(20, 25, 45, 0.08);
     --border-strong: rgba(20, 25, 45, 0.16);
     --border-active: rgba(139, 92, 246, 0.5);
@@ -592,7 +592,7 @@ input:-webkit-autofill:active {
 
 .theme-toggle-btn:hover {
     color: var(--text-primary);
-    border-color: var(--border-active);
+    background: var(--bg-card-hover);
 }
 
 .theme-toggle-icon {
@@ -722,7 +722,7 @@ input:-webkit-autofill:active {
     transition: all 0.2s ease;
     flex-shrink: 0;
 }
-.btn-hamburger:hover { border-color: var(--border-active); }
+.btn-hamburger:hover { background: var(--bg-card-hover); }
 
 .breadcrumb-container {
     display: flex;
@@ -882,8 +882,8 @@ input:-webkit-autofill:active {
 }
 
 .btn-primary:hover:not(:disabled) {
-    filter: brightness(1.08);
-    box-shadow: 0 4px 18px rgba(167, 139, 250, 0.4);
+    filter: brightness(1.04);
+    box-shadow: 0 2px 10px rgba(167, 139, 250, 0.22);
 }
 
 .btn-primary.is-success {
@@ -900,7 +900,6 @@ input:-webkit-autofill:active {
 
 .btn-secondary:hover:not(:disabled) {
     background: var(--bg-card-hover);
-    border-color: var(--border-active);
 }
 
 .btn-danger {
@@ -910,8 +909,7 @@ input:-webkit-autofill:active {
 }
 
 .btn-danger:hover:not(:disabled) {
-    background: rgba(251, 113, 133, 0.22);
-    border-color: rgba(251, 113, 133, 0.45);
+    background: rgba(251, 113, 133, 0.16);
 }
 
 .btn-spinner {
@@ -959,7 +957,7 @@ input:-webkit-autofill:active {
     transition: border-color 0.2s ease, background 0.2s ease;
 }
 
-.stat-card:hover { border-color: var(--border-strong); }
+.stat-card:hover { background: var(--bg-card-hover); }
 
 .stat-icon {
     width: 44px;
@@ -1074,14 +1072,14 @@ input:-webkit-autofill:active {
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    transition: background 0.2s ease, box-shadow 0.2s ease;
     margin-bottom: 0;
 }
 
 .network-card:hover,
 .engines-card:hover,
 .services-status-bar:hover {
-    border-color: var(--border-active);
+    background: var(--bg-card-hover);
 }
 
 /* Relay Engines Card Elements */
@@ -1143,8 +1141,7 @@ input:-webkit-autofill:active {
 }
 
 .engine-item:hover {
-    border-color: var(--border-active);
-    background: rgba(255, 255, 255, 0.05);
+    background: var(--bg-card-hover);
 }
 
 .engine-item-left {
@@ -1230,12 +1227,11 @@ input:-webkit-autofill:active {
 }
 
 .svc-status-pill:hover {
-    background: rgba(255, 255, 255, 0.06);
-    border-color: rgba(255, 255, 255, 0.15);
+    background: rgba(255, 255, 255, 0.05);
 }
 
 [data-theme="light"] .svc-status-pill:hover {
-    background: rgba(15, 23, 42, 0.08);
+    background: rgba(15, 23, 42, 0.05);
 }
 
 .svc-pill-dot {
@@ -1481,7 +1477,6 @@ input:-webkit-autofill:active {
 }
 
 .server-ip-pill:hover {
-    border-color: rgba(255, 255, 255, 0.16);
     background: rgba(255, 255, 255, 0.05);
 }
 
@@ -1490,7 +1485,6 @@ input:-webkit-autofill:active {
 }
 
 [data-theme="light"] .server-ip-pill:hover {
-    border-color: rgba(15, 23, 42, 0.18);
     background: rgba(15, 23, 42, 0.05);
 }
 
@@ -1565,11 +1559,11 @@ input:-webkit-autofill:active {
     border: 1px solid var(--border-color);
     border-radius: 12px;
     padding: 14px 16px;
-    transition: border-color 0.2s ease;
+    transition: background 0.2s ease;
 }
 
 .tunnel-card:hover {
-    border-color: var(--border-active);
+    background: var(--bg-card-hover);
 }
 
 .tunnel-card-top {
@@ -2033,7 +2027,7 @@ input:-webkit-autofill:active {
 }
 
 .path-box.is-down:hover {
-    opacity: 0.85;
+    opacity: 0.68;
 }
 
 .path-box.is-down.is-active {
@@ -2050,7 +2044,7 @@ input:-webkit-autofill:active {
 }
 
 [data-theme="light"] .path-box.is-down:hover {
-    opacity: 0.88;
+    opacity: 0.72;
 }
 
 
@@ -2094,14 +2088,12 @@ input:-webkit-autofill:active {
 
 .btn-path-test:hover {
     color: var(--text-primary);
-    border-color: rgba(255, 255, 255, 0.2);
-    background: rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.05);
 }
 
 [data-theme="light"] .btn-path-test:hover {
     color: var(--text-primary);
-    border-color: rgba(15, 23, 42, 0.2);
-    background: rgba(15, 23, 42, 0.06);
+    background: rgba(15, 23, 42, 0.04);
 }
 
 .btn-path-test.is-forced {
@@ -2112,8 +2104,7 @@ input:-webkit-autofill:active {
 }
 
 .btn-path-test.is-forced:hover {
-    background: rgba(239, 68, 68, 0.15);
-    border-color: rgba(239, 68, 68, 0.4);
+    background: rgba(239, 68, 68, 0.12);
     color: var(--accent-rose);
 }
 
@@ -2265,9 +2256,9 @@ input:-webkit-autofill:active {
 }
 
 .drag-handle:hover {
-    opacity: 1;
+    opacity: 0.9;
     color: var(--accent-cyan);
-    background: rgba(6, 182, 212, 0.12);
+    background: rgba(6, 182, 212, 0.08);
 }
 
 .drag-handle:active {
@@ -2505,7 +2496,7 @@ input:-webkit-autofill:active {
     background-position: calc(100% - 12px) center !important;
     background-size: 14px 14px !important;
 }
-.batch-select:hover { border-color: var(--accent-amber); }
+.batch-select:hover { background-color: var(--bg-card-hover); }
 
 /* ── Overview, Services & Security Grids ── */
 .overview-grid {
@@ -2610,12 +2601,11 @@ input:-webkit-autofill:active {
     border: 1px solid var(--border-color);
     font-size: 0.82rem;
     box-sizing: border-box;
-    transition: border-color 0.18s ease, background 0.18s ease;
+    transition: background 0.18s ease;
 }
 
 .info-item:hover {
     background: rgba(150, 150, 150, 0.08);
-    border-color: var(--border-active);
 }
 
 .info-label {
@@ -2801,10 +2791,10 @@ select option {
     margin-bottom: 12px;
     background: var(--bg-surface);
     position: relative;
-    transition: border-color 0.2s ease;
+    transition: background 0.2s ease;
 }
 
-.priority-box:hover { border-color: var(--border-active); }
+.priority-box:hover { background: var(--bg-card-hover); }
 
 .dest-extra-row {
     display: flex;
@@ -2858,7 +2848,7 @@ select option {
 
 .btn-test-dest:hover {
     color: var(--accent-primary);
-    border-color: var(--accent-primary);
+    background: rgba(167, 139, 250, 0.08);
 }
 
 .test-dest-result {
@@ -2935,8 +2925,7 @@ select option {
 }
 
 .add-prio-btn:hover {
-    background: rgba(167, 139, 250, 0.18);
-    border-color: var(--accent-violet);
+    background: rgba(167, 139, 250, 0.12);
 }
 
 .prio-header-actions {
@@ -2961,7 +2950,6 @@ select option {
 
 .btn-prio-move:hover:not(:disabled) {
     color: var(--accent-primary);
-    border-color: var(--border-active);
     background: var(--bg-card-hover);
 }
 
@@ -2987,8 +2975,8 @@ select option {
 }
 
 .btn-remove-prio:hover {
-    background: var(--accent-rose);
-    color: #FFF;
+    background: rgba(239, 68, 68, 0.22);
+    color: var(--accent-rose);
 }
 
 /* ── Modals ── */
@@ -3153,7 +3141,6 @@ select option {
 }
 
 .import-mode-option:hover .import-mode-card {
-    border-color: var(--border-active);
     background: var(--bg-card-hover);
 }
 
@@ -3197,7 +3184,10 @@ select option {
     background: rgba(15, 23, 42, 0.02);
 }
 
-.file-dropzone:hover,
+.file-dropzone:hover {
+    background: rgba(167, 139, 250, 0.04);
+}
+
 .file-dropzone.dragover {
     border-color: var(--accent-violet);
     background: rgba(167, 139, 250, 0.08);
@@ -3393,8 +3383,7 @@ select option {
 }
 
 .preset-chip:hover {
-    background: rgba(167, 139, 250, 0.22);
-    border-color: var(--accent-violet);
+    background: rgba(167, 139, 250, 0.15);
 }
 
 /* 1-Click Copy & Latency Pills */

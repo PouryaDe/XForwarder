@@ -353,6 +353,21 @@ class TestUIAndAPIEdgeCases(unittest.TestCase):
             self.assertNotIn("translateY", clean_block, f"Hover block must not jump vertically: {clean_block}")
             self.assertNotIn("scale", clean_block, f"Hover block must not scale: {clean_block}")
 
+    def test_frontend_css_no_hover_borders_and_subtle_transitions(self):
+        """Verifies that style.css enforces borderless, subtle hover states across all components."""
+        css_path = os.path.join(REPO_ROOT, "web", "style.css")
+        with open(css_path, "r", encoding="utf-8") as f:
+            css = f.read()
+
+        hover_matches = re.finditer(r'([^{}]*?:hover[^{}]*?)\{([^}]*?)\}', css)
+        for m in hover_matches:
+            selector = m.group(1).strip()
+            body = " ".join(m.group(2).strip().split())
+            if "autofill" in selector:
+                continue
+            self.assertNotIn("border-color", body, f"Hover selector '{selector}' must not set border-color: {body}")
+            self.assertNotIn("border:", body, f"Hover selector '{selector}' must not set border: {body}")
+
     def test_frontend_js_latency_and_priority_shortening(self):
         """Verifies that app.js suppresses 0ms latency and formats concise reasons and #num priorities."""
         js_path = os.path.join(REPO_ROOT, "web", "app.js")
