@@ -723,10 +723,10 @@ class TestUIAndAPIEdgeCases(unittest.TestCase):
         with open(js_path, "r", encoding="utf-8") as f:
             js = f.read()
 
-        # 1. Dark theme tokens in :root, [data-theme="dark"]
-        self.assertIn("--bg-base: #090A0F;", css)
-        self.assertIn("--bg-surface: #111218;", css)
-        self.assertIn("--accent-rose: #F43F5E;", css)
+        # 1. Dark theme tokens in :root, [data-theme="dark"] (Nova Admin Theme)
+        self.assertIn("--bg-base: #0B0E14;", css)
+        self.assertIn("--bg-surface: #12151f;", css)
+        self.assertIn("--accent-rose: #FB7185;", css)
 
         # 2. Stats numbers in index.html should not have hardcoded glare classes
         self.assertNotIn('id="statActiveHaproxy" class="stat-number text-emerald"', html)
@@ -781,6 +781,60 @@ class TestUIAndAPIEdgeCases(unittest.TestCase):
 
         # Degraded status -> bad rose
         self.assertEqual(classify("degraded", 10, 40.0), "latency-bad")
+
+    def test_nova_admin_design_system_and_login_cleanup(self):
+        """Verifies Nova Admin Template v3 design tokens, Aurora lighting layer, and clean login card."""
+        html_path = os.path.join(REPO_ROOT, "web", "index.html")
+        css_path = os.path.join(REPO_ROOT, "web", "style.css")
+
+        with open(html_path, "r", encoding="utf-8") as f:
+            html = f.read()
+        with open(css_path, "r", encoding="utf-8") as f:
+            css = f.read()
+
+        # 1. Typography & Google Fonts (Space Grotesk display font)
+        self.assertIn("family=Space+Grotesk", html, "index.html must load Space Grotesk font")
+        self.assertIn("--font-display: 'Space Grotesk'", css, "CSS must define Space Grotesk as display font")
+        self.assertIn("font-family: var(--font-display);", css, "Headings & stats must bind to font-display")
+
+        # 2. Floating Aurora Ambient Lighting Layer
+        self.assertIn('class="aurora"', html, "index.html must have .aurora background container")
+        self.assertIn(".aurora {", css, "style.css must style .aurora")
+        self.assertIn("pointer-events: none;", css, "Aurora must never intercept pointer events")
+        self.assertIn("@keyframes float1", css, "Aurora must define float1 keyframe animation")
+        self.assertIn("@media (prefers-reduced-motion: reduce)", css, "Must honor prefers-reduced-motion")
+
+        # 3. Nova Signature Color Tokens (Dark & Light)
+        # Dark Theme
+        self.assertIn("--bg-base: #0B0E14;", css)
+        self.assertIn("--bg-surface: #12151f;", css)
+        self.assertIn("--mint: #6EE7B7;", css)
+        self.assertIn("--violet: #A78BFA;", css)
+        self.assertIn("--amber: #FBBF6B;", css)
+        self.assertIn("--red: #FB7185;", css)
+        self.assertIn("--blob-1: #22315c;", css)
+
+        # Light Theme
+        self.assertIn("--bg-base: #EEF1F7;", css)
+        self.assertIn("--bg-surface: #FFFFFF;", css)
+        self.assertIn("--blob-1: #c9dcfb;", css)
+
+        # 4. Primary Button & Brand Logo Mint-to-Violet Gradients
+        self.assertIn("linear-gradient(135deg, var(--accent-mint), var(--accent-violet))", css)
+        self.assertIn(".btn-primary svg {", css)
+
+        # 5. Absence of Login Security Badge (Eliminates Tech Stack Disclosure)
+        self.assertNotIn("login-security-badge", html, "Login security badge must be removed from HTML")
+        self.assertNotIn(".login-security-badge {", css, "Dead .login-security-badge CSS must be cleaned up")
+        self.assertNotIn("PBKDF2-HMAC-SHA256 (100k iters)", html, "Tech stack banner must not leak on login screen")
+
+        # 6. Core Login Screen Controls Remain Fully Intact
+        self.assertIn('id="loginUsername"', html)
+        self.assertIn('id="loginPassword"', html)
+        self.assertIn('id="btnLogin"', html)
+        self.assertIn('id="loginError"', html)
+        self.assertIn('id="lockoutAlert"', html)
+        self.assertIn('id="lockoutTimer"', html)
 
 
 if __name__ == "__main__":

@@ -21,29 +21,24 @@ Authoritative visual guidelines, design tokens, and aesthetic rules for **all** 
 ## 2. Dual-Theme Design System (Dark & Light Mode)
 
 ### A. Dark Theme (`[data-theme="dark"]`, Default)
-- **Background Base:** `#090A0F` (Modern Obsidian / Charcoal Black)
-- **Surface:** `#111218`
-- **Card Fill:** `rgba(18, 20, 28, 0.75)` with `backdrop-filter: blur(14px)`
-- **Border Lines:** `rgba(255, 255, 255, 0.07)` (Focus/Active: `rgba(99, 102, 241, 0.35)`)
-- **Card Shadows:** Deep subtle depth `0 4px 20px rgba(0, 0, 0, 0.3)`
+- **Background Base:** `#0B0E14` (Nova Slate Navy)
+- **Surface Solid:** `#12151f` and `#171b28`
+- **Card Fill:** `rgba(255, 255, 255, 0.045)` with `backdrop-filter: blur(20px)`
+- **Border Lines:** `rgba(255, 255, 255, 0.08)` (Focus/Active: `rgba(167, 139, 250, 0.45)`)
+- **Card Shadows:** Deep subtle depth `0 20px 50px -12px rgba(0, 0, 0, 0.5)`
+- **Aurora Ambient Lighting:** 3 floating ambient blobs (`--blob-1: #22315c`, `--blob-2: #3d2255`, `--blob-3: #1c3b3a`)
 - **Restrained Highlights Principle (Mandatory):**
   - Never use loud neon glows (`box-shadow: 0 0 16px`) or flood normal/healthy cards with colored fills.
   - Active path routes use refined border-left accents (`border-left: 3px solid var(--accent-emerald)`) instead of neon halos.
   - Normal operational states (Auto Failover, healthy latency <150ms, priority badges, host IPs, engine running state) must remain quiet, clean, and neutral.
-  - Saturated highlight colors are strictly reserved for critical conditions: Red/Rose for DOWN/100% loss, and Amber for Degraded (>150ms or loss > 0%), Flapping, or Manual Forced testing overrides.
+  - Saturated highlight colors are strictly reserved for critical conditions: Red/Rose for DOWN/100% loss (`#FB7185`), and Amber for Degraded (>150ms or loss > 0%), Flapping, or Manual Forced testing overrides (`#FBBF6B`).
 
 ### B. Light Theme (`[data-theme="light"]`)
-- **Background Base:** `#F8FAFC`
-- **Surface & Cards:** `#FFFFFF`
-- **Border Lines:** `rgba(15, 23, 42, 0.09)` (Focus/Active: `rgba(79, 70, 229, 0.45)`)
-- **MANDATORY Standardized Light Card Shadows (Strict Constraint):**
-  - **PROHIBITED:** Heavy, dark, high-blur shadows (e.g. `rgba(0, 0, 0, 0.15)` or `10px 25px`) on white cards or the login box.
-  - **REQUIRED:** Subtle, crisp, airy elevation:
-    ```css
-    --card-shadow: 0 1px 3px 0 rgba(15, 23, 42, 0.04), 0 1px 2px -1px rgba(15, 23, 42, 0.03);
-    --panel-shadow: 0 1px 3px 0 rgba(15, 23, 42, 0.05), 0 2px 4px -1px rgba(15, 23, 42, 0.02);
-    ```
-  - Floating cards (like `.login-card`) use refined soft elevation: `box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.05), 0 1px 3px 0 rgba(15, 23, 42, 0.03);`
+- **Background Base:** `#EEF1F7` (Nova Light)
+- **Surface & Cards:** `#FFFFFF` and `rgba(255, 255, 255, 0.65)`
+- **Border Lines:** `rgba(20, 25, 45, 0.08)` (Focus/Active: `rgba(139, 92, 246, 0.5)`)
+- **Card Shadows:** `0 20px 50px -15px rgba(30, 40, 80, 0.14)`
+- **Aurora Ambient Lighting (Light):** Soft ambient blobs (`--blob-1: #c9dcfb`, `--blob-2: #f0d9fb`, `--blob-3: #c9f3ea`)
 
 ---
 

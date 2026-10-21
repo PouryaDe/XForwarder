@@ -8,10 +8,10 @@ description: Web dashboard UI aesthetics, Vanilla stack constraints, session aut
 ## 1. Frontend Technology Stack
 - **Pure Vanilla Stack**: HTML5, CSS3, and modern Vanilla ES6+ JavaScript.
 - **No Node.js / NPM Build Step**: The web dashboard is served directly from `web/` as static assets without any Webpack/Vite/Babel compilation step on the target Linux server.
-- **Typography**: Google Fonts Inter (interface) and JetBrains Mono (monospaced IPs, ports, and latency readouts).
+- **Typography**: Google Fonts Space Grotesk (display/headings), Inter (interface body), and JetBrains Mono (monospaced IPs, ports, and latency readouts).
 
 ## 2. Aesthetics & Design Guidelines
-- **Theme**: Modern Obsidian dark aesthetic (`#090A0F`) with sleek glassmorphism panels, subtle borders (`rgba(255, 255, 255, 0.07)`), and restrained highlights (red/rose strictly for outages, amber for degradation/flapping/manual testing overrides, and calm neutral surfaces for healthy states).
+- **Theme**: Nova Admin aesthetic with deep slate dark base (`#0B0E14`), floating Aurora ambient lighting (`.aurora`), sleek glassmorphism panels (`backdrop-filter: blur(20px)`), subtle borders (`rgba(255, 255, 255, 0.08)`), signature mint-to-violet gradients (`linear-gradient(135deg, #6EE7B7, #A78BFA)`), and restrained highlights (rose `#FB7185` for outages, amber `#FBBF6B` for warnings, mint `#6EE7B7` for healthy states).
 - **Responsiveness**: Fully usable on mobile viewports as well as ultra-wide monitors.
 - **Language**: English interface for universal usability.
 
