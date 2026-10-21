@@ -6,12 +6,12 @@
 - Unclassified: 8 file(s) not represented in the graph (top: .service 4, (none) 2, .example 1)
 
 ## Summary
-- 865 nodes · 1478 edges · 71 communities (42 shown, 29 thin omitted)
-- Extraction: 94% EXTRACTED · 6% INFERRED · 0% AMBIGUOUS · INFERRED: 84 edges (avg confidence: 0.92)
+- 865 nodes · 1475 edges · 70 communities (40 shown, 30 thin omitted)
+- Extraction: 95% EXTRACTED · 5% INFERRED · 0% AMBIGUOUS · INFERRED: 81 edges (avg confidence: 0.92)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `e489704a`
+- Built from commit: `cb742dff`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -65,36 +65,35 @@
 - load_config
 - Networking & Kernel Standards (XForwarder)
 - XForwarder - Agent Development Guide
-- Interactive Requirements Clarification (Reverse Prompt Engineering)
 
 ## God Nodes (most connected - your core abstractions)
-1. `XForwarderEngine` - 57 edges
-2. `TestUIAndAPIEdgeCases` - 29 edges
-3. `XForwarderWebHandler` - 20 edges
+1. `XForwarderEngine` - 56 edges
+2. `TestUIAndAPIEdgeCases` - 26 edges
+3. `XForwarderWebHandler` - 19 edges
 4. `load_config()` - 19 edges
 5. `xforwarder.sh script` - 19 edges
 6. `TestPerformanceAndOptimizations` - 18 edges
 7. `check_root()` - 18 edges
 8. `TestFastFailoverAndAntiFlap` - 17 edges
 9. `validate_rule()` - 16 edges
-10. `import_config_data()` - 15 edges
+10. `DummyHandler` - 15 edges
 
 ## Surprising Connections (you probably didn't know these)
 - `3. Fast IPC Engine Wake-Up` --references--> `notify_engine_wakeup()`  [INFERRED]
   .agents/experiences/008-full-stack-performance-and-fast-ipc.md → core/web_server.py
-- `3. Architecture & Solution Implemented` --references--> `get_services_status()`  [INFERRED]
-  .agents/experiences/006-host-subsystem-inspection-and-drag-drop-priorities.md → core/web_server.py
 - `4. Topology & Interface Discovery Standards (`get_network_interfaces_info`)` --references--> `get_network_interfaces_info()`  [INFERRED]
   .agents/rules/03-networking-and-kernel.md → core/web_server.py
+- `3. Architecture & Solution Implemented` --references--> `get_services_status()`  [INFERRED]
+  .agents/experiences/006-host-subsystem-inspection-and-drag-drop-priorities.md → core/web_server.py
 - `2. Root Cause / Core Dynamics` --references--> `XForwarderEngine`  [INFERRED]
   .agents/experiences/007-fix-haproxy-silent-drop-and-state-wipeout.md → core/engine.py
-- `⚡ Core Rules & Constraints` --references--> `sync_system_rules()`  [INFERRED]
-  AGENTS.md → core/engine.py
+- `5. Web UI Real-Time Visibility` --references--> `computeRulesFingerprint()`  [INFERRED]
+  .agents/experiences/009-fast-failover-multi-metric-and-anti-flapping.md → web/app.js
 
 ## Import Cycles
 - None detected.
 
-## Communities (71 total, 29 thin omitted)
+## Communities (70 total, 30 thin omitted)
 
 ### Community 0 - "TestXForwarderSecurity"
 Cohesion: 0.08
@@ -141,8 +140,8 @@ Cohesion: 0.33
 Nodes (5): Step 1: Check Runtime Daemon State, Step 2: Check Systemd Logs, Step 3: Verify Zero-Collision Rule Enforcement, Step 4: Test Manual Override, Workflow: Diagnose Failover & Forwarding
 
 ### Community 13 - "Architecture & Failover Rules (XForwarder)"
-Cohesion: 0.33
-Nodes (5): 1. System Overview, 2. Zero-Collision Rule (Mandatory), 4. State & Configuration Persistence, 5. Strict Interface & Route Isolation for Destination Probes, Architecture & Failover Rules (XForwarder)
+Cohesion: 0.29
+Nodes (6): 1. System Overview, 2. Zero-Collision Rule (Mandatory), 3. Failover & Recovery Dynamics, 4. State & Configuration Persistence, 5. Strict Interface & Route Isolation for Destination Probes, Architecture & Failover Rules (XForwarder)
 
 ### Community 14 - "The 8-Point Audit Checklist"
 Cohesion: 0.18
@@ -165,8 +164,8 @@ Cohesion: 0.17
 Nodes (11): 1. Prime Directive: Universal Visual Consistency, 2. Dual-Theme Design System (Dark & Light Mode), 3. Brand Identity & Iconography Across Screens, 4. Universal Theme Switcher Availability, 5. Typography Standards, 6. Components & Form Controls, 7. Strict Vanilla Technology Stack, 8. Rule Matrix & Card Layout Architecture (+3 more)
 
 ### Community 19 - ".agents/AGENTS.md"
-Cohesion: 0.29
-Nodes (4): 2. Constitution Check Gate, Pre-Execution Blast Radius & Impact Analysis Rule (XForwarder), Quick CLI Command Reference, XForwarder Operations Runbook (Legacy Alias: fwdman-ops)
+Cohesion: 0.18
+Nodes (7): 2. Constitution Check Gate, Pre-Execution Blast Radius & Impact Analysis Rule (XForwarder), 1. Zero-Assumption Policy & Triggers, 2. Rules of Engagement, Interactive Requirements Clarification (Reverse Prompt Engineering), Quick CLI Command Reference, XForwarder Operations Runbook (Legacy Alias: fwdman-ops)
 
 ### Community 20 - "Web Dashboard & Security Standards (`web/` & `core/web_server.py`)"
 Cohesion: 0.40
@@ -193,8 +192,8 @@ Cohesion: 0.16
 Nodes (17): 4. Client-Side Smoothness, askConfirm(), computeRulesFingerprint(), deleteRule(), fetchStatus(), formatConciseReason(), formatEngineVersion(), formatLatencyBadge() (+9 more)
 
 ### Community 26 - "3. Architecture & Solution Implemented"
-Cohesion: 0.20
-Nodes (8): 1. Context & Motivation, 3. Architecture & Solution Implemented, 4. Invariants & Rules for AI Agents, 5. Verification & Testing, Experience 007: Fix HAProxy Silent Drop and State Wipeout, is_haproxy_listening(), is_nginx_listening(), is_port_in_use_by_external_service()
+Cohesion: 0.18
+Nodes (9): 1. Context & Motivation, 2. Root Cause / Core Dynamics, 3. Architecture & Solution Implemented, 4. Invariants & Rules for AI Agents, 5. Verification & Testing, Experience 007: Fix HAProxy Silent Drop and State Wipeout, is_haproxy_listening(), is_nginx_listening() (+1 more)
 
 ### Community 27 - "syntax-check.py"
 Cohesion: 0.27
@@ -233,8 +232,8 @@ Cohesion: 0.18
 Nodes (6): get_network_interfaces_info(), do_ping(), get_services_status(), is_ignored_interface(), ping_target(), TestNetworkInterfaces
 
 ### Community 39 - "sync_system_rules"
-Cohesion: 0.22
-Nodes (8): 1. Context & Motivation, 2. Core Dynamics & Low-Resource Relay Safeguards, 3. Architecture & Solution Implemented, 4. Invariants & Rules for AI Agents, 5. Verification & Testing, Experience 006: Host Subsystem Inspection and Drag-Drop Priority Reordering, 2. Root Cause / Core Dynamics, sync_system_rules()
+Cohesion: 0.25
+Nodes (7): 1. Context & Motivation, 2. Core Dynamics & Low-Resource Relay Safeguards, 3. Architecture & Solution Implemented, 4. Invariants & Rules for AI Agents, 5. Verification & Testing, Experience 006: Host Subsystem Inspection and Drag-Drop Priority Reordering, sync_system_rules()
 
 ### Community 40 - "XForwarder Master Architecture Constitution"
 Cohesion: 0.33
@@ -243,10 +242,6 @@ Nodes (6): 1. Project Overview & Terminology, 3. Specialized Skills Index (Progr
 ### Community 41 - "json"
 Cohesion: 0.52
 Nodes (4): load_state(), main(), save_state(), show_state()
-
-### Community 42 - ".check_destination"
-Cohesion: 0.14
-Nodes (3): 2. Non-Negotiable Architectural Constraints, ⚡ Core Rules & Constraints, 3. Failover & Recovery Dynamics
 
 ### Community 46 - "load_config"
 Cohesion: 0.20
@@ -260,29 +255,25 @@ Nodes (5): 1. Table Isolation in NFTables, 2. HAProxy Zero-Tunnel Relay, 3. Kern
 Cohesion: 0.40
 Nodes (4): 🔍 Codebase Knowledge Graph (graphify), 🧭 Project Architecture, 🛠 Workflows, Skills & Verification Pipeline, XForwarder - Agent Development Guide
 
-### Community 49 - "Interactive Requirements Clarification (Reverse Prompt Engineering)"
-Cohesion: 0.50
-Nodes (3): 1. Zero-Assumption Policy & Triggers, 2. Rules of Engagement, Interactive Requirements Clarification (Reverse Prompt Engineering)
-
 ## Knowledge Gaps
-- **239 isolated node(s):** `basePath`, `currentRules`, `lastRuntime`, `loginScreen`, `dashboardScreen` (+234 more)
+- **239 isolated node(s):** `1. Frontend Technology Stack`, `2. Aesthetics & Design Guidelines`, `3. Authentication & Security Model`, `1. Prime Directive: Universal Visual Consistency`, `A. Dark Theme (`[data-theme="dark"]`, Default)` (+234 more)
   These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 436 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
-- **29 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **30 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `XForwarderEngine` connect `XForwarderEngine` to `TestPerformanceAndOptimizations`, `.test_nftables_dual_stack_rules_generation`, `TestFastFailoverAndAntiFlap`, `TestNginxStreamEngine`, `sync_system_rules`, `.migrate_and_normalize_config`, `.check_destination`, `engine.py`, `TestEngineProbes`, `.sync_firewall_and_proxies`, `.test_packet_loss_calculation_and_probes`, `web_server.py`, `.do_POST`, `TestUIAndAPIEdgeCases`?**
-  _High betweenness centrality (0.377) - this node is a cross-community bridge._
-- **Are the 8 inferred relationships involving `XForwarderEngine` (e.g. with `2. Root Cause / Core Dynamics` and `XForwarderWebHandler`) actually correct?**
-  _`XForwarderEngine` has 8 INFERRED edges - model-reasoned connections that need verification._
-- **What connects `basePath`, `currentRules`, `lastRuntime` to the rest of the system?**
+- **Why does `XForwarderEngine` connect `XForwarderEngine` to `TestPerformanceAndOptimizations`, `.test_nftables_dual_stack_rules_generation`, `TestFastFailoverAndAntiFlap`, `TestNginxStreamEngine`, `sync_system_rules`, `.migrate_and_normalize_config`, `.check_destination`, `engine.py`, `TestEngineProbes`, `.sync_firewall_and_proxies`, `.test_packet_loss_calculation_and_probes`, `3. Architecture & Solution Implemented`, `web_server.py`, `.do_POST`?**
+  _High betweenness centrality (0.368) - this node is a cross-community bridge._
+- **Are the 7 inferred relationships involving `XForwarderEngine` (e.g. with `2. Root Cause / Core Dynamics` and `XForwarderWebHandler`) actually correct?**
+  _`XForwarderEngine` has 7 INFERRED edges - model-reasoned connections that need verification._
+- **What connects `1. Frontend Technology Stack`, `2. Aesthetics & Design Guidelines`, `3. Authentication & Security Model` to the rest of the system?**
   _239 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `TestXForwarderSecurity` be split into smaller, more focused modules?**
   _Cohesion score 0.07741935483870968 - nodes in this community are weakly interconnected._
 - **Why does `Architectural Solutions Implemented` connect `experiences/README.md` to `renderRules`, `.sync_firewall_and_proxies`, `.do_POST`?**
   _High betweenness centrality (0.269) - this node is a cross-community bridge._
-- **Are the 3 inferred relationships involving `TestUIAndAPIEdgeCases` (e.g. with `XForwarderEngine` and `XForwarderWebHandler`) actually correct?**
-  _`TestUIAndAPIEdgeCases` has 3 INFERRED edges - model-reasoned connections that need verification._
+- **Are the 2 inferred relationships involving `XForwarderWebHandler` (e.g. with `XForwarderEngine` and `TestExportImport`) actually correct?**
+  _`XForwarderWebHandler` has 2 INFERRED edges - model-reasoned connections that need verification._
 - **Should `app.js` be split into smaller, more focused modules?**
   _Cohesion score 0.016260162601626018 - nodes in this community are weakly interconnected._

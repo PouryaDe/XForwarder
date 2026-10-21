@@ -1338,6 +1338,18 @@
       "source_location": "L1531"
     },
     {
+      "id": "core_engine_xforwarderengine_save_state_file",
+      "label": "._save_state_file()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 26,
+      "community_name": "3. Architecture & Solution Implemented",
+      "file_type": "code",
+      "norm_label": "._save_state_file()",
+      "source_file": "core/engine.py",
+      "source_location": "L1508"
+    },
+    {
       "id": "core_web_server_is_haproxy_listening",
       "label": "is_haproxy_listening()",
       "_callable": true,
@@ -1782,6 +1794,18 @@
       "source_location": "L449"
     },
     {
+      "id": "core_engine_xforwarderengine_get_rules_fingerprint",
+      "label": "._get_rules_fingerprint()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 30,
+      "community_name": "XForwarderEngine",
+      "file_type": "code",
+      "norm_label": "._get_rules_fingerprint()",
+      "source_file": "core/engine.py",
+      "source_location": "L1039"
+    },
+    {
       "id": "core_engine_xforwarderengine_init",
       "label": ".__init__()",
       "_callable": true,
@@ -1842,6 +1866,18 @@
       "source_location": "L114"
     },
     {
+      "id": "core_engine_xforwarderengine_run_loop",
+      "label": ".run_loop()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 30,
+      "community_name": "XForwarderEngine",
+      "file_type": "code",
+      "norm_label": ".run_loop()",
+      "source_file": "core/engine.py",
+      "source_location": "L1573"
+    },
+    {
       "id": "core_engine_xforwarderengine_save_config",
       "label": ".save_config()",
       "_callable": true,
@@ -1876,6 +1912,18 @@
       "norm_label": ".stop()",
       "source_file": "core/engine.py",
       "source_location": "L1626"
+    },
+    {
+      "id": "core_engine_xforwarderengine_write_pid_file",
+      "label": "._write_pid_file()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 30,
+      "community_name": "XForwarderEngine",
+      "file_type": "code",
+      "norm_label": "._write_pid_file()",
+      "source_file": "core/engine.py",
+      "source_location": "L1551"
     },
     {
       "id": "tests_test_ui_and_api_edge_cases_testuiandapiedgecases_test_api_test_target_http_endpoint",
@@ -3054,18 +3102,6 @@
       "source_location": "L1357"
     },
     {
-      "id": "core_engine_xforwarderengine_get_rules_fingerprint",
-      "label": "._get_rules_fingerprint()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 45,
-      "community_name": ".sync_firewall_and_proxies",
-      "file_type": "code",
-      "norm_label": "._get_rules_fingerprint()",
-      "source_file": "core/engine.py",
-      "source_location": "L1039"
-    },
-    {
       "id": "core_engine_xforwarderengine_is_ipv6_supported",
       "label": "._is_ipv6_supported()",
       "_callable": true,
@@ -3078,30 +3114,6 @@
       "source_location": "L104"
     },
     {
-      "id": "core_engine_xforwarderengine_run_loop",
-      "label": ".run_loop()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 45,
-      "community_name": ".sync_firewall_and_proxies",
-      "file_type": "code",
-      "norm_label": ".run_loop()",
-      "source_file": "core/engine.py",
-      "source_location": "L1573"
-    },
-    {
-      "id": "core_engine_xforwarderengine_save_state_file",
-      "label": "._save_state_file()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 45,
-      "community_name": ".sync_firewall_and_proxies",
-      "file_type": "code",
-      "norm_label": "._save_state_file()",
-      "source_file": "core/engine.py",
-      "source_location": "L1508"
-    },
-    {
       "id": "core_engine_xforwarderengine_sync_firewall_and_proxies",
       "label": ".sync_firewall_and_proxies()",
       "_callable": true,
@@ -3112,18 +3124,6 @@
       "norm_label": ".sync_firewall_and_proxies()",
       "source_file": "core/engine.py",
       "source_location": "L1052"
-    },
-    {
-      "id": "core_engine_xforwarderengine_write_pid_file",
-      "label": "._write_pid_file()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 45,
-      "community_name": ".sync_firewall_and_proxies",
-      "file_type": "code",
-      "norm_label": "._write_pid_file()",
-      "source_file": "core/engine.py",
-      "source_location": "L1551"
     },
     {
       "id": "core_web_server_export_config_data",
@@ -5364,6 +5364,18 @@
       "source_location": "L18"
     },
     {
+      "id": "agents_rules_01_architecture_and_failover_3_failover_recovery_dynamics",
+      "label": "3. Failover & Recovery Dynamics",
+      "_origin": "ast",
+      "community": 13,
+      "community_name": "Architecture & Failover Rules (XForwarder)",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "3. failover & recovery dynamics",
+      "source_file": ".agents/rules/01-architecture-and-failover.md",
+      "source_location": "L28"
+    },
+    {
       "id": "agents_rules_01_architecture_and_failover_4_state_configuration_persistence",
       "label": "4. State & Configuration Persistence",
       "_origin": "ast",
@@ -5890,6 +5902,24 @@
       "source_location": "L1"
     },
     {
+      "id": "agents_rules_reverse_prompting",
+      "label": "reverse-prompting.md",
+      "_origin": "ast",
+      "community": 19,
+      "community_name": ".agents/AGENTS.md",
+      "file_type": "document",
+      "frontmatter": {
+        "name": "reverse-prompting",
+        "description": "Reverse Prompt Engineering: single-question interactive clarification for ambiguous or architectural requests.",
+        "always_on": false,
+        "trigger": "model_decision"
+      },
+      "node_kind": "page",
+      "norm_label": "reverse-prompting.md",
+      "source_file": ".agents/rules/reverse-prompting.md",
+      "source_location": "L1"
+    },
+    {
       "id": "agents_skills_fwdman_ops_skill",
       "label": "fwdman-ops/SKILL.md",
       "_origin": "ast",
@@ -5955,6 +5985,42 @@
       "node_kind": "heading",
       "norm_label": "pre-execution blast radius & impact analysis rule (xforwarder)",
       "source_file": ".agents/rules/blast-radius-analysis.md",
+      "source_location": "L8"
+    },
+    {
+      "id": "agents_rules_reverse_prompting_1_zero_assumption_policy_triggers",
+      "label": "1. Zero-Assumption Policy & Triggers",
+      "_origin": "ast",
+      "community": 19,
+      "community_name": ".agents/AGENTS.md",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "1. zero-assumption policy & triggers",
+      "source_file": ".agents/rules/reverse-prompting.md",
+      "source_location": "L14"
+    },
+    {
+      "id": "agents_rules_reverse_prompting_2_rules_of_engagement",
+      "label": "2. Rules of Engagement",
+      "_origin": "ast",
+      "community": 19,
+      "community_name": ".agents/AGENTS.md",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "2. rules of engagement",
+      "source_file": ".agents/rules/reverse-prompting.md",
+      "source_location": "L29"
+    },
+    {
+      "id": "agents_rules_reverse_prompting_interactive_requirements_clarification_reverse_prompt_engineering",
+      "label": "Interactive Requirements Clarification (Reverse Prompt Engineering)",
+      "_origin": "ast",
+      "community": 19,
+      "community_name": ".agents/AGENTS.md",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "interactive requirements clarification (reverse prompt engineering)",
+      "source_file": ".agents/rules/reverse-prompting.md",
       "source_location": "L8"
     },
     {
@@ -6377,6 +6443,18 @@
       "source_location": "L9"
     },
     {
+      "id": "agents_experiences_007_fix_haproxy_silent_drop_and_state_wipeout_2_root_cause_core_dynamics",
+      "label": "2. Root Cause / Core Dynamics",
+      "_origin": "ast",
+      "community": 26,
+      "community_name": "3. Architecture & Solution Implemented",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "2. root cause / core dynamics",
+      "source_file": ".agents/experiences/007-fix-haproxy-silent-drop-and-state-wipeout.md",
+      "source_location": "L12"
+    },
+    {
       "id": "agents_experiences_007_fix_haproxy_silent_drop_and_state_wipeout_3_architecture_solution_implemented",
       "label": "3. Architecture & Solution Implemented",
       "_origin": "ast",
@@ -6688,6 +6766,17 @@
       "norm_label": "synchronizes active_priority and force_override in state.json atomically.",
       "source_file": "core/web_server.py",
       "source_location": "L290"
+    },
+    {
+      "id": "core_engine_rationale_1552",
+      "label": "Persists current engine PID to candidate paths to enable instant IPC wakeups.",
+      "_origin": "ast",
+      "community": 30,
+      "community_name": "XForwarderEngine",
+      "file_type": "rationale",
+      "norm_label": "persists current engine pid to candidate paths to enable instant ipc wakeups.",
+      "source_file": "core/engine.py",
+      "source_location": "L1552"
     },
     {
       "id": "core_engine_rationale_1564",
@@ -7316,18 +7405,6 @@
       "source_location": "L1"
     },
     {
-      "id": "agents_experiences_007_fix_haproxy_silent_drop_and_state_wipeout_2_root_cause_core_dynamics",
-      "label": "2. Root Cause / Core Dynamics",
-      "_origin": "ast",
-      "community": 39,
-      "community_name": "sync_system_rules",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "2. root cause / core dynamics",
-      "source_file": ".agents/experiences/007-fix-haproxy-silent-drop-and-state-wipeout.md",
-      "source_location": "L12"
-    },
-    {
       "id": "core_engine_rationale_1633",
       "label": "Synchronizes firewall (NFTables) and proxy layers (HAProxy, Nginx) on demand.\u2026",
       "_origin": "ast",
@@ -7611,18 +7688,6 @@
       "source_location": "L45"
     },
     {
-      "id": "agents_rules_01_architecture_and_failover_3_failover_recovery_dynamics",
-      "label": "3. Failover & Recovery Dynamics",
-      "_origin": "ast",
-      "community": 42,
-      "community_name": ".check_destination",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "3. failover & recovery dynamics",
-      "source_file": ".agents/rules/01-architecture-and-failover.md",
-      "source_location": "L28"
-    },
-    {
       "id": "core_engine_rationale_472",
       "label": "Checks if a Linux network interface exists and is operstate UP.",
       "_origin": "ast",
@@ -7856,17 +7921,6 @@
       "source_location": "L105"
     },
     {
-      "id": "core_engine_rationale_1552",
-      "label": "Persists current engine PID to candidate paths to enable instant IPC wakeups.",
-      "_origin": "ast",
-      "community": 45,
-      "community_name": ".sync_firewall_and_proxies",
-      "file_type": "rationale",
-      "norm_label": "persists current engine pid to candidate paths to enable instant ipc wakeups.",
-      "source_file": "core/engine.py",
-      "source_location": "L1552"
-    },
-    {
       "id": "tests_test_export_import",
       "label": "test_export_import.py",
       "_origin": "ast",
@@ -8034,60 +8088,6 @@
       "norm_label": "xforwarder - agent development guide",
       "source_file": "AGENTS.md",
       "source_location": "L1"
-    },
-    {
-      "id": "agents_rules_reverse_prompting",
-      "label": "reverse-prompting.md",
-      "_origin": "ast",
-      "community": 49,
-      "community_name": "Interactive Requirements Clarification (Reverse Prompt Engineering)",
-      "file_type": "document",
-      "frontmatter": {
-        "name": "reverse-prompting",
-        "description": "Reverse Prompt Engineering: single-question interactive clarification for ambiguous or architectural requests.",
-        "always_on": false,
-        "trigger": "model_decision"
-      },
-      "node_kind": "page",
-      "norm_label": "reverse-prompting.md",
-      "source_file": ".agents/rules/reverse-prompting.md",
-      "source_location": "L1"
-    },
-    {
-      "id": "agents_rules_reverse_prompting_1_zero_assumption_policy_triggers",
-      "label": "1. Zero-Assumption Policy & Triggers",
-      "_origin": "ast",
-      "community": 49,
-      "community_name": "Interactive Requirements Clarification (Reverse Prompt Engineering)",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "1. zero-assumption policy & triggers",
-      "source_file": ".agents/rules/reverse-prompting.md",
-      "source_location": "L14"
-    },
-    {
-      "id": "agents_rules_reverse_prompting_2_rules_of_engagement",
-      "label": "2. Rules of Engagement",
-      "_origin": "ast",
-      "community": 49,
-      "community_name": "Interactive Requirements Clarification (Reverse Prompt Engineering)",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "2. rules of engagement",
-      "source_file": ".agents/rules/reverse-prompting.md",
-      "source_location": "L29"
-    },
-    {
-      "id": "agents_rules_reverse_prompting_interactive_requirements_clarification_reverse_prompt_engineering",
-      "label": "Interactive Requirements Clarification (Reverse Prompt Engineering)",
-      "_origin": "ast",
-      "community": 49,
-      "community_name": "Interactive Requirements Clarification (Reverse Prompt Engineering)",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "interactive requirements clarification (reverse prompt engineering)",
-      "source_file": ".agents/rules/reverse-prompting.md",
-      "source_location": "L8"
     },
     {
       "id": "readme",
@@ -27239,41 +27239,8 @@
       "source_file": "tests/test_security.py",
       "source_location": "L218",
       "weight": 0.8
-    },
-    {
-      "source": "tests_test_ui_and_api_edge_cases_testuiandapiedgecases",
-      "target": "core_web_server_xforwarderwebserver",
-      "relation": "uses",
-      "_origin": "ast",
-      "confidence": "INFERRED",
-      "confidence_score": 0.95,
-      "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L112",
-      "weight": 0.8
-    },
-    {
-      "source": "tests_test_ui_and_api_edge_cases_testuiandapiedgecases",
-      "target": "core_web_server_xforwarderwebhandler",
-      "relation": "uses",
-      "_origin": "ast",
-      "confidence": "INFERRED",
-      "confidence_score": 0.95,
-      "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L280",
-      "weight": 0.8
-    },
-    {
-      "source": "tests_test_ui_and_api_edge_cases_testuiandapiedgecases",
-      "target": "core_engine_xforwarderengine",
-      "relation": "uses",
-      "_origin": "ast",
-      "confidence": "INFERRED",
-      "confidence_score": 0.95,
-      "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L511",
-      "weight": 0.8
     }
   ],
   "hyperedges": [],
-  "built_at_commit": "e489704aff80143b83576b537f0dec0e09d603e5"
+  "built_at_commit": "cb742dfff0b53fcef418a7ac891526d6162bf52f"
 }
