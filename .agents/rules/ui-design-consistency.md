@@ -21,11 +21,16 @@ Authoritative visual guidelines, design tokens, and aesthetic rules for **all** 
 ## 2. Dual-Theme Design System (Dark & Light Mode)
 
 ### A. Dark Theme (`[data-theme="dark"]`, Default)
-- **Background Base:** `#0B0F19`
-- **Surface:** `#111827`
-- **Card Fill:** `rgba(17, 24, 39, 0.78)` with `backdrop-filter: blur(20px)`
-- **Border Lines:** `rgba(255, 255, 255, 0.08)` (Focus/Active: `rgba(99, 102, 241, 0.4)`)
-- **Card Shadows:** Soft diffuse depth `0 4px 20px rgba(0, 0, 0, 0.25)`
+- **Background Base:** `#090A0F` (Modern Obsidian / Charcoal Black)
+- **Surface:** `#111218`
+- **Card Fill:** `rgba(18, 20, 28, 0.75)` with `backdrop-filter: blur(14px)`
+- **Border Lines:** `rgba(255, 255, 255, 0.07)` (Focus/Active: `rgba(99, 102, 241, 0.35)`)
+- **Card Shadows:** Deep subtle depth `0 4px 20px rgba(0, 0, 0, 0.3)`
+- **Restrained Highlights Principle (Mandatory):**
+  - Never use loud neon glows (`box-shadow: 0 0 16px`) or flood normal/healthy cards with colored fills.
+  - Active path routes use refined border-left accents (`border-left: 3px solid var(--accent-emerald)`) instead of neon halos.
+  - Normal operational states (Auto Failover, healthy latency <150ms, priority badges, host IPs, engine running state) must remain quiet, clean, and neutral.
+  - Saturated highlight colors are strictly reserved for critical conditions: Red/Rose for DOWN/100% loss, and Amber for Degraded (>150ms or loss > 0%), Flapping, or Manual Forced testing overrides.
 
 ### B. Light Theme (`[data-theme="light"]`)
 - **Background Base:** `#F8FAFC`

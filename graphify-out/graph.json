@@ -62,7 +62,7 @@
       "_callable_class": true,
       "_origin": "ast",
       "community": 29,
-      "community_name": "XForwarderWebHandler",
+      "community_name": ".do_POST",
       "file_type": "code",
       "norm_label": "xforwarderwebhandler",
       "source_file": "core/web_server.py",
@@ -186,18 +186,6 @@
       "source_location": "L23"
     },
     {
-      "id": "core_web_server_hash_password",
-      "label": "hash_password()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 0,
-      "community_name": "TestXForwarderSecurity",
-      "file_type": "code",
-      "norm_label": "hash_password()",
-      "source_file": "core/web_server.py",
-      "source_location": "L806"
-    },
-    {
       "id": "core_web_server_reset_rate_limit",
       "label": "reset_rate_limit()",
       "_callable": true,
@@ -208,6 +196,18 @@
       "norm_label": "reset_rate_limit()",
       "source_file": "core/web_server.py",
       "source_location": "L894"
+    },
+    {
+      "id": "core_web_server_verify_password",
+      "label": "verify_password()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 0,
+      "community_name": "TestXForwarderSecurity",
+      "file_type": "code",
+      "norm_label": "verify_password()",
+      "source_file": "core/web_server.py",
+      "source_location": "L815"
     },
     {
       "id": "core_web_server_xforwarderwebserver_init",
@@ -906,18 +906,6 @@
       "source_location": "L2079"
     },
     {
-      "id": "web_app_getpriotagclass",
-      "label": "getPrioTagClass()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 23,
-      "community_name": "renderDestinationRow",
-      "file_type": "code",
-      "norm_label": "getpriotagclass()",
-      "source_file": "web/app.js",
-      "source_location": "L1719"
-    },
-    {
       "id": "web_app_handlemodalpriodragend",
       "label": "handleModalPrioDragEnd()",
       "_callable": true,
@@ -1038,28 +1026,16 @@
       "source_location": "L1908"
     },
     {
-      "id": "web_app_addlogentry",
-      "label": "addLogEntry()",
+      "id": "web_app_testmodaldestination",
+      "label": "testModalDestination()",
       "_callable": true,
       "_origin": "ast",
-      "community": 24,
-      "community_name": "showToast",
+      "community": 23,
+      "community_name": "renderDestinationRow",
       "file_type": "code",
-      "norm_label": "addlogentry()",
+      "norm_label": "testmodaldestination()",
       "source_file": "web/app.js",
-      "source_location": "L2747"
-    },
-    {
-      "id": "web_app_appendlogentry",
-      "label": "appendLogEntry()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 24,
-      "community_name": "showToast",
-      "file_type": "code",
-      "norm_label": "appendlogentry()",
-      "source_file": "web/app.js",
-      "source_location": "L2773"
+      "source_location": "L1933"
     },
     {
       "id": "web_app_applytheme",
@@ -1098,18 +1074,6 @@
       "source_location": "L99"
     },
     {
-      "id": "web_app_escapehtml",
-      "label": "escapeHtml()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 24,
-      "community_name": "showToast",
-      "file_type": "code",
-      "norm_label": "escapehtml()",
-      "source_file": "web/app.js",
-      "source_location": "L165"
-    },
-    {
       "id": "web_app_fallbackcopy",
       "label": "fallbackCopy()",
       "_callable": true,
@@ -1134,18 +1098,6 @@
       "source_location": "L2488"
     },
     {
-      "id": "web_app_initdiagpacketlosstool",
-      "label": "initDiagPacketLossTool()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 24,
-      "community_name": "showToast",
-      "file_type": "code",
-      "norm_label": "initdiagpacketlosstool()",
-      "source_file": "web/app.js",
-      "source_location": "L2887"
-    },
-    {
       "id": "web_app_inittheme",
       "label": "initTheme()",
       "_callable": true,
@@ -1156,42 +1108,6 @@
       "norm_label": "inittheme()",
       "source_file": "web/app.js",
       "source_location": "L2233"
-    },
-    {
-      "id": "web_app_parseandvalidateimportjson",
-      "label": "parseAndValidateImportJson()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 24,
-      "community_name": "showToast",
-      "file_type": "code",
-      "norm_label": "parseandvalidateimportjson()",
-      "source_file": "web/app.js",
-      "source_location": "L2578"
-    },
-    {
-      "id": "web_app_rendernetworktopology",
-      "label": "renderNetworkTopology()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 24,
-      "community_name": "showToast",
-      "file_type": "code",
-      "norm_label": "rendernetworktopology()",
-      "source_file": "web/app.js",
-      "source_location": "L1021"
-    },
-    {
-      "id": "web_app_runlivepacketlosstest",
-      "label": "runLivePacketLossTest()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 24,
-      "community_name": "showToast",
-      "file_type": "code",
-      "norm_label": "runlivepacketlosstest()",
-      "source_file": "web/app.js",
-      "source_location": "L2815"
     },
     {
       "id": "web_app_showtoast",
@@ -1218,18 +1134,6 @@
       "source_location": "L342"
     },
     {
-      "id": "web_app_testmodaldestination",
-      "label": "testModalDestination()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 24,
-      "community_name": "showToast",
-      "file_type": "code",
-      "norm_label": "testmodaldestination()",
-      "source_file": "web/app.js",
-      "source_location": "L1933"
-    },
-    {
       "id": "web_app_toggletheme",
       "label": "toggleTheme()",
       "_callable": true,
@@ -1240,18 +1144,6 @@
       "norm_label": "toggletheme()",
       "source_file": "web/app.js",
       "source_location": "L2253"
-    },
-    {
-      "id": "web_app_trackfailoverevents",
-      "label": "trackFailoverEvents()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 24,
-      "community_name": "showToast",
-      "file_type": "code",
-      "norm_label": "trackfailoverevents()",
-      "source_file": "web/app.js",
-      "source_location": "L625"
     },
     {
       "id": "web_app_askconfirm",
@@ -1350,6 +1242,18 @@
       "source_location": "L767"
     },
     {
+      "id": "web_app_getpriotagclass",
+      "label": "getPrioTagClass()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 25,
+      "community_name": "renderRules",
+      "file_type": "code",
+      "norm_label": "getpriotagclass()",
+      "source_file": "web/app.js",
+      "source_location": "L1719"
+    },
+    {
       "id": "web_app_handleoverridechange",
       "label": "handleOverrideChange()",
       "_callable": true,
@@ -1432,30 +1336,6 @@
       "norm_label": "showsyncerroralert()",
       "source_file": "web/app.js",
       "source_location": "L1531"
-    },
-    {
-      "id": "core_engine_xforwarderengine_rules_state",
-      "label": ".rules_state()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 26,
-      "community_name": "3. Architecture & Solution Implemented",
-      "file_type": "code",
-      "norm_label": ".rules_state()",
-      "source_file": "core/engine.py",
-      "source_location": "L76"
-    },
-    {
-      "id": "core_engine_xforwarderengine_save_state_file",
-      "label": "._save_state_file()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 26,
-      "community_name": "3. Architecture & Solution Implemented",
-      "file_type": "code",
-      "norm_label": "._save_state_file()",
-      "source_file": "core/engine.py",
-      "source_location": "L1508"
     },
     {
       "id": "core_web_server_is_haproxy_listening",
@@ -1626,30 +1506,6 @@
       "source_location": "L866"
     },
     {
-      "id": "core_web_server_sync_rules_and_notify",
-      "label": "sync_rules_and_notify()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 28,
-      "community_name": "web_server.py",
-      "file_type": "code",
-      "norm_label": "sync_rules_and_notify()",
-      "source_file": "core/web_server.py",
-      "source_location": "L53"
-    },
-    {
-      "id": "core_web_server_update_state_rules",
-      "label": "update_state_rules()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 28,
-      "community_name": "web_server.py",
-      "file_type": "code",
-      "norm_label": "update_state_rules()",
-      "source_file": "core/web_server.py",
-      "source_location": "L289"
-    },
-    {
       "id": "core_web_server_validate_rule",
       "label": "validate_rule()",
       "_callable": true,
@@ -1662,36 +1518,12 @@
       "source_location": "L928"
     },
     {
-      "id": "core_web_server_verify_password",
-      "label": "verify_password()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 28,
-      "community_name": "web_server.py",
-      "file_type": "code",
-      "norm_label": "verify_password()",
-      "source_file": "core/web_server.py",
-      "source_location": "L815"
-    },
-    {
-      "id": "core_web_server_xforwarderwebhandler_do_post",
-      "label": ".do_POST()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 28,
-      "community_name": "web_server.py",
-      "file_type": "code",
-      "norm_label": ".do_post()",
-      "source_file": "core/web_server.py",
-      "source_location": "L1350"
-    },
-    {
       "id": "core_web_server_get_system_stats",
       "label": "get_system_stats()",
       "_callable": true,
       "_origin": "ast",
       "community": 29,
-      "community_name": "XForwarderWebHandler",
+      "community_name": ".do_POST",
       "file_type": "code",
       "norm_label": "get_system_stats()",
       "source_file": "core/web_server.py",
@@ -1703,11 +1535,35 @@
       "_callable": true,
       "_origin": "ast",
       "community": 29,
-      "community_name": "XForwarderWebHandler",
+      "community_name": ".do_POST",
       "file_type": "code",
       "norm_label": "load_state()",
       "source_file": "core/web_server.py",
       "source_location": "L278"
+    },
+    {
+      "id": "core_web_server_sync_rules_and_notify",
+      "label": "sync_rules_and_notify()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 29,
+      "community_name": ".do_POST",
+      "file_type": "code",
+      "norm_label": "sync_rules_and_notify()",
+      "source_file": "core/web_server.py",
+      "source_location": "L53"
+    },
+    {
+      "id": "core_web_server_update_state_rules",
+      "label": "update_state_rules()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 29,
+      "community_name": ".do_POST",
+      "file_type": "code",
+      "norm_label": "update_state_rules()",
+      "source_file": "core/web_server.py",
+      "source_location": "L289"
     },
     {
       "id": "core_web_server_xforwarderwebhandler_apply_security_headers",
@@ -1715,7 +1571,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 29,
-      "community_name": "XForwarderWebHandler",
+      "community_name": ".do_POST",
       "file_type": "code",
       "norm_label": ".apply_security_headers()",
       "source_file": "core/web_server.py",
@@ -1727,11 +1583,23 @@
       "_callable": true,
       "_origin": "ast",
       "community": 29,
-      "community_name": "XForwarderWebHandler",
+      "community_name": ".do_POST",
       "file_type": "code",
       "norm_label": ".check_origin()",
       "source_file": "core/web_server.py",
       "source_location": "L1169"
+    },
+    {
+      "id": "core_web_server_xforwarderwebhandler_do_delete",
+      "label": ".do_DELETE()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 29,
+      "community_name": ".do_POST",
+      "file_type": "code",
+      "norm_label": ".do_delete()",
+      "source_file": "core/web_server.py",
+      "source_location": "L1759"
     },
     {
       "id": "core_web_server_xforwarderwebhandler_do_get",
@@ -1739,11 +1607,23 @@
       "_callable": true,
       "_origin": "ast",
       "community": 29,
-      "community_name": "XForwarderWebHandler",
+      "community_name": ".do_POST",
       "file_type": "code",
       "norm_label": ".do_get()",
       "source_file": "core/web_server.py",
       "source_location": "L1259"
+    },
+    {
+      "id": "core_web_server_xforwarderwebhandler_do_post",
+      "label": ".do_POST()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 29,
+      "community_name": ".do_POST",
+      "file_type": "code",
+      "norm_label": ".do_post()",
+      "source_file": "core/web_server.py",
+      "source_location": "L1350"
     },
     {
       "id": "core_web_server_xforwarderwebhandler_get_client_ip",
@@ -1751,7 +1631,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 29,
-      "community_name": "XForwarderWebHandler",
+      "community_name": ".do_POST",
       "file_type": "code",
       "norm_label": ".get_client_ip()",
       "source_file": "core/web_server.py",
@@ -1763,7 +1643,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 29,
-      "community_name": "XForwarderWebHandler",
+      "community_name": ".do_POST",
       "file_type": "code",
       "norm_label": ".get_session_token()",
       "source_file": "core/web_server.py",
@@ -1775,11 +1655,23 @@
       "_callable": true,
       "_origin": "ast",
       "community": 29,
-      "community_name": "XForwarderWebHandler",
+      "community_name": ".do_POST",
       "file_type": "code",
       "norm_label": ".is_authenticated()",
       "source_file": "core/web_server.py",
       "source_location": "L1195"
+    },
+    {
+      "id": "core_web_server_xforwarderwebhandler_resolve_path",
+      "label": ".resolve_path()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 29,
+      "community_name": ".do_POST",
+      "file_type": "code",
+      "norm_label": ".resolve_path()",
+      "source_file": "core/web_server.py",
+      "source_location": "L1220"
     },
     {
       "id": "core_web_server_xforwarderwebhandler_send_file",
@@ -1787,7 +1679,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 29,
-      "community_name": "XForwarderWebHandler",
+      "community_name": ".do_POST",
       "file_type": "code",
       "norm_label": ".send_file()",
       "source_file": "core/web_server.py",
@@ -1799,7 +1691,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 29,
-      "community_name": "XForwarderWebHandler",
+      "community_name": ".do_POST",
       "file_type": "code",
       "norm_label": ".send_json()",
       "source_file": "core/web_server.py",
@@ -1890,18 +1782,6 @@
       "source_location": "L449"
     },
     {
-      "id": "core_engine_xforwarderengine_get_rules_fingerprint",
-      "label": "._get_rules_fingerprint()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 30,
-      "community_name": "XForwarderEngine",
-      "file_type": "code",
-      "norm_label": "._get_rules_fingerprint()",
-      "source_file": "core/engine.py",
-      "source_location": "L1039"
-    },
-    {
       "id": "core_engine_xforwarderengine_init",
       "label": ".__init__()",
       "_callable": true,
@@ -1962,18 +1842,6 @@
       "source_location": "L114"
     },
     {
-      "id": "core_engine_xforwarderengine_run_loop",
-      "label": ".run_loop()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 30,
-      "community_name": "XForwarderEngine",
-      "file_type": "code",
-      "norm_label": ".run_loop()",
-      "source_file": "core/engine.py",
-      "source_location": "L1573"
-    },
-    {
       "id": "core_engine_xforwarderengine_save_config",
       "label": ".save_config()",
       "_callable": true,
@@ -2010,18 +1878,6 @@
       "source_location": "L1626"
     },
     {
-      "id": "core_engine_xforwarderengine_write_pid_file",
-      "label": "._write_pid_file()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 30,
-      "community_name": "XForwarderEngine",
-      "file_type": "code",
-      "norm_label": "._write_pid_file()",
-      "source_file": "core/engine.py",
-      "source_location": "L1551"
-    },
-    {
       "id": "tests_test_ui_and_api_edge_cases_testuiandapiedgecases_test_api_test_target_http_endpoint",
       "label": ".test_api_test_target_http_endpoint()",
       "_callable": true,
@@ -2032,30 +1888,6 @@
       "norm_label": ".test_api_test_target_http_endpoint()",
       "source_file": "tests/test_ui_and_api_edge_cases.py",
       "source_location": "L274"
-    },
-    {
-      "id": "tests_test_ui_and_api_edge_cases_testuiandapiedgecases_test_drag_and_drop_edge_cases_and_reorder_logic",
-      "label": ".test_drag_and_drop_edge_cases_and_reorder_logic()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 31,
-      "community_name": "TestUIAndAPIEdgeCases",
-      "file_type": "code",
-      "norm_label": ".test_drag_and_drop_edge_cases_and_reorder_logic()",
-      "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L406"
-    },
-    {
-      "id": "tests_test_ui_and_api_edge_cases_testuiandapiedgecases_test_drag_and_drop_priority_reordering_integrity",
-      "label": ".test_drag_and_drop_priority_reordering_integrity()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 31,
-      "community_name": "TestUIAndAPIEdgeCases",
-      "file_type": "code",
-      "norm_label": ".test_drag_and_drop_priority_reordering_integrity()",
-      "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L369"
     },
     {
       "id": "tests_test_ui_and_api_edge_cases_testuiandapiedgecases_test_frontend_css_no_hover_motion_transforms",
@@ -2070,90 +1902,6 @@
       "source_location": "L343"
     },
     {
-      "id": "tests_test_ui_and_api_edge_cases_testuiandapiedgecases_test_frontend_js_latency_and_priority_shortening",
-      "label": ".test_frontend_js_latency_and_priority_shortening()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 31,
-      "community_name": "TestUIAndAPIEdgeCases",
-      "file_type": "code",
-      "norm_label": ".test_frontend_js_latency_and_priority_shortening()",
-      "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L356"
-    },
-    {
-      "id": "tests_test_ui_and_api_edge_cases_testuiandapiedgecases_test_full_responsive_system_integrity",
-      "label": ".test_full_responsive_system_integrity()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 31,
-      "community_name": "TestUIAndAPIEdgeCases",
-      "file_type": "code",
-      "norm_label": ".test_full_responsive_system_integrity()",
-      "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L464"
-    },
-    {
-      "id": "tests_test_ui_and_api_edge_cases_testuiandapiedgecases_test_nftables_dual_stack_rules_generation",
-      "label": ".test_nftables_dual_stack_rules_generation()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 31,
-      "community_name": "TestUIAndAPIEdgeCases",
-      "file_type": "code",
-      "norm_label": ".test_nftables_dual_stack_rules_generation()",
-      "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L674"
-    },
-    {
-      "id": "tests_test_ui_and_api_edge_cases_testuiandapiedgecases_test_overview_relay_engines_alignment_and_responsive",
-      "label": ".test_overview_relay_engines_alignment_and_responsive()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 31,
-      "community_name": "TestUIAndAPIEdgeCases",
-      "file_type": "code",
-      "norm_label": ".test_overview_relay_engines_alignment_and_responsive()",
-      "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L442"
-    },
-    {
-      "id": "tests_test_ui_and_api_edge_cases_testuiandapiedgecases_test_packet_loss_calculation_and_probes",
-      "label": ".test_packet_loss_calculation_and_probes()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 31,
-      "community_name": "TestUIAndAPIEdgeCases",
-      "file_type": "code",
-      "norm_label": ".test_packet_loss_calculation_and_probes()",
-      "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L509"
-    },
-    {
-      "id": "tests_test_ui_and_api_edge_cases_testuiandapiedgecases_test_packet_loss_diagnostic_tool_elements",
-      "label": ".test_packet_loss_diagnostic_tool_elements()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 31,
-      "community_name": "TestUIAndAPIEdgeCases",
-      "file_type": "code",
-      "norm_label": ".test_packet_loss_diagnostic_tool_elements()",
-      "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L591"
-    },
-    {
-      "id": "tests_test_ui_and_api_edge_cases_testuiandapiedgecases_test_services_status_api_and_dom",
-      "label": ".test_services_status_api_and_dom()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 31,
-      "community_name": "TestUIAndAPIEdgeCases",
-      "file_type": "code",
-      "norm_label": ".test_services_status_api_and_dom()",
-      "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L207"
-    },
-    {
       "id": "tests_test_ui_and_api_edge_cases_testuiandapiedgecases_test_static_asset_cache_control_and_versioning",
       "label": ".test_static_asset_cache_control_and_versioning()",
       "_callable": true,
@@ -2166,124 +1914,100 @@
       "source_location": "L557"
     },
     {
-      "id": "tests_test_ui_and_api_edge_cases_testuiandapiedgecases_test_static_assets_integrity",
-      "label": ".test_static_assets_integrity()",
+      "id": "web_app_addlogentry",
+      "label": "addLogEntry()",
       "_callable": true,
       "_origin": "ast",
-      "community": 31,
-      "community_name": "TestUIAndAPIEdgeCases",
+      "community": 34,
+      "community_name": "escapeHtml",
       "file_type": "code",
-      "norm_label": ".test_static_assets_integrity()",
-      "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L120"
+      "norm_label": "addlogentry()",
+      "source_file": "web/app.js",
+      "source_location": "L2747"
     },
     {
-      "id": "tests_test_ui_and_api_edge_cases_testuiandapiedgecases_test_tcp_udp_protocol_formatting_and_no_both",
-      "label": ".test_tcp_udp_protocol_formatting_and_no_both()",
+      "id": "web_app_appendlogentry",
+      "label": "appendLogEntry()",
       "_callable": true,
       "_origin": "ast",
-      "community": 31,
-      "community_name": "TestUIAndAPIEdgeCases",
+      "community": 34,
+      "community_name": "escapeHtml",
       "file_type": "code",
-      "norm_label": ".test_tcp_udp_protocol_formatting_and_no_both()",
-      "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L575"
+      "norm_label": "appendlogentry()",
+      "source_file": "web/app.js",
+      "source_location": "L2773"
     },
     {
-      "id": "tests_test_ui_and_api_edge_cases_testuiandapiedgecases_test_topology_and_engines_grid_layout",
-      "label": ".test_topology_and_engines_grid_layout()",
+      "id": "web_app_escapehtml",
+      "label": "escapeHtml()",
       "_callable": true,
       "_origin": "ast",
-      "community": 31,
-      "community_name": "TestUIAndAPIEdgeCases",
+      "community": 34,
+      "community_name": "escapeHtml",
       "file_type": "code",
-      "norm_label": ".test_topology_and_engines_grid_layout()",
-      "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L611"
+      "norm_label": "escapehtml()",
+      "source_file": "web/app.js",
+      "source_location": "L165"
     },
     {
-      "id": "tests_test_ui_and_api_edge_cases_testuiandapiedgecases_test_ui_proxy_protocol_and_test_target_dom",
-      "label": ".test_ui_proxy_protocol_and_test_target_dom()",
+      "id": "web_app_initdiagpacketlosstool",
+      "label": "initDiagPacketLossTool()",
       "_callable": true,
       "_origin": "ast",
-      "community": 31,
-      "community_name": "TestUIAndAPIEdgeCases",
+      "community": 34,
+      "community_name": "escapeHtml",
       "file_type": "code",
-      "norm_label": ".test_ui_proxy_protocol_and_test_target_dom()",
-      "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L251"
+      "norm_label": "initdiagpacketlosstool()",
+      "source_file": "web/app.js",
+      "source_location": "L2887"
     },
     {
-      "id": "tests_test_ui_and_api_edge_cases_testuiandapiedgecases_test_validate_rule_arbitrary_priorities",
-      "label": ".test_validate_rule_arbitrary_priorities()",
+      "id": "web_app_parseandvalidateimportjson",
+      "label": "parseAndValidateImportJson()",
       "_callable": true,
       "_origin": "ast",
-      "community": 31,
-      "community_name": "TestUIAndAPIEdgeCases",
+      "community": 34,
+      "community_name": "escapeHtml",
       "file_type": "code",
-      "norm_label": ".test_validate_rule_arbitrary_priorities()",
-      "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L40"
+      "norm_label": "parseandvalidateimportjson()",
+      "source_file": "web/app.js",
+      "source_location": "L2578"
     },
     {
-      "id": "tests_test_ui_and_api_edge_cases_testuiandapiedgecases_test_validate_rule_destination_defaults_port_if_missing",
-      "label": ".test_validate_rule_destination_defaults_port_if_missing()",
+      "id": "web_app_rendernetworktopology",
+      "label": "renderNetworkTopology()",
       "_callable": true,
       "_origin": "ast",
-      "community": 31,
-      "community_name": "TestUIAndAPIEdgeCases",
+      "community": 34,
+      "community_name": "escapeHtml",
       "file_type": "code",
-      "norm_label": ".test_validate_rule_destination_defaults_port_if_missing()",
-      "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L85"
+      "norm_label": "rendernetworktopology()",
+      "source_file": "web/app.js",
+      "source_location": "L1021"
     },
     {
-      "id": "tests_test_ui_and_api_edge_cases_testuiandapiedgecases_test_validate_rule_empty_destinations_rejected",
-      "label": ".test_validate_rule_empty_destinations_rejected()",
+      "id": "web_app_runlivepacketlosstest",
+      "label": "runLivePacketLossTest()",
       "_callable": true,
       "_origin": "ast",
-      "community": 31,
-      "community_name": "TestUIAndAPIEdgeCases",
+      "community": 34,
+      "community_name": "escapeHtml",
       "file_type": "code",
-      "norm_label": ".test_validate_rule_empty_destinations_rejected()",
-      "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L56"
+      "norm_label": "runlivepacketlosstest()",
+      "source_file": "web/app.js",
+      "source_location": "L2815"
     },
     {
-      "id": "tests_test_ui_and_api_edge_cases_testuiandapiedgecases_test_validate_rule_haproxy_requires_ipv6",
-      "label": ".test_validate_rule_haproxy_requires_ipv6()",
+      "id": "web_app_trackfailoverevents",
+      "label": "trackFailoverEvents()",
       "_callable": true,
       "_origin": "ast",
-      "community": 31,
-      "community_name": "TestUIAndAPIEdgeCases",
+      "community": 34,
+      "community_name": "escapeHtml",
       "file_type": "code",
-      "norm_label": ".test_validate_rule_haproxy_requires_ipv6()",
-      "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L634"
-    },
-    {
-      "id": "tests_test_ui_and_api_edge_cases_testuiandapiedgecases_test_validate_rule_invalid_characters_rejected",
-      "label": ".test_validate_rule_invalid_characters_rejected()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 31,
-      "community_name": "TestUIAndAPIEdgeCases",
-      "file_type": "code",
-      "norm_label": ".test_validate_rule_invalid_characters_rejected()",
-      "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L96"
-    },
-    {
-      "id": "tests_test_ui_and_api_edge_cases_testuiandapiedgecases_test_validate_rule_port_boundary_conditions",
-      "label": ".test_validate_rule_port_boundary_conditions()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 31,
-      "community_name": "TestUIAndAPIEdgeCases",
-      "file_type": "code",
-      "norm_label": ".test_validate_rule_port_boundary_conditions()",
-      "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L63"
+      "norm_label": "trackfailoverevents()",
+      "source_file": "web/app.js",
+      "source_location": "L625"
     },
     {
       "id": "core_haproxy_parser_build_xforwarder_rule",
@@ -2320,6 +2044,18 @@
       "norm_label": "find_candidate_haproxy_files()",
       "source_file": "core/haproxy_parser.py",
       "source_location": "L207"
+    },
+    {
+      "id": "core_haproxy_parser_import_haproxy_rules_into_config",
+      "label": "import_haproxy_rules_into_config()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 36,
+      "community_name": "haproxy_parser.py",
+      "file_type": "code",
+      "norm_label": "import_haproxy_rules_into_config()",
+      "source_file": "core/haproxy_parser.py",
+      "source_location": "L260"
     },
     {
       "id": "core_haproxy_parser_parse_haproxy_content",
@@ -2970,6 +2706,54 @@
       "source_location": "L363"
     },
     {
+      "id": "agents_scripts_session_state_load_state",
+      "label": "load_state()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 41,
+      "community_name": "json",
+      "file_type": "code",
+      "norm_label": "load_state()",
+      "source_file": ".agents/scripts/session-state.py",
+      "source_location": "L16"
+    },
+    {
+      "id": "agents_scripts_session_state_main",
+      "label": "main()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 41,
+      "community_name": "json",
+      "file_type": "code",
+      "norm_label": "main()",
+      "source_file": ".agents/scripts/session-state.py",
+      "source_location": "L71"
+    },
+    {
+      "id": "agents_scripts_session_state_save_state",
+      "label": "save_state()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 41,
+      "community_name": "json",
+      "file_type": "code",
+      "norm_label": "save_state()",
+      "source_file": ".agents/scripts/session-state.py",
+      "source_location": "L34"
+    },
+    {
+      "id": "agents_scripts_session_state_show_state",
+      "label": "show_state()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 41,
+      "community_name": "json",
+      "file_type": "code",
+      "norm_label": "show_state()",
+      "source_file": ".agents/scripts/session-state.py",
+      "source_location": "L42"
+    },
+    {
       "id": "core_engine_xforwarderengine_check_destination",
       "label": ".check_destination()",
       "_callable": true,
@@ -3042,6 +2826,18 @@
       "source_location": "L471"
     },
     {
+      "id": "core_engine_xforwarderengine_rules_state",
+      "label": ".rules_state()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 42,
+      "community_name": ".check_destination",
+      "file_type": "code",
+      "norm_label": ".rules_state()",
+      "source_file": "core/engine.py",
+      "source_location": "L76"
+    },
+    {
       "id": "core_engine_xforwarderengine_send_haproxy_runtime_cmd",
       "label": "._send_haproxy_runtime_cmd()",
       "_callable": true,
@@ -3052,54 +2848,6 @@
       "norm_label": "._send_haproxy_runtime_cmd()",
       "source_file": "core/engine.py",
       "source_location": "L694"
-    },
-    {
-      "id": "agents_scripts_session_state_load_state",
-      "label": "load_state()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 43,
-      "community_name": "engine.py",
-      "file_type": "code",
-      "norm_label": "load_state()",
-      "source_file": ".agents/scripts/session-state.py",
-      "source_location": "L16"
-    },
-    {
-      "id": "agents_scripts_session_state_main",
-      "label": "main()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 43,
-      "community_name": "engine.py",
-      "file_type": "code",
-      "norm_label": "main()",
-      "source_file": ".agents/scripts/session-state.py",
-      "source_location": "L71"
-    },
-    {
-      "id": "agents_scripts_session_state_save_state",
-      "label": "save_state()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 43,
-      "community_name": "engine.py",
-      "file_type": "code",
-      "norm_label": "save_state()",
-      "source_file": ".agents/scripts/session-state.py",
-      "source_location": "L34"
-    },
-    {
-      "id": "agents_scripts_session_state_show_state",
-      "label": "show_state()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 43,
-      "community_name": "engine.py",
-      "file_type": "code",
-      "norm_label": "show_state()",
-      "source_file": ".agents/scripts/session-state.py",
-      "source_location": "L42"
     },
     {
       "id": "core_engine_handle_sig",
@@ -3114,24 +2862,12 @@
       "source_location": "L1667"
     },
     {
-      "id": "core_haproxy_parser_import_haproxy_rules_into_config",
-      "label": "import_haproxy_rules_into_config()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 43,
-      "community_name": "engine.py",
-      "file_type": "code",
-      "norm_label": "import_haproxy_rules_into_config()",
-      "source_file": "core/haproxy_parser.py",
-      "source_location": "L260"
-    },
-    {
       "id": "core_engine_is_private_or_tunnel_target",
       "label": "is_private_or_tunnel_target()",
       "_callable": true,
       "_origin": "ast",
-      "community": 44,
-      "community_name": "TestEngineProbes",
+      "community": 43,
+      "community_name": "engine.py",
       "file_type": "code",
       "norm_label": "is_private_or_tunnel_target()",
       "source_file": "core/engine.py",
@@ -3318,6 +3054,18 @@
       "source_location": "L1357"
     },
     {
+      "id": "core_engine_xforwarderengine_get_rules_fingerprint",
+      "label": "._get_rules_fingerprint()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 45,
+      "community_name": ".sync_firewall_and_proxies",
+      "file_type": "code",
+      "norm_label": "._get_rules_fingerprint()",
+      "source_file": "core/engine.py",
+      "source_location": "L1039"
+    },
+    {
       "id": "core_engine_xforwarderengine_is_ipv6_supported",
       "label": "._is_ipv6_supported()",
       "_callable": true,
@@ -3330,6 +3078,30 @@
       "source_location": "L104"
     },
     {
+      "id": "core_engine_xforwarderengine_run_loop",
+      "label": ".run_loop()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 45,
+      "community_name": ".sync_firewall_and_proxies",
+      "file_type": "code",
+      "norm_label": ".run_loop()",
+      "source_file": "core/engine.py",
+      "source_location": "L1573"
+    },
+    {
+      "id": "core_engine_xforwarderengine_save_state_file",
+      "label": "._save_state_file()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 45,
+      "community_name": ".sync_firewall_and_proxies",
+      "file_type": "code",
+      "norm_label": "._save_state_file()",
+      "source_file": "core/engine.py",
+      "source_location": "L1508"
+    },
+    {
       "id": "core_engine_xforwarderengine_sync_firewall_and_proxies",
       "label": ".sync_firewall_and_proxies()",
       "_callable": true,
@@ -3340,6 +3112,18 @@
       "norm_label": ".sync_firewall_and_proxies()",
       "source_file": "core/engine.py",
       "source_location": "L1052"
+    },
+    {
+      "id": "core_engine_xforwarderengine_write_pid_file",
+      "label": "._write_pid_file()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 45,
+      "community_name": ".sync_firewall_and_proxies",
+      "file_type": "code",
+      "norm_label": "._write_pid_file()",
+      "source_file": "core/engine.py",
+      "source_location": "L1551"
     },
     {
       "id": "core_web_server_export_config_data",
@@ -3400,30 +3184,6 @@
       "norm_label": "save_config()",
       "source_file": "core/web_server.py",
       "source_location": "L149"
-    },
-    {
-      "id": "core_web_server_xforwarderwebhandler_do_delete",
-      "label": ".do_DELETE()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 46,
-      "community_name": "load_config",
-      "file_type": "code",
-      "norm_label": ".do_delete()",
-      "source_file": "core/web_server.py",
-      "source_location": "L1759"
-    },
-    {
-      "id": "core_web_server_xforwarderwebhandler_resolve_path",
-      "label": ".resolve_path()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 46,
-      "community_name": "load_config",
-      "file_type": "code",
-      "norm_label": ".resolve_path()",
-      "source_file": "core/web_server.py",
-      "source_location": "L1220"
     },
     {
       "id": "tests_test_export_import_testexportimport_setup",
@@ -3558,6 +3318,270 @@
       "source_location": "L195"
     },
     {
+      "id": "tests_test_ui_and_api_edge_cases_testuiandapiedgecases_test_latency_badge_classification_edge_cases",
+      "label": ".test_latency_badge_classification_edge_cases()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 50,
+      "community_name": ".test_latency_badge_classification_edge_cases",
+      "file_type": "code",
+      "norm_label": ".test_latency_badge_classification_edge_cases()",
+      "source_file": "tests/test_ui_and_api_edge_cases.py",
+      "source_location": "L746"
+    },
+    {
+      "id": "tests_test_ui_and_api_edge_cases_testuiandapiedgecases_test_latency_badge_classification_edge_cases_classify",
+      "label": "classify()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 50,
+      "community_name": ".test_latency_badge_classification_edge_cases",
+      "file_type": "code",
+      "norm_label": "classify()",
+      "source_file": "tests/test_ui_and_api_edge_cases.py",
+      "source_location": "L748"
+    },
+    {
+      "id": "tests_test_ui_and_api_edge_cases_testuiandapiedgecases_test_static_assets_integrity",
+      "label": ".test_static_assets_integrity()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 51,
+      "community_name": ".test_static_assets_integrity",
+      "file_type": "code",
+      "norm_label": ".test_static_assets_integrity()",
+      "source_file": "tests/test_ui_and_api_edge_cases.py",
+      "source_location": "L120"
+    },
+    {
+      "id": "tests_test_ui_and_api_edge_cases_testuiandapiedgecases_test_services_status_api_and_dom",
+      "label": ".test_services_status_api_and_dom()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 52,
+      "community_name": ".test_services_status_api_and_dom",
+      "file_type": "code",
+      "norm_label": ".test_services_status_api_and_dom()",
+      "source_file": "tests/test_ui_and_api_edge_cases.py",
+      "source_location": "L207"
+    },
+    {
+      "id": "tests_test_ui_and_api_edge_cases_testuiandapiedgecases_test_ui_proxy_protocol_and_test_target_dom",
+      "label": ".test_ui_proxy_protocol_and_test_target_dom()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 53,
+      "community_name": ".test_ui_proxy_protocol_and_test_target_dom",
+      "file_type": "code",
+      "norm_label": ".test_ui_proxy_protocol_and_test_target_dom()",
+      "source_file": "tests/test_ui_and_api_edge_cases.py",
+      "source_location": "L251"
+    },
+    {
+      "id": "tests_test_ui_and_api_edge_cases_testuiandapiedgecases_test_frontend_js_latency_and_priority_shortening",
+      "label": ".test_frontend_js_latency_and_priority_shortening()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 54,
+      "community_name": ".test_frontend_js_latency_and_priority_shortening",
+      "file_type": "code",
+      "norm_label": ".test_frontend_js_latency_and_priority_shortening()",
+      "source_file": "tests/test_ui_and_api_edge_cases.py",
+      "source_location": "L356"
+    },
+    {
+      "id": "tests_test_ui_and_api_edge_cases_testuiandapiedgecases_test_drag_and_drop_priority_reordering_integrity",
+      "label": ".test_drag_and_drop_priority_reordering_integrity()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 55,
+      "community_name": ".test_drag_and_drop_priority_reordering_integrity",
+      "file_type": "code",
+      "norm_label": ".test_drag_and_drop_priority_reordering_integrity()",
+      "source_file": "tests/test_ui_and_api_edge_cases.py",
+      "source_location": "L369"
+    },
+    {
+      "id": "tests_test_ui_and_api_edge_cases_testuiandapiedgecases_test_drag_and_drop_edge_cases_and_reorder_logic",
+      "label": ".test_drag_and_drop_edge_cases_and_reorder_logic()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 56,
+      "community_name": ".test_drag_and_drop_edge_cases_and_reorder_logic",
+      "file_type": "code",
+      "norm_label": ".test_drag_and_drop_edge_cases_and_reorder_logic()",
+      "source_file": "tests/test_ui_and_api_edge_cases.py",
+      "source_location": "L406"
+    },
+    {
+      "id": "tests_test_ui_and_api_edge_cases_testuiandapiedgecases_test_validate_rule_arbitrary_priorities",
+      "label": ".test_validate_rule_arbitrary_priorities()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 57,
+      "community_name": ".test_validate_rule_arbitrary_priorities",
+      "file_type": "code",
+      "norm_label": ".test_validate_rule_arbitrary_priorities()",
+      "source_file": "tests/test_ui_and_api_edge_cases.py",
+      "source_location": "L40"
+    },
+    {
+      "id": "tests_test_ui_and_api_edge_cases_testuiandapiedgecases_test_overview_relay_engines_alignment_and_responsive",
+      "label": ".test_overview_relay_engines_alignment_and_responsive()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 58,
+      "community_name": ".test_overview_relay_engines_alignment_and_responsive",
+      "file_type": "code",
+      "norm_label": ".test_overview_relay_engines_alignment_and_responsive()",
+      "source_file": "tests/test_ui_and_api_edge_cases.py",
+      "source_location": "L442"
+    },
+    {
+      "id": "tests_test_ui_and_api_edge_cases_testuiandapiedgecases_test_full_responsive_system_integrity",
+      "label": ".test_full_responsive_system_integrity()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 59,
+      "community_name": ".test_full_responsive_system_integrity",
+      "file_type": "code",
+      "norm_label": ".test_full_responsive_system_integrity()",
+      "source_file": "tests/test_ui_and_api_edge_cases.py",
+      "source_location": "L464"
+    },
+    {
+      "id": "tests_test_ui_and_api_edge_cases_testuiandapiedgecases_test_packet_loss_calculation_and_probes",
+      "label": ".test_packet_loss_calculation_and_probes()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 60,
+      "community_name": ".test_packet_loss_calculation_and_probes",
+      "file_type": "code",
+      "norm_label": ".test_packet_loss_calculation_and_probes()",
+      "source_file": "tests/test_ui_and_api_edge_cases.py",
+      "source_location": "L509"
+    },
+    {
+      "id": "tests_test_ui_and_api_edge_cases_testuiandapiedgecases_test_validate_rule_empty_destinations_rejected",
+      "label": ".test_validate_rule_empty_destinations_rejected()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 61,
+      "community_name": ".test_validate_rule_empty_destinations_rejected",
+      "file_type": "code",
+      "norm_label": ".test_validate_rule_empty_destinations_rejected()",
+      "source_file": "tests/test_ui_and_api_edge_cases.py",
+      "source_location": "L56"
+    },
+    {
+      "id": "tests_test_ui_and_api_edge_cases_testuiandapiedgecases_test_tcp_udp_protocol_formatting_and_no_both",
+      "label": ".test_tcp_udp_protocol_formatting_and_no_both()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 62,
+      "community_name": ".test_tcp_udp_protocol_formatting_and_no_both",
+      "file_type": "code",
+      "norm_label": ".test_tcp_udp_protocol_formatting_and_no_both()",
+      "source_file": "tests/test_ui_and_api_edge_cases.py",
+      "source_location": "L575"
+    },
+    {
+      "id": "tests_test_ui_and_api_edge_cases_testuiandapiedgecases_test_packet_loss_diagnostic_tool_elements",
+      "label": ".test_packet_loss_diagnostic_tool_elements()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 63,
+      "community_name": ".test_packet_loss_diagnostic_tool_elements",
+      "file_type": "code",
+      "norm_label": ".test_packet_loss_diagnostic_tool_elements()",
+      "source_file": "tests/test_ui_and_api_edge_cases.py",
+      "source_location": "L591"
+    },
+    {
+      "id": "tests_test_ui_and_api_edge_cases_testuiandapiedgecases_test_topology_and_engines_grid_layout",
+      "label": ".test_topology_and_engines_grid_layout()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 64,
+      "community_name": ".test_topology_and_engines_grid_layout",
+      "file_type": "code",
+      "norm_label": ".test_topology_and_engines_grid_layout()",
+      "source_file": "tests/test_ui_and_api_edge_cases.py",
+      "source_location": "L611"
+    },
+    {
+      "id": "tests_test_ui_and_api_edge_cases_testuiandapiedgecases_test_validate_rule_haproxy_requires_ipv6",
+      "label": ".test_validate_rule_haproxy_requires_ipv6()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 65,
+      "community_name": ".test_validate_rule_haproxy_requires_ipv6",
+      "file_type": "code",
+      "norm_label": ".test_validate_rule_haproxy_requires_ipv6()",
+      "source_file": "tests/test_ui_and_api_edge_cases.py",
+      "source_location": "L634"
+    },
+    {
+      "id": "tests_test_ui_and_api_edge_cases_testuiandapiedgecases_test_validate_rule_port_boundary_conditions",
+      "label": ".test_validate_rule_port_boundary_conditions()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 66,
+      "community_name": ".test_validate_rule_port_boundary_conditions",
+      "file_type": "code",
+      "norm_label": ".test_validate_rule_port_boundary_conditions()",
+      "source_file": "tests/test_ui_and_api_edge_cases.py",
+      "source_location": "L63"
+    },
+    {
+      "id": "tests_test_ui_and_api_edge_cases_testuiandapiedgecases_test_nftables_dual_stack_rules_generation",
+      "label": ".test_nftables_dual_stack_rules_generation()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 67,
+      "community_name": ".test_nftables_dual_stack_rules_generation",
+      "file_type": "code",
+      "norm_label": ".test_nftables_dual_stack_rules_generation()",
+      "source_file": "tests/test_ui_and_api_edge_cases.py",
+      "source_location": "L674"
+    },
+    {
+      "id": "tests_test_ui_and_api_edge_cases_testuiandapiedgecases_test_dark_theme_tokens_and_restrained_highlights",
+      "label": ".test_dark_theme_tokens_and_restrained_highlights()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 68,
+      "community_name": ".test_dark_theme_tokens_and_restrained_highlights",
+      "file_type": "code",
+      "norm_label": ".test_dark_theme_tokens_and_restrained_highlights()",
+      "source_file": "tests/test_ui_and_api_edge_cases.py",
+      "source_location": "L713"
+    },
+    {
+      "id": "tests_test_ui_and_api_edge_cases_testuiandapiedgecases_test_validate_rule_destination_defaults_port_if_missing",
+      "label": ".test_validate_rule_destination_defaults_port_if_missing()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 69,
+      "community_name": ".test_validate_rule_destination_defaults_port_if_missing",
+      "file_type": "code",
+      "norm_label": ".test_validate_rule_destination_defaults_port_if_missing()",
+      "source_file": "tests/test_ui_and_api_edge_cases.py",
+      "source_location": "L85"
+    },
+    {
+      "id": "tests_test_ui_and_api_edge_cases_testuiandapiedgecases_test_validate_rule_invalid_characters_rejected",
+      "label": ".test_validate_rule_invalid_characters_rejected()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 70,
+      "community_name": ".test_validate_rule_invalid_characters_rejected",
+      "file_type": "code",
+      "norm_label": ".test_validate_rule_invalid_characters_rejected()",
+      "source_file": "tests/test_ui_and_api_edge_cases.py",
+      "source_location": "L96"
+    },
+    {
       "id": "core_engine_xforwarderengine_migrate_and_normalize_config",
       "label": ".migrate_and_normalize_config()",
       "_callable": true,
@@ -3678,153 +3702,27 @@
       "source_location": "L191"
     },
     {
-      "id": "agents_rules_clean_code_dry",
-      "label": "clean-code-dry.md",
+      "id": "core_web_server_hash_password",
+      "label": "hash_password()",
+      "_callable": true,
       "_origin": "ast",
-      "community": 0,
-      "community_name": "TestXForwarderSecurity",
-      "file_type": "document",
-      "frontmatter": {
-        "name": "clean-code-dry",
-        "description": "Enforces DRY zero-duplication, atomic helper methods, and clean architecture standards in XForwarder.",
-        "always_on": false,
-        "trigger": "model_decision"
-      },
-      "node_kind": "page",
-      "norm_label": "clean-code-dry.md",
-      "source_file": ".agents/rules/clean-code-dry.md",
-      "source_location": "L1"
+      "community": 9,
+      "community_name": "experiences/README.md",
+      "file_type": "code",
+      "norm_label": "hash_password()",
+      "source_file": "core/web_server.py",
+      "source_location": "L806"
     },
     {
-      "id": "agents_experiences_005_pbkdf2_salted_auth_and_adaptive_rate_limiting",
-      "label": "005-pbkdf2-salted-auth-and-adaptive-rate-limiting.md",
-      "_origin": "ast",
-      "community": 0,
-      "community_name": "TestXForwarderSecurity",
-      "file_type": "document",
-      "node_kind": "page",
-      "norm_label": "005-pbkdf2-salted-auth-and-adaptive-rate-limiting.md",
-      "source_file": ".agents/experiences/005-pbkdf2-salted-auth-and-adaptive-rate-limiting.md",
-      "source_location": "L1"
-    },
-    {
-      "id": "agents_experiences_005_pbkdf2_salted_auth_and_adaptive_rate_limiting_1_context_motivation",
-      "label": "1. Context & Motivation",
-      "_origin": "ast",
-      "community": 0,
-      "community_name": "TestXForwarderSecurity",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "1. context & motivation",
-      "source_file": ".agents/experiences/005-pbkdf2-salted-auth-and-adaptive-rate-limiting.md",
-      "source_location": "L9"
-    },
-    {
-      "id": "agents_experiences_005_pbkdf2_salted_auth_and_adaptive_rate_limiting_2_root_cause_core_dynamics",
-      "label": "2. Root Cause / Core Dynamics",
-      "_origin": "ast",
-      "community": 0,
-      "community_name": "TestXForwarderSecurity",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "2. root cause / core dynamics",
-      "source_file": ".agents/experiences/005-pbkdf2-salted-auth-and-adaptive-rate-limiting.md",
-      "source_location": "L12"
-    },
-    {
-      "id": "agents_experiences_005_pbkdf2_salted_auth_and_adaptive_rate_limiting_3_architecture_solution_implemented",
-      "label": "3. Architecture & Solution Implemented",
-      "_origin": "ast",
-      "community": 0,
-      "community_name": "TestXForwarderSecurity",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "3. architecture & solution implemented",
-      "source_file": ".agents/experiences/005-pbkdf2-salted-auth-and-adaptive-rate-limiting.md",
-      "source_location": "L17"
-    },
-    {
-      "id": "agents_experiences_005_pbkdf2_salted_auth_and_adaptive_rate_limiting_4_invariants_rules_for_ai_agents",
-      "label": "4. Invariants & Rules for AI Agents",
-      "_origin": "ast",
-      "community": 0,
-      "community_name": "TestXForwarderSecurity",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "4. invariants & rules for ai agents",
-      "source_file": ".agents/experiences/005-pbkdf2-salted-auth-and-adaptive-rate-limiting.md",
-      "source_location": "L31"
-    },
-    {
-      "id": "agents_experiences_005_pbkdf2_salted_auth_and_adaptive_rate_limiting_5_verification_testing",
-      "label": "5. Verification & Testing",
-      "_origin": "ast",
-      "community": 0,
-      "community_name": "TestXForwarderSecurity",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "5. verification & testing",
-      "source_file": ".agents/experiences/005-pbkdf2-salted-auth-and-adaptive-rate-limiting.md",
-      "source_location": "L37"
-    },
-    {
-      "id": "agents_experiences_005_pbkdf2_salted_auth_and_adaptive_rate_limiting_experience_005_pbkdf2_salted_auth_and_adaptive_rate_limiting",
-      "label": "Experience 005: PBKDF2 Salted Auth and Adaptive Rate Limiting",
-      "_origin": "ast",
-      "community": 0,
-      "community_name": "TestXForwarderSecurity",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "experience 005: pbkdf2 salted auth and adaptive rate limiting",
-      "source_file": ".agents/experiences/005-pbkdf2-salted-auth-and-adaptive-rate-limiting.md",
-      "source_location": "L1"
-    },
-    {
-      "id": "agents_rules_clean_code_dry_1_absolute_prohibition_of_duplicated_logic",
-      "label": "1. Absolute Prohibition of Duplicated Logic",
-      "_origin": "ast",
-      "community": 0,
-      "community_name": "TestXForwarderSecurity",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "1. absolute prohibition of duplicated logic",
-      "source_file": ".agents/rules/clean-code-dry.md",
-      "source_location": "L14"
-    },
-    {
-      "id": "agents_rules_clean_code_dry_2_mandatory_helper_centralization",
-      "label": "2. Mandatory Helper Centralization",
-      "_origin": "ast",
-      "community": 0,
-      "community_name": "TestXForwarderSecurity",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "2. mandatory helper centralization",
-      "source_file": ".agents/rules/clean-code-dry.md",
-      "source_location": "L24"
-    },
-    {
-      "id": "agents_rules_clean_code_dry_clean_code_dry_don_t_repeat_yourself_rule",
-      "label": "Clean Code & DRY (Don't Repeat Yourself) Rule",
-      "_origin": "ast",
-      "community": 0,
-      "community_name": "TestXForwarderSecurity",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "clean code & dry (don't repeat yourself) rule",
-      "source_file": ".agents/rules/clean-code-dry.md",
-      "source_location": "L8"
-    },
-    {
-      "id": "core_web_server_rationale_807",
-      "label": "Generates a secure PBKDF2-HMAC-SHA256 salted password hash.",
+      "id": "core_web_server_rationale_816",
+      "label": "Verifies password against stored hash using constant-time comparison. Returns:\u2026",
       "_origin": "ast",
       "community": 0,
       "community_name": "TestXForwarderSecurity",
       "file_type": "rationale",
-      "norm_label": "generates a secure pbkdf2-hmac-sha256 salted password hash.",
+      "norm_label": "verifies password against stored hash using constant-time comparison. returns:...",
       "source_file": "core/web_server.py",
-      "source_location": "L807"
+      "source_location": "L816"
     },
     {
       "id": "core_web_server_rationale_895",
@@ -5466,18 +5364,6 @@
       "source_location": "L18"
     },
     {
-      "id": "agents_rules_01_architecture_and_failover_3_failover_recovery_dynamics",
-      "label": "3. Failover & Recovery Dynamics",
-      "_origin": "ast",
-      "community": 13,
-      "community_name": "Architecture & Failover Rules (XForwarder)",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "3. failover & recovery dynamics",
-      "source_file": ".agents/rules/01-architecture-and-failover.md",
-      "source_location": "L28"
-    },
-    {
       "id": "agents_rules_01_architecture_and_failover_4_state_configuration_persistence",
       "label": "4. State & Configuration Persistence",
       "_origin": "ast",
@@ -5887,7 +5773,7 @@
       "node_kind": "heading",
       "norm_label": "3. brand identity & iconography across screens",
       "source_file": ".agents/rules/ui-design-consistency.md",
-      "source_location": "L45"
+      "source_location": "L50"
     },
     {
       "id": "agents_rules_ui_design_consistency_4_universal_theme_switcher_availability",
@@ -5899,7 +5785,7 @@
       "node_kind": "heading",
       "norm_label": "4. universal theme switcher availability",
       "source_file": ".agents/rules/ui-design-consistency.md",
-      "source_location": "L53"
+      "source_location": "L58"
     },
     {
       "id": "agents_rules_ui_design_consistency_5_typography_standards",
@@ -5911,7 +5797,7 @@
       "node_kind": "heading",
       "norm_label": "5. typography standards",
       "source_file": ".agents/rules/ui-design-consistency.md",
-      "source_location": "L62"
+      "source_location": "L67"
     },
     {
       "id": "agents_rules_ui_design_consistency_6_components_form_controls",
@@ -5923,7 +5809,7 @@
       "node_kind": "heading",
       "norm_label": "6. components & form controls",
       "source_file": ".agents/rules/ui-design-consistency.md",
-      "source_location": "L69"
+      "source_location": "L74"
     },
     {
       "id": "agents_rules_ui_design_consistency_7_strict_vanilla_technology_stack",
@@ -5935,7 +5821,7 @@
       "node_kind": "heading",
       "norm_label": "7. strict vanilla technology stack",
       "source_file": ".agents/rules/ui-design-consistency.md",
-      "source_location": "L86"
+      "source_location": "L91"
     },
     {
       "id": "agents_rules_ui_design_consistency_8_rule_matrix_card_layout_architecture",
@@ -5947,7 +5833,7 @@
       "node_kind": "heading",
       "norm_label": "8. rule matrix & card layout architecture",
       "source_file": ".agents/rules/ui-design-consistency.md",
-      "source_location": "L99"
+      "source_location": "L104"
     },
     {
       "id": "agents_rules_ui_design_consistency_a_dark_theme_data_theme_dark_default",
@@ -5971,7 +5857,7 @@
       "node_kind": "heading",
       "norm_label": "b. light theme (`[data-theme=\"light\"]`)",
       "source_file": ".agents/rules/ui-design-consistency.md",
-      "source_location": "L30"
+      "source_location": "L35"
     },
     {
       "id": "agents_rules_ui_design_consistency_ui_design_universal_consistency_standards_web",
@@ -6001,24 +5887,6 @@
       "node_kind": "page",
       "norm_label": "blast-radius-analysis.md",
       "source_file": ".agents/rules/blast-radius-analysis.md",
-      "source_location": "L1"
-    },
-    {
-      "id": "agents_rules_reverse_prompting",
-      "label": "reverse-prompting.md",
-      "_origin": "ast",
-      "community": 19,
-      "community_name": ".agents/AGENTS.md",
-      "file_type": "document",
-      "frontmatter": {
-        "name": "reverse-prompting",
-        "description": "Reverse Prompt Engineering: single-question interactive clarification for ambiguous or architectural requests.",
-        "always_on": false,
-        "trigger": "model_decision"
-      },
-      "node_kind": "page",
-      "norm_label": "reverse-prompting.md",
-      "source_file": ".agents/rules/reverse-prompting.md",
       "source_location": "L1"
     },
     {
@@ -6087,42 +5955,6 @@
       "node_kind": "heading",
       "norm_label": "pre-execution blast radius & impact analysis rule (xforwarder)",
       "source_file": ".agents/rules/blast-radius-analysis.md",
-      "source_location": "L8"
-    },
-    {
-      "id": "agents_rules_reverse_prompting_1_zero_assumption_policy_triggers",
-      "label": "1. Zero-Assumption Policy & Triggers",
-      "_origin": "ast",
-      "community": 19,
-      "community_name": ".agents/AGENTS.md",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "1. zero-assumption policy & triggers",
-      "source_file": ".agents/rules/reverse-prompting.md",
-      "source_location": "L14"
-    },
-    {
-      "id": "agents_rules_reverse_prompting_2_rules_of_engagement",
-      "label": "2. Rules of Engagement",
-      "_origin": "ast",
-      "community": 19,
-      "community_name": ".agents/AGENTS.md",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "2. rules of engagement",
-      "source_file": ".agents/rules/reverse-prompting.md",
-      "source_location": "L29"
-    },
-    {
-      "id": "agents_rules_reverse_prompting_interactive_requirements_clarification_reverse_prompt_engineering",
-      "label": "Interactive Requirements Clarification (Reverse Prompt Engineering)",
-      "_origin": "ast",
-      "community": 19,
-      "community_name": ".agents/AGENTS.md",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "interactive requirements clarification (reverse prompt engineering)",
-      "source_file": ".agents/rules/reverse-prompting.md",
       "source_location": "L8"
     },
     {
@@ -6521,30 +6353,6 @@
       "source_location": "L28"
     },
     {
-      "id": "agents_experiences_009_fast_failover_multi_metric_and_anti_flapping_5_web_ui_real_time_visibility",
-      "label": "5. Web UI Real-Time Visibility",
-      "_origin": "ast",
-      "community": 25,
-      "community_name": "renderRules",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "5. web ui real-time visibility",
-      "source_file": ".agents/experiences/009-fast-failover-multi-metric-and-anti-flapping.md",
-      "source_location": "L37"
-    },
-    {
-      "id": "agents_agents_2_non_negotiable_architectural_constraints",
-      "label": "2. Non-Negotiable Architectural Constraints",
-      "_origin": "ast",
-      "community": 26,
-      "community_name": "3. Architecture & Solution Implemented",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "2. non-negotiable architectural constraints",
-      "source_file": ".agents/AGENTS.md",
-      "source_location": "L18"
-    },
-    {
       "id": "agents_experiences_007_fix_haproxy_silent_drop_and_state_wipeout",
       "label": "007-fix-haproxy-silent-drop-and-state-wipeout.md",
       "_origin": "ast",
@@ -6567,18 +6375,6 @@
       "norm_label": "1. context & motivation",
       "source_file": ".agents/experiences/007-fix-haproxy-silent-drop-and-state-wipeout.md",
       "source_location": "L9"
-    },
-    {
-      "id": "agents_experiences_007_fix_haproxy_silent_drop_and_state_wipeout_2_root_cause_core_dynamics",
-      "label": "2. Root Cause / Core Dynamics",
-      "_origin": "ast",
-      "community": 26,
-      "community_name": "3. Architecture & Solution Implemented",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "2. root cause / core dynamics",
-      "source_file": ".agents/experiences/007-fix-haproxy-silent-drop-and-state-wipeout.md",
-      "source_location": "L12"
     },
     {
       "id": "agents_experiences_007_fix_haproxy_silent_drop_and_state_wipeout_3_architecture_solution_implemented",
@@ -6728,6 +6524,17 @@
       "source_location": "L1"
     },
     {
+      "id": "tests_test_ui_and_api_edge_cases",
+      "label": "test_ui_and_api_edge_cases.py",
+      "_origin": "ast",
+      "community": 28,
+      "community_name": "web_server.py",
+      "file_type": "code",
+      "norm_label": "test_ui_and_api_edge_cases.py",
+      "source_file": "tests/test_ui_and_api_edge_cases.py",
+      "source_location": "L1"
+    },
+    {
       "id": "core_web_server_rationale_2",
       "label": "XForwarder - 24/7 Always-Online Web Server Provides a secure English dashboard\u2026",
       "_origin": "ast",
@@ -6739,17 +6546,6 @@
       "source_location": "L2"
     },
     {
-      "id": "core_web_server_rationale_290",
-      "label": "Synchronizes active_priority and force_override in state.json atomically.",
-      "_origin": "ast",
-      "community": 28,
-      "community_name": "web_server.py",
-      "file_type": "rationale",
-      "norm_label": "synchronizes active_priority and force_override in state.json atomically.",
-      "source_file": "core/web_server.py",
-      "source_location": "L290"
-    },
-    {
       "id": "core_web_server_rationale_40",
       "label": "Signals core engine to immediately evaluate routing changes without waiting for\u2026",
       "_origin": "ast",
@@ -6759,17 +6555,6 @@
       "norm_label": "signals core engine to immediately evaluate routing changes without waiting for...",
       "source_file": "core/web_server.py",
       "source_location": "L40"
-    },
-    {
-      "id": "core_web_server_rationale_816",
-      "label": "Verifies password against stored hash using constant-time comparison. Returns:\u2026",
-      "_origin": "ast",
-      "community": 28,
-      "community_name": "web_server.py",
-      "file_type": "rationale",
-      "norm_label": "verifies password against stored hash using constant-time comparison. returns:...",
-      "source_file": "core/web_server.py",
-      "source_location": "L816"
     },
     {
       "id": "core_web_server_rationale_846",
@@ -6816,11 +6601,22 @@
       "source_location": "L2"
     },
     {
+      "id": "tests_test_ui_and_api_edge_cases_rationale_2",
+      "label": "Unit tests for XForwarder UI, API Edge Cases, and Multi-Priority Validation.\u2026",
+      "_origin": "ast",
+      "community": 28,
+      "community_name": "web_server.py",
+      "file_type": "rationale",
+      "norm_label": "unit tests for xforwarder ui, api edge cases, and multi-priority validation....",
+      "source_file": "tests/test_ui_and_api_edge_cases.py",
+      "source_location": "L2"
+    },
+    {
       "id": "basehttprequesthandler",
       "label": "BaseHTTPRequestHandler",
       "_origin": "ast",
       "community": 29,
-      "community_name": "XForwarderWebHandler",
+      "community_name": ".do_POST",
       "file_type": "code",
       "norm_label": "basehttprequesthandler",
       "source_file": "",
@@ -6831,7 +6627,7 @@
       "label": "1. Server-Side HTTP Performance",
       "_origin": "ast",
       "community": 29,
-      "community_name": "XForwarderWebHandler",
+      "community_name": ".do_POST",
       "file_type": "document",
       "node_kind": "heading",
       "norm_label": "1. server-side http performance",
@@ -6843,7 +6639,7 @@
       "label": "Applies comprehensive OWASP recommended security headers.",
       "_origin": "ast",
       "community": 29,
-      "community_name": "XForwarderWebHandler",
+      "community_name": ".do_POST",
       "file_type": "rationale",
       "norm_label": "applies comprehensive owasp recommended security headers.",
       "source_file": "core/web_server.py",
@@ -6854,7 +6650,7 @@
       "label": "Extracts remote client IP with reverse-proxy support.",
       "_origin": "ast",
       "community": 29,
-      "community_name": "XForwarderWebHandler",
+      "community_name": ".do_POST",
       "file_type": "rationale",
       "norm_label": "extracts remote client ip with reverse-proxy support.",
       "source_file": "core/web_server.py",
@@ -6865,22 +6661,33 @@
       "label": "Validates Origin/Referer headers against Host to prevent CSRF.",
       "_origin": "ast",
       "community": 29,
-      "community_name": "XForwarderWebHandler",
+      "community_name": ".do_POST",
       "file_type": "rationale",
       "norm_label": "validates origin/referer headers against host to prevent csrf.",
       "source_file": "core/web_server.py",
       "source_location": "L1170"
     },
     {
-      "id": "core_engine_rationale_1552",
-      "label": "Persists current engine PID to candidate paths to enable instant IPC wakeups.",
+      "id": "core_web_server_rationale_1221",
+      "label": "Resolves the requested path against configured secret_path. Returns:\u2026",
       "_origin": "ast",
-      "community": 30,
-      "community_name": "XForwarderEngine",
+      "community": 29,
+      "community_name": ".do_POST",
       "file_type": "rationale",
-      "norm_label": "persists current engine pid to candidate paths to enable instant ipc wakeups.",
-      "source_file": "core/engine.py",
-      "source_location": "L1552"
+      "norm_label": "resolves the requested path against configured secret_path. returns:...",
+      "source_file": "core/web_server.py",
+      "source_location": "L1221"
+    },
+    {
+      "id": "core_web_server_rationale_290",
+      "label": "Synchronizes active_priority and force_override in state.json atomically.",
+      "_origin": "ast",
+      "community": 29,
+      "community_name": ".do_POST",
+      "file_type": "rationale",
+      "norm_label": "synchronizes active_priority and force_override in state.json atomically.",
+      "source_file": "core/web_server.py",
+      "source_location": "L290"
     },
     {
       "id": "core_engine_rationale_1564",
@@ -6938,39 +6745,6 @@
       "source_location": "L80"
     },
     {
-      "id": "tests_test_ui_and_api_edge_cases_rationale_121",
-      "label": "Verifies that index.html, style.css, and app.js exist and meet architectural\u2026",
-      "_origin": "ast",
-      "community": 31,
-      "community_name": "TestUIAndAPIEdgeCases",
-      "file_type": "rationale",
-      "norm_label": "verifies that index.html, style.css, and app.js exist and meet architectural...",
-      "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L121"
-    },
-    {
-      "id": "tests_test_ui_and_api_edge_cases_rationale_208",
-      "label": "Verifies get_services_status API structure and DOM presence for NFTables,\u2026",
-      "_origin": "ast",
-      "community": 31,
-      "community_name": "TestUIAndAPIEdgeCases",
-      "file_type": "rationale",
-      "norm_label": "verifies get_services_status api structure and dom presence for nftables,...",
-      "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L208"
-    },
-    {
-      "id": "tests_test_ui_and_api_edge_cases_rationale_252",
-      "label": "Verifies UI elements for PROXY Protocol toggle and Test Target button exist.",
-      "_origin": "ast",
-      "community": 31,
-      "community_name": "TestUIAndAPIEdgeCases",
-      "file_type": "rationale",
-      "norm_label": "verifies ui elements for proxy protocol toggle and test target button exist.",
-      "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L252"
-    },
-    {
       "id": "tests_test_ui_and_api_edge_cases_rationale_275",
       "label": "Tests POST /api/test-target endpoint auth, input validation, and successful\u2026",
       "_origin": "ast",
@@ -6993,83 +6767,6 @@
       "source_location": "L344"
     },
     {
-      "id": "tests_test_ui_and_api_edge_cases_rationale_357",
-      "label": "Verifies that app.js suppresses 0ms latency and formats concise reasons and\u2026",
-      "_origin": "ast",
-      "community": 31,
-      "community_name": "TestUIAndAPIEdgeCases",
-      "file_type": "rationale",
-      "norm_label": "verifies that app.js suppresses 0ms latency and formats concise reasons and...",
-      "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L357"
-    },
-    {
-      "id": "tests_test_ui_and_api_edge_cases_rationale_370",
-      "label": "Verifies that both rules list and modal support priority drag-and-drop\u2026",
-      "_origin": "ast",
-      "community": 31,
-      "community_name": "TestUIAndAPIEdgeCases",
-      "file_type": "rationale",
-      "norm_label": "verifies that both rules list and modal support priority drag-and-drop...",
-      "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L370"
-    },
-    {
-      "id": "tests_test_ui_and_api_edge_cases_rationale_407",
-      "label": "Verifies edge case handling for priority reordering: click isolation, rule\u2026",
-      "_origin": "ast",
-      "community": 31,
-      "community_name": "TestUIAndAPIEdgeCases",
-      "file_type": "rationale",
-      "norm_label": "verifies edge case handling for priority reordering: click isolation, rule...",
-      "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L407"
-    },
-    {
-      "id": "tests_test_ui_and_api_edge_cases_rationale_41",
-      "label": "Verifies that validate_rule accepts arbitrary cascading priorities (P1..PN).",
-      "_origin": "ast",
-      "community": 31,
-      "community_name": "TestUIAndAPIEdgeCases",
-      "file_type": "rationale",
-      "norm_label": "verifies that validate_rule accepts arbitrary cascading priorities (p1..pn).",
-      "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L41"
-    },
-    {
-      "id": "tests_test_ui_and_api_edge_cases_rationale_443",
-      "label": "Verifies that formatEngineVersion truncates long distro strings and CSS\u2026",
-      "_origin": "ast",
-      "community": 31,
-      "community_name": "TestUIAndAPIEdgeCases",
-      "file_type": "rationale",
-      "norm_label": "verifies that formatengineversion truncates long distro strings and css...",
-      "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L443"
-    },
-    {
-      "id": "tests_test_ui_and_api_edge_cases_rationale_465",
-      "label": "Verifies multi-tier responsive system: topbar condensation, drawer breakpoint,\u2026",
-      "_origin": "ast",
-      "community": 31,
-      "community_name": "TestUIAndAPIEdgeCases",
-      "file_type": "rationale",
-      "norm_label": "verifies multi-tier responsive system: topbar condensation, drawer breakpoint,...",
-      "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L465"
-    },
-    {
-      "id": "tests_test_ui_and_api_edge_cases_rationale_510",
-      "label": "Verifies that engine.check_destination calculates packet_loss metrics properly.",
-      "_origin": "ast",
-      "community": 31,
-      "community_name": "TestUIAndAPIEdgeCases",
-      "file_type": "rationale",
-      "norm_label": "verifies that engine.check_destination calculates packet_loss metrics properly.",
-      "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L510"
-    },
-    {
       "id": "tests_test_ui_and_api_edge_cases_rationale_558",
       "label": "Verifies that static assets have cache-busting headers and query parameters.",
       "_origin": "ast",
@@ -7079,105 +6776,6 @@
       "norm_label": "verifies that static assets have cache-busting headers and query parameters.",
       "source_file": "tests/test_ui_and_api_edge_cases.py",
       "source_location": "L558"
-    },
-    {
-      "id": "tests_test_ui_and_api_edge_cases_rationale_57",
-      "label": "Verifies that a rule without destinations is rejected.",
-      "_origin": "ast",
-      "community": 31,
-      "community_name": "TestUIAndAPIEdgeCases",
-      "file_type": "rationale",
-      "norm_label": "verifies that a rule without destinations is rejected.",
-      "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L57"
-    },
-    {
-      "id": "tests_test_ui_and_api_edge_cases_rationale_576",
-      "label": "Verifies that BOTH is replaced by TCP + UDP across the frontend.",
-      "_origin": "ast",
-      "community": 31,
-      "community_name": "TestUIAndAPIEdgeCases",
-      "file_type": "rationale",
-      "norm_label": "verifies that both is replaced by tcp + udp across the frontend.",
-      "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L576"
-    },
-    {
-      "id": "tests_test_ui_and_api_edge_cases_rationale_592",
-      "label": "Verifies that packet loss UI tool and functions exist in frontend.",
-      "_origin": "ast",
-      "community": 31,
-      "community_name": "TestUIAndAPIEdgeCases",
-      "file_type": "rationale",
-      "norm_label": "verifies that packet loss ui tool and functions exist in frontend.",
-      "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L592"
-    },
-    {
-      "id": "tests_test_ui_and_api_edge_cases_rationale_612",
-      "label": "Verifies that Server Network & Tunnel Topology and Relay Engines are structured\u2026",
-      "_origin": "ast",
-      "community": 31,
-      "community_name": "TestUIAndAPIEdgeCases",
-      "file_type": "rationale",
-      "norm_label": "verifies that server network & tunnel topology and relay engines are structured...",
-      "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L612"
-    },
-    {
-      "id": "tests_test_ui_and_api_edge_cases_rationale_635",
-      "label": "Verifies that validate_rule strictly enforces that HAProxy destinations must be\u2026",
-      "_origin": "ast",
-      "community": 31,
-      "community_name": "TestUIAndAPIEdgeCases",
-      "file_type": "rationale",
-      "norm_label": "verifies that validate_rule strictly enforces that haproxy destinations must be...",
-      "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L635"
-    },
-    {
-      "id": "tests_test_ui_and_api_edge_cases_rationale_64",
-      "label": "Tests port bounds (1 to 65535).",
-      "_origin": "ast",
-      "community": 31,
-      "community_name": "TestUIAndAPIEdgeCases",
-      "file_type": "rationale",
-      "norm_label": "tests port bounds (1 to 65535).",
-      "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L64"
-    },
-    {
-      "id": "tests_test_ui_and_api_edge_cases_rationale_675",
-      "label": "Verifies that _apply_nftables generates isolated table ip and table ip6 for\u2026",
-      "_origin": "ast",
-      "community": 31,
-      "community_name": "TestUIAndAPIEdgeCases",
-      "file_type": "rationale",
-      "norm_label": "verifies that _apply_nftables generates isolated table ip and table ip6 for...",
-      "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L675"
-    },
-    {
-      "id": "tests_test_ui_and_api_edge_cases_rationale_86",
-      "label": "Verifies destination inherits rule listening port when omitted.",
-      "_origin": "ast",
-      "community": 31,
-      "community_name": "TestUIAndAPIEdgeCases",
-      "file_type": "rationale",
-      "norm_label": "verifies destination inherits rule listening port when omitted.",
-      "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L86"
-    },
-    {
-      "id": "tests_test_ui_and_api_edge_cases_rationale_97",
-      "label": "Prevents shell command injection characters in destination target.",
-      "_origin": "ast",
-      "community": 31,
-      "community_name": "TestUIAndAPIEdgeCases",
-      "file_type": "rationale",
-      "norm_label": "prevents shell command injection characters in destination target.",
-      "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L97"
     },
     {
       "id": "agents_rules_02_python_core_standards",
@@ -7392,6 +6990,17 @@
       "source_location": ""
     },
     {
+      "id": "tests_test_haproxy_parser",
+      "label": "test_haproxy_parser.py",
+      "_origin": "ast",
+      "community": 36,
+      "community_name": "haproxy_parser.py",
+      "file_type": "code",
+      "norm_label": "test_haproxy_parser.py",
+      "source_file": "tests/test_haproxy_parser.py",
+      "source_location": "L1"
+    },
+    {
       "id": "core_haproxy_parser_rationale_195",
       "label": "Safely reads and parses a HAProxy config file.",
       "_origin": "ast",
@@ -7436,6 +7045,17 @@
       "source_location": "L234"
     },
     {
+      "id": "core_haproxy_parser_rationale_261",
+      "label": "Discovers unimported HAProxy rules and appends them to config_path atomically.\u2026",
+      "_origin": "ast",
+      "community": 36,
+      "community_name": "haproxy_parser.py",
+      "file_type": "rationale",
+      "norm_label": "discovers unimported haproxy rules and appends them to config_path atomically....",
+      "source_file": "core/haproxy_parser.py",
+      "source_location": "L261"
+    },
+    {
       "id": "core_haproxy_parser_rationale_40",
       "label": "Parses HAProxy configuration text and extracts list/frontend rules. Returns a\u2026",
       "_origin": "ast",
@@ -7445,6 +7065,17 @@
       "norm_label": "parses haproxy configuration text and extracts list/frontend rules. returns a...",
       "source_file": "core/haproxy_parser.py",
       "source_location": "L40"
+    },
+    {
+      "id": "tests_test_haproxy_parser_rationale_2",
+      "label": "Unit tests for HAProxy Configuration Parser & Importer. Standard Library\u2026",
+      "_origin": "ast",
+      "community": 36,
+      "community_name": "haproxy_parser.py",
+      "file_type": "rationale",
+      "norm_label": "unit tests for haproxy configuration parser & importer. standard library...",
+      "source_file": "tests/test_haproxy_parser.py",
+      "source_location": "L2"
     },
     {
       "id": "core_web_server_py_any",
@@ -7601,42 +7232,6 @@
       "source_location": "L75"
     },
     {
-      "id": "agents",
-      "label": "AGENTS.md",
-      "_origin": "ast",
-      "community": 39,
-      "community_name": "sync_system_rules",
-      "file_type": "document",
-      "node_kind": "page",
-      "norm_label": "agents.md",
-      "source_file": "AGENTS.md",
-      "source_location": "L1"
-    },
-    {
-      "id": "agents_codebase_knowledge_graph_graphify",
-      "label": "\ud83d\udd0d Codebase Knowledge Graph (graphify)",
-      "_origin": "ast",
-      "community": 39,
-      "community_name": "sync_system_rules",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "\ud83d\udd0d codebase knowledge graph (graphify)",
-      "source_file": "AGENTS.md",
-      "source_location": "L96"
-    },
-    {
-      "id": "agents_core_rules_constraints",
-      "label": "\u26a1 Core Rules & Constraints",
-      "_origin": "ast",
-      "community": 39,
-      "community_name": "sync_system_rules",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "\u26a1 core rules & constraints",
-      "source_file": "AGENTS.md",
-      "source_location": "L45"
-    },
-    {
       "id": "agents_experiences_006_host_subsystem_inspection_and_drag_drop_priorities",
       "label": "006-host-subsystem-inspection-and-drag-drop-priorities.md",
       "_origin": "ast",
@@ -7721,40 +7316,16 @@
       "source_location": "L1"
     },
     {
-      "id": "agents_project_architecture",
-      "label": "\ud83e\udded Project Architecture",
+      "id": "agents_experiences_007_fix_haproxy_silent_drop_and_state_wipeout_2_root_cause_core_dynamics",
+      "label": "2. Root Cause / Core Dynamics",
       "_origin": "ast",
       "community": 39,
       "community_name": "sync_system_rules",
       "file_type": "document",
       "node_kind": "heading",
-      "norm_label": "\ud83e\udded project architecture",
-      "source_file": "AGENTS.md",
-      "source_location": "L5"
-    },
-    {
-      "id": "agents_workflows_skills_verification_pipeline",
-      "label": "\ud83d\udee0 Workflows, Skills & Verification Pipeline",
-      "_origin": "ast",
-      "community": 39,
-      "community_name": "sync_system_rules",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "\ud83d\udee0 workflows, skills & verification pipeline",
-      "source_file": "AGENTS.md",
-      "source_location": "L106"
-    },
-    {
-      "id": "agents_xforwarder_agent_development_guide",
-      "label": "XForwarder - Agent Development Guide",
-      "_origin": "ast",
-      "community": 39,
-      "community_name": "sync_system_rules",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "xforwarder - agent development guide",
-      "source_file": "AGENTS.md",
-      "source_location": "L1"
+      "norm_label": "2. root cause / core dynamics",
+      "source_file": ".agents/experiences/007-fix-haproxy-silent-drop-and-state-wipeout.md",
+      "source_location": "L12"
     },
     {
       "id": "core_engine_rationale_1633",
@@ -7983,6 +7554,28 @@
       "source_location": "L1"
     },
     {
+      "id": "agents_scripts_session_state",
+      "label": "session-state.py",
+      "_origin": "ast",
+      "community": 41,
+      "community_name": "json",
+      "file_type": "code",
+      "norm_label": "session-state.py",
+      "source_file": ".agents/scripts/session-state.py",
+      "source_location": "L1"
+    },
+    {
+      "id": "agents_scripts_session_state_rationale_2",
+      "label": "CLI Manager for .agents/session-state.json Provides structured task context,\u2026",
+      "_origin": "ast",
+      "community": 41,
+      "community_name": "json",
+      "file_type": "rationale",
+      "norm_label": "cli manager for .agents/session-state.json provides structured task context,...",
+      "source_file": ".agents/scripts/session-state.py",
+      "source_location": "L2"
+    },
+    {
       "id": "core_engine_py_any",
       "label": "Any",
       "_origin": "ast",
@@ -7992,6 +7585,42 @@
       "norm_label": "any",
       "source_file": "",
       "source_location": ""
+    },
+    {
+      "id": "agents_agents_2_non_negotiable_architectural_constraints",
+      "label": "2. Non-Negotiable Architectural Constraints",
+      "_origin": "ast",
+      "community": 42,
+      "community_name": ".check_destination",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "2. non-negotiable architectural constraints",
+      "source_file": ".agents/AGENTS.md",
+      "source_location": "L18"
+    },
+    {
+      "id": "agents_core_rules_constraints",
+      "label": "\u26a1 Core Rules & Constraints",
+      "_origin": "ast",
+      "community": 42,
+      "community_name": ".check_destination",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "\u26a1 core rules & constraints",
+      "source_file": "AGENTS.md",
+      "source_location": "L45"
+    },
+    {
+      "id": "agents_rules_01_architecture_and_failover_3_failover_recovery_dynamics",
+      "label": "3. Failover & Recovery Dynamics",
+      "_origin": "ast",
+      "community": 42,
+      "community_name": ".check_destination",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "3. failover & recovery dynamics",
+      "source_file": ".agents/rules/01-architecture-and-failover.md",
+      "source_location": "L28"
     },
     {
       "id": "core_engine_rationale_472",
@@ -8060,17 +7689,6 @@
       "source_location": "L777"
     },
     {
-      "id": "agents_scripts_session_state",
-      "label": "session-state.py",
-      "_origin": "ast",
-      "community": 43,
-      "community_name": "engine.py",
-      "file_type": "code",
-      "norm_label": "session-state.py",
-      "source_file": ".agents/scripts/session-state.py",
-      "source_location": "L1"
-    },
-    {
       "id": "core_engine",
       "label": "engine.py",
       "_origin": "ast",
@@ -8093,17 +7711,6 @@
       "source_location": "L1"
     },
     {
-      "id": "tests_test_export_import",
-      "label": "test_export_import.py",
-      "_origin": "ast",
-      "community": 43,
-      "community_name": "engine.py",
-      "file_type": "code",
-      "norm_label": "test_export_import.py",
-      "source_file": "tests/test_export_import.py",
-      "source_location": "L1"
-    },
-    {
       "id": "tests_test_fast_failover_and_antiflap",
       "label": "test_fast_failover_and_antiflap.py",
       "_origin": "ast",
@@ -8115,14 +7722,14 @@
       "source_location": "L1"
     },
     {
-      "id": "tests_test_haproxy_parser",
-      "label": "test_haproxy_parser.py",
+      "id": "tests_test_migration",
+      "label": "test_migration.py",
       "_origin": "ast",
       "community": 43,
       "community_name": "engine.py",
       "file_type": "code",
-      "norm_label": "test_haproxy_parser.py",
-      "source_file": "tests/test_haproxy_parser.py",
+      "norm_label": "test_migration.py",
+      "source_file": "tests/test_migration.py",
       "source_location": "L1"
     },
     {
@@ -8148,28 +7755,6 @@
       "source_location": "L1"
     },
     {
-      "id": "tests_test_ui_and_api_edge_cases",
-      "label": "test_ui_and_api_edge_cases.py",
-      "_origin": "ast",
-      "community": 43,
-      "community_name": "engine.py",
-      "file_type": "code",
-      "norm_label": "test_ui_and_api_edge_cases.py",
-      "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L1"
-    },
-    {
-      "id": "agents_scripts_session_state_rationale_2",
-      "label": "CLI Manager for .agents/session-state.json Provides structured task context,\u2026",
-      "_origin": "ast",
-      "community": 43,
-      "community_name": "engine.py",
-      "file_type": "rationale",
-      "norm_label": "cli manager for .agents/session-state.json provides structured task context,...",
-      "source_file": ".agents/scripts/session-state.py",
-      "source_location": "L2"
-    },
-    {
       "id": "core_engine_rationale_2",
       "label": "XForwarder - Core Engine Daemon Monitors uplink destinations (IPv6 HAProxy vs\u2026",
       "_origin": "ast",
@@ -8181,15 +7766,15 @@
       "source_location": "L2"
     },
     {
-      "id": "core_haproxy_parser_rationale_261",
-      "label": "Discovers unimported HAProxy rules and appends them to config_path atomically.\u2026",
+      "id": "core_engine_rationale_39",
+      "label": "Returns True if the target IP is in RFC 1918 private, loopback, link-local, or\u2026",
       "_origin": "ast",
       "community": 43,
       "community_name": "engine.py",
       "file_type": "rationale",
-      "norm_label": "discovers unimported haproxy rules and appends them to config_path atomically....",
-      "source_file": "core/haproxy_parser.py",
-      "source_location": "L261"
+      "norm_label": "returns true if the target ip is in rfc 1918 private, loopback, link-local, or...",
+      "source_file": "core/engine.py",
+      "source_location": "L39"
     },
     {
       "id": "tests_test_fast_failover_and_antiflap_rationale_2",
@@ -8203,14 +7788,14 @@
       "source_location": "L2"
     },
     {
-      "id": "tests_test_haproxy_parser_rationale_2",
-      "label": "Unit tests for HAProxy Configuration Parser & Importer. Standard Library\u2026",
+      "id": "tests_test_migration_rationale_2",
+      "label": "Unit tests for XForwarder Configuration Migration & Backward Compatibility.\u2026",
       "_origin": "ast",
       "community": 43,
       "community_name": "engine.py",
       "file_type": "rationale",
-      "norm_label": "unit tests for haproxy configuration parser & importer. standard library...",
-      "source_file": "tests/test_haproxy_parser.py",
+      "norm_label": "unit tests for xforwarder configuration migration & backward compatibility....",
+      "source_file": "tests/test_migration.py",
       "source_location": "L2"
     },
     {
@@ -8234,28 +7819,6 @@
       "norm_label": "unit tests for xforwarder performance optimizations. tests gzip compression,...",
       "source_file": "tests/test_performance_and_optimizations.py",
       "source_location": "L2"
-    },
-    {
-      "id": "tests_test_ui_and_api_edge_cases_rationale_2",
-      "label": "Unit tests for XForwarder UI, API Edge Cases, and Multi-Priority Validation.\u2026",
-      "_origin": "ast",
-      "community": 43,
-      "community_name": "engine.py",
-      "file_type": "rationale",
-      "norm_label": "unit tests for xforwarder ui, api edge cases, and multi-priority validation....",
-      "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L2"
-    },
-    {
-      "id": "core_engine_rationale_39",
-      "label": "Returns True if the target IP is in RFC 1918 private, loopback, link-local, or\u2026",
-      "_origin": "ast",
-      "community": 44,
-      "community_name": "TestEngineProbes",
-      "file_type": "rationale",
-      "norm_label": "returns true if the target ip is in rfc 1918 private, loopback, link-local, or...",
-      "source_file": "core/engine.py",
-      "source_location": "L39"
     },
     {
       "id": "agents_experiences_008_full_stack_performance_and_fast_ipc_2_selective_service_reloading",
@@ -8293,26 +7856,26 @@
       "source_location": "L105"
     },
     {
-      "id": "tests_test_migration",
-      "label": "test_migration.py",
+      "id": "core_engine_rationale_1552",
+      "label": "Persists current engine PID to candidate paths to enable instant IPC wakeups.",
+      "_origin": "ast",
+      "community": 45,
+      "community_name": ".sync_firewall_and_proxies",
+      "file_type": "rationale",
+      "norm_label": "persists current engine pid to candidate paths to enable instant ipc wakeups.",
+      "source_file": "core/engine.py",
+      "source_location": "L1552"
+    },
+    {
+      "id": "tests_test_export_import",
+      "label": "test_export_import.py",
       "_origin": "ast",
       "community": 46,
       "community_name": "load_config",
       "file_type": "code",
-      "norm_label": "test_migration.py",
-      "source_file": "tests/test_migration.py",
+      "norm_label": "test_export_import.py",
+      "source_file": "tests/test_export_import.py",
       "source_location": "L1"
-    },
-    {
-      "id": "core_web_server_rationale_1221",
-      "label": "Resolves the requested path against configured secret_path. Returns:\u2026",
-      "_origin": "ast",
-      "community": 46,
-      "community_name": "load_config",
-      "file_type": "rationale",
-      "norm_label": "resolves the requested path against configured secret_path. returns:...",
-      "source_file": "core/web_server.py",
-      "source_location": "L1221"
     },
     {
       "id": "core_web_server_rationale_166",
@@ -8335,17 +7898,6 @@
       "norm_label": "validates, migrates, backs up, and applies an imported configuration dictionary...",
       "source_file": "core/web_server.py",
       "source_location": "L188"
-    },
-    {
-      "id": "tests_test_migration_rationale_2",
-      "label": "Unit tests for XForwarder Configuration Migration & Backward Compatibility.\u2026",
-      "_origin": "ast",
-      "community": 46,
-      "community_name": "load_config",
-      "file_type": "rationale",
-      "norm_label": "unit tests for xforwarder configuration migration & backward compatibility....",
-      "source_file": "tests/test_migration.py",
-      "source_location": "L2"
     },
     {
       "id": "agents_rules_03_networking_and_kernel",
@@ -8422,6 +7974,120 @@
       "norm_label": "networking & kernel standards (xforwarder)",
       "source_file": ".agents/rules/03-networking-and-kernel.md",
       "source_location": "L6"
+    },
+    {
+      "id": "agents",
+      "label": "AGENTS.md",
+      "_origin": "ast",
+      "community": 48,
+      "community_name": "XForwarder - Agent Development Guide",
+      "file_type": "document",
+      "node_kind": "page",
+      "norm_label": "agents.md",
+      "source_file": "AGENTS.md",
+      "source_location": "L1"
+    },
+    {
+      "id": "agents_codebase_knowledge_graph_graphify",
+      "label": "\ud83d\udd0d Codebase Knowledge Graph (graphify)",
+      "_origin": "ast",
+      "community": 48,
+      "community_name": "XForwarder - Agent Development Guide",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "\ud83d\udd0d codebase knowledge graph (graphify)",
+      "source_file": "AGENTS.md",
+      "source_location": "L96"
+    },
+    {
+      "id": "agents_project_architecture",
+      "label": "\ud83e\udded Project Architecture",
+      "_origin": "ast",
+      "community": 48,
+      "community_name": "XForwarder - Agent Development Guide",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "\ud83e\udded project architecture",
+      "source_file": "AGENTS.md",
+      "source_location": "L5"
+    },
+    {
+      "id": "agents_workflows_skills_verification_pipeline",
+      "label": "\ud83d\udee0 Workflows, Skills & Verification Pipeline",
+      "_origin": "ast",
+      "community": 48,
+      "community_name": "XForwarder - Agent Development Guide",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "\ud83d\udee0 workflows, skills & verification pipeline",
+      "source_file": "AGENTS.md",
+      "source_location": "L106"
+    },
+    {
+      "id": "agents_xforwarder_agent_development_guide",
+      "label": "XForwarder - Agent Development Guide",
+      "_origin": "ast",
+      "community": 48,
+      "community_name": "XForwarder - Agent Development Guide",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "xforwarder - agent development guide",
+      "source_file": "AGENTS.md",
+      "source_location": "L1"
+    },
+    {
+      "id": "agents_rules_reverse_prompting",
+      "label": "reverse-prompting.md",
+      "_origin": "ast",
+      "community": 49,
+      "community_name": "Interactive Requirements Clarification (Reverse Prompt Engineering)",
+      "file_type": "document",
+      "frontmatter": {
+        "name": "reverse-prompting",
+        "description": "Reverse Prompt Engineering: single-question interactive clarification for ambiguous or architectural requests.",
+        "always_on": false,
+        "trigger": "model_decision"
+      },
+      "node_kind": "page",
+      "norm_label": "reverse-prompting.md",
+      "source_file": ".agents/rules/reverse-prompting.md",
+      "source_location": "L1"
+    },
+    {
+      "id": "agents_rules_reverse_prompting_1_zero_assumption_policy_triggers",
+      "label": "1. Zero-Assumption Policy & Triggers",
+      "_origin": "ast",
+      "community": 49,
+      "community_name": "Interactive Requirements Clarification (Reverse Prompt Engineering)",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "1. zero-assumption policy & triggers",
+      "source_file": ".agents/rules/reverse-prompting.md",
+      "source_location": "L14"
+    },
+    {
+      "id": "agents_rules_reverse_prompting_2_rules_of_engagement",
+      "label": "2. Rules of Engagement",
+      "_origin": "ast",
+      "community": 49,
+      "community_name": "Interactive Requirements Clarification (Reverse Prompt Engineering)",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "2. rules of engagement",
+      "source_file": ".agents/rules/reverse-prompting.md",
+      "source_location": "L29"
+    },
+    {
+      "id": "agents_rules_reverse_prompting_interactive_requirements_clarification_reverse_prompt_engineering",
+      "label": "Interactive Requirements Clarification (Reverse Prompt Engineering)",
+      "_origin": "ast",
+      "community": 49,
+      "community_name": "Interactive Requirements Clarification (Reverse Prompt Engineering)",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "interactive requirements clarification (reverse prompt engineering)",
+      "source_file": ".agents/rules/reverse-prompting.md",
+      "source_location": "L8"
     },
     {
       "id": "readme",
@@ -8590,6 +8256,116 @@
       "norm_label": "\ud83d\udce6 \u06f8. \u0646\u0635\u0628 \u062f\u0633\u062a\u06cc \u0627\u0632 \u0637\u0631\u06cc\u0642 \u06af\u06cc\u062a (manual installation)",
       "source_file": "README.md",
       "source_location": "L162"
+    },
+    {
+      "id": "tests_test_ui_and_api_edge_cases_rationale_747",
+      "label": "Tests that latency classification thresholds categorize clean pings and failure\u2026",
+      "_origin": "ast",
+      "community": 50,
+      "community_name": ".test_latency_badge_classification_edge_cases",
+      "file_type": "rationale",
+      "norm_label": "tests that latency classification thresholds categorize clean pings and failure...",
+      "source_file": "tests/test_ui_and_api_edge_cases.py",
+      "source_location": "L747"
+    },
+    {
+      "id": "tests_test_ui_and_api_edge_cases_rationale_121",
+      "label": "Verifies that index.html, style.css, and app.js exist and meet architectural\u2026",
+      "_origin": "ast",
+      "community": 51,
+      "community_name": ".test_static_assets_integrity",
+      "file_type": "rationale",
+      "norm_label": "verifies that index.html, style.css, and app.js exist and meet architectural...",
+      "source_file": "tests/test_ui_and_api_edge_cases.py",
+      "source_location": "L121"
+    },
+    {
+      "id": "tests_test_ui_and_api_edge_cases_rationale_208",
+      "label": "Verifies get_services_status API structure and DOM presence for NFTables,\u2026",
+      "_origin": "ast",
+      "community": 52,
+      "community_name": ".test_services_status_api_and_dom",
+      "file_type": "rationale",
+      "norm_label": "verifies get_services_status api structure and dom presence for nftables,...",
+      "source_file": "tests/test_ui_and_api_edge_cases.py",
+      "source_location": "L208"
+    },
+    {
+      "id": "tests_test_ui_and_api_edge_cases_rationale_252",
+      "label": "Verifies UI elements for PROXY Protocol toggle and Test Target button exist.",
+      "_origin": "ast",
+      "community": 53,
+      "community_name": ".test_ui_proxy_protocol_and_test_target_dom",
+      "file_type": "rationale",
+      "norm_label": "verifies ui elements for proxy protocol toggle and test target button exist.",
+      "source_file": "tests/test_ui_and_api_edge_cases.py",
+      "source_location": "L252"
+    },
+    {
+      "id": "tests_test_ui_and_api_edge_cases_rationale_357",
+      "label": "Verifies that app.js suppresses 0ms latency and formats concise reasons and\u2026",
+      "_origin": "ast",
+      "community": 54,
+      "community_name": ".test_frontend_js_latency_and_priority_shortening",
+      "file_type": "rationale",
+      "norm_label": "verifies that app.js suppresses 0ms latency and formats concise reasons and...",
+      "source_file": "tests/test_ui_and_api_edge_cases.py",
+      "source_location": "L357"
+    },
+    {
+      "id": "tests_test_ui_and_api_edge_cases_rationale_370",
+      "label": "Verifies that both rules list and modal support priority drag-and-drop\u2026",
+      "_origin": "ast",
+      "community": 55,
+      "community_name": ".test_drag_and_drop_priority_reordering_integrity",
+      "file_type": "rationale",
+      "norm_label": "verifies that both rules list and modal support priority drag-and-drop...",
+      "source_file": "tests/test_ui_and_api_edge_cases.py",
+      "source_location": "L370"
+    },
+    {
+      "id": "tests_test_ui_and_api_edge_cases_rationale_407",
+      "label": "Verifies edge case handling for priority reordering: click isolation, rule\u2026",
+      "_origin": "ast",
+      "community": 56,
+      "community_name": ".test_drag_and_drop_edge_cases_and_reorder_logic",
+      "file_type": "rationale",
+      "norm_label": "verifies edge case handling for priority reordering: click isolation, rule...",
+      "source_file": "tests/test_ui_and_api_edge_cases.py",
+      "source_location": "L407"
+    },
+    {
+      "id": "tests_test_ui_and_api_edge_cases_rationale_41",
+      "label": "Verifies that validate_rule accepts arbitrary cascading priorities (P1..PN).",
+      "_origin": "ast",
+      "community": 57,
+      "community_name": ".test_validate_rule_arbitrary_priorities",
+      "file_type": "rationale",
+      "norm_label": "verifies that validate_rule accepts arbitrary cascading priorities (p1..pn).",
+      "source_file": "tests/test_ui_and_api_edge_cases.py",
+      "source_location": "L41"
+    },
+    {
+      "id": "tests_test_ui_and_api_edge_cases_rationale_443",
+      "label": "Verifies that formatEngineVersion truncates long distro strings and CSS\u2026",
+      "_origin": "ast",
+      "community": 58,
+      "community_name": ".test_overview_relay_engines_alignment_and_responsive",
+      "file_type": "rationale",
+      "norm_label": "verifies that formatengineversion truncates long distro strings and css...",
+      "source_file": "tests/test_ui_and_api_edge_cases.py",
+      "source_location": "L443"
+    },
+    {
+      "id": "tests_test_ui_and_api_edge_cases_rationale_465",
+      "label": "Verifies multi-tier responsive system: topbar condensation, drawer breakpoint,\u2026",
+      "_origin": "ast",
+      "community": 59,
+      "community_name": ".test_full_responsive_system_integrity",
+      "file_type": "rationale",
+      "norm_label": "verifies multi-tier responsive system: topbar condensation, drawer breakpoint,...",
+      "source_file": "tests/test_ui_and_api_edge_cases.py",
+      "source_location": "L465"
     },
     {
       "id": "xforwarder",
@@ -9042,6 +8818,116 @@
       "source_location": "L355"
     },
     {
+      "id": "tests_test_ui_and_api_edge_cases_rationale_510",
+      "label": "Verifies that engine.check_destination calculates packet_loss metrics properly.",
+      "_origin": "ast",
+      "community": 60,
+      "community_name": ".test_packet_loss_calculation_and_probes",
+      "file_type": "rationale",
+      "norm_label": "verifies that engine.check_destination calculates packet_loss metrics properly.",
+      "source_file": "tests/test_ui_and_api_edge_cases.py",
+      "source_location": "L510"
+    },
+    {
+      "id": "tests_test_ui_and_api_edge_cases_rationale_57",
+      "label": "Verifies that a rule without destinations is rejected.",
+      "_origin": "ast",
+      "community": 61,
+      "community_name": ".test_validate_rule_empty_destinations_rejected",
+      "file_type": "rationale",
+      "norm_label": "verifies that a rule without destinations is rejected.",
+      "source_file": "tests/test_ui_and_api_edge_cases.py",
+      "source_location": "L57"
+    },
+    {
+      "id": "tests_test_ui_and_api_edge_cases_rationale_576",
+      "label": "Verifies that BOTH is replaced by TCP + UDP across the frontend.",
+      "_origin": "ast",
+      "community": 62,
+      "community_name": ".test_tcp_udp_protocol_formatting_and_no_both",
+      "file_type": "rationale",
+      "norm_label": "verifies that both is replaced by tcp + udp across the frontend.",
+      "source_file": "tests/test_ui_and_api_edge_cases.py",
+      "source_location": "L576"
+    },
+    {
+      "id": "tests_test_ui_and_api_edge_cases_rationale_592",
+      "label": "Verifies that packet loss UI tool and functions exist in frontend.",
+      "_origin": "ast",
+      "community": 63,
+      "community_name": ".test_packet_loss_diagnostic_tool_elements",
+      "file_type": "rationale",
+      "norm_label": "verifies that packet loss ui tool and functions exist in frontend.",
+      "source_file": "tests/test_ui_and_api_edge_cases.py",
+      "source_location": "L592"
+    },
+    {
+      "id": "tests_test_ui_and_api_edge_cases_rationale_612",
+      "label": "Verifies that Server Network & Tunnel Topology and Relay Engines are structured\u2026",
+      "_origin": "ast",
+      "community": 64,
+      "community_name": ".test_topology_and_engines_grid_layout",
+      "file_type": "rationale",
+      "norm_label": "verifies that server network & tunnel topology and relay engines are structured...",
+      "source_file": "tests/test_ui_and_api_edge_cases.py",
+      "source_location": "L612"
+    },
+    {
+      "id": "tests_test_ui_and_api_edge_cases_rationale_635",
+      "label": "Verifies that validate_rule strictly enforces that HAProxy destinations must be\u2026",
+      "_origin": "ast",
+      "community": 65,
+      "community_name": ".test_validate_rule_haproxy_requires_ipv6",
+      "file_type": "rationale",
+      "norm_label": "verifies that validate_rule strictly enforces that haproxy destinations must be...",
+      "source_file": "tests/test_ui_and_api_edge_cases.py",
+      "source_location": "L635"
+    },
+    {
+      "id": "tests_test_ui_and_api_edge_cases_rationale_64",
+      "label": "Tests port bounds (1 to 65535).",
+      "_origin": "ast",
+      "community": 66,
+      "community_name": ".test_validate_rule_port_boundary_conditions",
+      "file_type": "rationale",
+      "norm_label": "tests port bounds (1 to 65535).",
+      "source_file": "tests/test_ui_and_api_edge_cases.py",
+      "source_location": "L64"
+    },
+    {
+      "id": "tests_test_ui_and_api_edge_cases_rationale_675",
+      "label": "Verifies that _apply_nftables generates isolated table ip and table ip6 for\u2026",
+      "_origin": "ast",
+      "community": 67,
+      "community_name": ".test_nftables_dual_stack_rules_generation",
+      "file_type": "rationale",
+      "norm_label": "verifies that _apply_nftables generates isolated table ip and table ip6 for...",
+      "source_file": "tests/test_ui_and_api_edge_cases.py",
+      "source_location": "L675"
+    },
+    {
+      "id": "tests_test_ui_and_api_edge_cases_rationale_714",
+      "label": "Verifies that dark theme uses obsidian palette and restrains highlights\u2026",
+      "_origin": "ast",
+      "community": 68,
+      "community_name": ".test_dark_theme_tokens_and_restrained_highlights",
+      "file_type": "rationale",
+      "norm_label": "verifies that dark theme uses obsidian palette and restrains highlights...",
+      "source_file": "tests/test_ui_and_api_edge_cases.py",
+      "source_location": "L714"
+    },
+    {
+      "id": "tests_test_ui_and_api_edge_cases_rationale_86",
+      "label": "Verifies destination inherits rule listening port when omitted.",
+      "_origin": "ast",
+      "community": 69,
+      "community_name": ".test_validate_rule_destination_defaults_port_if_missing",
+      "file_type": "rationale",
+      "norm_label": "verifies destination inherits rule listening port when omitted.",
+      "source_file": "tests/test_ui_and_api_edge_cases.py",
+      "source_location": "L86"
+    },
+    {
       "id": "agents_workflows_deploy_update",
       "label": "deploy-update.md",
       "_origin": "ast",
@@ -9130,16 +9016,15 @@
       "source_location": "L6"
     },
     {
-      "id": "agents_experiences_004_backward_compatibility_and_schema_migrations",
-      "label": "004-backward-compatibility-and-schema-migrations.md",
+      "id": "tests_test_ui_and_api_edge_cases_rationale_97",
+      "label": "Prevents shell command injection characters in destination target.",
       "_origin": "ast",
-      "community": 8,
-      "community_name": ".migrate_and_normalize_config",
-      "file_type": "document",
-      "node_kind": "page",
-      "norm_label": "004-backward-compatibility-and-schema-migrations.md",
-      "source_file": ".agents/experiences/004-backward-compatibility-and-schema-migrations.md",
-      "source_location": "L1"
+      "community": 70,
+      "community_name": ".test_validate_rule_invalid_characters_rejected",
+      "file_type": "rationale",
+      "norm_label": "prevents shell command injection characters in destination target.",
+      "source_file": "tests/test_ui_and_api_edge_cases.py",
+      "source_location": "L97"
     },
     {
       "id": "agents_experiences_004_backward_compatibility_and_schema_migrations_1_context_motivation",
@@ -9212,6 +9097,126 @@
       "norm_label": "experience 004: backward compatibility and automated schema migrations",
       "source_file": ".agents/experiences/004-backward-compatibility-and-schema-migrations.md",
       "source_location": "L1"
+    },
+    {
+      "id": "agents_experiences_009_fast_failover_multi_metric_and_anti_flapping",
+      "label": "009-fast-failover-multi-metric-and-anti-flapping.md",
+      "_origin": "ast",
+      "community": 8,
+      "community_name": ".migrate_and_normalize_config",
+      "file_type": "document",
+      "node_kind": "page",
+      "norm_label": "009-fast-failover-multi-metric-and-anti-flapping.md",
+      "source_file": ".agents/experiences/009-fast-failover-multi-metric-and-anti-flapping.md",
+      "source_location": "L1"
+    },
+    {
+      "id": "agents_experiences_009_fast_failover_multi_metric_and_anti_flapping_1_rapid_failure_detection_confirmation_burst_1s",
+      "label": "1. Rapid Failure Detection & Confirmation Burst (<1s)",
+      "_origin": "ast",
+      "community": 8,
+      "community_name": ".migrate_and_normalize_config",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "1. rapid failure detection & confirmation burst (<1s)",
+      "source_file": ".agents/experiences/009-fast-failover-multi-metric-and-anti-flapping.md",
+      "source_location": "L11"
+    },
+    {
+      "id": "agents_experiences_009_fast_failover_multi_metric_and_anti_flapping_2_multi_metric_composite_quality_scoring",
+      "label": "2. Multi-Metric Composite Quality Scoring",
+      "_origin": "ast",
+      "community": 8,
+      "community_name": ".migrate_and_normalize_config",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "2. multi-metric composite quality scoring",
+      "source_file": ".agents/experiences/009-fast-failover-multi-metric-and-anti-flapping.md",
+      "source_location": "L16"
+    },
+    {
+      "id": "agents_experiences_009_fast_failover_multi_metric_and_anti_flapping_3_anti_flapping_route_damping_10_hysteresis",
+      "label": "3. Anti-Flapping Route Damping & 10% Hysteresis",
+      "_origin": "ast",
+      "community": 8,
+      "community_name": ".migrate_and_normalize_config",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "3. anti-flapping route damping & 10% hysteresis",
+      "source_file": ".agents/experiences/009-fast-failover-multi-metric-and-anti-flapping.md",
+      "source_location": "L24"
+    },
+    {
+      "id": "agents_experiences_009_fast_failover_multi_metric_and_anti_flapping_4_zero_collision_hot_runtime_handover_nginx_lifecycle",
+      "label": "4. Zero-Collision Hot Runtime Handover & Nginx Lifecycle",
+      "_origin": "ast",
+      "community": 8,
+      "community_name": ".migrate_and_normalize_config",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "4. zero-collision hot runtime handover & nginx lifecycle",
+      "source_file": ".agents/experiences/009-fast-failover-multi-metric-and-anti-flapping.md",
+      "source_location": "L31"
+    },
+    {
+      "id": "agents_experiences_009_fast_failover_multi_metric_and_anti_flapping_5_web_ui_real_time_visibility",
+      "label": "5. Web UI Real-Time Visibility",
+      "_origin": "ast",
+      "community": 8,
+      "community_name": ".migrate_and_normalize_config",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "5. web ui real-time visibility",
+      "source_file": ".agents/experiences/009-fast-failover-multi-metric-and-anti-flapping.md",
+      "source_location": "L37"
+    },
+    {
+      "id": "agents_experiences_009_fast_failover_multi_metric_and_anti_flapping_architectural_solutions_implemented",
+      "label": "Architectural Solutions Implemented",
+      "_origin": "ast",
+      "community": 8,
+      "community_name": ".migrate_and_normalize_config",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "architectural solutions implemented",
+      "source_file": ".agents/experiences/009-fast-failover-multi-metric-and-anti-flapping.md",
+      "source_location": "L9"
+    },
+    {
+      "id": "agents_experiences_009_fast_failover_multi_metric_and_anti_flapping_context_motivation",
+      "label": "Context & Motivation",
+      "_origin": "ast",
+      "community": 8,
+      "community_name": ".migrate_and_normalize_config",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "context & motivation",
+      "source_file": ".agents/experiences/009-fast-failover-multi-metric-and-anti-flapping.md",
+      "source_location": "L3"
+    },
+    {
+      "id": "agents_experiences_009_fast_failover_multi_metric_and_anti_flapping_experience_009_fast_sub_second_failover_multi_metric_evaluation_anti_flapping_stability",
+      "label": "Experience 009: Fast Sub-Second Failover, Multi-Metric Evaluation & Anti-Flapping Stability",
+      "_origin": "ast",
+      "community": 8,
+      "community_name": ".migrate_and_normalize_config",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "experience 009: fast sub-second failover, multi-metric evaluation & anti-flapping stability",
+      "source_file": ".agents/experiences/009-fast-failover-multi-metric-and-anti-flapping.md",
+      "source_location": "L1"
+    },
+    {
+      "id": "agents_experiences_009_fast_failover_multi_metric_and_anti_flapping_key_invariants_lessons",
+      "label": "Key Invariants & Lessons",
+      "_origin": "ast",
+      "community": 8,
+      "community_name": ".migrate_and_normalize_config",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "key invariants & lessons",
+      "source_file": ".agents/experiences/009-fast-failover-multi-metric-and-anti-flapping.md",
+      "source_location": "L42"
     },
     {
       "id": "agents_rules_backward_compatibility_and_migrations",
@@ -9406,6 +9411,24 @@
       "norm_label": "verifies that modern destination types like nginx are fully preserved.",
       "source_file": "tests/test_migration.py",
       "source_location": "L89"
+    },
+    {
+      "id": "agents_rules_clean_code_dry",
+      "label": "clean-code-dry.md",
+      "_origin": "ast",
+      "community": 9,
+      "community_name": "experiences/README.md",
+      "file_type": "document",
+      "frontmatter": {
+        "name": "clean-code-dry",
+        "description": "Enforces DRY zero-duplication, atomic helper methods, and clean architecture standards in XForwarder.",
+        "always_on": false,
+        "trigger": "model_decision"
+      },
+      "node_kind": "page",
+      "norm_label": "clean-code-dry.md",
+      "source_file": ".agents/rules/clean-code-dry.md",
+      "source_location": "L1"
     },
     {
       "id": "agents_rules_experience_logging",
@@ -9678,6 +9701,102 @@
       "source_location": "L1"
     },
     {
+      "id": "agents_experiences_004_backward_compatibility_and_schema_migrations",
+      "label": "004-backward-compatibility-and-schema-migrations.md",
+      "_origin": "ast",
+      "community": 9,
+      "community_name": "experiences/README.md",
+      "file_type": "document",
+      "node_kind": "page",
+      "norm_label": "004-backward-compatibility-and-schema-migrations.md",
+      "source_file": ".agents/experiences/004-backward-compatibility-and-schema-migrations.md",
+      "source_location": "L1"
+    },
+    {
+      "id": "agents_experiences_005_pbkdf2_salted_auth_and_adaptive_rate_limiting",
+      "label": "005-pbkdf2-salted-auth-and-adaptive-rate-limiting.md",
+      "_origin": "ast",
+      "community": 9,
+      "community_name": "experiences/README.md",
+      "file_type": "document",
+      "node_kind": "page",
+      "norm_label": "005-pbkdf2-salted-auth-and-adaptive-rate-limiting.md",
+      "source_file": ".agents/experiences/005-pbkdf2-salted-auth-and-adaptive-rate-limiting.md",
+      "source_location": "L1"
+    },
+    {
+      "id": "agents_experiences_005_pbkdf2_salted_auth_and_adaptive_rate_limiting_1_context_motivation",
+      "label": "1. Context & Motivation",
+      "_origin": "ast",
+      "community": 9,
+      "community_name": "experiences/README.md",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "1. context & motivation",
+      "source_file": ".agents/experiences/005-pbkdf2-salted-auth-and-adaptive-rate-limiting.md",
+      "source_location": "L9"
+    },
+    {
+      "id": "agents_experiences_005_pbkdf2_salted_auth_and_adaptive_rate_limiting_2_root_cause_core_dynamics",
+      "label": "2. Root Cause / Core Dynamics",
+      "_origin": "ast",
+      "community": 9,
+      "community_name": "experiences/README.md",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "2. root cause / core dynamics",
+      "source_file": ".agents/experiences/005-pbkdf2-salted-auth-and-adaptive-rate-limiting.md",
+      "source_location": "L12"
+    },
+    {
+      "id": "agents_experiences_005_pbkdf2_salted_auth_and_adaptive_rate_limiting_3_architecture_solution_implemented",
+      "label": "3. Architecture & Solution Implemented",
+      "_origin": "ast",
+      "community": 9,
+      "community_name": "experiences/README.md",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "3. architecture & solution implemented",
+      "source_file": ".agents/experiences/005-pbkdf2-salted-auth-and-adaptive-rate-limiting.md",
+      "source_location": "L17"
+    },
+    {
+      "id": "agents_experiences_005_pbkdf2_salted_auth_and_adaptive_rate_limiting_4_invariants_rules_for_ai_agents",
+      "label": "4. Invariants & Rules for AI Agents",
+      "_origin": "ast",
+      "community": 9,
+      "community_name": "experiences/README.md",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "4. invariants & rules for ai agents",
+      "source_file": ".agents/experiences/005-pbkdf2-salted-auth-and-adaptive-rate-limiting.md",
+      "source_location": "L31"
+    },
+    {
+      "id": "agents_experiences_005_pbkdf2_salted_auth_and_adaptive_rate_limiting_5_verification_testing",
+      "label": "5. Verification & Testing",
+      "_origin": "ast",
+      "community": 9,
+      "community_name": "experiences/README.md",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "5. verification & testing",
+      "source_file": ".agents/experiences/005-pbkdf2-salted-auth-and-adaptive-rate-limiting.md",
+      "source_location": "L37"
+    },
+    {
+      "id": "agents_experiences_005_pbkdf2_salted_auth_and_adaptive_rate_limiting_experience_005_pbkdf2_salted_auth_and_adaptive_rate_limiting",
+      "label": "Experience 005: PBKDF2 Salted Auth and Adaptive Rate Limiting",
+      "_origin": "ast",
+      "community": 9,
+      "community_name": "experiences/README.md",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "experience 005: pbkdf2 salted auth and adaptive rate limiting",
+      "source_file": ".agents/experiences/005-pbkdf2-salted-auth-and-adaptive-rate-limiting.md",
+      "source_location": "L1"
+    },
+    {
       "id": "agents_experiences_008_full_stack_performance_and_fast_ipc",
       "label": "008-full-stack-performance-and-fast-ipc.md",
       "_origin": "ast",
@@ -9750,114 +9869,6 @@
       "source_location": "L34"
     },
     {
-      "id": "agents_experiences_009_fast_failover_multi_metric_and_anti_flapping",
-      "label": "009-fast-failover-multi-metric-and-anti-flapping.md",
-      "_origin": "ast",
-      "community": 9,
-      "community_name": "experiences/README.md",
-      "file_type": "document",
-      "node_kind": "page",
-      "norm_label": "009-fast-failover-multi-metric-and-anti-flapping.md",
-      "source_file": ".agents/experiences/009-fast-failover-multi-metric-and-anti-flapping.md",
-      "source_location": "L1"
-    },
-    {
-      "id": "agents_experiences_009_fast_failover_multi_metric_and_anti_flapping_1_rapid_failure_detection_confirmation_burst_1s",
-      "label": "1. Rapid Failure Detection & Confirmation Burst (<1s)",
-      "_origin": "ast",
-      "community": 9,
-      "community_name": "experiences/README.md",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "1. rapid failure detection & confirmation burst (<1s)",
-      "source_file": ".agents/experiences/009-fast-failover-multi-metric-and-anti-flapping.md",
-      "source_location": "L11"
-    },
-    {
-      "id": "agents_experiences_009_fast_failover_multi_metric_and_anti_flapping_2_multi_metric_composite_quality_scoring",
-      "label": "2. Multi-Metric Composite Quality Scoring",
-      "_origin": "ast",
-      "community": 9,
-      "community_name": "experiences/README.md",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "2. multi-metric composite quality scoring",
-      "source_file": ".agents/experiences/009-fast-failover-multi-metric-and-anti-flapping.md",
-      "source_location": "L16"
-    },
-    {
-      "id": "agents_experiences_009_fast_failover_multi_metric_and_anti_flapping_3_anti_flapping_route_damping_10_hysteresis",
-      "label": "3. Anti-Flapping Route Damping & 10% Hysteresis",
-      "_origin": "ast",
-      "community": 9,
-      "community_name": "experiences/README.md",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "3. anti-flapping route damping & 10% hysteresis",
-      "source_file": ".agents/experiences/009-fast-failover-multi-metric-and-anti-flapping.md",
-      "source_location": "L24"
-    },
-    {
-      "id": "agents_experiences_009_fast_failover_multi_metric_and_anti_flapping_4_zero_collision_hot_runtime_handover_nginx_lifecycle",
-      "label": "4. Zero-Collision Hot Runtime Handover & Nginx Lifecycle",
-      "_origin": "ast",
-      "community": 9,
-      "community_name": "experiences/README.md",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "4. zero-collision hot runtime handover & nginx lifecycle",
-      "source_file": ".agents/experiences/009-fast-failover-multi-metric-and-anti-flapping.md",
-      "source_location": "L31"
-    },
-    {
-      "id": "agents_experiences_009_fast_failover_multi_metric_and_anti_flapping_architectural_solutions_implemented",
-      "label": "Architectural Solutions Implemented",
-      "_origin": "ast",
-      "community": 9,
-      "community_name": "experiences/README.md",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "architectural solutions implemented",
-      "source_file": ".agents/experiences/009-fast-failover-multi-metric-and-anti-flapping.md",
-      "source_location": "L9"
-    },
-    {
-      "id": "agents_experiences_009_fast_failover_multi_metric_and_anti_flapping_context_motivation",
-      "label": "Context & Motivation",
-      "_origin": "ast",
-      "community": 9,
-      "community_name": "experiences/README.md",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "context & motivation",
-      "source_file": ".agents/experiences/009-fast-failover-multi-metric-and-anti-flapping.md",
-      "source_location": "L3"
-    },
-    {
-      "id": "agents_experiences_009_fast_failover_multi_metric_and_anti_flapping_experience_009_fast_sub_second_failover_multi_metric_evaluation_anti_flapping_stability",
-      "label": "Experience 009: Fast Sub-Second Failover, Multi-Metric Evaluation & Anti-Flapping Stability",
-      "_origin": "ast",
-      "community": 9,
-      "community_name": "experiences/README.md",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "experience 009: fast sub-second failover, multi-metric evaluation & anti-flapping stability",
-      "source_file": ".agents/experiences/009-fast-failover-multi-metric-and-anti-flapping.md",
-      "source_location": "L1"
-    },
-    {
-      "id": "agents_experiences_009_fast_failover_multi_metric_and_anti_flapping_key_invariants_lessons",
-      "label": "Key Invariants & Lessons",
-      "_origin": "ast",
-      "community": 9,
-      "community_name": "experiences/README.md",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "key invariants & lessons",
-      "source_file": ".agents/experiences/009-fast-failover-multi-metric-and-anti-flapping.md",
-      "source_location": "L42"
-    },
-    {
       "id": "agents_experiences_readme",
       "label": "experiences/README.md",
       "_origin": "ast",
@@ -9880,6 +9891,42 @@
       "norm_label": "xforwarder architectural experiences catalog",
       "source_file": ".agents/experiences/README.md",
       "source_location": "L1"
+    },
+    {
+      "id": "agents_rules_clean_code_dry_1_absolute_prohibition_of_duplicated_logic",
+      "label": "1. Absolute Prohibition of Duplicated Logic",
+      "_origin": "ast",
+      "community": 9,
+      "community_name": "experiences/README.md",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "1. absolute prohibition of duplicated logic",
+      "source_file": ".agents/rules/clean-code-dry.md",
+      "source_location": "L14"
+    },
+    {
+      "id": "agents_rules_clean_code_dry_2_mandatory_helper_centralization",
+      "label": "2. Mandatory Helper Centralization",
+      "_origin": "ast",
+      "community": 9,
+      "community_name": "experiences/README.md",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "2. mandatory helper centralization",
+      "source_file": ".agents/rules/clean-code-dry.md",
+      "source_location": "L24"
+    },
+    {
+      "id": "agents_rules_clean_code_dry_clean_code_dry_don_t_repeat_yourself_rule",
+      "label": "Clean Code & DRY (Don't Repeat Yourself) Rule",
+      "_origin": "ast",
+      "community": 9,
+      "community_name": "experiences/README.md",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "clean code & dry (don't repeat yourself) rule",
+      "source_file": ".agents/rules/clean-code-dry.md",
+      "source_location": "L8"
     },
     {
       "id": "agents_rules_experience_logging_1_when_to_log_an_experience",
@@ -9916,6 +9963,17 @@
       "norm_label": "architectural experience logging rule (xforwarder)",
       "source_file": ".agents/rules/experience-logging.md",
       "source_location": "L8"
+    },
+    {
+      "id": "core_web_server_rationale_807",
+      "label": "Generates a secure PBKDF2-HMAC-SHA256 salted password hash.",
+      "_origin": "ast",
+      "community": 9,
+      "community_name": "experiences/README.md",
+      "file_type": "rationale",
+      "norm_label": "generates a secure pbkdf2-hmac-sha256 salted password hash.",
+      "source_file": "core/web_server.py",
+      "source_location": "L807"
     },
     {
       "id": "datetime",
@@ -9978,6 +10036,18 @@
       "type": "external"
     },
     {
+      "id": "gzip",
+      "label": "gzip",
+      "_origin": "semantic",
+      "community": 28,
+      "community_name": "web_server.py",
+      "external": true,
+      "file_type": "concept",
+      "norm_label": "gzip",
+      "source_file": "",
+      "type": "external"
+    },
+    {
       "id": "hashlib",
       "label": "hashlib",
       "_origin": "semantic",
@@ -10002,6 +10072,18 @@
       "type": "external"
     },
     {
+      "id": "http_server",
+      "label": "http_server",
+      "_origin": "semantic",
+      "community": 28,
+      "community_name": "web_server.py",
+      "external": true,
+      "file_type": "concept",
+      "norm_label": "http_server",
+      "source_file": "",
+      "type": "external"
+    },
+    {
       "id": "secrets",
       "label": "secrets",
       "_origin": "semantic",
@@ -10010,6 +10092,42 @@
       "external": true,
       "file_type": "concept",
       "norm_label": "secrets",
+      "source_file": "",
+      "type": "external"
+    },
+    {
+      "id": "shutil",
+      "label": "shutil",
+      "_origin": "semantic",
+      "community": 28,
+      "community_name": "web_server.py",
+      "external": true,
+      "file_type": "concept",
+      "norm_label": "shutil",
+      "source_file": "",
+      "type": "external"
+    },
+    {
+      "id": "signal",
+      "label": "signal",
+      "_origin": "semantic",
+      "community": 28,
+      "community_name": "web_server.py",
+      "external": true,
+      "file_type": "concept",
+      "norm_label": "signal",
+      "source_file": "",
+      "type": "external"
+    },
+    {
+      "id": "socket",
+      "label": "socket",
+      "_origin": "semantic",
+      "community": 28,
+      "community_name": "web_server.py",
+      "external": true,
+      "file_type": "concept",
+      "norm_label": "socket",
       "source_file": "",
       "type": "external"
     },
@@ -10026,6 +10144,30 @@
       "type": "external"
     },
     {
+      "id": "threading",
+      "label": "threading",
+      "_origin": "semantic",
+      "community": 28,
+      "community_name": "web_server.py",
+      "external": true,
+      "file_type": "concept",
+      "norm_label": "threading",
+      "source_file": "",
+      "type": "external"
+    },
+    {
+      "id": "urllib_error",
+      "label": "urllib_error",
+      "_origin": "semantic",
+      "community": 28,
+      "community_name": "web_server.py",
+      "external": true,
+      "file_type": "concept",
+      "norm_label": "urllib_error",
+      "source_file": "",
+      "type": "external"
+    },
+    {
       "id": "urllib_parse",
       "label": "urllib_parse",
       "_origin": "semantic",
@@ -10034,6 +10176,18 @@
       "external": true,
       "file_type": "concept",
       "norm_label": "urllib_parse",
+      "source_file": "",
+      "type": "external"
+    },
+    {
+      "id": "urllib_request",
+      "label": "urllib_request",
+      "_origin": "semantic",
+      "community": 28,
+      "community_name": "web_server.py",
+      "external": true,
+      "file_type": "concept",
+      "norm_label": "urllib_request",
       "source_file": "",
       "type": "external"
     },
@@ -10062,26 +10216,14 @@
       "type": "external"
     },
     {
-      "id": "gzip",
-      "label": "gzip",
+      "id": "json",
+      "label": "json",
       "_origin": "semantic",
-      "community": 43,
-      "community_name": "engine.py",
+      "community": 41,
+      "community_name": "json",
       "external": true,
       "file_type": "concept",
-      "norm_label": "gzip",
-      "source_file": "",
-      "type": "external"
-    },
-    {
-      "id": "http_server",
-      "label": "http_server",
-      "_origin": "semantic",
-      "community": 43,
-      "community_name": "engine.py",
-      "external": true,
-      "file_type": "concept",
-      "norm_label": "http_server",
+      "norm_label": "json",
       "source_file": "",
       "type": "external"
     },
@@ -10110,18 +10252,6 @@
       "type": "external"
     },
     {
-      "id": "json",
-      "label": "json",
-      "_origin": "semantic",
-      "community": 43,
-      "community_name": "engine.py",
-      "external": true,
-      "file_type": "concept",
-      "norm_label": "json",
-      "source_file": "",
-      "type": "external"
-    },
-    {
       "id": "os",
       "label": "os",
       "_origin": "semantic",
@@ -10130,42 +10260,6 @@
       "external": true,
       "file_type": "concept",
       "norm_label": "os",
-      "source_file": "",
-      "type": "external"
-    },
-    {
-      "id": "shutil",
-      "label": "shutil",
-      "_origin": "semantic",
-      "community": 43,
-      "community_name": "engine.py",
-      "external": true,
-      "file_type": "concept",
-      "norm_label": "shutil",
-      "source_file": "",
-      "type": "external"
-    },
-    {
-      "id": "signal",
-      "label": "signal",
-      "_origin": "semantic",
-      "community": 43,
-      "community_name": "engine.py",
-      "external": true,
-      "file_type": "concept",
-      "norm_label": "signal",
-      "source_file": "",
-      "type": "external"
-    },
-    {
-      "id": "socket",
-      "label": "socket",
-      "_origin": "semantic",
-      "community": 43,
-      "community_name": "engine.py",
-      "external": true,
-      "file_type": "concept",
-      "norm_label": "socket",
       "source_file": "",
       "type": "external"
     },
@@ -10190,18 +10284,6 @@
       "external": true,
       "file_type": "concept",
       "norm_label": "tempfile",
-      "source_file": "",
-      "type": "external"
-    },
-    {
-      "id": "threading",
-      "label": "threading",
-      "_origin": "semantic",
-      "community": 43,
-      "community_name": "engine.py",
-      "external": true,
-      "file_type": "concept",
-      "norm_label": "threading",
       "source_file": "",
       "type": "external"
     },
@@ -10238,30 +10320,6 @@
       "external": true,
       "file_type": "concept",
       "norm_label": "unittest_mock",
-      "source_file": "",
-      "type": "external"
-    },
-    {
-      "id": "urllib_error",
-      "label": "urllib_error",
-      "_origin": "semantic",
-      "community": 43,
-      "community_name": "engine.py",
-      "external": true,
-      "file_type": "concept",
-      "norm_label": "urllib_error",
-      "source_file": "",
-      "type": "external"
-    },
-    {
-      "id": "urllib_request",
-      "label": "urllib_request",
-      "_origin": "semantic",
-      "community": 43,
-      "community_name": "engine.py",
-      "external": true,
-      "file_type": "concept",
-      "norm_label": "urllib_request",
       "source_file": "",
       "type": "external"
     }
@@ -15140,6 +15198,18 @@
       "weight": 1.0
     },
     {
+      "source": "tests_test_ui_and_api_edge_cases_testuiandapiedgecases_test_latency_badge_classification_edge_cases",
+      "target": "tests_test_ui_and_api_edge_cases_testuiandapiedgecases_test_latency_badge_classification_edge_cases_classify",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "call",
+      "source_file": "tests/test_ui_and_api_edge_cases.py",
+      "source_location": "L748",
+      "weight": 1.0
+    },
+    {
       "source": "web_app",
       "target": "web_app_renderrules",
       "relation": "contains",
@@ -19130,7 +19200,18 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": ".agents/rules/ui-design-consistency.md",
-      "source_location": "L30",
+      "source_location": "L35",
+      "weight": 1.0
+    },
+    {
+      "source": "agents_rules_ui_design_consistency_ui_design_universal_consistency_standards_web",
+      "target": "agents_rules_ui_design_consistency_8_rule_matrix_card_layout_architecture",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".agents/rules/ui-design-consistency.md",
+      "source_location": "L104",
       "weight": 1.0
     },
     {
@@ -19163,7 +19244,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": ".agents/rules/ui-design-consistency.md",
-      "source_location": "L45",
+      "source_location": "L50",
       "weight": 1.0
     },
     {
@@ -19174,7 +19255,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": ".agents/rules/ui-design-consistency.md",
-      "source_location": "L53",
+      "source_location": "L58",
       "weight": 1.0
     },
     {
@@ -19185,7 +19266,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": ".agents/rules/ui-design-consistency.md",
-      "source_location": "L62",
+      "source_location": "L67",
       "weight": 1.0
     },
     {
@@ -19196,7 +19277,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": ".agents/rules/ui-design-consistency.md",
-      "source_location": "L69",
+      "source_location": "L74",
       "weight": 1.0
     },
     {
@@ -19207,18 +19288,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": ".agents/rules/ui-design-consistency.md",
-      "source_location": "L86",
-      "weight": 1.0
-    },
-    {
-      "source": "agents_rules_ui_design_consistency_ui_design_universal_consistency_standards_web",
-      "target": "agents_rules_ui_design_consistency_8_rule_matrix_card_layout_architecture",
-      "relation": "contains",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": ".agents/rules/ui-design-consistency.md",
-      "source_location": "L99",
+      "source_location": "L91",
       "weight": 1.0
     },
     {
@@ -24294,6 +24364,28 @@
     },
     {
       "source": "tests_test_ui_and_api_edge_cases_testuiandapiedgecases",
+      "target": "tests_test_ui_and_api_edge_cases_testuiandapiedgecases_test_dark_theme_tokens_and_restrained_highlights",
+      "relation": "method",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "tests/test_ui_and_api_edge_cases.py",
+      "source_location": "L713",
+      "weight": 1.0
+    },
+    {
+      "source": "tests_test_ui_and_api_edge_cases_testuiandapiedgecases",
+      "target": "tests_test_ui_and_api_edge_cases_testuiandapiedgecases_test_latency_badge_classification_edge_cases",
+      "relation": "method",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "tests/test_ui_and_api_edge_cases.py",
+      "source_location": "L746",
+      "weight": 1.0
+    },
+    {
+      "source": "tests_test_ui_and_api_edge_cases_testuiandapiedgecases",
       "target": "tests_test_ui_and_api_edge_cases_testuiandapiedgecases_test_validate_rule_destination_defaults_port_if_missing",
       "relation": "method",
       "_origin": "ast",
@@ -25767,6 +25859,28 @@
       "weight": 1.0
     },
     {
+      "source": "tests_test_ui_and_api_edge_cases_rationale_714",
+      "target": "tests_test_ui_and_api_edge_cases_testuiandapiedgecases_test_dark_theme_tokens_and_restrained_highlights",
+      "relation": "rationale_for",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "tests/test_ui_and_api_edge_cases.py",
+      "source_location": "L714",
+      "weight": 1.0
+    },
+    {
+      "source": "tests_test_ui_and_api_edge_cases_rationale_747",
+      "target": "tests_test_ui_and_api_edge_cases_testuiandapiedgecases_test_latency_badge_classification_edge_cases",
+      "relation": "rationale_for",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "tests/test_ui_and_api_edge_cases.py",
+      "source_location": "L747",
+      "weight": 1.0
+    },
+    {
       "source": "tests_test_ui_and_api_edge_cases_rationale_86",
       "target": "tests_test_ui_and_api_edge_cases_testuiandapiedgecases_test_validate_rule_destination_defaults_port_if_missing",
       "relation": "rationale_for",
@@ -27161,5 +27275,5 @@
     }
   ],
   "hyperedges": [],
-  "built_at_commit": "c43968dc78e2116f9982f1dcaf04b907f9047706"
+  "built_at_commit": "e489704aff80143b83576b537f0dec0e09d603e5"
 }

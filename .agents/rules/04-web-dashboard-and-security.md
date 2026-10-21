@@ -11,7 +11,7 @@ description: Web dashboard UI aesthetics, Vanilla stack constraints, session aut
 - **Typography**: Google Fonts Inter (interface) and JetBrains Mono (monospaced IPs, ports, and latency readouts).
 
 ## 2. Aesthetics & Design Guidelines
-- **Theme**: Premium dark aesthetic with sleek glassmorphism panels, subtle borders (`rgba(255, 255, 255, 0.08)`), and soft neon accent indicators (green for healthy, amber for checking, red for failed).
+- **Theme**: Modern Obsidian dark aesthetic (`#090A0F`) with sleek glassmorphism panels, subtle borders (`rgba(255, 255, 255, 0.07)`), and restrained highlights (red/rose strictly for outages, amber for degradation/flapping/manual testing overrides, and calm neutral surfaces for healthy states).
 - **Responsiveness**: Fully usable on mobile viewports as well as ultra-wide monitors.
 - **Language**: English interface for universal usability.
 

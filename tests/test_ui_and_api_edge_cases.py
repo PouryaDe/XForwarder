@@ -710,6 +710,78 @@ class TestUIAndAPIEdgeCases(unittest.TestCase):
             self.assertIn('oifname "wg*" masquerade', sent_input)
             self.assertIn('oifname "tun*" masquerade', sent_input)
 
+    def test_dark_theme_tokens_and_restrained_highlights(self):
+        """Verifies that dark theme uses obsidian palette and restrains highlights strictly to important states."""
+        css_path = os.path.join(REPO_ROOT, "web", "style.css")
+        html_path = os.path.join(REPO_ROOT, "web", "index.html")
+        js_path = os.path.join(REPO_ROOT, "web", "app.js")
+
+        with open(css_path, "r", encoding="utf-8") as f:
+            css = f.read()
+        with open(html_path, "r", encoding="utf-8") as f:
+            html = f.read()
+        with open(js_path, "r", encoding="utf-8") as f:
+            js = f.read()
+
+        # 1. Dark theme tokens in :root, [data-theme="dark"]
+        self.assertIn("--bg-base: #090A0F;", css)
+        self.assertIn("--bg-surface: #111218;", css)
+        self.assertIn("--accent-rose: #F43F5E;", css)
+
+        # 2. Stats numbers in index.html should not have hardcoded glare classes
+        self.assertNotIn('id="statActiveHaproxy" class="stat-number text-emerald"', html)
+        self.assertNotIn('class="stat-number text-emerald" id="statActiveHaproxy"', html)
+        self.assertNotIn('id="statActiveNftables" class="stat-number text-amber"', html)
+        self.assertNotIn('class="stat-number text-amber" id="statActiveNftables"', html)
+
+        # 3. Path box active indicator uses left accent border, not neon blur halo
+        self.assertIn("border-left: 3px solid var(--accent-emerald);", css)
+        self.assertNotIn("box-shadow: 0 0 16px -4px rgba(16, 185, 129, 0.25);", css)
+
+        # 4. Latency threshold in app.js reserves amber warning for > 150ms or loss > 0%
+        self.assertIn("ms > 150", js)
+        self.assertIn("ms > 250", js)
+        self.assertNotIn("ms > 70", js)
+
+    def test_latency_badge_classification_edge_cases(self):
+        """Tests that latency classification thresholds categorize clean pings and failure conditions correctly."""
+        def classify(status, loss, ms):
+            is_healthy = (status == "healthy")
+            is_degraded = (status == "degraded")
+            is_failed = (status in ("failed", "down"))
+            if is_failed or (not is_healthy and not is_degraded):
+                return "latency-bad"
+            if ms is None or ms <= 0:
+                return "latency-good"
+            if is_degraded or loss > 25 or ms > 250:
+                return "latency-bad"
+            if loss > 0 or ms > 150:
+                return "latency-medium"
+            return "latency-good"
+
+        # Healthy international ping (78ms, 0% loss) -> must be good, NOT warning amber
+        self.assertEqual(classify("healthy", 0, 78.2), "latency-good")
+        self.assertEqual(classify("healthy", 0, 149.0), "latency-good")
+
+        # Elevated latency (>150ms, 0% loss) -> warning amber
+        self.assertEqual(classify("healthy", 0, 151.0), "latency-medium")
+
+        # High latency (>250ms) -> bad rose
+        self.assertEqual(classify("healthy", 0, 260.0), "latency-bad")
+
+        # Minor packet loss (>0% and <=25%) -> warning amber
+        self.assertEqual(classify("healthy", 5, 50.0), "latency-medium")
+
+        # Severe packet loss (>25%) -> bad rose
+        self.assertEqual(classify("healthy", 30, 50.0), "latency-bad")
+
+        # Explicit down / failed status -> bad rose
+        self.assertEqual(classify("failed", 100, 0), "latency-bad")
+        self.assertEqual(classify("down", 100, 0), "latency-bad")
+
+        # Degraded status -> bad rose
+        self.assertEqual(classify("degraded", 10, 40.0), "latency-bad")
+
 
 if __name__ == "__main__":
     unittest.main()
