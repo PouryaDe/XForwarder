@@ -313,14 +313,14 @@ install_xforwarder() {
 EOF
         msg_ok "Configuration initialized at $CONFIG_FILE"
 
-        # Auto-discover and import pre-existing HAProxy port rules if available
+        # Auto-discover and import pre-existing HAProxy & NFTables port rules if available
         python3 -c "
 import sys
 sys.path.insert(0, '$INSTALL_DIR')
-from core.haproxy_parser import import_haproxy_rules_into_config
-count, ports = import_haproxy_rules_into_config('$CONFIG_FILE')
+from core.nftables_parser import import_all_relay_rules_into_config
+count, ports, logs = import_all_relay_rules_into_config('$CONFIG_FILE', deactivate_legacy=True)
 if count > 0:
-    print(f'\033[0;32m[OK] Auto-imported {count} pre-existing HAProxy port rules: {ports}\033[0m')
+    print(f'\033[0;32m[OK] Auto-imported {count} pre-existing relay port rules (HAProxy/NFTables): {ports}\033[0m')
 " 2>/dev/null || true
     fi
 
@@ -1017,24 +1017,30 @@ except Exception as e:
 "
 }
 
-import_haproxy_rules() {
+import_relay_rules() {
     check_root
     local active_cfg
     active_cfg=$(resolve_active_config)
-    msg_info "Scanning for pre-existing HAProxy configurations (/etc/haproxy/haproxy.cfg and backups)..."
+    msg_info "Scanning for pre-existing HAProxy & NFTables relay rules on this server..."
     python3 -c "
 import sys
 sys.path.insert(0, '$INSTALL_DIR')
-from core.haproxy_parser import import_haproxy_rules_into_config
-count, ports = import_haproxy_rules_into_config('$active_cfg')
+from core.nftables_parser import import_all_relay_rules_into_config
+count, ports, logs = import_all_relay_rules_into_config('$active_cfg', deactivate_legacy=True)
+for log in logs:
+    print(f'   \033[0;36m*\033[0m {log}')
 if count > 0:
-    print(f'\033[0;32m[OK] Successfully imported {count} HAProxy port rules into XForwarder: {ports}\033[0m')
+    print(f'\033[0;32m[OK] Successfully imported {count} relay port rule(s) into XForwarder: {ports}\033[0m')
 else:
-    print('\033[1;33m[INFO] No new unimported HAProxy rules found in /etc/haproxy/.\033[0m')
+    print('\033[1;33m[INFO] No new unimported HAProxy or NFTables forwarding rules found.\033[0m')
 "
     systemctl restart "$DAEMON_SERVICE" "$WEB_SERVICE" >/dev/null 2>&1 || true
     msg_ok "XForwarder services synced with imported rules."
     show_status
+}
+
+import_haproxy_rules() {
+    import_relay_rules
 }
 
 export_config_cli() {
@@ -1200,7 +1206,7 @@ show_menu() {
     echo "5) View Core Engine Live Logs"
     echo "6) Update XForwarder (Auto-Migrate & Preserve Rules)"
     echo "7) Re-install / Full Setup Wizard"
-    echo "8) Import Pre-existing HAProxy Rules (/etc/haproxy/)"
+    echo "8) Import Pre-existing Relay Rules (HAProxy & NFTables)"
     echo "9) Backup & Restore (Export / Import Settings JSON)"
     echo "10) Check & Install System Dependencies (NFTables, HAProxy, Nginx)"
     echo "0) Exit"
@@ -1215,7 +1221,7 @@ show_menu() {
         5) journalctl -u "$DAEMON_SERVICE" -f ;;
         6) update_xforwarder ;;
         7) install_xforwarder ;;
-        8) import_haproxy_rules ;;
+        8) import_relay_rules ;;
         9) backup_restore_menu ;;
         10) check_root; ensure_dependencies ;;
         0) exit 0 ;;
@@ -1228,8 +1234,8 @@ case "${1:-}" in
     install)
         install_xforwarder
         ;;
-    import|import-haproxy)
-        import_haproxy_rules
+    import|import-rules|import-all|import-haproxy|import-nftables)
+        import_relay_rules
         ;;
     update|upgrade)
         if ! is_installed; then

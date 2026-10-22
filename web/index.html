@@ -617,7 +617,7 @@
                                 </svg>
                             </div>
                             <div>
-                                <span class="import-title">Pre-existing HAProxy Forwarding Detected</span>
+                                <span class="import-title">Pre-existing Relay Rules Detected</span>
                                 <p id="importBannerText" class="import-desc">Discovered existing port forwarding rules
                                     on this server.</p>
                             </div>
@@ -1225,21 +1225,17 @@
                                     </svg>
                                 </div>
                                 <div>
-                                    <h3>Legacy HAProxy Forwarding Discovery</h3>
-                                    <span class="overview-card-sub">Import pre-existing port forwarding configurations
-                                        into XForwarder</span>
+                                    <h3>Pre-existing Relay Rules Discovery</h3>
+                                    <span class="overview-card-sub">Auto-discover and import active HAProxy & NFTables rules into XForwarder</span>
                                 </div>
                             </div>
                             <button class="btn btn-secondary btn-sm" id="btnScanHaproxy">Scan Server</button>
                         </div>
                         <div class="overview-card-body">
-                            <p class="section-desc">If this server was previously configured with HAProxy forwarding
-                                ports, XForwarder can automatically detect the listen blocks, extract inbound ports,
-                                backends, and protocols, and import them as managed multi-priority rules with zero
-                                downtime.</p>
+                            <p class="section-desc">If this server was previously configured with HAProxy or active NFTables/iptables DNAT forwarding rules, XForwarder can automatically detect them, extract inbound ports, backends, and protocols, backup legacy tables, and import them with zero port collisions.</p>
                             <div id="serviceDiscoveryResult"
                                 style="margin-top:14px; font-size: 0.88rem; color: var(--text-secondary);">
-                                Click "Scan Server" to check for unmanaged HAProxy ports.
+                                Click "Scan Server" to check for unmanaged HAProxy and NFTables forwarding rules.
                             </div>
                         </div>
                     </div>

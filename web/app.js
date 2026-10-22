@@ -248,7 +248,7 @@ document.addEventListener("visibilitychange", () => {
     }
 });
 
-// ── Pre-existing HAProxy Rules Discovery & 1-Click Import ──
+// ── Pre-existing Relay Rules Discovery & 1-Click Import ──
 async function checkImportableRules() {
     try {
         const res = await fetch(`${API_BASE}/import/discover`);
@@ -260,7 +260,13 @@ async function checkImportableRules() {
             const portsStr = data.ports.map(p => `:${p}`).join(", ");
             const bannerText = document.getElementById("importBannerText");
             if (bannerText) {
-                bannerText.innerText = `Discovered ${data.count} existing HAProxy forwarding port(s) on this server (${portsStr}). Import them to manage failover in the dashboard.`;
+                const srcCounts = [];
+                if (data.sources) {
+                    if (data.sources.haproxy > 0) srcCounts.push(`${data.sources.haproxy} HAProxy`);
+                    if (data.sources.nftables > 0) srcCounts.push(`${data.sources.nftables} NFTables`);
+                }
+                const srcLabel = srcCounts.length > 0 ? ` (${srcCounts.join(" + ")})` : "";
+                bannerText.innerText = `Discovered ${data.count} existing forwarding port(s) on this server (${portsStr})${srcLabel}. Import them to manage failover in the dashboard.`;
             }
             banner.style.display = "flex";
         } else {
@@ -275,10 +281,10 @@ if (btnImportHaproxy) {
         btnImportHaproxy.disabled = true;
         btnImportHaproxy.innerHTML = '<span class="btn-spinner"></span> <span>Importing...</span>';
         try {
-            const res = await fetch(`${API_BASE}/import/haproxy`, { method: "POST" });
+            const res = await fetch(`${API_BASE}/import/all`, { method: "POST" });
             const data = await res.json().catch(() => ({}));
             if (res.ok && data.ok) {
-                showToast(`Successfully imported ${data.imported_count} HAProxy port rules!`);
+                showToast(`Successfully imported ${data.imported_count} relay port rules!`);
                 const banner = document.getElementById("importBanner");
                 if (banner) banner.style.display = "none";
                 fetchStatus();
@@ -2406,9 +2412,15 @@ if (btnScanHaproxy) {
                 const data = await res.json();
                 if (data.available && data.count > 0) {
                     const portsStr = data.ports.map(p => `:${p}`).join(", ");
+                    const srcCounts = [];
+                    if (data.sources) {
+                        if (data.sources.haproxy > 0) srcCounts.push(`${data.sources.haproxy} HAProxy`);
+                        if (data.sources.nftables > 0) srcCounts.push(`${data.sources.nftables} NFTables`);
+                    }
+                    const srcLabel = srcCounts.length > 0 ? ` [${srcCounts.join(" + ")}]` : "";
                     resultEl.innerHTML = `
                         <div style="color:var(--accent-emerald); font-weight:600; margin-bottom:8px;">
-                            Discovered ${data.count} existing HAProxy forwarding rule(s) (${portsStr})
+                            Discovered ${data.count} existing relay rule(s) (${portsStr})${srcLabel}
                         </div>
                         <button class="btn btn-primary btn-sm" id="btnServiceImport">Import All Discovered Rules</button>
                     `;
@@ -2419,7 +2431,7 @@ if (btnScanHaproxy) {
                         });
                     }
                 } else {
-                    resultEl.innerHTML = `<span style="color:var(--accent-emerald);">All existing HAProxy forwarding rules on this server are already managed by XForwarder.</span>`;
+                    resultEl.innerHTML = `<span style="color:var(--accent-emerald);">All existing HAProxy and NFTables forwarding rules on this server are already managed by XForwarder.</span>`;
                 }
             } else {
                 resultEl.innerText = "Failed to scan server.";

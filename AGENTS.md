@@ -10,7 +10,9 @@ XForwarder/
 ├── core/
 │   ├── engine.py          # Core failover engine daemon (<15MB RAM, socket health prober, firewall/proxy syncer)
 │   ├── web_server.py      # Native Python 3 HTTP server (session auth, JSON REST API, static asset server)
-│   └── metrics.py         # 50-probe packet loss engine, 15m SQLite scheduler, target deduplicator & 30d retention
+│   ├── metrics.py         # 50-probe packet loss engine, 15m SQLite scheduler, target deduplicator & 30d retention
+│   ├── haproxy_parser.py  # HAProxy configuration parser, backup locator, and rule importer
+│   └── nftables_parser.py # Active kernel NFTables & iptables DNAT parser, backup creator & handle-based deconfliction
 ├── web/
 │   ├── index.html         # Modern panel dashboard with sidebar navigation, modular sections, and light/dark theme
 │   ├── style.css          # Glassmorphism aesthetic, light & dark theme design system, and responsive layout
@@ -26,6 +28,7 @@ XForwarder/
 │   ├── test_migration.py  # Native Python unittest suite (schema migrations & edge cases)
 │   ├── test_security.py   # Native Python unittest suite (PBKDF2 auth, rate limiting & input sanitization)
 │   ├── test_haproxy_parser.py # Native Python unittest suite (HAProxy config parser & importer)
+│   ├── test_nftables_parser.py# Native Python unittest suite (NFTables/iptables parser, backup & deconfliction)
 │   ├── test_export_import.py  # Native Python unittest suite (sanitized config export & merge/replace restore)
 │   ├── test_metrics_subsystem.py # Native Python unittest suite (50-probe ping, deduplication & SQLite retention)
 │   └── test_ui_and_api_edge_cases.py # Native Python unittest suite (UI, API edge cases & static asset integrity)
@@ -102,6 +105,11 @@ XForwarder/
 12. **In-Panel System Updates & Service Control (Mandatory)**:
     - Remote Release & Update Engine: Web dashboard compares local git commit/version against remote GitHub repository (`/api/system/version`) and initiates decoupled update executions via `systemd-run` (`/api/system/update`, `/api/system/update/status`).
     - Controlled Service Lifecycle: Dashboard provides controlled service restart/reload capabilities (`POST /api/services/restart`) supporting individual targets (`engine`, `haproxy`, `nginx`, `nftables`) and graceful delayed self-restarts for `web` and `all` with UI reconnection polling.
+
+13. **Active Rules Auto-Discovery, Import & Deconfliction (Mandatory)**:
+    - Pre-existing relay rules on the server (HAProxy listen blocks or active NFTables/iptables DNAT rules in kernel tables or `/etc/nftables.conf`) must be automatically detectable via unified discovery (`discover_all_relay_rules`).
+    - When imported, an atomic ruleset snapshot must be created at `/etc/xforwarder/backups/legacy_nftables_<timestamp>.nft`.
+    - Conflicting unmanaged legacy DNAT rules must be safely deactivated using exact rule handles (`nft delete rule <family> <table> <chain> handle <id>`) to eliminate kernel PREROUTING hook collision and guarantee zero-collision forwarding.
 
 
 ---

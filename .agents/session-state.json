@@ -1,6 +1,6 @@
 {
-  "last_updated": "2026-10-21T07:30:00.000000+00:00",
-  "active_task": "Sub-Second Failover, Multi-Metric Routing (Latency + Packet Loss), Anti-Flapping Damping, and Nginx Lifecycle",
+  "last_updated": "2026-10-22T19:40:00.000000+00:00",
+  "active_task": "NFTables Active Rules Auto-Discovery, Import & Conflict Deactivation Subsystem",
   "active_spec": null,
   "phase": "Completed",
   "completed_milestones": [
@@ -29,8 +29,13 @@
     "Implemented fast sub-second failover (<1s confirmation burst), multi-metric composite quality scoring (latency + packet loss), 10% hysteresis margin, anti-flapping route cooldown hold-down and flap damping, dynamic Nginx service lifecycle, and Web UI real-time badges",
     "Added dual-stack NFTables forwarding support (table ip + table ip6 xfwd_orchestrator) and enforced IPv6 destination targets for HAProxy across API and Web UI",
     "Implemented 50-probe packet loss engine (ping [ip] -c 50 -i 0.2), unique destination deduplication across rules, 15-minute automated background prober, 30-day SQLite retention, and full Web UI timeline & disruption history",
-    "Completed 8-point architecture, security, and edge-case audit: hardened target & interface argument sanitization, fixed scheduler wake_event lifecycle, and verified zero over-engineering across 115 unit tests"
+    "Completed 8-point architecture, security, and edge-case audit: hardened target & interface argument sanitization, fixed scheduler wake_event lifecycle, and verified zero over-engineering across 115 unit tests",
+    "Implemented native NFTables and iptables parser core/nftables_parser.py supporting JSON schema, text rulesets, handles, and multiport sets",
+    "Added automatic ruleset snapshot backup to /etc/xforwarder/backups/legacy_nftables_<timestamp>.nft and handle-based collision deactivation",
+    "Integrated unified relay rule discovery and 1-click import across xforwarder.sh setup wizard, Option 8 CLI menu, and CLI dispatcher",
+    "Expanded Web UI discovery alert banner and service scanner to discover and import both HAProxy and NFTables rules with per-source metrics",
+    "Created test suite tests/test_nftables_parser.py with 100% passing tests and verified zero regression across all 129 tests"
   ],
   "next_steps": [],
-  "notes": "Network Quality subsystem complete with 50-probe measurement, 15m SQLite monitor, 30d retention, argument injection shielding, and 115 passing unit tests."
+  "notes": "NFTables active rules auto-discovery, safe backup, and collision deactivation completed and verified."
 }

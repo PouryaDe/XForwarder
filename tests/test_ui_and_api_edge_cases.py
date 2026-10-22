@@ -929,13 +929,14 @@ class TestUIAndAPIEdgeCases(unittest.TestCase):
                 f"http://127.0.0.1:{port}/api/system/version",
                 headers={"Cookie": f"xfwd_session={token}"}
             )
-            with urllib.request.urlopen(req_auth_v, timeout=5.0) as resp:
-                self.assertEqual(resp.status, 200)
-                body = json.loads(resp.read().decode("utf-8"))
-                self.assertTrue(body.get("ok"))
-                self.assertIn("current_version", body)
-                self.assertIn("update_available", body)
-                self.assertIn("repo_url", body)
+            with patch("core.web_server.get_remote_version_info", return_value={"commit": "abc1234", "date": "2026-10-22", "error": None}):
+                with urllib.request.urlopen(req_auth_v, timeout=5.0) as resp:
+                    self.assertEqual(resp.status, 200)
+                    body = json.loads(resp.read().decode("utf-8"))
+                    self.assertTrue(body.get("ok"))
+                    self.assertIn("current_version", body)
+                    self.assertIn("update_available", body)
+                    self.assertIn("repo_url", body)
 
             # 3. Unauthenticated GET /api/system/update/status -> 401
             req_unauth_s = urllib.request.Request(f"http://127.0.0.1:{port}{secret_prefix}/api/system/update/status")

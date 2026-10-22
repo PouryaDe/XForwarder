@@ -1680,14 +1680,13 @@ class XForwarderWebHandler(BaseHTTPRequestHandler):
             elif subpath == "/api/import/discover":
                 cfg = load_config()
                 existing_rules = cfg.get("rules", [])
-                from core.haproxy_parser import discover_importable_rules
-                importable = discover_importable_rules(existing_rules)
-                self.send_json({
-                    "available": bool(importable),
-                    "count": len(importable),
-                    "ports": [r["port"] for r in importable],
-                    "rules": importable
-                })
+                try:
+                    from core.nftables_parser import discover_all_relay_rules
+                except ImportError:
+                    from nftables_parser import discover_all_relay_rules
+                data = discover_all_relay_rules(existing_rules)
+                self.send_json(data)
+                return
             elif subpath == "/api/config/export":
                 export_data = export_config_data()
                 now_str = time.strftime("%Y%m%d-%H%M%S")
@@ -2096,6 +2095,40 @@ class XForwarderWebHandler(BaseHTTPRequestHandler):
                 "ok": True,
                 "imported_count": count,
                 "imported_ports": ports,
+                "sync_ok": sync_ok,
+                "sync_errors": sync_errors
+            })
+
+        elif subpath == "/api/import/nftables":
+            try:
+                from core.nftables_parser import import_nftables_rules_into_config
+            except ImportError:
+                from nftables_parser import import_nftables_rules_into_config
+            cfg_path = get_config_path()
+            count, ports, logs = import_nftables_rules_into_config(cfg_path, deactivate_legacy=True)
+            sync_ok, sync_errors = sync_rules_and_notify(max_retries=2)
+            self.send_json({
+                "ok": True,
+                "imported_count": count,
+                "imported_ports": ports,
+                "logs": logs,
+                "sync_ok": sync_ok,
+                "sync_errors": sync_errors
+            })
+
+        elif subpath == "/api/import/all":
+            try:
+                from core.nftables_parser import import_all_relay_rules_into_config
+            except ImportError:
+                from nftables_parser import import_all_relay_rules_into_config
+            cfg_path = get_config_path()
+            count, ports, logs = import_all_relay_rules_into_config(cfg_path, deactivate_legacy=True)
+            sync_ok, sync_errors = sync_rules_and_notify(max_retries=2)
+            self.send_json({
+                "ok": True,
+                "imported_count": count,
+                "imported_ports": ports,
+                "logs": logs,
                 "sync_ok": sync_ok,
                 "sync_errors": sync_errors
             })
