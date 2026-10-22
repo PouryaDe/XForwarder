@@ -3264,13 +3264,25 @@ function initSystemUpdateManager() {
     const btnConfirmStartUpdate = document.getElementById("btnConfirmStartUpdate");
     const iconCheckUpdates = document.getElementById("iconCheckUpdates");
 
+    // Initially disable trigger button until check confirms an update is available
+    if (btnTriggerUpdate) {
+        btnTriggerUpdate.disabled = true;
+        btnTriggerUpdate.title = "Click 'Check for Updates' to scan GitHub for new releases";
+    }
+
     if (btnCheckUpdates) {
         btnCheckUpdates.addEventListener("click", async () => {
             if (iconCheckUpdates) iconCheckUpdates.classList.add("spinning");
             btnCheckUpdates.disabled = true;
             try {
-                await fetchSystemVersionInfo(true);
-                showToast("Update check complete", "info");
+                const info = await fetchSystemVersionInfo(true);
+                if (info && info.update_available) {
+                    showToast(`New release available: #${info.remote_commit || 'update'}`, "info");
+                } else if (info && info.check_error) {
+                    showToast(`Update check failed: ${info.check_error}`, "error");
+                } else {
+                    showToast("XForwarder is up to date!", "success");
+                }
             } catch (err) {
                 showToast("Could not check for updates: " + err.message, "error");
             } finally {
@@ -3282,6 +3294,7 @@ function initSystemUpdateManager() {
 
     if (btnTriggerUpdate) {
         btnTriggerUpdate.addEventListener("click", () => {
+            if (btnTriggerUpdate.disabled) return;
             openSystemUpdateModal();
         });
     }
@@ -3303,6 +3316,9 @@ function initSystemUpdateManager() {
             startSystemUpdateProcedure();
         });
     }
+
+    // Trigger non-forced initial version check
+    fetchSystemVersionInfo(false);
 }
 
 async function fetchSystemVersionInfo(force = false) {
@@ -3319,7 +3335,7 @@ async function fetchSystemVersionInfo(force = false) {
         const res = await fetch(`${API_BASE}/system/version${force ? "?check=1" : ""}`, {
             headers: { "Accept": "application/json" }
         });
-        if (!res.ok) return;
+        if (!res.ok) return null;
         const data = await res.json();
 
         if (valInstalledVersion && data.current_version) {
@@ -3356,16 +3372,18 @@ async function fetchSystemVersionInfo(force = false) {
             }
             if (updateStatusNotice) {
                 updateStatusNotice.style.display = "block";
-                updateStatusNotice.style.background = "rgba(251, 191, 107, 0.12)";
-                updateStatusNotice.style.border = "1px solid rgba(251, 191, 107, 0.3)";
-                updateStatusNotice.style.color = "var(--accent-amber)";
-                updateStatusNotice.innerHTML = `<strong>Update Available:</strong> A newer commit (<code class="font-mono">#${escapeHtml(data.remote_commit)}</code>) is available on GitHub. Click <em>Update XForwarder</em> to upgrade automatically.`;
+                updateStatusNotice.className = "update-notice notice-amber";
+                const commitLabel = data.remote_commit ? `#${escapeHtml(data.remote_commit)}` : "Latest Release";
+                const msgLabel = data.remote_commit_msg ? ` &mdash; <em>${escapeHtml(data.remote_commit_msg)}</em>` : "";
+                updateStatusNotice.innerHTML = `<strong>Update Available:</strong> A newer release (<code class="font-mono">${commitLabel}</code>${msgLabel}) is available on GitHub. Click <strong>Update to Latest</strong> below to upgrade.`;
             }
             if (btnTriggerUpdate) {
+                btnTriggerUpdate.disabled = false;
                 btnTriggerUpdate.classList.add("pulse-glow");
+                btnTriggerUpdate.title = "Click to apply software update";
             }
             if (btnTriggerUpdateText) {
-                btnTriggerUpdateText.textContent = "Upgrade to Latest Release";
+                btnTriggerUpdateText.textContent = data.remote_commit ? `Update to #${data.remote_commit}` : "Update to Latest";
             }
         } else if (data.check_error) {
             if (badgeUpdateStatus) {
@@ -3373,23 +3391,40 @@ async function fetchSystemVersionInfo(force = false) {
                 badgeUpdateStatus.textContent = "CHECK FAILED";
             }
             if (updateStatusNotice) {
-                updateStatusNotice.style.display = "none";
+                updateStatusNotice.style.display = "block";
+                updateStatusNotice.className = "update-notice notice-rose";
+                updateStatusNotice.innerHTML = `<strong>Check Failed:</strong> Could not connect to GitHub API (${escapeHtml(data.check_error)}). Please check internet connectivity on the server.`;
             }
-            if (btnTriggerUpdate) btnTriggerUpdate.classList.remove("pulse-glow");
-            if (btnTriggerUpdateText) btnTriggerUpdateText.textContent = "Update XForwarder";
+            if (btnTriggerUpdate) {
+                btnTriggerUpdate.disabled = true;
+                btnTriggerUpdate.classList.remove("pulse-glow");
+                btnTriggerUpdate.title = "Update check failed - cannot verify releases";
+            }
+            if (btnTriggerUpdateText) btnTriggerUpdateText.textContent = "Update to Latest";
         } else {
             if (badgeUpdateStatus) {
                 badgeUpdateStatus.className = "stat-badge badge-active";
                 badgeUpdateStatus.textContent = "UP TO DATE";
             }
             if (updateStatusNotice) {
-                updateStatusNotice.style.display = "none";
+                updateStatusNotice.style.display = "block";
+                updateStatusNotice.className = "update-notice notice-emerald";
+                const verLabel = `v${escapeHtml(data.current_version || "1.3.1")}`;
+                const commitLabel = data.current_commit ? ` (#${escapeHtml(data.current_commit)})` : "";
+                updateStatusNotice.innerHTML = `<strong>System Up to Date:</strong> Running latest version <strong>${verLabel}</strong>${commitLabel}. No updates needed.`;
             }
-            if (btnTriggerUpdate) btnTriggerUpdate.classList.remove("pulse-glow");
-            if (btnTriggerUpdateText) btnTriggerUpdateText.textContent = "Update XForwarder";
+            if (btnTriggerUpdate) {
+                btnTriggerUpdate.disabled = true;
+                btnTriggerUpdate.classList.remove("pulse-glow");
+                btnTriggerUpdate.title = "No update available - system is already running the latest release";
+            }
+            if (btnTriggerUpdateText) btnTriggerUpdateText.textContent = "Up to Date";
         }
+
+        return data;
     } catch (e) {
         console.warn("Failed to fetch system version info", e);
+        return null;
     }
 }
 
@@ -3501,7 +3536,21 @@ function pollUpdateProgress() {
                 headers: { "Accept": "application/json" }
             });
 
-            if (!res.ok) throw new Error("Status HTTP " + res.status);
+            if (!res.ok) {
+                if (res.status === 401) {
+                    // Daemon restarted or session refreshed; trigger dashboard reload
+                    if (updateConsole) {
+                        updateConsole.innerHTML += `<div class="log-entry"><span class="log-time text-emerald">[DONE]</span><span class="log-msg text-emerald font-bold">Services restarted with updated code! Reloading dashboard...</span></div>`;
+                        updateConsole.scrollTop = updateConsole.scrollHeight;
+                    }
+                    if (updateStatusText) {
+                        updateStatusText.innerHTML = "<strong>Update Complete!</strong> Reloading dashboard in 1.2s...";
+                    }
+                    setTimeout(() => window.location.reload(), 1200);
+                    return;
+                }
+                throw new Error("Status HTTP " + res.status);
+            }
             const data = await res.json();
             updateReconnectTries = 0;
 
@@ -3529,7 +3578,7 @@ function pollUpdateProgress() {
                 }
                 if (updateSpinner) updateSpinner.style.display = "none";
                 if (updateStatusText) {
-                    updateStatusText.innerHTML = "<strong>Update Completed Successfully!</strong> Refreshing dashboard in 2s...";
+                    updateStatusText.innerHTML = "<strong>Update Completed Successfully!</strong> Refreshing dashboard in 1.5s...";
                 }
                 if (btnCancelUpdateModal) {
                     btnCancelUpdateModal.disabled = false;
@@ -3541,7 +3590,7 @@ function pollUpdateProgress() {
 
                 setTimeout(() => {
                     window.location.reload();
-                }, 2200);
+                }, 1500);
                 return;
             } else if (data.status === "failed") {
                 if (updateStatusBanner) {
@@ -3574,15 +3623,34 @@ function pollUpdateProgress() {
                 updateStatusBanner.style.color = "var(--accent-violet)";
             }
             if (updateStatusText) {
-                updateStatusText.textContent = `Services reloading... Waiting for web panel to resume (Attempt ${updateReconnectTries})...`;
+                updateStatusText.textContent = `Services reloading with new update... Waiting for web panel to resume (Attempt ${updateReconnectTries})...`;
             }
             if (updateConsole && updateReconnectTries <= 2) {
                 updateConsole.innerHTML += `<div class="log-entry"><span class="log-time text-violet">[RELOAD]</span><span class="log-msg text-violet">Web daemon reloading with new code...</span></div>`;
                 updateConsole.scrollTop = updateConsole.scrollHeight;
             }
-            if (updateReconnectTries > 30) {
+
+            // Actively probe if web server has resumed
+            if (updateReconnectTries >= 2) {
+                try {
+                    const pingCheck = await fetch(`${API_BASE}/services/status`, { cache: "no-store" }).catch(() => null);
+                    if (pingCheck && (pingCheck.ok || pingCheck.status === 401)) {
+                        if (updateConsole) {
+                            updateConsole.innerHTML += `<div class="log-entry"><span class="log-time text-emerald">[DONE]</span><span class="log-msg text-emerald font-bold">Web panel successfully resumed! Refreshing...</span></div>`;
+                            updateConsole.scrollTop = updateConsole.scrollHeight;
+                        }
+                        if (updateStatusText) {
+                            updateStatusText.innerHTML = "<strong>Update Complete!</strong> Dashboard reconnected. Refreshing in 1s...";
+                        }
+                        setTimeout(() => window.location.reload(), 1200);
+                        return;
+                    }
+                } catch (e) {}
+            }
+
+            if (updateReconnectTries > 35) {
                 if (updateStatusText) {
-                    updateStatusText.textContent = "Reconnect timeout. Please refresh the browser manually.";
+                    updateStatusText.textContent = "Update completed. Please refresh the browser manually.";
                 }
                 if (btnCancelUpdateModal) {
                     btnCancelUpdateModal.disabled = false;

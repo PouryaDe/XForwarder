@@ -4537,5 +4537,31 @@ select option {
     }
 }
 
+.update-notice.notice-amber {
+    background: rgba(251, 191, 107, 0.12);
+    border: 1px solid rgba(251, 191, 107, 0.35);
+    color: var(--accent-amber);
+}
+
+.update-notice.notice-emerald {
+    background: rgba(16, 185, 129, 0.12);
+    border: 1px solid rgba(16, 185, 129, 0.35);
+    color: var(--accent-mint);
+}
+
+.update-notice.notice-rose {
+    background: rgba(244, 63, 94, 0.12);
+    border: 1px solid rgba(244, 63, 94, 0.35);
+    color: var(--accent-rose);
+}
+
+#btnTriggerUpdate:disabled {
+    opacity: 0.45 !important;
+    cursor: not-allowed !important;
+    filter: grayscale(0.5);
+    box-shadow: none !important;
+    pointer-events: none;
+}
+
 
 

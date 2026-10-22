@@ -188,6 +188,13 @@ install_xforwarder() {
     cp "$script_dir/xforwarder.sh" "$INSTALL_DIR/xforwarder.sh"
     chmod +x "$INSTALL_DIR/xforwarder.sh" "$INSTALL_DIR/core/engine.py" "$INSTALL_DIR/core/web_server.py"
 
+    # Persist commit metadata for in-panel version tracking
+    if command -v git >/dev/null 2>&1 && git -C "$script_dir" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+        git -C "$script_dir" rev-parse --short HEAD > "$INSTALL_DIR/.commit" 2>/dev/null || true
+        git -C "$script_dir" log -1 --format=%cd --date=short > "$INSTALL_DIR/.commit_date" 2>/dev/null || true
+        git -C "$script_dir" log -1 --format=%s > "$INSTALL_DIR/.commit_msg" 2>/dev/null || true
+    fi
+
     # Backup pre-existing configurations to avoid data loss
     local timestamp
     timestamp=$(date +%Y%m%d_%H%M%S)
@@ -397,6 +404,13 @@ update_xforwarder() {
     cp "$script_dir/xforwarder.sh" "$INSTALL_DIR/xforwarder.sh"
     chmod +x "$INSTALL_DIR/xforwarder.sh" "$INSTALL_DIR/core/engine.py" "$INSTALL_DIR/core/web_server.py"
 
+    # Persist commit metadata for in-panel version tracking
+    if command -v git >/dev/null 2>&1 && git -C "$script_dir" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+        git -C "$script_dir" rev-parse --short HEAD > "$INSTALL_DIR/.commit" 2>/dev/null || true
+        git -C "$script_dir" log -1 --format=%cd --date=short > "$INSTALL_DIR/.commit_date" 2>/dev/null || true
+        git -C "$script_dir" log -1 --format=%s > "$INSTALL_DIR/.commit_msg" 2>/dev/null || true
+    fi
+
     # Migrate legacy configuration path if applicable
     if [[ ! -f "$CONFIG_FILE" && -f "$LEGACY_CONFIG_FILE" ]]; then
         msg_info "Migrating configuration file from $LEGACY_CONFIG_FILE to $CONFIG_FILE..."
@@ -440,14 +454,19 @@ update_xforwarder() {
 
     # Restart services cleanly
     msg_info "Restarting XForwarder services..."
-    systemctl restart "$DAEMON_SERVICE" "$WEB_SERVICE"
+    systemctl restart "$DAEMON_SERVICE" 2>/dev/null || true
 
-    # Verify active status
+    # Verify active daemon status and log successful completion
     sleep 1
-    if systemctl is-active --quiet "$DAEMON_SERVICE" && systemctl is-active --quiet "$WEB_SERVICE"; then
+    if systemctl is-active --quiet "$DAEMON_SERVICE" 2>/dev/null; then
         msg_ok "XForwarder updated successfully! All services are active and running."
     else
         msg_warn "Services restarted, but status check reported a potential issue. Run: xfwd status"
+    fi
+
+    # Smoothly reload/restart web dashboard service
+    if systemctl is-active --quiet "$WEB_SERVICE" 2>/dev/null; then
+        systemctl restart "$WEB_SERVICE" 2>/dev/null || true
     fi
 
     if [[ -n "$cleanup_tmp" && -d "$cleanup_tmp" ]]; then

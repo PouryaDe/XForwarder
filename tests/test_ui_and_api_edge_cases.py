@@ -35,7 +35,13 @@ from core.web_server import (
     get_update_status,
     restart_services_action,
     _UPDATE_STATE,
-    _UPDATE_LOCK
+    _UPDATE_LOCK,
+    save_sessions_to_disk,
+    load_sessions_from_disk,
+    save_update_state,
+    load_update_state,
+    get_local_version_info,
+    get_full_version_status
 )
 from core.engine import XForwarderEngine
 
@@ -1257,6 +1263,115 @@ class TestUIAndAPIEdgeCases(unittest.TestCase):
             "pollDashboardReconnection"
         ):
             self.assertIn(fn_name, js, f"Missing JS function: {fn_name}")
+
+    def test_session_and_update_state_disk_persistence(self):
+        """Verifies session and update state persistence across daemon reloads."""
+        tmp_sessions = os.path.join(tempfile.gettempdir(), f"xfwd_test_sess_{int(time.time())}.json")
+        tmp_update = os.path.join(tempfile.gettempdir(), f"xfwd_test_upstate_{int(time.time())}.json")
+
+        with patch("core.web_server.get_sessions_file_path", return_value=tmp_sessions), \
+             patch("core.web_server.get_update_state_file_path", return_value=tmp_update):
+
+            # 1. Test Session persistence
+            test_tok = "tok_persist_12345"
+            with SESSION_LOCK:
+                ACTIVE_SESSIONS[test_tok] = {
+                    "username": "admin_persist",
+                    "created_at": time.time(),
+                    "last_active": time.time(),
+                    "expires_at": time.time() + 3600,
+                    "ip": "127.0.0.1"
+                }
+            save_sessions_to_disk()
+            self.assertTrue(os.path.isfile(tmp_sessions))
+
+            # Simulate daemon reload: clear in-memory and reload from disk
+            with SESSION_LOCK:
+                ACTIVE_SESSIONS.clear()
+            self.assertNotIn(test_tok, ACTIVE_SESSIONS)
+
+            load_sessions_from_disk()
+            self.assertIn(test_tok, ACTIVE_SESSIONS)
+            self.assertEqual(ACTIVE_SESSIONS[test_tok]["username"], "admin_persist")
+
+            # 2. Test Update State persistence
+            state_data = {
+                "status": "running",
+                "start_time": time.time(),
+                "pid": 9876,
+                "error": None
+            }
+            save_update_state(state_data)
+            self.assertTrue(os.path.isfile(tmp_update))
+
+            with _UPDATE_LOCK:
+                _UPDATE_STATE["status"] = "idle"
+                _UPDATE_STATE["start_time"] = 0
+
+            load_update_state()
+            with _UPDATE_LOCK:
+                self.assertEqual(_UPDATE_STATE["status"], "running")
+                self.assertEqual(_UPDATE_STATE["pid"], 9876)
+
+        # Cleanup
+        try:
+            os.remove(tmp_sessions)
+        except Exception:
+            pass
+        try:
+            os.remove(tmp_update)
+        except Exception:
+            pass
+        with SESSION_LOCK:
+            ACTIVE_SESSIONS.pop(test_tok, None)
+        with _UPDATE_LOCK:
+            _UPDATE_STATE["status"] = "idle"
+            _UPDATE_STATE["start_time"] = 0
+
+    def test_version_detection_with_commit_file_and_fallback(self):
+        """Verifies local version info parses .commit files and detects updates when remote differs."""
+        tmp_commit = os.path.join(tempfile.gettempdir(), f"xfwd_test_commit_{int(time.time())}.commit")
+        tmp_date = tmp_commit.replace(".commit", ".commit_date")
+
+        with open(tmp_commit, "w", encoding="utf-8") as f:
+            f.write("abc1234\n")
+        with open(tmp_date, "w", encoding="utf-8") as f:
+            f.write("2026-10-22\n")
+
+        with patch("core.web_server.get_local_version_info") as mock_loc:
+            # 1. When local matches remote -> update_available is False
+            mock_loc.return_value = {
+                "version": "1.3.1",
+                "commit": "abc1234",
+                "commit_date": "2026-10-22",
+                "is_git": False
+            }
+            with patch("core.web_server.get_remote_version_info", return_value={"remote_commit": "abc1234", "remote_date": "2026-10-22", "error": None}):
+                status = get_full_version_status(force=True)
+                self.assertFalse(status["update_available"])
+                self.assertEqual(status["current_commit"], "abc1234")
+
+            # 2. When remote has newer commit -> update_available is True
+            with patch("core.web_server.get_remote_version_info", return_value={"remote_commit": "def5678", "remote_date": "2026-10-22", "error": None}):
+                status = get_full_version_status(force=True)
+                self.assertTrue(status["update_available"])
+
+            # 3. When local commit is unrecorded (None) -> update_available is True so user can sync
+            mock_loc.return_value = {
+                "version": "1.3.1",
+                "commit": None,
+                "commit_date": None,
+                "is_git": False
+            }
+            with patch("core.web_server.get_remote_version_info", return_value={"remote_commit": "def5678", "remote_date": "2026-10-22", "error": None}):
+                status = get_full_version_status(force=True)
+                self.assertTrue(status["update_available"])
+
+        try:
+            os.remove(tmp_commit)
+            os.remove(tmp_date)
+        except Exception:
+            pass
 
 
 if __name__ == "__main__":

@@ -82,6 +82,57 @@ SESSION_TTL_HOURS = 24
 SESSION_IDLE_TIMEOUT_SECONDS = 14400  # 4 hours idle limit
 MAX_ACTIVE_SESSIONS = 50
 
+
+def get_sessions_file_path() -> str:
+    """Returns persistent sessions storage path in /run/xforwarder or system temp."""
+    for d in ["/run/xforwarder", "/run/forward-manager"]:
+        if os.path.isdir(d):
+            return os.path.join(d, "sessions.json")
+    try:
+        os.makedirs("/run/xforwarder", exist_ok=True)
+        return "/run/xforwarder/sessions.json"
+    except Exception:
+        return os.path.join(tempfile.gettempdir(), "xfwd_sessions.json")
+
+
+def load_sessions_from_disk():
+    """Loads active, unexpired sessions from disk to survive daemon restarts."""
+    path = get_sessions_file_path()
+    if not os.path.isfile(path):
+        return
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        if isinstance(data, dict):
+            now = time.time()
+            valid = {}
+            for tok, sess in data.items():
+                if isinstance(sess, dict) and sess.get("expires_at", 0) > now:
+                    valid[tok] = sess
+            with SESSION_LOCK:
+                ACTIVE_SESSIONS.update(valid)
+    except Exception:
+        pass
+
+
+def save_sessions_to_disk():
+    """Atomically persists active sessions to disk."""
+    path = get_sessions_file_path()
+    now = time.time()
+    with SESSION_LOCK:
+        data_to_save = {k: v for k, v in ACTIVE_SESSIONS.items() if v.get("expires_at", 0) > now}
+    try:
+        tmp = f"{path}.tmp.{os.getpid()}"
+        with open(tmp, "w", encoding="utf-8") as f:
+            json.dump(data_to_save, f)
+        os.replace(tmp, path)
+    except Exception:
+        pass
+
+
+# Restore sessions on startup
+load_sessions_from_disk()
+
 # Rate Limiting & Brute-Force Shield State
 FAILED_LOGIN_ATTEMPTS: Dict[str, dict] = {}
 RATE_LIMIT_LOCK = threading.Lock()
@@ -537,6 +588,47 @@ _UPDATE_STATE: Dict[str, Any] = {
 _UPDATE_LOCK = threading.Lock()
 
 
+def get_update_state_file_path() -> str:
+    """Returns persistent update state file path in /run/xforwarder or system temp."""
+    for d in ["/run/xforwarder", "/run/forward-manager"]:
+        if os.path.isdir(d):
+            return os.path.join(d, "update_state.json")
+    try:
+        os.makedirs("/run/xforwarder", exist_ok=True)
+        return "/run/xforwarder/update_state.json"
+    except Exception:
+        return os.path.join(tempfile.gettempdir(), "xfwd_update_state.json")
+
+
+def save_update_state(state: dict):
+    """Atomically persists update progress state to disk."""
+    path = get_update_state_file_path()
+    try:
+        tmp = f"{path}.tmp.{os.getpid()}"
+        with open(tmp, "w", encoding="utf-8") as f:
+            json.dump(state, f)
+        os.replace(tmp, path)
+    except Exception:
+        pass
+
+
+def load_update_state():
+    """Loads update progress state across daemon reloads."""
+    path = get_update_state_file_path()
+    if os.path.isfile(path):
+        try:
+            with open(path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            if isinstance(data, dict):
+                with _UPDATE_LOCK:
+                    _UPDATE_STATE.update(data)
+        except Exception:
+            pass
+
+
+load_update_state()
+
+
 def get_installed_version() -> str:
     """Reads script version from xforwarder.sh or returns default APP_VERSION."""
     script_candidates = [
@@ -559,7 +651,7 @@ def get_installed_version() -> str:
 
 
 def get_local_version_info() -> dict:
-    """Inspects local git repository or installed package version."""
+    """Inspects local git repository, .commit metadata files, or installed package version."""
     version = get_installed_version()
     info = {
         "version": version,
@@ -567,7 +659,37 @@ def get_local_version_info() -> dict:
         "commit_date": None,
         "is_git": False
     }
-    git_dirs = [BASE_DIR, "/opt/xforwarder"]
+
+    # 1. Read persistent metadata written during xforwarder install/update
+    commit_file_candidates = [
+        os.path.join(BASE_DIR, ".commit"),
+        "/opt/xforwarder/.commit",
+        "/etc/xforwarder/.commit",
+    ]
+    for c_path in commit_file_candidates:
+        if os.path.isfile(c_path):
+            try:
+                with open(c_path, "r", encoding="utf-8", errors="replace") as f:
+                    c_val = f.read().strip()
+                if c_val:
+                    info["commit"] = c_val[:7]
+                    d_path = c_path.replace(".commit", ".commit_date")
+                    if os.path.isfile(d_path):
+                        with open(d_path, "r", encoding="utf-8", errors="replace") as df:
+                            info["commit_date"] = df.read().strip()
+                    break
+            except Exception:
+                pass
+
+    # 2. Check local git repositories if commit not determined yet or for active git checkouts
+    git_dirs = [
+        BASE_DIR,
+        "/opt/xforwarder",
+        os.path.join(os.path.dirname(BASE_DIR), "XForwarder"),
+        os.path.join(os.path.dirname(BASE_DIR), "Forward-Manager"),
+        "/root/XForwarder",
+        "/root/Forward-Manager",
+    ]
     for g_dir in git_dirs:
         if os.path.isdir(os.path.join(g_dir, ".git")):
             try:
@@ -587,6 +709,7 @@ def get_local_version_info() -> dict:
                     break
             except Exception:
                 pass
+
     return info
 
 
@@ -643,8 +766,15 @@ def get_full_version_status(force: bool = False) -> dict:
     remote_info = get_remote_version_info(force=force)
 
     update_available = False
-    if local_info.get("commit") and remote_info.get("remote_commit"):
-        if local_info["commit"] != remote_info["remote_commit"]:
+    local_commit = (local_info.get("commit") or "").lower()
+    remote_commit = (remote_info.get("remote_commit") or "").lower()
+
+    if remote_commit:
+        if local_commit:
+            if local_commit != remote_commit:
+                update_available = True
+        else:
+            # If local commit is unrecorded on server, compare versions or suggest update
             update_available = True
 
     return {
@@ -717,6 +847,7 @@ def start_system_update() -> Tuple[bool, str]:
         _UPDATE_STATE["status"] = "running"
         _UPDATE_STATE["start_time"] = now
         _UPDATE_STATE["error"] = None
+        save_update_state(_UPDATE_STATE)
 
         has_systemd_run = bool(shutil.which("systemd-run"))
         ts = int(now)
@@ -741,12 +872,14 @@ def start_system_update() -> Tuple[bool, str]:
                             f.write("[OK] XForwarder updated successfully! All services are active and running.\n")
                         with _UPDATE_LOCK:
                             _UPDATE_STATE["status"] = "completed"
+                            save_update_state(_UPDATE_STATE)
                     else:
                         subprocess.Popen(["bash", "-c", cmd_str], start_new_session=True)
             except Exception as ex:
                 with _UPDATE_LOCK:
                     _UPDATE_STATE["status"] = "failed"
                     _UPDATE_STATE["error"] = str(ex)
+                    save_update_state(_UPDATE_STATE)
                 try:
                     with open(log_path, "a", encoding="utf-8") as f:
                         f.write(f"\n[ERROR] Update runner failure: {ex}\n")
@@ -785,17 +918,26 @@ def get_update_status() -> dict:
     )
     if is_recent_success:
         status = "completed"
+        with _UPDATE_LOCK:
+            _UPDATE_STATE["status"] = "completed"
+            save_update_state(_UPDATE_STATE)
     elif mem_status == "running":
         if (now - start_time) > 300:
             status = "failed"
+            with _UPDATE_LOCK:
+                _UPDATE_STATE["status"] = "failed"
+                save_update_state(_UPDATE_STATE)
         else:
             status = "running"
-    elif mtime > 0 and (now - mtime) < 30 and start_time > 0 and (now - start_time) < 300:
+    elif mtime > 0 and (now - mtime) < 45 and (start_time == 0 or (now - start_time) < 300):
         status = "running"
     elif ("Could not pull updates" in clean_log or "Failed to install" in clean_log or "[ERROR]" in clean_log) and (
         (start_time > 0 and mtime >= start_time - 5) or (mtime > 0 and (now - mtime) < 180)
     ):
         status = "failed"
+        with _UPDATE_LOCK:
+            _UPDATE_STATE["status"] = "failed"
+            save_update_state(_UPDATE_STATE)
     else:
         status = "idle"
 
@@ -1846,6 +1988,7 @@ class XForwarderWebHandler(BaseHTTPRequestHandler):
                         "expires_at": now + (SESSION_TTL_HOURS * 3600),
                         "ip": client_ip
                     }
+                save_sessions_to_disk()
                 self.send_json({"ok": True, "token": token, "username": user}, 200, cookie_token=token)
             else:
                 is_locked_now, lock_remaining, count = record_failed_login(client_ip)
@@ -1873,6 +2016,7 @@ class XForwarderWebHandler(BaseHTTPRequestHandler):
             if token:
                 with SESSION_LOCK:
                     ACTIVE_SESSIONS.pop(token, None)
+                save_sessions_to_disk()
             self.send_json({"ok": True}, 200, cookie_token="")
             return
 
@@ -1906,6 +2050,7 @@ class XForwarderWebHandler(BaseHTTPRequestHandler):
                     with SESSION_LOCK:
                         if token in ACTIVE_SESSIONS:
                             ACTIVE_SESSIONS[token]["username"] = new_user
+                    save_sessions_to_disk()
 
             if new_pwd:
                 if len(new_pwd) < 8:
