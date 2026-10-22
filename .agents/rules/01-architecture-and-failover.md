@@ -52,8 +52,7 @@ A port must **NEVER** be bound by HAProxy and forwarded by NFTables DNAT at the 
 
 ## 5. Strict Interface & Route Isolation for Destination Probes
 - **No WAN Leakage for Private/Tunnel Targets:** Tunnel destinations (e.g. `10.x.x.x`, `172.16-31.x.x`, `192.168.x.x`, IPv6 ULA) must never be probed over the WAN interface (`eth0`). If `ip route get <target>` routes to the WAN interface, the tunnel interface is undefined on the host and the probe MUST be marked `failed` immediately.
-- **Explicit Interface Binding:** When `tunnel_iface` is specified, verify `/sys/class/net/<iface>` exists and is UP. All ICMP and TCP probes must be strictly bound to `<tunnel_iface>` (`ping -I <iface>`, `SO_BINDTODEVICE`).
-- **Zero Synthetic Guessing:** Never synthesize or guess arbitrary peer IP targets (e.g. `+1` or `-1` on the last octet). A tunnel target must strictly be an explicit peer configured on the interface or a configured rule destination.
+- **Bilateral Tunnel Peer Resolution:** Point-to-point tunnel interfaces (e.g. GRE, IPIP, WireGuard /30) between Iran and foreign relay servers conventionally allocate bilateral peer addresses (`.1` ↔ `.2`, or `/30` partner octets `(last_oct % 4 == 1 ? +1 : -1)`). If the kernel does not explicitly provide a peer address and no matching rule destination is configured, the system auto-resolves the bilateral counterpart as the peer endpoint and ping target (bound strictly to `<tunnel_iface>`). Arbitrary guessing for non-point-to-point subnets is forbidden.
 
 ## 6. Long-Term Packet Loss Monitoring & Deduplicated Probing
 - **Dedicated 50-Probe Engine:** Precise packet loss evaluation uses `ping [ip] -c 50 -i 0.2 -W 1` (<10s).

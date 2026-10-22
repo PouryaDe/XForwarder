@@ -1084,15 +1084,39 @@ def get_network_interfaces_info() -> Dict[str, Any]:
             else:
                 friendly_type = "Virtual / Tunnel"
 
-            # Determine best ping target (explicit peer IP or matched configured rule target only)
+            # Determine best ping target and peer endpoint:
+            # 1. Explicit kernel peer IP (addr_info address / peer)
+            # 2. Configured destination target matching same /24 subnet
+            # 3. Bilateral point-to-point tunnel convention (.1 <-> .2 and standard /30 pairs)
             target_to_ping = peer_ip
             if not target_to_ping and local_ip:
-                parts = local_ip.split(".")
-                if len(parts) == 4:
-                    prefix = f"{parts[0]}.{parts[1]}.{parts[2]}."
-                    matched = next((kt for kt in known_targets if kt.startswith(prefix) and kt != local_ip), None)
+                if ip_version == 4:
+                    parts = local_ip.split(".")
+                    if len(parts) == 4:
+                        prefix = f"{parts[0]}.{parts[1]}.{parts[2]}."
+                        matched = next((kt for kt in known_targets if kt.startswith(prefix) and kt != local_ip), None)
+                        if matched:
+                            target_to_ping = matched
+                        else:
+                            try:
+                                last_oct = int(parts[3])
+                                if last_oct % 4 == 1:
+                                    target_to_ping = f"{prefix}{last_oct + 1}"
+                                elif last_oct % 4 == 2:
+                                    target_to_ping = f"{prefix}{last_oct - 1}"
+                            except ValueError:
+                                pass
+                elif ip_version == 6:
+                    matched = next((kt for kt in known_targets if kt != local_ip and kt.split("::")[0] == local_ip.split("::")[0]), None)
                     if matched:
                         target_to_ping = matched
+                    elif local_ip.endswith("::1"):
+                        target_to_ping = local_ip[:-1] + "2"
+                    elif local_ip.endswith("::2"):
+                        target_to_ping = local_ip[:-1] + "1"
+
+            if target_to_ping and not peer_ip:
+                peer_ip = target_to_ping
 
             # Skip unconfigured inactive interfaces with no IP and state DOWN
             if not local_ip and not peer_ip and not is_up:
