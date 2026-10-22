@@ -2928,6 +2928,15 @@ input:-webkit-autofill:active {
     margin-bottom: 24px;
 }
 
+/* Settings & Security Grid: 2 balanced columns on desktop (>1024px) for optimal form/info proportions, 1 column on tablet/mobile */
+#sectionSecurity .overview-grid,
+.settings-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 22px;
+    margin-bottom: 24px;
+}
+
 .overview-card {
     background: var(--bg-card);
     border: 1px solid var(--border-color);
@@ -3016,7 +3025,7 @@ input:-webkit-autofill:active {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    gap: 12px;
+    gap: 14px;
     padding: 10px 14px;
     border-radius: 10px;
     background: rgba(150, 150, 150, 0.05);
@@ -3033,8 +3042,8 @@ input:-webkit-autofill:active {
 .info-label {
     color: var(--text-secondary);
     font-weight: 500;
-    flex: 1 1 auto;
-    min-width: 0;
+    flex: 0 1 auto;
+    min-width: 125px;
     line-height: 1.35;
 }
 
@@ -3042,9 +3051,11 @@ input:-webkit-autofill:active {
     font-weight: 600;
     color: var(--text-primary);
     text-align: right;
-    flex-shrink: 0;
-    white-space: nowrap;
+    flex: 1 1 auto;
+    min-width: 0;
     line-height: 1.35;
+    word-break: break-word;
+    overflow-wrap: anywhere;
 }
 
 .font-mono { font-family: var(--font-mono); font-size: 0.8rem; }
@@ -3052,6 +3063,12 @@ input:-webkit-autofill:active {
 .quick-btn-grid {
     display: grid;
     grid-template-columns: 1fr;
+    gap: 10px;
+}
+
+.settings-btn-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
     gap: 10px;
 }
 
@@ -4217,7 +4234,9 @@ select option {
         gap: 16px;
     }
 
-    .overview-grid {
+    .overview-grid,
+    .settings-grid,
+    #sectionSecurity .overview-grid {
         grid-template-columns: 1fr;
     }
 

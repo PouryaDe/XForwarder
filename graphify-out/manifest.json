@@ -12,9 +12,9 @@
     "semantic_hash": ""
   },
   "web/app.js": {
-    "mtime": 1792693689.1303115,
-    "seen": 1792693904.4993618,
-    "ast_hash": "e8e55fd7bc2e20d2b9e8c39d18647921",
+    "mtime": 1792711976.442945,
+    "seen": 1792712162.6647403,
+    "ast_hash": "cf2509a3f3b46303fa12ac9bb661105d",
     "semantic_hash": ""
   },
   ".agents/rules/01-architecture-and-failover.md": {
@@ -72,9 +72,9 @@
     "semantic_hash": ""
   },
   "AGENTS.md": {
-    "mtime": 1792686323.561532,
-    "seen": 1792687801.265922,
-    "ast_hash": "9dbbe4f703fa3cebaf95de2297d9a603",
+    "mtime": 1792696177.4475963,
+    "seen": 1792712162.6647725,
+    "ast_hash": "5c10b73dcf303002446cf78cb234446a",
     "semantic_hash": ""
   },
   "README.md": {
@@ -84,15 +84,15 @@
     "semantic_hash": ""
   },
   "web/index.html": {
-    "mtime": 1792691509.96204,
-    "seen": 1792692944.5005145,
-    "ast_hash": "be21274cb449a6d73ff5776b53a53f24",
+    "mtime": 1792711932.0056684,
+    "seen": 1792712162.6647744,
+    "ast_hash": "e32b7949010bfb999f86395e20d435e5",
     "semantic_hash": ""
   },
   "xforwarder.sh": {
-    "mtime": 1792695420.4764423,
-    "seen": 1792695555.7949836,
-    "ast_hash": "430f0e522f6587def46e869dda0f8ee9",
+    "mtime": 1792696053.9844353,
+    "seen": 1792712162.664741,
+    "ast_hash": "5570a36d990cdc2518e7edc54e61554a",
     "semantic_hash": ""
   },
   ".agents/skills/xfwd-ops/SKILL.md": {
@@ -150,9 +150,9 @@
     "semantic_hash": ""
   },
   ".agents/AGENTS.md": {
-    "mtime": 1792686380.3987267,
-    "seen": 1792687801.265895,
-    "ast_hash": "467cda00e9e903519b1923a24570a50a",
+    "mtime": 1792696207.652409,
+    "seen": 1792712162.664742,
+    "ast_hash": "40186c7e107fa0dc0592263367e50faa",
     "semantic_hash": ""
   },
   ".agents/experiences/001-zero-collision-haproxy-nftables-failover.md": {
@@ -174,9 +174,9 @@
     "semantic_hash": ""
   },
   ".agents/experiences/README.md": {
-    "mtime": 1792685367.8287177,
-    "seen": 1792685467.3718457,
-    "ast_hash": "66978a0fbd6b6a71457befa3de92ba35",
+    "mtime": 1792695584.0855873,
+    "seen": 1792712162.6647534,
+    "ast_hash": "9753ac8af94750d26dc4b6da44de7797",
     "semantic_hash": ""
   },
   ".agents/rules/blast-radius-analysis.md": {
@@ -288,9 +288,9 @@
     "semantic_hash": ""
   },
   "tests/test_ui_and_api_edge_cases.py": {
-    "mtime": 1792693857.2673366,
-    "seen": 1792693904.499361,
-    "ast_hash": "205b8af541831cebdbfd59f342b547ae",
+    "mtime": 1792712067.2051113,
+    "seen": 1792712162.664739,
+    "ast_hash": "00871d0404d9dec5e535a064a0132685",
     "semantic_hash": ""
   },
   "tests/test_network_interfaces.py": {
@@ -330,9 +330,9 @@
     "semantic_hash": ""
   },
   "tests/test_performance_and_optimizations.py": {
-    "mtime": 1792695456.766676,
-    "seen": 1792695555.7949805,
-    "ast_hash": "9ca83e797e08356d34dcbaa1a8d35f1a",
+    "mtime": 1792696285.3251977,
+    "seen": 1792712162.664737,
+    "ast_hash": "31c2bbc5fc7c499dbca289c22af47a8a",
     "semantic_hash": ""
   },
   ".agents/experiences/008-full-stack-performance-and-fast-ipc.md": {
@@ -387,6 +387,12 @@
     "mtime": 1792685397.2718937,
     "seen": 1792685467.3718448,
     "ast_hash": "27e7181e03bcaa94373d821bd349f271",
+    "semantic_hash": ""
+  },
+  ".agents/experiences/012-kernel-zero-copy-splicing-bbr-network-tuning-and-session-timeout-optimization.md": {
+    "mtime": 1792695620.090052,
+    "seen": 1792712162.6647525,
+    "ast_hash": "2aae9998585f280fd7f0eacd837f3435",
     "semantic_hash": ""
   }
 }

@@ -3609,10 +3609,15 @@ async function fetchSystemVersionInfo(force = false) {
             if (data.remote_commit) {
                 const msg = data.remote_commit_msg ? ` - ${data.remote_commit_msg.substring(0, 32)}` : "";
                 valRemoteCommit.textContent = `#${data.remote_commit}${msg}`;
+                valRemoteCommit.title = data.remote_commit_msg || `#${data.remote_commit}`;
             } else if (data.check_error) {
-                valRemoteCommit.textContent = `Offline (${data.check_error})`;
+                const errStr = String(data.check_error);
+                const isRateLimit = errStr.toLowerCase().includes("rate limit") || errStr.includes("403");
+                valRemoteCommit.textContent = isRateLimit ? "Rate Limited (GitHub API)" : "Check Failed";
+                valRemoteCommit.title = data.check_error;
             } else {
                 valRemoteCommit.textContent = "Up to date";
+                valRemoteCommit.title = "Running latest commit";
             }
         }
         if (valLastChecked) {
@@ -3649,7 +3654,12 @@ async function fetchSystemVersionInfo(force = false) {
             if (updateStatusNotice) {
                 updateStatusNotice.style.display = "block";
                 updateStatusNotice.className = "update-notice notice-rose";
-                updateStatusNotice.innerHTML = `<strong>Check Failed:</strong> Could not connect to GitHub API (${escapeHtml(data.check_error)}). Please check internet connectivity on the server.`;
+                const errStr = String(data.check_error);
+                const isRateLimit = errStr.toLowerCase().includes("rate limit") || errStr.includes("403");
+                const errDetail = isRateLimit
+                    ? "GitHub API rate limit exceeded for this IP. Please wait a few minutes before checking again, or update directly via CLI."
+                    : `Could not connect to GitHub API (${escapeHtml(data.check_error)}). Please check internet connectivity on the server.`;
+                updateStatusNotice.innerHTML = `<strong>Check Failed:</strong> ${errDetail}`;
             }
             if (btnTriggerUpdate) {
                 btnTriggerUpdate.disabled = true;

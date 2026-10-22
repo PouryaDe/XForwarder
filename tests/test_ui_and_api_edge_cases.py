@@ -1495,6 +1495,42 @@ class TestUIAndAPIEdgeCases(unittest.TestCase):
             updated_body["created_at"] = orig_created_at
         self.assertEqual(updated_body["created_at"], 1600000000.0)
 
+    def test_security_settings_responsive_layout_and_info_item_wrapping(self):
+        """Verifies that Section 4 (Security & Settings) enforces a 2-column responsive layout,
+        prevents text collisions via proper min-width and word-wrapping, and handles GitHub rate limits."""
+        css_path = os.path.join(REPO_ROOT, "web", "style.css")
+        html_path = os.path.join(REPO_ROOT, "web", "index.html")
+        js_path = os.path.join(REPO_ROOT, "web", "app.js")
+
+        with open(css_path, "r", encoding="utf-8") as f:
+            css = f.read()
+        with open(html_path, "r", encoding="utf-8") as f:
+            html = f.read()
+        with open(js_path, "r", encoding="utf-8") as f:
+            js = f.read()
+
+        # 1. CSS Grid definitions for Settings
+        self.assertIn("#sectionSecurity .overview-grid", css)
+        self.assertIn(".settings-grid", css)
+        self.assertIn("grid-template-columns: repeat(2, minmax(0, 1fr));", css)
+        self.assertIn(".settings-btn-grid", css)
+
+        # 2. info-item collision defense (no nowrap without flex shrink, guaranteed label min-width)
+        self.assertIn(".info-label {", css)
+        self.assertIn("min-width: 125px;", css)
+        self.assertIn(".info-value {", css)
+        self.assertIn("word-break: break-word;", css)
+        self.assertIn("overflow-wrap: anywhere;", css)
+
+        # 3. HTML usage of settings-grid and settings-btn-grid
+        self.assertIn('class="overview-grid settings-grid"', html)
+        self.assertIn('class="settings-btn-grid"', html)
+        self.assertNotIn('style="grid-template-columns: 1fr 1fr;"', html, "Inline rigid button columns must be replaced with responsive settings-btn-grid")
+
+        # 4. JS graceful handling of GitHub API rate limits
+        self.assertIn("Rate Limited (GitHub API)", js)
+        self.assertIn("rate limit", js)
+
 
 if __name__ == "__main__":
     unittest.main()
