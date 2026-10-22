@@ -99,6 +99,10 @@ XForwarder/
     - Zero-Redundancy Target Deduplication: Targets across all rules and ports are deduplicated (`get_unique_targets_from_config`); testing is performed strictly once per IP regardless of port count.
     - 30-Day SQLite Time-Series Retention: Metrics are persisted in `/etc/xforwarder/metrics.db` (WAL mode) and automatically pruned after 30 days to protect disk storage.
 
+12. **In-Panel System Updates & Service Control (Mandatory)**:
+    - Remote Release & Update Engine: Web dashboard compares local git commit/version against remote GitHub repository (`/api/system/version`) and initiates decoupled update executions via `systemd-run` (`/api/system/update`, `/api/system/update/status`).
+    - Controlled Service Lifecycle: Dashboard provides controlled service restart/reload capabilities (`POST /api/services/restart`) supporting individual targets (`engine`, `haproxy`, `nginx`, `nftables`) and graceful delayed self-restarts for `web` and `all` with UI reconnection polling.
+
 
 ---
 

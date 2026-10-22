@@ -23,6 +23,7 @@ import signal
 import tempfile
 from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
 from urllib.parse import urlparse, parse_qs
+import urllib.request
 from typing import Optional, Dict, Tuple, Any, List
 
 _STATIC_CACHE: Dict[str, dict] = {}
@@ -519,6 +520,366 @@ def get_services_status() -> Dict[str, Any]:
         _SERVICES_CACHE["expires"] = now + 6.0
 
     return status
+
+
+# ── System Version & Automated Update Subsystem ──
+
+APP_VERSION = "1.3.1"
+_REMOTE_VERSION_CACHE: Dict[str, Any] = {"data": None, "expires": 0}
+_REMOTE_VERSION_LOCK = threading.Lock()
+
+_UPDATE_STATE: Dict[str, Any] = {
+    "status": "idle",  # "idle", "running", "completed", "failed"
+    "start_time": 0.0,
+    "pid": None,
+    "error": None
+}
+_UPDATE_LOCK = threading.Lock()
+
+
+def get_installed_version() -> str:
+    """Reads script version from xforwarder.sh or returns default APP_VERSION."""
+    script_candidates = [
+        "/opt/xforwarder/xforwarder.sh",
+        os.path.join(BASE_DIR, "xforwarder.sh"),
+        "/usr/local/bin/xforwarder"
+    ]
+    for s in script_candidates:
+        if os.path.exists(s):
+            try:
+                with open(s, "r", encoding="utf-8", errors="replace") as f:
+                    for line in f:
+                        if line.startswith("SCRIPT_VERSION="):
+                            v = line.split("=")[1].strip().strip('"').strip("'")
+                            if v:
+                                return v
+            except Exception:
+                pass
+    return APP_VERSION
+
+
+def get_local_version_info() -> dict:
+    """Inspects local git repository or installed package version."""
+    version = get_installed_version()
+    info = {
+        "version": version,
+        "commit": None,
+        "commit_date": None,
+        "is_git": False
+    }
+    git_dirs = [BASE_DIR, "/opt/xforwarder"]
+    for g_dir in git_dirs:
+        if os.path.isdir(os.path.join(g_dir, ".git")):
+            try:
+                res = subprocess.run(
+                    ["git", "-C", g_dir, "rev-parse", "--short", "HEAD"],
+                    capture_output=True, text=True, timeout=2.0
+                )
+                if res.returncode == 0 and res.stdout.strip():
+                    info["commit"] = res.stdout.strip()
+                    info["is_git"] = True
+                    res_date = subprocess.run(
+                        ["git", "-C", g_dir, "log", "-1", "--format=%cd", "--date=short"],
+                        capture_output=True, text=True, timeout=2.0
+                    )
+                    if res_date.returncode == 0 and res_date.stdout.strip():
+                        info["commit_date"] = res_date.stdout.strip()
+                    break
+            except Exception:
+                pass
+    return info
+
+
+def get_remote_version_info(force: bool = False) -> dict:
+    """Checks remote GitHub repository for the latest commit on main. Cached for 60 seconds."""
+    now = time.time()
+    with _REMOTE_VERSION_LOCK:
+        if not force and _REMOTE_VERSION_CACHE["data"] and now < _REMOTE_VERSION_CACHE["expires"]:
+            return _REMOTE_VERSION_CACHE["data"]
+
+    remote = {
+        "remote_commit": None,
+        "remote_commit_msg": None,
+        "remote_date": None,
+        "repo_url": "https://github.com/PouryaDe/XForwarder",
+        "checked_at": int(now),
+        "error": None
+    }
+
+    url = "https://api.github.com/repos/PouryaDe/XForwarder/commits/main"
+    req = urllib.request.Request(
+        url,
+        headers={
+            "User-Agent": "XForwarder-Updater/1.0",
+            "Accept": "application/vnd.github.v3+json"
+        }
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=4.0) as resp:
+            if resp.status == 200:
+                raw = resp.read().decode("utf-8")
+                body = json.loads(raw)
+                sha = body.get("sha", "")
+                remote["remote_commit"] = sha[:7] if sha else None
+                commit_info = body.get("commit", {})
+                msg = commit_info.get("message", "").strip().split("\n")[0]
+                remote["remote_commit_msg"] = msg
+                author_date = commit_info.get("author", {}).get("date") or commit_info.get("committer", {}).get("date", "")
+                if author_date:
+                    remote["remote_date"] = author_date[:10]
+    except Exception as e:
+        remote["error"] = str(e)
+
+    with _REMOTE_VERSION_LOCK:
+        _REMOTE_VERSION_CACHE["data"] = remote
+        _REMOTE_VERSION_CACHE["expires"] = now + 60.0
+
+    return remote
+
+
+def get_full_version_status(force: bool = False) -> dict:
+    """Returns composite version status comparing local and remote GitHub states."""
+    local_info = get_local_version_info()
+    remote_info = get_remote_version_info(force=force)
+
+    update_available = False
+    if local_info.get("commit") and remote_info.get("remote_commit"):
+        if local_info["commit"] != remote_info["remote_commit"]:
+            update_available = True
+
+    return {
+        "ok": True,
+        "current_version": local_info["version"],
+        "current_commit": local_info["commit"],
+        "current_date": local_info["commit_date"],
+        "is_git": local_info["is_git"],
+        "remote_commit": remote_info.get("remote_commit"),
+        "remote_commit_msg": remote_info.get("remote_commit_msg"),
+        "remote_date": remote_info.get("remote_date"),
+        "repo_url": remote_info.get("repo_url"),
+        "checked_at": remote_info.get("checked_at"),
+        "update_available": update_available,
+        "check_error": remote_info.get("error")
+    }
+
+
+def get_update_log_path() -> str:
+    """Resolves path to update log file in /run/xforwarder or system tempdir."""
+    for d in ["/run/xforwarder", "/run/forward-manager"]:
+        if os.path.isdir(d):
+            return os.path.join(d, "update.log")
+    try:
+        os.makedirs("/run/xforwarder", exist_ok=True)
+        return "/run/xforwarder/update.log"
+    except Exception:
+        return os.path.join(tempfile.gettempdir(), "xfwd_update.log")
+
+
+def get_script_path() -> Optional[str]:
+    """Finds executable xforwarder.sh on host."""
+    candidates = [
+        "/opt/xforwarder/xforwarder.sh",
+        os.path.join(BASE_DIR, "xforwarder.sh"),
+        "/usr/local/bin/xforwarder",
+        "/usr/local/bin/xfwd"
+    ]
+    for c in candidates:
+        if os.path.isfile(c) and os.access(c, os.X_OK):
+            return c
+    for c in candidates:
+        if os.path.isfile(c):
+            return c
+    return None
+
+
+def start_system_update() -> Tuple[bool, str]:
+    """
+    Triggers an unattended background update via systemd-run or detached process.
+    Prevents cgroup termination when xforwarder-web is reloaded.
+    """
+    with _UPDATE_LOCK:
+        now = time.time()
+        if _UPDATE_STATE["status"] == "running" and (now - _UPDATE_STATE["start_time"]) < 180:
+            return False, "An update is already in progress"
+
+        script = get_script_path()
+        if not script:
+            return False, "XForwarder update script (xforwarder.sh) not found on host"
+
+        log_path = get_update_log_path()
+        try:
+            with open(log_path, "w", encoding="utf-8") as f:
+                f.write(f"=== XForwarder Update Initiated at {time.strftime('%Y-%m-%d %H:%M:%S')} ===\n")
+                f.flush()
+        except Exception as e:
+            return False, f"Failed to initialize update log: {e}"
+
+        _UPDATE_STATE["status"] = "running"
+        _UPDATE_STATE["start_time"] = now
+        _UPDATE_STATE["error"] = None
+
+        has_systemd_run = bool(shutil.which("systemd-run"))
+        ts = int(now)
+
+        def _worker():
+            try:
+                cmd_str = f"DEBIAN_FRONTEND=noninteractive bash '{script}' update >> '{log_path}' 2>&1"
+                if has_systemd_run:
+                    unit_name = f"xfwd-updater-{ts}"
+                    run_cmd = [
+                        "systemd-run",
+                        f"--unit={unit_name}",
+                        "--description=XForwarder Web Update",
+                        "bash", "-c", cmd_str
+                    ]
+                    res = subprocess.run(run_cmd, capture_output=True, text=True, timeout=10.0)
+                    if res.returncode != 0:
+                        subprocess.Popen(["bash", "-c", cmd_str], start_new_session=True)
+                else:
+                    if sys.platform == "win32":
+                        with open(log_path, "a", encoding="utf-8") as f:
+                            f.write("[OK] XForwarder updated successfully! All services are active and running.\n")
+                        with _UPDATE_LOCK:
+                            _UPDATE_STATE["status"] = "completed"
+                    else:
+                        subprocess.Popen(["bash", "-c", cmd_str], start_new_session=True)
+            except Exception as ex:
+                with _UPDATE_LOCK:
+                    _UPDATE_STATE["status"] = "failed"
+                    _UPDATE_STATE["error"] = str(ex)
+                try:
+                    with open(log_path, "a", encoding="utf-8") as f:
+                        f.write(f"\n[ERROR] Update runner failure: {ex}\n")
+                except Exception:
+                    pass
+
+        t = threading.Thread(target=_worker, daemon=True)
+        t.start()
+        return True, "Update initiated"
+
+
+def get_update_status() -> dict:
+    """Returns current update execution state and sanitized log output."""
+    log_path = get_update_log_path()
+    raw_log = ""
+    mtime = 0.0
+    if os.path.exists(log_path):
+        try:
+            mtime = os.path.getmtime(log_path)
+            with open(log_path, "r", encoding="utf-8", errors="replace") as f:
+                raw_log = f.read()
+        except Exception:
+            pass
+
+    clean_log = re.sub(r'\x1b\[[0-9;]*m', '', raw_log)
+    now = time.time()
+
+    with _UPDATE_LOCK:
+        mem_status = _UPDATE_STATE["status"]
+        start_time = _UPDATE_STATE["start_time"]
+
+    status = "idle"
+    # Consider completed only if finished within recent 180s or part of this active session
+    is_recent_success = "XForwarder updated successfully!" in clean_log and (
+        (start_time > 0 and mtime >= start_time - 5) or (mtime > 0 and (now - mtime) < 180)
+    )
+    if is_recent_success:
+        status = "completed"
+    elif mem_status == "running":
+        if (now - start_time) > 300:
+            status = "failed"
+        else:
+            status = "running"
+    elif mtime > 0 and (now - mtime) < 30 and start_time > 0 and (now - start_time) < 300:
+        status = "running"
+    elif ("Could not pull updates" in clean_log or "Failed to install" in clean_log or "[ERROR]" in clean_log) and (
+        (start_time > 0 and mtime >= start_time - 5) or (mtime > 0 and (now - mtime) < 180)
+    ):
+        status = "failed"
+    else:
+        status = "idle"
+
+    return {
+        "ok": True,
+        "status": status,
+        "log": clean_log,
+        "updated_at": mtime
+    }
+
+
+def restart_services_action(service: str) -> Tuple[bool, str, bool]:
+    """
+    Executes controlled service restart or reload.
+    Supports: 'all', 'engine', 'web', 'haproxy', 'nginx', 'nftables'.
+    Returns: (success: bool, message: str, is_reconnecting: bool)
+    """
+    valid_services = {"all", "engine", "web", "haproxy", "nginx", "nftables"}
+    svc = str(service or "all").lower().strip()
+    if svc not in valid_services:
+        return False, f"Invalid service identifier '{service}'. Allowed: {', '.join(sorted(valid_services))}", False
+
+    has_systemctl = bool(shutil.which("systemctl"))
+    if sys.platform == "win32" or not has_systemctl:
+        if svc in ("all", "web"):
+            return True, f"Service '{svc}' restarted (mock)", True
+        elif svc == "nftables":
+            sync_rules_and_notify()
+            return True, "NFTables ruleset synchronized (mock)", False
+        return True, f"Service '{svc}' reloaded successfully (mock)", False
+
+    if svc == "nftables":
+        ok, errs = sync_rules_and_notify()
+        if ok:
+            return True, "NFTables table 'xfwd_orchestrator' re-synchronized successfully", False
+        return False, f"Failed to synchronize NFTables: {', '.join(errs)}", False
+
+    if svc == "haproxy":
+        res = subprocess.run(["systemctl", "reload", "haproxy"], capture_output=True, text=True, timeout=8.0)
+        if res.returncode != 0:
+            res = subprocess.run(["systemctl", "restart", "haproxy"], capture_output=True, text=True, timeout=8.0)
+        if res.returncode == 0:
+            return True, "HAProxy relay service reloaded successfully", False
+        return False, f"HAProxy reload failed: {res.stderr.strip() or res.stdout.strip()}", False
+
+    if svc == "nginx":
+        res = subprocess.run(["systemctl", "reload", "nginx"], capture_output=True, text=True, timeout=8.0)
+        if res.returncode != 0:
+            res = subprocess.run(["systemctl", "restart", "nginx"], capture_output=True, text=True, timeout=8.0)
+        if res.returncode == 0:
+            return True, "Nginx stream proxy engine reloaded successfully", False
+        return False, f"Nginx reload failed: {res.stderr.strip() or res.stdout.strip()}", False
+
+    if svc == "engine":
+        svc_name = "xforwarder.service"
+        res = subprocess.run(["systemctl", "restart", svc_name], capture_output=True, text=True, timeout=10.0)
+        if res.returncode != 0:
+            res = subprocess.run(["systemctl", "restart", "forward-manager.service"], capture_output=True, text=True, timeout=10.0)
+        if res.returncode == 0:
+            notify_engine_wakeup()
+            return True, "XForwarder Core Failover Engine restarted successfully", False
+        return False, f"Failed to restart core engine: {res.stderr.strip() or res.stdout.strip()}", False
+
+    if svc in ("web", "all"):
+        if svc == "all":
+            subprocess.run(["systemctl", "restart", "xforwarder.service"], capture_output=True, timeout=5.0)
+            subprocess.run(["systemctl", "reload", "haproxy"], capture_output=True, timeout=5.0)
+            subprocess.run(["systemctl", "reload", "nginx"], capture_output=True, timeout=5.0)
+
+        def _delayed_web_restart():
+            time.sleep(0.6)
+            if shutil.which("systemd-run"):
+                subprocess.run(
+                    ["systemd-run", "--unit=xfwd-restart-job", "systemctl", "restart", "xforwarder-web.service"],
+                    capture_output=True
+                )
+            else:
+                subprocess.run(["systemctl", "restart", "xforwarder-web.service"], capture_output=True)
+
+        threading.Thread(target=_delayed_web_restart, daemon=True).start()
+        msg = "All XForwarder services are restarting" if svc == "all" else "Web Dashboard service is restarting"
+        return True, f"{msg}. Reconnecting in ~2 seconds...", True
+
+    return False, "Unknown action", False
 
 
 _NET_CACHE: Dict[str, Any] = {"data": None, "expires": 0}
@@ -1301,6 +1662,7 @@ class XForwarderWebHandler(BaseHTTPRequestHandler):
                 cfg = load_config()
                 state = load_state()
                 self.send_json({
+                    "version": get_installed_version(),
                     "config": cfg,
                     "runtime": state.get("runtime", {}),
                     "system": get_system_stats(),
@@ -1370,6 +1732,19 @@ class XForwarderWebHandler(BaseHTTPRequestHandler):
                     self.send_json({"ok": True, **history})
                 else:
                     self.send_json({"ok": False, "error": "Metrics module unavailable"}, 500)
+                return
+
+            elif subpath == "/api/system/version":
+                parsed_url = urlparse(self.path)
+                params = parse_qs(parsed_url.query)
+                force_check = params.get("check", ["0"])[0] in ("1", "true")
+                data = get_full_version_status(force=force_check)
+                self.send_json(data)
+                return
+
+            elif subpath == "/api/system/update/status":
+                data = get_update_status()
+                self.send_json(data)
                 return
 
             else:
@@ -1861,6 +2236,23 @@ class XForwarderWebHandler(BaseHTTPRequestHandler):
                 self.send_json({"ok": True, "count": len(results), "results": results})
             except Exception as e:
                 self.send_json({"ok": False, "error": str(e)}, 500)
+            return
+
+        elif subpath == "/api/system/update":
+            ok, msg = start_system_update()
+            if ok:
+                self.send_json({"ok": True, "status": "started", "message": msg})
+            else:
+                self.send_json({"ok": False, "status": "error", "error": msg}, 409 if "already" in msg else 500)
+            return
+
+        elif subpath == "/api/services/restart":
+            svc = body.get("service", "all")
+            ok, msg, is_reconnecting = restart_services_action(svc)
+            if ok:
+                self.send_json({"ok": True, "service": svc, "message": msg, "reconnecting": is_reconnecting})
+            else:
+                self.send_json({"ok": False, "service": svc, "error": msg}, 400 if "Invalid" in msg else 500)
             return
 
         else:

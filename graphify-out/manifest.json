@@ -6,15 +6,15 @@
     "semantic_hash": ""
   },
   "core/web_server.py": {
-    "mtime": 1792672195.973905,
-    "seen": 1792672364.3369646,
-    "ast_hash": "da06be363939972898fd376c9ca3d227",
+    "mtime": 1792681487.6266513,
+    "seen": 1792682636.9294755,
+    "ast_hash": "dba9aa6c403105e24b4ea177076db9e1",
     "semantic_hash": ""
   },
   "web/app.js": {
-    "mtime": 1792623166.9369762,
-    "seen": 1792623317.358811,
-    "ast_hash": "14a057460c5ed307f8ff735b0ec30f8a",
+    "mtime": 1792681799.002476,
+    "seen": 1792682636.9294875,
+    "ast_hash": "c24360bbbb5d45d164fdf147681646f1",
     "semantic_hash": ""
   },
   ".agents/rules/01-architecture-and-failover.md": {
@@ -36,9 +36,9 @@
     "semantic_hash": ""
   },
   ".agents/rules/04-web-dashboard-and-security.md": {
-    "mtime": 1792597049.3542247,
-    "seen": 1792597221.9095154,
-    "ast_hash": "51fc67a3697bf9c9336f0d461e0d288d",
+    "mtime": 1792682459.171863,
+    "seen": 1792682636.929504,
+    "ast_hash": "157b0c0fbe6292975c2b0e3cdd467246",
     "semantic_hash": ""
   },
   ".agents/rules/05-bash-and-deployment.md": {
@@ -72,9 +72,9 @@
     "semantic_hash": ""
   },
   "AGENTS.md": {
-    "mtime": 1792672080.6656027,
-    "seen": 1792672364.3370025,
-    "ast_hash": "becb28d85b3f44acf75abfd6f33e6ff4",
+    "mtime": 1792682408.3598533,
+    "seen": 1792682636.9295216,
+    "ast_hash": "27ee3b1a15ce88d18499813d46beccca",
     "semantic_hash": ""
   },
   "README.md": {
@@ -84,9 +84,9 @@
     "semantic_hash": ""
   },
   "web/index.html": {
-    "mtime": 1792622980.738973,
-    "seen": 1792623317.358842,
-    "ast_hash": "f8d1fe8b95b747eb330947766dd59e5b",
+    "mtime": 1792681692.9292157,
+    "seen": 1792682636.9295235,
+    "ast_hash": "1432ff8fc8ec25b0dfb3ced5329b3dfb",
     "semantic_hash": ""
   },
   "xforwarder.sh": {
@@ -150,9 +150,9 @@
     "semantic_hash": ""
   },
   ".agents/AGENTS.md": {
-    "mtime": 1792672105.0394888,
-    "seen": 1792672364.3369763,
-    "ast_hash": "3595a88035ff49130d62daa0ab4069a1",
+    "mtime": 1792682425.9417925,
+    "seen": 1792682636.9294894,
+    "ast_hash": "1f7541a47e7e3d30a30b1a7e53093eb5",
     "semantic_hash": ""
   },
   ".agents/experiences/001-zero-collision-haproxy-nftables-failover.md": {
@@ -174,9 +174,9 @@
     "semantic_hash": ""
   },
   ".agents/experiences/README.md": {
-    "mtime": 1792568070.4084425,
-    "seen": 1792568113.30516,
-    "ast_hash": "b15a3cec3955ba3968246906dfc10d84",
+    "mtime": 1792680287.2686172,
+    "seen": 1792682636.9295006,
+    "ast_hash": "308ed2bf1220760dec13dd199b64d2fb",
     "semantic_hash": ""
   },
   ".agents/rules/blast-radius-analysis.md": {
@@ -288,9 +288,9 @@
     "semantic_hash": ""
   },
   "tests/test_ui_and_api_edge_cases.py": {
-    "mtime": 1792623218.2359636,
-    "seen": 1792623317.3588102,
-    "ast_hash": "e9d9bf422869aa411aa24fb87f01ec2b",
+    "mtime": 1792682341.1975136,
+    "seen": 1792682636.9294865,
+    "ast_hash": "f6a2b40bd4039e3cb482df2b79b59263",
     "semantic_hash": ""
   },
   "tests/test_network_interfaces.py": {
@@ -363,6 +363,12 @@
     "mtime": 1792671935.0447507,
     "seen": 1792672364.336969,
     "ast_hash": "9f3c49360e77dfd6e998d26e1e16a3d7",
+    "semantic_hash": ""
+  },
+  ".agents/experiences/010-decoupled-in-panel-system-updates-and-reconnect-flow.md": {
+    "mtime": 1792682515.4507496,
+    "seen": 1792682636.9294994,
+    "ast_hash": "3ac67f42a28593ed495941c17e7c8ac7",
     "semantic_hash": ""
   }
 }

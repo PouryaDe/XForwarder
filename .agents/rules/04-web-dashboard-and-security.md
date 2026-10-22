@@ -31,3 +31,4 @@ description: Web dashboard UI aesthetics, Vanilla stack constraints, session aut
   - CSRF protection via `Origin`/`Referer` header verification on mutating endpoints (POST, DELETE).
 - **API Guard**: Every endpoint under `/api/*` (except `/api/login`) must verify session validity using `check_auth(handler)` and return `401 Unauthorized` if unauthenticated.
 - **Cache Control**: All JSON API responses must specify `Cache-Control: no-store, no-cache, must-revalidate`.
+- **System Updates & Service Control Endpoints**: `/api/system/version` (GET), `/api/system/update` (POST), `/api/system/update/status` (GET), and `/api/services/restart` (POST) are strictly authenticated, origin-checked, and execute asynchronously to prevent HTTP socket cutoff or systemd cgroup termination.

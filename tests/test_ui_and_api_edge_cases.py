@@ -30,7 +30,12 @@ from core.web_server import (
     get_services_status,
     XForwarderWebHandler,
     ACTIVE_SESSIONS,
-    SESSION_LOCK
+    SESSION_LOCK,
+    get_installed_version,
+    get_update_status,
+    restart_services_action,
+    _UPDATE_STATE,
+    _UPDATE_LOCK
 )
 from core.engine import XForwarderEngine
 
@@ -889,6 +894,368 @@ class TestUIAndAPIEdgeCases(unittest.TestCase):
         self.assertIn('[data-theme="light"] .user-avatar svg {', css)
         self.assertIn('[data-theme="light"] .sidebar-user {', css)
         self.assertIn("-webkit-font-smoothing: antialiased;", css)
+
+    def test_system_version_and_update_apis(self):
+        """Verifies GET /api/system/version, GET /api/system/update/status, and POST /api/system/update."""
+        cfg = load_config()
+        secret = str(cfg.get("web", {}).get("secret_path", "")).strip().strip("/")
+        secret_prefix = f"/{secret}" if secret else ""
+
+        server = HTTPServer(("127.0.0.1", 0), XForwarderWebHandler)
+        port = server.server_port
+        t = threading.Thread(target=server.serve_forever, daemon=True)
+        t.start()
+
+        token = "test_update_session_token"
+        with SESSION_LOCK:
+            ACTIVE_SESSIONS[token] = {
+                "username": "admin",
+                "created_at": time.time(),
+                "last_active": time.time(),
+                "expires_at": time.time() + 3600
+            }
+
+        try:
+            # 1. Unauthenticated GET /api/system/version -> 401
+            req_unauth_v = urllib.request.Request(f"http://127.0.0.1:{port}{secret_prefix}/api/system/version")
+            try:
+                urllib.request.urlopen(req_unauth_v, timeout=3.0)
+                self.fail("Expected 401 HTTPError")
+            except urllib.error.HTTPError as err:
+                self.assertEqual(err.code, 401)
+
+            # 2. Authenticated GET /api/system/version -> 200
+            req_auth_v = urllib.request.Request(
+                f"http://127.0.0.1:{port}/api/system/version",
+                headers={"Cookie": f"xfwd_session={token}"}
+            )
+            with urllib.request.urlopen(req_auth_v, timeout=5.0) as resp:
+                self.assertEqual(resp.status, 200)
+                body = json.loads(resp.read().decode("utf-8"))
+                self.assertTrue(body.get("ok"))
+                self.assertIn("current_version", body)
+                self.assertIn("update_available", body)
+                self.assertIn("repo_url", body)
+
+            # 3. Unauthenticated GET /api/system/update/status -> 401
+            req_unauth_s = urllib.request.Request(f"http://127.0.0.1:{port}{secret_prefix}/api/system/update/status")
+            try:
+                urllib.request.urlopen(req_unauth_s, timeout=3.0)
+                self.fail("Expected 401 HTTPError")
+            except urllib.error.HTTPError as err:
+                self.assertEqual(err.code, 401)
+
+            # 4. Authenticated GET /api/system/update/status -> 200
+            req_auth_s = urllib.request.Request(
+                f"http://127.0.0.1:{port}/api/system/update/status",
+                headers={"Cookie": f"xfwd_session={token}"}
+            )
+            with urllib.request.urlopen(req_auth_s, timeout=3.0) as resp:
+                self.assertEqual(resp.status, 200)
+                body_s = json.loads(resp.read().decode("utf-8"))
+                self.assertTrue(body_s.get("ok"))
+                self.assertIn("status", body_s)
+                self.assertIn("log", body_s)
+
+            # 5. Unauthenticated POST /api/system/update -> 401
+            req_unauth_up = urllib.request.Request(
+                f"http://127.0.0.1:{port}{secret_prefix}/api/system/update",
+                data=b"{}",
+                headers={"Content-Type": "application/json"}
+            )
+            try:
+                urllib.request.urlopen(req_unauth_up, timeout=3.0)
+                self.fail("Expected 401 HTTPError")
+            except urllib.error.HTTPError as err:
+                self.assertEqual(err.code, 401)
+
+            # 6. Authenticated POST /api/system/update with invalid Origin -> 403
+            req_no_origin = urllib.request.Request(
+                f"http://127.0.0.1:{port}/api/system/update",
+                data=b"{}",
+                headers={
+                    "Content-Type": "application/json",
+                    "Cookie": f"xfwd_session={token}",
+                    "Origin": "http://attacker-site.com"
+                }
+            )
+            try:
+                urllib.request.urlopen(req_no_origin, timeout=3.0)
+                self.fail("Expected 403 HTTPError")
+            except urllib.error.HTTPError as err:
+                self.assertEqual(err.code, 403)
+
+            # 7. Authenticated POST /api/system/update with Origin -> 200 started
+            req_valid_up = urllib.request.Request(
+                f"http://127.0.0.1:{port}/api/system/update",
+                data=b"{}",
+                headers={
+                    "Content-Type": "application/json",
+                    "Cookie": f"xfwd_session={token}",
+                    "Origin": f"http://127.0.0.1:{port}"
+                }
+            )
+            with urllib.request.urlopen(req_valid_up, timeout=5.0) as resp:
+                self.assertEqual(resp.status, 200)
+                body_up = json.loads(resp.read().decode("utf-8"))
+                self.assertTrue(body_up.get("ok"))
+                self.assertEqual(body_up.get("status"), "started")
+
+        finally:
+            with SESSION_LOCK:
+                ACTIVE_SESSIONS.pop(token, None)
+            with _UPDATE_LOCK:
+                _UPDATE_STATE["status"] = "idle"
+                _UPDATE_STATE["start_time"] = 0
+            server.shutdown()
+            server.server_close()
+
+    def test_system_update_dom_and_ui_wiring(self):
+        """Verifies that System Update UI elements exist across HTML, JavaScript, and CSS."""
+        web_dir = os.path.join(REPO_ROOT, "web")
+        with open(os.path.join(web_dir, "index.html"), "r", encoding="utf-8") as f:
+            html = f.read()
+        with open(os.path.join(web_dir, "app.js"), "r", encoding="utf-8") as f:
+            js = f.read()
+        with open(os.path.join(web_dir, "style.css"), "r", encoding="utf-8") as f:
+            css = f.read()
+
+        # HTML elements
+        for elem_id in (
+            "cardSystemUpdate",
+            "valInstalledVersion",
+            "valLocalCommit",
+            "valRemoteCommit",
+            "valLastChecked",
+            "badgeUpdateStatus",
+            "btnCheckUpdates",
+            "btnTriggerUpdate",
+            "updateStatusNotice",
+            "updateModal",
+            "updateConfirmView",
+            "updateProgressView",
+            "updateStatusBanner",
+            "updateSpinner",
+            "updateConsole",
+            "btnConfirmStartUpdate",
+            "btnCloseUpdateModal",
+            "btnCancelUpdateModal"
+        ):
+            self.assertIn(f'id="{elem_id}"', html, f"Missing element ID: {elem_id}")
+
+        # JS functions & logic
+        for fn_name in (
+            "initSystemUpdateManager",
+            "fetchSystemVersionInfo",
+            "openSystemUpdateModal",
+            "closeSystemUpdateModal",
+            "startSystemUpdateProcedure",
+            "pollUpdateProgress"
+        ):
+            self.assertIn(fn_name, js, f"Missing JS function: {fn_name}")
+
+        # CSS classes & variables
+        self.assertIn(".badge-amber", css)
+        self.assertIn(".update-notice", css)
+        self.assertIn("#updateConsole", css)
+        self.assertIn(".pulse-glow", css)
+
+    def test_get_update_status_parsing_and_ansi_cleaning(self):
+        """Verifies get_update_status parses completed state and strips ANSI codes."""
+        tmp_log = os.path.join(tempfile.gettempdir(), f"xfwd_test_update_{int(time.time())}.log")
+        with open(tmp_log, "w", encoding="utf-8") as f:
+            f.write("\x1b[32m[OK]\x1b[0m XForwarder updated successfully! All services are active and running.\n")
+
+        with patch("core.web_server.get_update_log_path", return_value=tmp_log):
+            status = get_update_status()
+            self.assertTrue(status["ok"])
+            self.assertEqual(status["status"], "completed")
+            self.assertNotIn("\x1b[", status["log"])
+            self.assertIn("XForwarder updated successfully!", status["log"])
+
+        try:
+            os.remove(tmp_log)
+        except Exception:
+            pass
+
+    def test_restart_services_action_logic(self):
+        """Verifies restart_services_action behavior across supported services and edge cases."""
+        # 1. Invalid service name rejected
+        ok, msg, recon = restart_services_action("unknown_invalid_service")
+        self.assertFalse(ok)
+        self.assertIn("Invalid service identifier", msg)
+        self.assertFalse(recon)
+
+        # 2. None or empty string defaults to 'all'
+        ok, msg, recon = restart_services_action("")
+        self.assertTrue(ok)
+        self.assertTrue(recon)
+
+        # 3. Individual services in mock/fallback mode
+        for svc in ("engine", "haproxy", "nginx", "nftables"):
+            ok, msg, recon = restart_services_action(svc)
+            self.assertTrue(ok, f"Failed for {svc}: {msg}")
+            self.assertFalse(recon)
+
+        # 4. Web service returns reconnecting flag
+        ok, msg, recon = restart_services_action("web")
+        self.assertTrue(ok)
+        self.assertTrue(recon)
+
+        # 5. Linux environment with systemctl mocked
+        with patch("shutil.which", return_value="/bin/systemctl"), \
+             patch("sys.platform", "linux"), \
+             patch("subprocess.run") as mock_sub:
+            mock_sub.return_value = MagicMock(returncode=0, stdout="success", stderr="")
+
+            # Test HAProxy
+            ok, msg, recon = restart_services_action("haproxy")
+            self.assertTrue(ok)
+            self.assertFalse(recon)
+            mock_sub.assert_called_with(["systemctl", "reload", "haproxy"], capture_output=True, text=True, timeout=8.0)
+
+            # Test Engine
+            mock_sub.reset_mock()
+            ok, msg, recon = restart_services_action("engine")
+            self.assertTrue(ok)
+            self.assertFalse(recon)
+            mock_sub.assert_any_call(["systemctl", "restart", "xforwarder.service"], capture_output=True, text=True, timeout=10.0)
+
+    def test_service_restart_api_endpoints(self):
+        """Verifies POST /api/services/restart authentication, origin security, and payload handling."""
+        cfg = load_config()
+        secret = str(cfg.get("web", {}).get("secret_path", "")).strip().strip("/")
+        secret_prefix = f"/{secret}" if secret else ""
+
+        server = HTTPServer(("127.0.0.1", 0), XForwarderWebHandler)
+        port = server.server_port
+        thread = threading.Thread(target=server.serve_forever, daemon=True)
+        thread.start()
+
+        token = "test_restart_token_9999"
+        with SESSION_LOCK:
+            ACTIVE_SESSIONS[token] = {
+                "username": "admin",
+                "created_at": time.time(),
+                "last_active": time.time(),
+                "expires_at": time.time() + 3600,
+                "ip": "127.0.0.1"
+            }
+
+        try:
+            # 1. Unauthenticated request -> 401
+            req_unauth = urllib.request.Request(
+                f"http://127.0.0.1:{port}{secret_prefix}/api/services/restart",
+                data=b'{"service":"engine"}',
+                headers={"Content-Type": "application/json"}
+            )
+            try:
+                urllib.request.urlopen(req_unauth, timeout=3.0)
+                self.fail("Expected 401 Unauthorized")
+            except urllib.error.HTTPError as err:
+                self.assertEqual(err.code, 401)
+
+            # 2. Authenticated request with mismatched Origin -> 403 Forbidden
+            req_bad_origin = urllib.request.Request(
+                f"http://127.0.0.1:{port}/api/services/restart",
+                data=b'{"service":"engine"}',
+                headers={
+                    "Content-Type": "application/json",
+                    "Cookie": f"xfwd_session={token}",
+                    "Origin": "http://evil-attacker.com"
+                }
+            )
+            try:
+                urllib.request.urlopen(req_bad_origin, timeout=3.0)
+                self.fail("Expected 403 Forbidden")
+            except urllib.error.HTTPError as err:
+                self.assertEqual(err.code, 403)
+
+            # 3. Authenticated request with invalid service -> 400 Bad Request
+            req_invalid = urllib.request.Request(
+                f"http://127.0.0.1:{port}/api/services/restart",
+                data=b'{"service":"nonexistent_service"}',
+                headers={
+                    "Content-Type": "application/json",
+                    "Cookie": f"xfwd_session={token}",
+                    "Origin": f"http://127.0.0.1:{port}"
+                }
+            )
+            try:
+                urllib.request.urlopen(req_invalid, timeout=3.0)
+                self.fail("Expected 400 Bad Request")
+            except urllib.error.HTTPError as err:
+                self.assertEqual(err.code, 400)
+                err_data = json.loads(err.read().decode("utf-8"))
+                self.assertFalse(err_data.get("ok"))
+                self.assertIn("Invalid service identifier", err_data.get("error", ""))
+
+            # 4. Authenticated request with valid service (engine) -> 200 OK
+            req_valid_engine = urllib.request.Request(
+                f"http://127.0.0.1:{port}/api/services/restart",
+                data=b'{"service":"engine"}',
+                headers={
+                    "Content-Type": "application/json",
+                    "Cookie": f"xfwd_session={token}",
+                    "Origin": f"http://127.0.0.1:{port}"
+                }
+            )
+            with urllib.request.urlopen(req_valid_engine, timeout=3.0) as resp:
+                self.assertEqual(resp.status, 200)
+                resp_data = json.loads(resp.read().decode("utf-8"))
+                self.assertTrue(resp_data.get("ok"))
+                self.assertEqual(resp_data.get("service"), "engine")
+                self.assertFalse(resp_data.get("reconnecting"))
+
+            # 5. Authenticated request with 'all' -> 200 OK with reconnecting=True
+            req_valid_all = urllib.request.Request(
+                f"http://127.0.0.1:{port}/api/services/restart",
+                data=b'{"service":"all"}',
+                headers={
+                    "Content-Type": "application/json",
+                    "Cookie": f"xfwd_session={token}",
+                    "Origin": f"http://127.0.0.1:{port}"
+                }
+            )
+            with urllib.request.urlopen(req_valid_all, timeout=3.0) as resp:
+                self.assertEqual(resp.status, 200)
+                resp_data = json.loads(resp.read().decode("utf-8"))
+                self.assertTrue(resp_data.get("ok"))
+                self.assertEqual(resp_data.get("service"), "all")
+                self.assertTrue(resp_data.get("reconnecting"))
+
+        finally:
+            with SESSION_LOCK:
+                ACTIVE_SESSIONS.pop(token, None)
+            server.shutdown()
+            server.server_close()
+
+    def test_service_restart_dom_and_ui_wiring(self):
+        """Verifies that Service Restart buttons and JS controllers exist."""
+        web_dir = os.path.join(REPO_ROOT, "web")
+        with open(os.path.join(web_dir, "index.html"), "r", encoding="utf-8") as f:
+            html = f.read()
+        with open(os.path.join(web_dir, "app.js"), "r", encoding="utf-8") as f:
+            js = f.read()
+
+        # HTML Button IDs
+        for btn_id in (
+            "btnRestartCoreEngine",
+            "btnRestartAllServices",
+            "btnReloadHaproxy",
+            "btnResyncNftables",
+            "btnReloadNginx",
+            "btnOvRestartServices"
+        ):
+            self.assertIn(f'id="{btn_id}"', html, f"Missing restart button: {btn_id}")
+
+        # JS functions
+        for fn_name in (
+            "initServiceRestartControls",
+            "handleServiceRestart",
+            "pollDashboardReconnection"
+        ):
+            self.assertIn(fn_name, js, f"Missing JS function: {fn_name}")
 
 
 if __name__ == "__main__":

@@ -13,3 +13,4 @@ Records of architectural decisions, critical invariants, and lessons learned dur
 | `007` | [Fix HAProxy Silent Drop and State Wipeout](007-fix-haproxy-silent-drop-and-state-wipeout.md) | `Networking` | 2026-10-19 |
 | `008` | [Full-Stack Performance Optimization & Fast IPC](008-full-stack-performance-and-fast-ipc.md) | `Performance & IPC` | 2026-10-20 |
 | `009` | [Fast Failover, Multi-Metric Evaluation & Anti-Flapping](009-fast-failover-multi-metric-and-anti-flapping.md) | `Routing & Resilience` | 2026-10-21 |
+| `010` | [Decoupled In-Panel System Updates and Reconnect Flow](010-decoupled-in-panel-system-updates-and-reconnect-flow.md) | `Architecture` | 2026-10-22 |

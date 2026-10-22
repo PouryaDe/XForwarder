@@ -228,6 +228,9 @@ function showDashboard(username) {
     }
     fetchStatus();
     checkImportableRules();
+    if (typeof fetchSystemVersionInfo === "function") {
+        fetchSystemVersionInfo(false);
+    }
     if (!pollTimer) {
         pollTimer = setInterval(fetchStatus, 3000);
     }
@@ -2318,6 +2321,9 @@ function switchSection(sectionId) {
     if (sectionId === "overview" && typeof loadNetworkQualityMetrics === "function") {
         loadNetworkQualityMetrics();
     }
+    if (sectionId === "security" && typeof fetchSystemVersionInfo === "function") {
+        fetchSystemVersionInfo(false);
+    }
 
     closeMobileSidebar();
 }
@@ -3233,8 +3239,452 @@ function renderDisruptionsTable(disruptions) {
     tbody.innerHTML = rowsHtml;
 }
 
+// ── System Updates & Core Upgrade Manager ──
+let updatePollTimer = null;
+let updatePollingActive = false;
+let updateReconnectTries = 0;
+
+function initSystemUpdateManager() {
+    const btnCheckUpdates = document.getElementById("btnCheckUpdates");
+    const btnTriggerUpdate = document.getElementById("btnTriggerUpdate");
+    const btnCloseUpdateModal = document.getElementById("btnCloseUpdateModal");
+    const btnCancelUpdateModal = document.getElementById("btnCancelUpdateModal");
+    const btnConfirmStartUpdate = document.getElementById("btnConfirmStartUpdate");
+    const iconCheckUpdates = document.getElementById("iconCheckUpdates");
+
+    if (btnCheckUpdates) {
+        btnCheckUpdates.addEventListener("click", async () => {
+            if (iconCheckUpdates) iconCheckUpdates.classList.add("spinning");
+            btnCheckUpdates.disabled = true;
+            try {
+                await fetchSystemVersionInfo(true);
+                showToast("Update check complete", "info");
+            } catch (err) {
+                showToast("Could not check for updates: " + err.message, "error");
+            } finally {
+                if (iconCheckUpdates) iconCheckUpdates.classList.remove("spinning");
+                btnCheckUpdates.disabled = false;
+            }
+        });
+    }
+
+    if (btnTriggerUpdate) {
+        btnTriggerUpdate.addEventListener("click", () => {
+            openSystemUpdateModal();
+        });
+    }
+
+    if (btnCloseUpdateModal) {
+        btnCloseUpdateModal.addEventListener("click", () => {
+            closeSystemUpdateModal();
+        });
+    }
+
+    if (btnCancelUpdateModal) {
+        btnCancelUpdateModal.addEventListener("click", () => {
+            closeSystemUpdateModal();
+        });
+    }
+
+    if (btnConfirmStartUpdate) {
+        btnConfirmStartUpdate.addEventListener("click", () => {
+            startSystemUpdateProcedure();
+        });
+    }
+}
+
+async function fetchSystemVersionInfo(force = false) {
+    const valInstalledVersion = document.getElementById("valInstalledVersion");
+    const valLocalCommit = document.getElementById("valLocalCommit");
+    const valRemoteCommit = document.getElementById("valRemoteCommit");
+    const valLastChecked = document.getElementById("valLastChecked");
+    const badgeUpdateStatus = document.getElementById("badgeUpdateStatus");
+    const updateStatusNotice = document.getElementById("updateStatusNotice");
+    const btnTriggerUpdate = document.getElementById("btnTriggerUpdate");
+    const btnTriggerUpdateText = document.getElementById("btnTriggerUpdateText");
+
+    try {
+        const res = await fetch(`${API_BASE}/system/version${force ? "?check=1" : ""}`, {
+            headers: { "Accept": "application/json" }
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+
+        if (valInstalledVersion && data.current_version) {
+            valInstalledVersion.textContent = `v${data.current_version}`;
+        }
+        if (valLocalCommit) {
+            if (data.current_commit) {
+                const dateStr = data.current_date ? ` (${data.current_date})` : "";
+                valLocalCommit.textContent = `#${data.current_commit}${dateStr}`;
+            } else {
+                valLocalCommit.textContent = "Release package";
+            }
+        }
+        if (valRemoteCommit) {
+            if (data.remote_commit) {
+                const msg = data.remote_commit_msg ? ` - ${data.remote_commit_msg.substring(0, 32)}` : "";
+                valRemoteCommit.textContent = `#${data.remote_commit}${msg}`;
+            } else if (data.check_error) {
+                valRemoteCommit.textContent = `Offline (${data.check_error})`;
+            } else {
+                valRemoteCommit.textContent = "Up to date";
+            }
+        }
+        if (valLastChecked) {
+            valLastChecked.textContent = data.checked_at
+                ? new Date(data.checked_at * 1000).toLocaleTimeString()
+                : "Just now";
+        }
+
+        if (data.update_available) {
+            if (badgeUpdateStatus) {
+                badgeUpdateStatus.className = "stat-badge badge-amber";
+                badgeUpdateStatus.textContent = "UPDATE AVAILABLE";
+            }
+            if (updateStatusNotice) {
+                updateStatusNotice.style.display = "block";
+                updateStatusNotice.style.background = "rgba(251, 191, 107, 0.12)";
+                updateStatusNotice.style.border = "1px solid rgba(251, 191, 107, 0.3)";
+                updateStatusNotice.style.color = "var(--accent-amber)";
+                updateStatusNotice.innerHTML = `<strong>Update Available:</strong> A newer commit (<code class="font-mono">#${escapeHtml(data.remote_commit)}</code>) is available on GitHub. Click <em>Update XForwarder</em> to upgrade automatically.`;
+            }
+            if (btnTriggerUpdate) {
+                btnTriggerUpdate.classList.add("pulse-glow");
+            }
+            if (btnTriggerUpdateText) {
+                btnTriggerUpdateText.textContent = "Upgrade to Latest Release";
+            }
+        } else if (data.check_error) {
+            if (badgeUpdateStatus) {
+                badgeUpdateStatus.className = "stat-badge badge-warn";
+                badgeUpdateStatus.textContent = "CHECK FAILED";
+            }
+            if (updateStatusNotice) {
+                updateStatusNotice.style.display = "none";
+            }
+            if (btnTriggerUpdate) btnTriggerUpdate.classList.remove("pulse-glow");
+            if (btnTriggerUpdateText) btnTriggerUpdateText.textContent = "Update XForwarder";
+        } else {
+            if (badgeUpdateStatus) {
+                badgeUpdateStatus.className = "stat-badge badge-active";
+                badgeUpdateStatus.textContent = "UP TO DATE";
+            }
+            if (updateStatusNotice) {
+                updateStatusNotice.style.display = "none";
+            }
+            if (btnTriggerUpdate) btnTriggerUpdate.classList.remove("pulse-glow");
+            if (btnTriggerUpdateText) btnTriggerUpdateText.textContent = "Update XForwarder";
+        }
+    } catch (e) {
+        console.warn("Failed to fetch system version info", e);
+    }
+}
+
+function openSystemUpdateModal() {
+    const updateModal = document.getElementById("updateModal");
+    const updateConfirmView = document.getElementById("updateConfirmView");
+    const updateProgressView = document.getElementById("updateProgressView");
+    const btnCancelUpdateModal = document.getElementById("btnCancelUpdateModal");
+    const btnConfirmStartUpdate = document.getElementById("btnConfirmStartUpdate");
+    const btnCloseUpdateModal = document.getElementById("btnCloseUpdateModal");
+
+    if (updateConfirmView) updateConfirmView.style.display = "block";
+    if (updateProgressView) updateProgressView.style.display = "none";
+    if (btnCancelUpdateModal) {
+        btnCancelUpdateModal.style.display = "inline-flex";
+        btnCancelUpdateModal.textContent = "Cancel";
+        btnCancelUpdateModal.disabled = false;
+        btnCancelUpdateModal.onclick = () => closeSystemUpdateModal();
+    }
+    if (btnConfirmStartUpdate) {
+        btnConfirmStartUpdate.style.display = "inline-flex";
+        btnConfirmStartUpdate.disabled = false;
+    }
+    if (btnCloseUpdateModal) btnCloseUpdateModal.disabled = false;
+
+    if (updateModal) updateModal.classList.add("show");
+}
+
+function closeSystemUpdateModal() {
+    const updateModal = document.getElementById("updateModal");
+    if (updatePollingActive) return;
+    if (updateModal) updateModal.classList.remove("show");
+}
+
+async function startSystemUpdateProcedure() {
+    const updateConfirmView = document.getElementById("updateConfirmView");
+    const updateProgressView = document.getElementById("updateProgressView");
+    const btnConfirmStartUpdate = document.getElementById("btnConfirmStartUpdate");
+    const btnCancelUpdateModal = document.getElementById("btnCancelUpdateModal");
+    const btnCloseUpdateModal = document.getElementById("btnCloseUpdateModal");
+    const updateStatusBanner = document.getElementById("updateStatusBanner");
+    const updateStatusText = document.getElementById("updateStatusText");
+    const updateSpinner = document.getElementById("updateSpinner");
+    const updateConsole = document.getElementById("updateConsole");
+
+    if (updateConfirmView) updateConfirmView.style.display = "none";
+    if (updateProgressView) updateProgressView.style.display = "block";
+    if (btnConfirmStartUpdate) btnConfirmStartUpdate.style.display = "none";
+    if (btnCancelUpdateModal) btnCancelUpdateModal.disabled = true;
+    if (btnCloseUpdateModal) btnCloseUpdateModal.disabled = true;
+
+    if (updateStatusBanner) {
+        updateStatusBanner.style.background = "rgba(56, 189, 248, 0.12)";
+        updateStatusBanner.style.border = "1px solid rgba(56, 189, 248, 0.3)";
+        updateStatusBanner.style.color = "var(--accent-cyan)";
+    }
+    if (updateSpinner) updateSpinner.style.display = "block";
+    if (updateStatusText) updateStatusText.textContent = "Triggering update procedure on server...";
+    if (updateConsole) {
+        updateConsole.innerHTML = '<div class="log-entry"><span class="log-time">[INIT]</span><span class="log-msg text-cyan">Connecting to host daemon...</span></div>';
+    }
+
+    updatePollingActive = true;
+    updateReconnectTries = 0;
+
+    try {
+        const res = await fetch(`${API_BASE}/system/update`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            },
+            body: JSON.stringify({})
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok && res.status !== 409) {
+            throw new Error(data.error || "Server returned " + res.status);
+        }
+    } catch (err) {
+        if (updateConsole) {
+            updateConsole.innerHTML += `<div class="log-entry"><span class="log-time text-rose">[ERROR]</span><span class="log-msg text-rose">${escapeHtml(err.message)}</span></div>`;
+        }
+        if (updateStatusText) updateStatusText.textContent = "Failed to initiate update: " + err.message;
+        if (btnCancelUpdateModal) {
+            btnCancelUpdateModal.disabled = false;
+            btnCancelUpdateModal.textContent = "Close";
+        }
+        if (btnCloseUpdateModal) btnCloseUpdateModal.disabled = false;
+        updatePollingActive = false;
+        return;
+    }
+
+    pollUpdateProgress();
+}
+
+function pollUpdateProgress() {
+    if (updatePollTimer) clearTimeout(updatePollTimer);
+
+    const updateStatusBanner = document.getElementById("updateStatusBanner");
+    const updateStatusText = document.getElementById("updateStatusText");
+    const updateSpinner = document.getElementById("updateSpinner");
+    const updateConsole = document.getElementById("updateConsole");
+    const btnCancelUpdateModal = document.getElementById("btnCancelUpdateModal");
+    const btnCloseUpdateModal = document.getElementById("btnCloseUpdateModal");
+
+    updatePollTimer = setTimeout(async () => {
+        try {
+            const res = await fetch(`${API_BASE}/system/update/status`, {
+                headers: { "Accept": "application/json" }
+            });
+
+            if (!res.ok) throw new Error("Status HTTP " + res.status);
+            const data = await res.json();
+            updateReconnectTries = 0;
+
+            if (data.log && updateConsole) {
+                const lines = data.log.split("\n");
+                let logHtml = "";
+                lines.forEach(l => {
+                    if (!l.trim()) return;
+                    let cls = "text-secondary";
+                    if (l.includes("[OK]")) cls = "text-emerald font-bold";
+                    else if (l.includes("[ERROR]") || l.includes("Failed")) cls = "text-rose font-bold";
+                    else if (l.includes("[WARN]")) cls = "text-amber";
+                    else if (l.includes("[INFO]")) cls = "text-cyan";
+                    logHtml += `<div class="log-entry"><span class="log-msg ${cls}">${escapeHtml(l)}</span></div>`;
+                });
+                updateConsole.innerHTML = logHtml || '<div class="log-entry"><span class="log-msg text-muted">Running update...</span></div>';
+                updateConsole.scrollTop = updateConsole.scrollHeight;
+            }
+
+            if (data.status === "completed") {
+                if (updateStatusBanner) {
+                    updateStatusBanner.style.background = "rgba(16, 185, 129, 0.16)";
+                    updateStatusBanner.style.border = "1px solid rgba(16, 185, 129, 0.35)";
+                    updateStatusBanner.style.color = "var(--accent-mint)";
+                }
+                if (updateSpinner) updateSpinner.style.display = "none";
+                if (updateStatusText) {
+                    updateStatusText.innerHTML = "<strong>Update Completed Successfully!</strong> Refreshing dashboard in 2s...";
+                }
+                if (btnCancelUpdateModal) {
+                    btnCancelUpdateModal.disabled = false;
+                    btnCancelUpdateModal.textContent = "Reload Now";
+                    btnCancelUpdateModal.onclick = () => window.location.reload();
+                }
+                if (btnCloseUpdateModal) btnCloseUpdateModal.disabled = false;
+                updatePollingActive = false;
+
+                setTimeout(() => {
+                    window.location.reload();
+                }, 2200);
+                return;
+            } else if (data.status === "failed") {
+                if (updateStatusBanner) {
+                    updateStatusBanner.style.background = "rgba(244, 63, 94, 0.16)";
+                    updateStatusBanner.style.border = "1px solid rgba(244, 63, 94, 0.35)";
+                    updateStatusBanner.style.color = "var(--accent-rose)";
+                }
+                if (updateSpinner) updateSpinner.style.display = "none";
+                if (updateStatusText) {
+                    updateStatusText.textContent = "Update encountered an error. Check logs above.";
+                }
+                if (btnCancelUpdateModal) {
+                    btnCancelUpdateModal.disabled = false;
+                    btnCancelUpdateModal.textContent = "Close";
+                }
+                if (btnCloseUpdateModal) btnCloseUpdateModal.disabled = false;
+                updatePollingActive = false;
+                return;
+            } else {
+                if (updateStatusText) {
+                    updateStatusText.textContent = "Applying update and restarting services...";
+                }
+                pollUpdateProgress();
+            }
+        } catch (err) {
+            updateReconnectTries++;
+            if (updateStatusBanner) {
+                updateStatusBanner.style.background = "rgba(167, 139, 250, 0.16)";
+                updateStatusBanner.style.border = "1px solid rgba(167, 139, 250, 0.35)";
+                updateStatusBanner.style.color = "var(--accent-violet)";
+            }
+            if (updateStatusText) {
+                updateStatusText.textContent = `Services reloading... Waiting for web panel to resume (Attempt ${updateReconnectTries})...`;
+            }
+            if (updateConsole && updateReconnectTries <= 2) {
+                updateConsole.innerHTML += `<div class="log-entry"><span class="log-time text-violet">[RELOAD]</span><span class="log-msg text-violet">Web daemon reloading with new code...</span></div>`;
+                updateConsole.scrollTop = updateConsole.scrollHeight;
+            }
+            if (updateReconnectTries > 30) {
+                if (updateStatusText) {
+                    updateStatusText.textContent = "Reconnect timeout. Please refresh the browser manually.";
+                }
+                if (btnCancelUpdateModal) {
+                    btnCancelUpdateModal.disabled = false;
+                    btnCancelUpdateModal.textContent = "Reload Page";
+                    btnCancelUpdateModal.onclick = () => window.location.reload();
+                }
+                updatePollingActive = false;
+                return;
+            }
+            pollUpdateProgress();
+        }
+    }, 1200);
+}
+
+// ── Relay Services Restart & Reload Controls ──
+async function handleServiceRestart(service) {
+    const serviceNames = {
+        all: "All Relay Services & Daemons",
+        engine: "XForwarder Core Failover Engine",
+        haproxy: "HAProxy Relay Service",
+        nginx: "Nginx Stream Proxy",
+        nftables: "NFTables Table 'xfwd_orchestrator'"
+    };
+    const friendlyName = serviceNames[service] || service;
+    const isFullRestart = service === "all" || service === "web";
+    const warnMsg = isFullRestart
+        ? `Are you sure you want to restart ${friendlyName}? The web dashboard will temporarily disconnect and reconnect automatically in ~2 seconds.`
+        : `Are you sure you want to reload/restart ${friendlyName}? Active client connections will be preserved.`;
+
+    const confirmed = await askConfirm(`Restart ${friendlyName}?`, warnMsg);
+    if (!confirmed) return;
+
+    showToast(`Restarting ${friendlyName}...`, "info");
+
+    try {
+        const res = await fetch(`${API_BASE}/services/restart`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            },
+            body: JSON.stringify({ service })
+        });
+        const data = await res.json().catch(() => ({}));
+
+        if (!res.ok) {
+            throw new Error(data.error || `HTTP ${res.status}`);
+        }
+
+        if (data.reconnecting) {
+            showToast(data.message || "Services restarting...", "info");
+            pollDashboardReconnection();
+        } else {
+            showToast(data.message || `${friendlyName} reloaded successfully!`, "success");
+            fetchStatus();
+        }
+    } catch (err) {
+        showToast(`Failed to restart ${friendlyName}: ${err.message}`, "error");
+    }
+}
+
+function pollDashboardReconnection() {
+    let tries = 0;
+    const interval = setInterval(async () => {
+        tries++;
+        try {
+            const res = await fetch(`${API_BASE}/services/status`);
+            if (res.ok) {
+                clearInterval(interval);
+                showToast("Dashboard reconnected successfully!", "success");
+                setTimeout(() => window.location.reload(), 1000);
+            }
+        } catch (e) {
+            if (tries > 25) {
+                clearInterval(interval);
+                showToast("Please refresh the page manually", "warn");
+            }
+        }
+    }, 1200);
+}
+
+function initServiceRestartControls() {
+    const btnRestartAllServices = document.getElementById("btnRestartAllServices");
+    const btnRestartCoreEngine = document.getElementById("btnRestartCoreEngine");
+    const btnReloadHaproxy = document.getElementById("btnReloadHaproxy");
+    const btnResyncNftables = document.getElementById("btnResyncNftables");
+    const btnReloadNginx = document.getElementById("btnReloadNginx");
+    const btnOvRestartServices = document.getElementById("btnOvRestartServices");
+
+    if (btnRestartAllServices) {
+        btnRestartAllServices.addEventListener("click", () => handleServiceRestart("all"));
+    }
+    if (btnRestartCoreEngine) {
+        btnRestartCoreEngine.addEventListener("click", () => handleServiceRestart("engine"));
+    }
+    if (btnReloadHaproxy) {
+        btnReloadHaproxy.addEventListener("click", () => handleServiceRestart("haproxy"));
+    }
+    if (btnResyncNftables) {
+        btnResyncNftables.addEventListener("click", () => handleServiceRestart("nftables"));
+    }
+    if (btnReloadNginx) {
+        btnReloadNginx.addEventListener("click", () => handleServiceRestart("nginx"));
+    }
+    if (btnOvRestartServices) {
+        btnOvRestartServices.addEventListener("click", () => handleServiceRestart("all"));
+    }
+}
+
 // Initialize on page load
 initTheme();
 initDiagPacketLossTool();
 initNetworkQualityMonitor();
+initSystemUpdateManager();
+initServiceRestartControls();
 checkAuth();
+

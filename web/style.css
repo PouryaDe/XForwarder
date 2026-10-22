@@ -4499,5 +4499,43 @@ select option {
     gap: 4px;
 }
 
+/* ── System Updates & Progress Terminal ── */
+.badge-amber {
+    background: rgba(251, 191, 107, 0.16);
+    color: var(--accent-amber);
+    border: 1px solid rgba(251, 191, 107, 0.35);
+}
+
+.update-notice {
+    animation: fadeIn 0.3s ease;
+    border-radius: 8px;
+    font-size: 0.82rem;
+    line-height: 1.5;
+}
+
+[data-theme="light"] .badge-amber {
+    background: rgba(217, 119, 6, 0.14);
+    color: #b45309;
+    border-color: rgba(217, 119, 6, 0.28);
+}
+
+[data-theme="light"] #updateConsole {
+    background: #0f172a !important;
+    color: #e2e8f0;
+}
+
+.pulse-glow {
+    animation: pulseGlowBtn 2s infinite ease-in-out;
+}
+
+@keyframes pulseGlowBtn {
+    0%, 100% {
+        box-shadow: 0 0 0 0 rgba(56, 189, 248, 0.4);
+    }
+    50% {
+        box-shadow: 0 0 0 6px rgba(56, 189, 248, 0);
+    }
+}
+
 
 
