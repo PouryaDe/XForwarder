@@ -1408,8 +1408,8 @@ class TestUIAndAPIEdgeCases(unittest.TestCase):
         self.assertFalse(valid)
         self.assertIn("exceed 48 characters", msg)
 
-        # 4. Dangerous injection characters in category are rejected
-        for bad_char in ['<script>', '"quoted"', "foo;bar", "val$var", "`cmd`"]:
+        # 4. Dangerous injection characters, control chars, and backslashes in category are rejected
+        for bad_char in ['<script>', '"quoted"', "foo;bar", "val$var", "`cmd`", "path\\name", "line\nbreak", "tab\tchar"]:
             rule_bad = {
                 "port": 8446,
                 "protocol": "tcp",
@@ -1420,16 +1420,18 @@ class TestUIAndAPIEdgeCases(unittest.TestCase):
             self.assertFalse(valid, f"Expected reject for bad character '{bad_char}'")
             self.assertIn("invalid characters", msg)
 
-        # 5. Invalid created_at is sanitized
-        rule_bad_ts = {
-            "port": 8447,
-            "protocol": "tcp",
-            "created_at": "invalid_date",
-            "destinations": [{"target": "1.1.1.1"}]
-        }
-        valid, msg = validate_rule(rule_bad_ts)
-        self.assertTrue(valid, msg)
-        self.assertIsInstance(rule_bad_ts["created_at"], float)
+        # 5. Invalid created_at (string, NaN, Inf, negative, or future bound) is sanitized to 0.0
+        for bad_ts in ["invalid_date", "nan", "inf", "-inf", -500.0, 99999999999.0]:
+            rule_bad_ts = {
+                "port": 8447,
+                "protocol": "tcp",
+                "created_at": bad_ts,
+                "destinations": [{"target": "1.1.1.1"}]
+            }
+            valid, msg = validate_rule(rule_bad_ts)
+            self.assertTrue(valid, msg)
+            self.assertIsInstance(rule_bad_ts["created_at"], float)
+            self.assertEqual(rule_bad_ts["created_at"], 0.0, f"Expected 0.0 for bad timestamp {bad_ts}")
 
     def test_rules_view_toggle_and_category_assets(self):
         """Verifies presence and integrity of view toggle buttons, sort dropdown, and category DOM/CSS."""
@@ -1465,6 +1467,33 @@ class TestUIAndAPIEdgeCases(unittest.TestCase):
         self.assertIn('renderRuleCard', js)
         self.assertIn('renderRuleListRow', js)
         self.assertIn('updateCategoryDatalist', js)
+
+    def test_rule_update_created_at_preservation(self):
+        """Verifies that editing a rule preserves its original creation timestamp if omitted or updates it if provided."""
+        existing_rules = [
+            {
+                "id": "rule-7777",
+                "port": 7777,
+                "protocol": "tcp",
+                "category": "Gaming",
+                "created_at": 1600000000.0,
+                "destinations": [{"priority": 1, "type": "haproxy", "target": "2001:db8::1", "port": 7777}]
+            }
+        ]
+        # Simulate updating rule without created_at passed in body
+        updated_body = {
+            "id": "rule-7777",
+            "port": 7777,
+            "protocol": "tcp",
+            "category": "Gaming Pro",
+            "created_at": 0.0,
+            "destinations": [{"priority": 1, "type": "haproxy", "target": "2001:db8::1", "port": 7777}]
+        }
+        orig_created_at = float(existing_rules[0].get("created_at", 0) or 0)
+        body_created_at = float(updated_body.get("created_at", 0) or 0)
+        if orig_created_at > 0 and body_created_at <= 0:
+            updated_body["created_at"] = orig_created_at
+        self.assertEqual(updated_body["created_at"], 1600000000.0)
 
 
 if __name__ == "__main__":

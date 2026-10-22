@@ -331,8 +331,9 @@ class XForwarderEngine:
                 rule["force_override"] = force_ovr
                 modified = True
 
-            # Normalize category (default empty string, max 48 chars)
-            clean_category = str(rule.get("category", "") or "").strip()[:48]
+            # Normalize category (default empty string, max 48 chars, sanitize control/dangerous chars)
+            raw_category = str(rule.get("category", "") or "").strip()[:48]
+            clean_category = "".join(c for c in raw_category if ord(c) >= 32 and c not in "<>\";`$\\")
             if "category" not in rule:
                 rule["category"] = clean_category
                 modified = True
@@ -340,9 +341,11 @@ class XForwarderEngine:
                 rule["category"] = clean_category
                 modified = True
 
-            # Normalize registration timestamp (created_at)
+            # Normalize registration timestamp (created_at with NaN, Inf, and boundary protection)
             try:
                 created_at = float(rule.get("created_at", 0))
+                if created_at != created_at or created_at < 0 or created_at > 4102444800 or abs(created_at) == float("inf"):
+                    created_at = 0.0
             except (ValueError, TypeError):
                 created_at = 0.0
             if "created_at" not in rule:

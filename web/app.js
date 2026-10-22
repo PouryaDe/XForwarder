@@ -2323,6 +2323,7 @@ btnOpenAddModal.addEventListener("click", () => {
     document.getElementById("editRuleId").value = "";
     document.getElementById("formProto").value = "both";
     if (formCategory) formCategory.value = "";
+    updateCategoryDatalist(currentRules);
     currentModalDestinations = [
         { priority: 1, type: "haproxy", target: "", port: "", comment: "Primary Direct IPv6" },
         { priority: 2, type: "nftables", target: "", port: "", comment: "Backup Tunnel" }
@@ -2348,6 +2349,7 @@ function editRule(ruleId) {
     previousPortVal = String(r.port);
     document.getElementById("formProto").value = r.protocol || "both";
     if (formCategory) formCategory.value = r.category || "";
+    updateCategoryDatalist(currentRules);
 
     if (r.destinations && r.destinations.length > 0) {
         currentModalDestinations = JSON.parse(JSON.stringify(r.destinations)).sort((a, b) => (a.priority || 1) - (b.priority || 1));

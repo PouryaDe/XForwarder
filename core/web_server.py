@@ -1470,16 +1470,19 @@ def validate_rule(body: dict) -> Tuple[bool, str]:
         return False, "Protocol must be 'tcp', 'udp', or 'both'"
     body["protocol"] = proto
 
-    # Normalize and sanitize category (optional group name, max 48 chars)
+    # Normalize and sanitize category (optional group name, max 48 chars, reject shell/injection chars)
     category = str(body.get("category", "") or "").strip()
     if len(category) > 48:
         return False, "Category name must not exceed 48 characters"
-    if any(c in category for c in "<>\";`$"):
+    if any(c in category for c in "<>\";`$\\") or any(ord(c) < 32 for c in category):
         return False, "Category name contains invalid characters"
     body["category"] = category
 
+    # Sanitize created_at timestamp with NaN, Inf, and boundary protection
     try:
         created_at = float(body.get("created_at", 0))
+        if created_at != created_at or created_at < 0 or created_at > 4102444800 or abs(created_at) == float("inf"):
+            created_at = 0.0
     except (ValueError, TypeError):
         created_at = 0.0
     body["created_at"] = created_at
@@ -2108,15 +2111,20 @@ class XForwarderWebHandler(BaseHTTPRequestHandler):
             updated = False
             for i, r in enumerate(rules):
                 if r.get("id") == rule_id:
-                    if "created_at" in r and r.get("created_at") and not body.get("created_at"):
-                        body["created_at"] = r["created_at"]
-                    elif not body.get("created_at"):
+                    # Preserve existing created_at timestamp if present and not provided in update
+                    orig_created_at = float(r.get("created_at", 0) or 0)
+                    body_created_at = float(body.get("created_at", 0) or 0)
+                    if orig_created_at > 0 and body_created_at <= 0:
+                        body["created_at"] = orig_created_at
+                    elif body_created_at <= 0:
                         body["created_at"] = now_ts
+                    else:
+                        body["created_at"] = body_created_at
                     rules[i] = body
                     updated = True
                     break
             if not updated:
-                if not body.get("created_at"):
+                if float(body.get("created_at", 0) or 0) <= 0:
                     body["created_at"] = now_ts
                 rules.append(body)
 

@@ -225,6 +225,12 @@ class TestXForwarderMigration(unittest.TestCase):
                     "port": 8080,
                     "category": "x" * 60,  # Exceeds max 48 characters
                     "destinations": [{"target": "8.8.8.8"}]
+                },
+                {
+                    "port": 9090,
+                    "category": "Clean<script>Category\nName",
+                    "created_at": "nan",
+                    "destinations": [{"target": "9.9.9.9"}]
                 }
             ]
         }
@@ -244,6 +250,10 @@ class TestXForwarderMigration(unittest.TestCase):
         # Rule 3: truncated category to max 48 chars
         self.assertEqual(len(rules[2]["category"]), 48)
         self.assertEqual(rules[2]["category"], "x" * 48)
+
+        # Rule 4: stripped dangerous chars, sanitized NaN created_at to 0.0
+        self.assertEqual(rules[3]["category"], "CleanscriptCategoryName")
+        self.assertEqual(rules[3]["created_at"], 0.0)
 
 
 if __name__ == "__main__":
