@@ -9,7 +9,8 @@ XForwarder is an ultra-lightweight, 24/7 intelligent multi-path priority failove
 XForwarder/
 ├── core/
 │   ├── engine.py          # Core failover engine daemon (<15MB RAM, socket health prober, firewall/proxy syncer)
-│   └── web_server.py      # Native Python 3 HTTP server (session auth, JSON REST API, static asset server)
+│   ├── web_server.py      # Native Python 3 HTTP server (session auth, JSON REST API, static asset server)
+│   └── metrics.py         # 50-probe packet loss engine, 15m SQLite scheduler, target deduplicator & 30d retention
 ├── web/
 │   ├── index.html         # Modern panel dashboard with sidebar navigation, modular sections, and light/dark theme
 │   ├── style.css          # Glassmorphism aesthetic, light & dark theme design system, and responsive layout
@@ -26,6 +27,7 @@ XForwarder/
 │   ├── test_security.py   # Native Python unittest suite (PBKDF2 auth, rate limiting & input sanitization)
 │   ├── test_haproxy_parser.py # Native Python unittest suite (HAProxy config parser & importer)
 │   ├── test_export_import.py  # Native Python unittest suite (sanitized config export & merge/replace restore)
+│   ├── test_metrics_subsystem.py # Native Python unittest suite (50-probe ping, deduplication & SQLite retention)
 │   └── test_ui_and_api_edge_cases.py # Native Python unittest suite (UI, API edge cases & static asset integrity)
 ├── .agents/               # Antigravity agent configuration (constitution, rules, workflows, skills, scripts)
 │   ├── AGENTS.md          # Master architecture constitution
@@ -90,6 +92,13 @@ XForwarder/
     - Multi-Metric Evaluation: Route selection balances latency and rolling packet loss via composite quality scoring (`Score = Latency + (Loss% * 10)`).
     - Anti-Flapping Stability: Route switches require a 10% quality advantage margin (`hysteresis_percent = 10%`), hold-down cooldown (`cooldown_seconds = 60s`), and exponential flap damping on frequent oscillations.
     - Zero-Interruption Hot Handover: Frontends are hot-toggled via HAProxy runtime socket (<2ms) and stale conntrack states are flushed. Nginx is stopped when 0 rules use Nginx.
+
+11. **Long-Term Packet Loss Monitoring & Deduplicated Probing (Mandatory)**:
+    - 50-Probe Precision: Detailed packet loss measurement uses `ping [ip] -c 50 -i 0.2 -W 1` (<10s) with UI loading states.
+    - 15-Minute Background Daemon: `LossMonitorScheduler` runs periodic rounds every 900 seconds.
+    - Zero-Redundancy Target Deduplication: Targets across all rules and ports are deduplicated (`get_unique_targets_from_config`); testing is performed strictly once per IP regardless of port count.
+    - 30-Day SQLite Time-Series Retention: Metrics are persisted in `/etc/xforwarder/metrics.db` (WAL mode) and automatically pruned after 30 days to protect disk storage.
+
 
 ---
 

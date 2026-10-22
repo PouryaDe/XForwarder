@@ -70,6 +70,7 @@ class XForwarderEngine:
         self._wake_event = threading.Event()
         self._last_nft_content: Optional[str] = None
         self._pid_path: Optional[str] = None
+        self._loss_scheduler: Optional[Any] = None
         self.load_config()
 
     @property
@@ -1583,6 +1584,19 @@ http {{
 
         self.sync_firewall_and_proxies()
 
+        # Start 15-minute packet loss monitor scheduler across unique destinations
+        try:
+            from core.metrics import LossMonitorScheduler
+        except ImportError:
+            try:
+                from metrics import LossMonitorScheduler
+            except ImportError:
+                LossMonitorScheduler = None
+
+        if LossMonitorScheduler and not self._loss_scheduler:
+            self._loss_scheduler = LossMonitorScheduler(config_loader_fn=self.load_config)
+            self._loss_scheduler.start()
+
         try:
             while self.running:
                 try:
@@ -1621,10 +1635,16 @@ http {{
                     self._wake_event.wait(timeout=5)
                     self._wake_event.clear()
         finally:
+            if self._loss_scheduler:
+                self._loss_scheduler.stop()
+                self._loss_scheduler = None
             self._remove_pid_file()
 
     def stop(self) -> None:
         self.running = False
+        if self._loss_scheduler:
+            self._loss_scheduler.stop()
+            self._loss_scheduler = None
         self._wake_event.set()
         self._remove_pid_file()
 

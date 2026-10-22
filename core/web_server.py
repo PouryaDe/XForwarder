@@ -22,7 +22,7 @@ import gzip
 import signal
 import tempfile
 from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
-from urllib.parse import urlparse
+from urllib.parse import urlparse, parse_qs
 from typing import Optional, Dict, Tuple, Any, List
 
 _STATIC_CACHE: Dict[str, dict] = {}
@@ -1340,6 +1340,38 @@ class XForwarderWebHandler(BaseHTTPRequestHandler):
                 return
 
 
+            elif subpath == "/api/metrics/loss-history":
+                # Returns aggregated packet loss, quality timeline, KPIs, and recent disruption events
+                parsed_url = urlparse(self.path)
+                params = parse_qs(parsed_url.query)
+                target = params.get("target", ["all"])[0]
+                range_str = params.get("range", ["24h"])[0]
+                hours = 24
+                if range_str == "7d":
+                    hours = 168
+                elif range_str == "30d":
+                    hours = 720
+                else:
+                    try:
+                        hours = int(range_str.replace("h", ""))
+                    except Exception:
+                        hours = 24
+
+                try:
+                    from core.metrics import get_metrics_history
+                except ImportError:
+                    try:
+                        from metrics import get_metrics_history
+                    except ImportError:
+                        get_metrics_history = None
+
+                if get_metrics_history:
+                    history = get_metrics_history(target=target, time_range_hours=hours)
+                    self.send_json({"ok": True, **history})
+                else:
+                    self.send_json({"ok": False, "error": "Metrics module unavailable"}, 500)
+                return
+
             else:
                 self.send_error(404, "API endpoint not found")
                 return
@@ -1724,6 +1756,36 @@ class XForwarderWebHandler(BaseHTTPRequestHandler):
                     self.send_json({"ok": False, "healthy": False, "error": f"HAProxy destination target must be a valid IPv6 address (got '{target}')"}, 400)
                     return
 
+            is_loss_test = (body.get("mode") == "loss_50" or body.get("test_loss") is True or str(body.get("packets", "")) == "50")
+            if is_loss_test:
+                try:
+                    from core.metrics import measure_packet_loss_50
+                except ImportError:
+                    try:
+                        from metrics import measure_packet_loss_50
+                    except ImportError:
+                        measure_packet_loss_50 = None
+
+                if measure_packet_loss_50:
+                    try:
+                        res = measure_packet_loss_50(target, count=50, interval=0.2, save_to_db=True)
+                        self.send_json({
+                            "ok": True,
+                            "healthy": res.get("healthy", False),
+                            "latency_ms": res.get("latency_ms"),
+                            "min_lat": res.get("min_lat"),
+                            "max_lat": res.get("max_lat"),
+                            "packet_loss": res.get("packet_loss", 0 if res.get("healthy") else 100),
+                            "packets_sent": res.get("packets_sent", 50),
+                            "packets_received": res.get("packets_received", 0),
+                            "is_disrupted": res.get("is_disrupted", 0),
+                            "reason": res.get("error", "")
+                        })
+                        return
+                    except Exception as e:
+                        self.send_json({"ok": False, "healthy": False, "error": str(e)}, 500)
+                        return
+
             protocol = str(body.get("protocol", "both")).lower()
             try:
                 packets = int(body.get("packets", 4))
@@ -1751,6 +1813,54 @@ class XForwarderWebHandler(BaseHTTPRequestHandler):
                 })
             except Exception as e:
                 self.send_json({"ok": False, "healthy": False, "error": str(e)}, 500)
+            return
+
+        elif subpath == "/api/test-loss":
+            # On-demand precise 50-probe packet loss evaluation (`ping [ip] -c 50 -i 0.2`)
+            target = str(body.get("target", "")).strip().strip("[]")
+            if not target or not is_valid_target(target):
+                self.send_json({"ok": False, "healthy": False, "error": "Invalid target IP/host"}, 400)
+                return
+
+            try:
+                from core.metrics import measure_packet_loss_50
+            except ImportError:
+                try:
+                    from metrics import measure_packet_loss_50
+                except ImportError:
+                    measure_packet_loss_50 = None
+
+            if not measure_packet_loss_50:
+                self.send_json({"ok": False, "healthy": False, "error": "Loss measurement module unavailable"}, 500)
+                return
+
+            try:
+                res = measure_packet_loss_50(target, count=50, interval=0.2, save_to_db=True)
+                self.send_json({"ok": True, **res})
+            except Exception as e:
+                self.send_json({"ok": False, "healthy": False, "error": str(e)}, 500)
+            return
+
+        elif subpath == "/api/metrics/trigger-round":
+            # Manual trigger for an immediate scheduled probing round across deduplicated targets
+            try:
+                from core.metrics import run_scheduled_ping_round
+            except ImportError:
+                try:
+                    from metrics import run_scheduled_ping_round
+                except ImportError:
+                    run_scheduled_ping_round = None
+
+            if not run_scheduled_ping_round:
+                self.send_json({"ok": False, "error": "Metrics module unavailable"}, 500)
+                return
+
+            try:
+                cfg = load_config()
+                results = run_scheduled_ping_round(cfg)
+                self.send_json({"ok": True, "count": len(results), "results": results})
+            except Exception as e:
+                self.send_json({"ok": False, "error": str(e)}, 500)
             return
 
         else:

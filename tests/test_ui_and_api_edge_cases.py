@@ -492,7 +492,7 @@ class TestUIAndAPIEdgeCases(unittest.TestCase):
         # 1. HTML responsive classes
         self.assertIn('class="ram-full"', html)
         self.assertIn('class="ram-short"', html)
-        self.assertIn('class="btn-text">Security<', html)
+        self.assertIn('Security & Access', html)
         self.assertIn('class="btn-text">Logout<', html)
 
         # 2. JS responsive metric injection & drawer auto-close

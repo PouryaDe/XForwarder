@@ -4331,4 +4331,173 @@ select option {
     }
 }
 
+/* ── Network Quality & Disruption Monitor Subsystem ── */
+.metrics-kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.metrics-kpi-card {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: 12px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+[data-theme="light"] .metrics-kpi-card {
+    background: rgba(20, 25, 45, 0.03);
+    border-color: rgba(20, 25, 45, 0.08);
+}
+
+.metrics-kpi-card .kpi-label {
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 600;
+}
+
+.metrics-kpi-card .kpi-value {
+    font-size: 1.35rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    line-height: 1.2;
+}
+
+.metrics-kpi-card .kpi-sub {
+    font-size: 0.72rem;
+    color: var(--text-muted);
+}
+
+.btn-range-tab {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    padding: 4px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.75rem;
+    font-weight: 600;
+    transition: all 0.2s ease;
+}
+
+.btn-range-tab:hover {
+    color: var(--text-primary);
+    background: rgba(255, 255, 255, 0.06);
+}
+
+[data-theme="light"] .btn-range-tab:hover {
+    background: rgba(0, 0, 0, 0.06);
+}
+
+.btn-range-tab.active {
+    background: var(--accent-indigo);
+    color: #ffffff !important;
+}
+
+.metrics-timeline-bar {
+    display: flex;
+    gap: 2px;
+    height: 38px;
+    padding: 3px;
+    background: rgba(0, 0, 0, 0.25);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    align-items: stretch;
+    position: relative;
+    overflow: hidden;
+}
+
+[data-theme="light"] .metrics-timeline-bar {
+    background: rgba(20, 25, 45, 0.04);
+}
+
+.timeline-slot {
+    flex: 1;
+    min-width: 3px;
+    border-radius: 2px;
+    cursor: pointer;
+    transition: opacity 0.15s ease, filter 0.15s ease;
+    position: relative;
+}
+
+.timeline-slot:hover {
+    z-index: 10;
+    filter: brightness(1.25);
+    opacity: 0.95;
+}
+
+.timeline-slot.slot-empty {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+[data-theme="light"] .timeline-slot.slot-empty {
+    background: rgba(0, 0, 0, 0.07);
+}
+
+.timeline-slot.slot-clean {
+    background: #10b981;
+}
+
+.timeline-slot.slot-degraded {
+    background: #f59e0b;
+}
+
+.timeline-slot.slot-disrupted {
+    background: #f43f5e;
+    box-shadow: 0 0 6px rgba(244, 63, 94, 0.5);
+}
+
+.table-disruptions th,
+.table-disruptions td {
+    padding: 8px 10px;
+    font-size: 0.8rem;
+}
+
+.table-disruptions tbody tr {
+    border-bottom: 1px solid var(--border-color);
+    transition: background 0.15s ease;
+}
+
+.table-disruptions tbody tr:hover {
+    background: rgba(255, 255, 255, 0.03);
+}
+
+[data-theme="light"] .table-disruptions tbody tr:hover {
+    background: rgba(0, 0, 0, 0.02);
+}
+
+.disruption-badge-alert {
+    background: rgba(244, 63, 94, 0.15);
+    color: #f43f5e;
+    border: 1px solid rgba(244, 63, 94, 0.3);
+    border-radius: 4px;
+    padding: 2px 6px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.disruption-badge-warn {
+    background: rgba(245, 158, 11, 0.15);
+    color: #f59e0b;
+    border: 1px solid rgba(245, 158, 11, 0.3);
+    border-radius: 4px;
+    padding: 2px 6px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+
 

@@ -310,32 +310,6 @@
                         </div>
                     </div>
 
-                    <div class="user-pill">
-                        <span class="pulse-dot" id="pulseDot" title="Live Polling Active"></span>
-                        <span class="user-label">Logged in:</span>
-                        <span class="user-name" id="currentUsername">admin</span>
-                    </div>
-
-                    <button class="btn btn-secondary btn-icon" id="btnHeaderThemeToggle"
-                        title="Toggle Light / Dark Theme">
-                        <svg class="sun-icon" width="15" height="15" viewBox="0 0 24 24" fill="none"
-                            stroke="currentColor" stroke-width="2">
-                            <circle cx="12" cy="12" r="5" />
-                            <line x1="12" y1="1" x2="12" y2="3" />
-                            <line x1="12" y1="21" x2="12" y2="23" />
-                            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
-                            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
-                            <line x1="1" y1="12" x2="3" y2="12" />
-                            <line x1="21" y1="12" x2="23" y2="12" />
-                            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
-                            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
-                        </svg>
-                        <svg class="moon-icon" width="15" height="15" viewBox="0 0 24 24" fill="none"
-                            stroke="currentColor" stroke-width="2">
-                            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
-                        </svg>
-                    </button>
-
                     <button class="btn btn-secondary btn-icon" id="btnManualRefresh" title="Refresh Now">
                         <svg id="refreshIcon" width="14" height="14" viewBox="0 0 24 24" fill="none"
                             stroke="currentColor" stroke-width="2">
@@ -343,14 +317,6 @@
                             <path d="M1 20v-6h6" />
                             <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
                         </svg>
-                    </button>
-
-                    <button class="btn btn-secondary btn-sm" id="btnOpenSecurityModal" title="Security & Credentials">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="2">
-                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-                        </svg>
-                        <span class="btn-text">Security</span>
                     </button>
 
                     <button class="btn btn-secondary btn-sm" id="btnLogout" title="Sign out">
@@ -421,6 +387,19 @@
                     <div class="stat-content">
                         <span class="stat-title">Kernel Engine</span>
                         <span class="stat-badge badge-active" id="engineStatusBadge">SYNCED</span>
+                    </div>
+                </div>
+
+                <div class="stat-card" id="statCardLoss" onclick="switchSection('overview')" style="cursor:pointer;" title="Click to view Network Quality & Disruption History">
+                    <div class="stat-icon icon-emerald" id="statLossIcon">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+                        </svg>
+                    </div>
+                    <div class="stat-content">
+                        <span class="stat-title">Network Quality (24h)</span>
+                        <span class="stat-number text-emerald" id="statNetworkQuality">100%</span>
+                        <span class="stat-subtext" id="statLossSubtext">0% Loss &middot; 15m Engine</span>
                     </div>
                 </div>
             </section>
@@ -875,6 +854,116 @@
                         </div>
                     </div>
 
+                    <!-- Network Quality & Packet Loss Timeline Card (Full Width) -->
+                    <div class="overview-card full-width-card" id="cardNetworkQualityMonitor" style="grid-column: 1 / -1;">
+                        <div class="overview-card-header" style="flex-wrap: wrap; gap: 12px;">
+                            <div class="overview-card-title">
+                                <div class="stat-icon icon-emerald" style="width:34px;height:34px;">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+                                    </svg>
+                                </div>
+                                <div>
+                                    <h3>Network Quality &amp; Packet Loss Timeline</h3>
+                                    <span class="overview-card-sub">Automated 15-minute 50-probe test (<code class="font-mono">ping [ip] -c 50 -i 0.2</code>) &middot; 30-Day Retention</span>
+                                </div>
+                            </div>
+                            <div class="metrics-header-controls" style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                                <div class="metrics-filter-group" style="display:flex; align-items:center; gap:6px;">
+                                    <label for="metricsTargetSelect" style="font-size:0.75rem; color:var(--text-muted); margin:0;">Target IP:</label>
+                                    <select id="metricsTargetSelect" class="form-control" style="height:32px; font-size:0.8rem; padding:2px 8px; width:auto; min-width:140px;">
+                                        <option value="all">All Tracked Targets</option>
+                                    </select>
+                                </div>
+                                <div class="metrics-range-tabs" id="metricsRangeTabs" style="display:flex; gap:4px; background:var(--bg-surface); padding:2px; border-radius:6px; border:1px solid var(--border-color);">
+                                    <button type="button" class="btn btn-xs btn-range-tab active" data-range="24h">24 Hours</button>
+                                    <button type="button" class="btn btn-xs btn-range-tab" data-range="7d">7 Days</button>
+                                    <button type="button" class="btn btn-xs btn-range-tab" data-range="30d">30 Days</button>
+                                </div>
+                                <button type="button" class="btn btn-secondary btn-xs" id="btnTriggerMetricsRound" title="Run 50-probe test round across all unique targets now">
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+                                    </svg>
+                                    <span>Run Round</span>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="overview-card-body">
+                            <!-- KPI Summary Stats Row -->
+                            <div class="metrics-kpi-grid">
+                                <div class="metrics-kpi-card">
+                                    <span class="kpi-label">Network Quality</span>
+                                    <span class="kpi-value text-emerald font-mono" id="metricKpiQuality">--%</span>
+                                    <span class="kpi-sub" id="metricKpiProbes">0 probes analyzed</span>
+                                </div>
+                                <div class="metrics-kpi-card">
+                                    <span class="kpi-label">Average Latency</span>
+                                    <span class="kpi-value text-cyan font-mono" id="metricKpiLatency">-- ms</span>
+                                    <span class="kpi-sub">Round-trip ICMP time</span>
+                                </div>
+                                <div class="metrics-kpi-card">
+                                    <span class="kpi-label">Avg / Peak Loss</span>
+                                    <span class="kpi-value font-mono" id="metricKpiLoss">--%</span>
+                                    <span class="kpi-sub" id="metricKpiPeak">Peak: 0%</span>
+                                </div>
+                                <div class="metrics-kpi-card">
+                                    <span class="kpi-label">Disruption Incidents</span>
+                                    <span class="kpi-value font-mono" id="metricKpiDisruptions">0</span>
+                                    <span class="kpi-sub" id="metricKpiDisruptionSub">0 anomalies detected</span>
+                                </div>
+                            </div>
+
+                            <!-- Timeline Heat Bar Section -->
+                            <div class="metrics-timeline-section" style="margin-top:18px;">
+                                <div class="metrics-timeline-header" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:8px;">
+                                    <span class="timeline-title" style="font-size:0.82rem; font-weight:600; color:var(--text-primary);">Network Health Timeline (<span id="timelineRangeLabel">Past 24 Hours</span>)</span>
+                                    <div class="timeline-legend" style="display:flex; gap:12px; font-size:0.75rem; color:var(--text-muted);">
+                                        <span class="legend-item" style="display:inline-flex; align-items:center; gap:4px;"><span class="legend-dot dot-emerald" style="width:8px; height:8px; border-radius:50%; background:#10b981; display:inline-block;"></span> Clean (0% Loss)</span>
+                                        <span class="legend-item" style="display:inline-flex; align-items:center; gap:4px;"><span class="legend-dot dot-amber" style="width:8px; height:8px; border-radius:50%; background:#f59e0b; display:inline-block;"></span> Degraded (1-20%)</span>
+                                        <span class="legend-item" style="display:inline-flex; align-items:center; gap:4px;"><span class="legend-dot dot-rose" style="width:8px; height:8px; border-radius:50%; background:#f43f5e; display:inline-block;"></span> Disrupted (&gt;20%)</span>
+                                    </div>
+                                </div>
+                                <div class="metrics-timeline-bar" id="metricsTimelineBar">
+                                    <!-- Populated dynamically with time slots -->
+                                </div>
+                                <div class="timeline-ticks" id="timelineTicks" style="display:flex; justify-content:space-between; font-size:0.72rem; color:var(--text-muted); margin-top:4px; font-family:var(--font-mono);">
+                                    <span>24h ago</span>
+                                    <span>18h ago</span>
+                                    <span>12h ago</span>
+                                    <span>6h ago</span>
+                                    <span>Now</span>
+                                </div>
+                            </div>
+
+                            <!-- Disruption Incidents Log Table -->
+                            <div class="metrics-disruptions-section" style="margin-top:20px;">
+                                <div class="metrics-disruptions-header" style="margin-bottom:8px;">
+                                    <h4 style="font-size:0.88rem; font-weight:600; margin:0 0 2px 0;">Network Disruption Incidents Log</h4>
+                                    <span class="disruptions-sub" style="font-size:0.75rem; color:var(--text-muted);">Timestamps where packet loss &gt; 0% or connection failures occurred</span>
+                                </div>
+                                <div class="table-responsive" style="overflow-x:auto;">
+                                    <table class="table-disruptions" id="tableDisruptions" style="width:100%; border-collapse:collapse; font-size:0.8rem;">
+                                        <thead>
+                                            <tr style="border-bottom:1px solid var(--border-color); text-align:left; color:var(--text-muted);">
+                                                <th style="padding:8px;">Timestamp</th>
+                                                <th style="padding:8px;">Target Host</th>
+                                                <th style="padding:8px;">Packet Loss</th>
+                                                <th style="padding:8px;">Round-Trip Latency</th>
+                                                <th style="padding:8px;">Probes</th>
+                                                <th style="padding:8px;">Severity / Status</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="disruptionsTableBody">
+                                            <tr>
+                                                <td colspan="6" class="text-center text-muted" style="padding:16px;">Loading disruption data...</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Quick Actions Card -->
                     <div class="overview-card">
                         <div class="overview-card-header">
@@ -1309,7 +1398,8 @@
                             <div class="form-group" style="flex:1; min-width:110px; margin-bottom:0;">
                                 <label for="diagPacketsSelect" style="font-size:0.75rem; margin-bottom:4px; display:block;">Packets</label>
                                 <select id="diagPacketsSelect" class="form-control" style="font-size:0.85rem; height:38px;">
-                                    <option value="4" selected>4 Packets</option>
+                                    <option value="50" selected>50 Packets (0.2s - Standard Loss Test)</option>
+                                    <option value="4">4 Packets (Fast Ping)</option>
                                     <option value="6">6 Packets</option>
                                     <option value="8">8 Packets</option>
                                     <option value="10">10 Packets</option>

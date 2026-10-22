@@ -55,3 +55,10 @@ A port must **NEVER** be bound by HAProxy and forwarded by NFTables DNAT at the 
 - **Explicit Interface Binding:** When `tunnel_iface` is specified, verify `/sys/class/net/<iface>` exists and is UP. All ICMP and TCP probes must be strictly bound to `<tunnel_iface>` (`ping -I <iface>`, `SO_BINDTODEVICE`).
 - **Zero Synthetic Guessing:** Never synthesize or guess arbitrary peer IP targets (e.g. `+1` or `-1` on the last octet). A tunnel target must strictly be an explicit peer configured on the interface or a configured rule destination.
 
+## 6. Long-Term Packet Loss Monitoring & Deduplicated Probing
+- **Dedicated 50-Probe Engine:** Precise packet loss evaluation uses `ping [ip] -c 50 -i 0.2 -W 1` (<10s).
+- **Scheduled Rounds & Deduplication:** Background daemon (`LossMonitorScheduler`) triggers a round every 15 minutes (`LOSS_CHECK_INTERVAL_SECONDS = 900`). All targets across configured rules and ports are deduplicated (`get_unique_targets_from_config`), guaranteeing that an IP configured on 10 different ports is probed only ONCE per round.
+- **SQLite Persistence & 30-Day Retention:** Probe history is recorded in `/etc/xforwarder/metrics.db` (WAL mode). Records older than 30 days are automatically pruned (`prune_old_metrics`) to prevent disk bloat.
+- **Parameter Bounds & Injection Shielding:** Target hosts and interface flags must be strictly sanitized against command argument injection.
+
+
