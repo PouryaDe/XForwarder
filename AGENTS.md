@@ -111,6 +111,13 @@ XForwarder/
     - When imported, an atomic ruleset snapshot must be created at `/etc/xforwarder/backups/legacy_nftables_<timestamp>.nft`.
     - Conflicting unmanaged legacy DNAT rules must be safely deactivated using exact rule handles (`nft delete rule <family> <table> <chain> handle <id>`) to eliminate kernel PREROUTING hook collision and guarantee zero-collision forwarding.
 
+14. **Kernel Zero-Copy Splicing, BBR Tuning & Bounded UDP Timeouts (Mandatory)**:
+    - HAProxy forwarding must enforce zero-copy kernel splicing (`option splice-auto`, `tune.pipesize 262144`, `tune.bufsize 65536`) with defensive fallback to minimize CPU usage and avoid user-space buffer copies.
+    - Per-connection TCP logging (`option tcplog`) is forbidden on forwarding relays; logging is restricted to `notice` level and error states.
+    - Client and server TCP keepalives (`option clitcpka`, `option srvtcpka`) are mandatory to sweep zombie connections.
+    - UDP stream proxying must strictly enforce bounded timeouts (`proxy_timeout 60s`) and large buffers (`proxy_buffer_size 64k`) to eliminate UDP socket and memory accumulation.
+    - Dynamic host network profiling (`tune_network` in `xforwarder.sh`) automatically configures BBR congestion control, scales `somaxconn` to 65,535, expands socket buffers, sets `LimitNOFILE=1048576` for HAProxy, and scales conntrack tables.
+
 
 ---
 

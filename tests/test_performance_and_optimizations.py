@@ -382,5 +382,143 @@ class TestPerformanceAndOptimizations(unittest.TestCase):
         self.assertFalse(engine._wake_event.is_set())
 
 
+    def test_haproxy_performance_options_rendered(self):
+        """Verifies option splice-auto, tune.pipesize, clitcpka, and quiet logging are generated."""
+        engine = XForwarderEngine()
+        with tempfile.NamedTemporaryFile("w+", delete=False, encoding="utf-8") as tf:
+            test_haproxy_conf = tf.name
+
+        try:
+            with patch("core.engine.HAPROXY_CONF_PATH", test_haproxy_conf), \
+                 patch("shutil.which", return_value=None):
+                ok, err = engine._apply_haproxy(["listen test_p1\n    bind *:8080\n    server s1 10.0.0.1:8080"])
+                self.assertTrue(ok)
+                with open(test_haproxy_conf, "r", encoding="utf-8") as f:
+                    content = f.read()
+
+                self.assertIn("option  splice-auto", content)
+                self.assertIn("tune.bufsize 65536", content)
+                self.assertIn("tune.pipesize 262144", content)
+                self.assertIn("option  clitcpka", content)
+                self.assertIn("option  srvtcpka", content)
+                self.assertIn("log /dev/log local0 notice", content)
+                # Ensure verbose tcplog is NOT in defaults
+                self.assertNotIn("option  tcplog", content)
+        finally:
+            if os.path.exists(test_haproxy_conf):
+                os.remove(test_haproxy_conf)
+
+    def test_haproxy_performance_fallback_on_old_binary(self):
+        """Verifies fallback removes splice-auto and pipesize if validation fails."""
+        engine = XForwarderEngine()
+        with tempfile.NamedTemporaryFile("w+", delete=False, encoding="utf-8") as tf:
+            test_haproxy_conf = tf.name
+
+        try:
+            # First call fails (e.g. unknown keyword 'splice-auto'), second call (fallback) succeeds
+            call_count = [0]
+            def mock_run_validator(cmd, **kwargs):
+                call_count[0] += 1
+                if call_count[0] == 1:
+                    return MagicMock(returncode=1, stderr="parsing [/tmp/test]: unknown keyword 'splice-auto'")
+                return MagicMock(returncode=0, stderr="")
+
+            with patch("core.engine.HAPROXY_CONF_PATH", test_haproxy_conf), \
+                 patch("shutil.which", return_value="/usr/sbin/haproxy"), \
+                 patch("subprocess.run", side_effect=mock_run_validator):
+                ok, err = engine._apply_haproxy(["listen test_p1\n    bind *:8080\n    server s1 10.0.0.1:8080"])
+                self.assertTrue(ok)
+                with open(test_haproxy_conf, "r", encoding="utf-8") as f:
+                    content = f.read()
+
+                self.assertNotIn("option  splice-auto", content)
+                self.assertNotIn("tune.pipesize", content)
+                self.assertIn("listen test_p1", content)
+        finally:
+            if os.path.exists(test_haproxy_conf):
+                os.remove(test_haproxy_conf)
+
+    def test_nginx_udp_proxy_timeout_rendered(self):
+        """Verifies that UDP rules and HAProxy UDP helper set proxy_timeout 60s and 64k buffer."""
+        engine = XForwarderEngine()
+        with tempfile.NamedTemporaryFile("w+", delete=False, encoding="utf-8") as tf:
+            test_nginx_conf = tf.name
+
+        try:
+            with patch("core.engine.NGINX_CONF_PATH", test_nginx_conf), \
+                 patch("shutil.which", return_value=None):
+                entries = [
+                    "    # [UDP for HAProxy Port 443]\n    server { listen 443 udp reuseport; proxy_pass [2001:db8::1]:443; proxy_timeout 60s; }"
+                ]
+                ok, err = engine._apply_nginx(entries)
+                self.assertTrue(ok)
+                with open(test_nginx_conf, "r", encoding="utf-8") as f:
+                    content = f.read()
+
+                self.assertIn("proxy_timeout 60s;", content)
+                self.assertIn("proxy_buffer_size 64k;", content)
+        finally:
+            if os.path.exists(test_nginx_conf):
+                os.remove(test_nginx_conf)
+
+
+    def test_haproxy_syntax_validation_real_error_fails(self):
+        """Verifies that legitimate syntax errors in HAProxy config fail gracefully without looping."""
+        engine = XForwarderEngine()
+        with tempfile.NamedTemporaryFile("w+", delete=False, encoding="utf-8") as tf:
+            test_haproxy_conf = tf.name
+
+        try:
+            with patch("core.engine.HAPROXY_CONF_PATH", test_haproxy_conf), \
+                 patch("shutil.which", return_value="/usr/sbin/haproxy"), \
+                 patch("subprocess.run", return_value=MagicMock(returncode=1, stderr="parsing [/tmp/test]: bind: invalid port range")):
+                ok, err = engine._apply_haproxy(["listen test_p1\n    bind *:999999\n    server s1 10.0.0.1:8080"])
+                self.assertFalse(ok)
+                self.assertIn("HAProxy syntax:", err)
+        finally:
+            if os.path.exists(test_haproxy_conf):
+                os.remove(test_haproxy_conf)
+
+    def test_nginx_stream_sync_firewall_udp_and_proxy_protocol(self):
+        """Verifies sync_firewall_and_proxies generates proxy_timeout 60s and proxy_protocol for pure UDP rules."""
+        engine = XForwarderEngine()
+        engine.config = {
+            "schema_version": 2,
+            "wan_interface": "eth0",
+            "rules": [
+                {
+                    "id": "rule-udp-edge",
+                    "port": 50053,
+                    "protocol": "udp",
+                    "active_priority": 1,
+                    "destinations": [
+                        {
+                            "priority": 1,
+                            "type": "nginx",
+                            "target": "10.10.10.10",
+                            "port": 50053,
+                            "proxy_protocol": True,
+                            "comment": "Edge UDP Tunnel"
+                        }
+                    ]
+                }
+            ]
+        }
+        with patch.object(engine, "_is_ipv6_supported", return_value=False), \
+             patch.object(engine, "_apply_nftables", return_value=(True, None)), \
+             patch.object(engine, "_apply_haproxy", return_value=(True, None)), \
+             patch.object(engine, "_apply_nginx") as mock_apply_ngx:
+            mock_apply_ngx.return_value = (True, None)
+            ok, errors = engine.sync_firewall_and_proxies()
+            self.assertTrue(ok)
+            self.assertEqual(len(errors), 0)
+            mock_apply_ngx.assert_called_once()
+            entries = mock_apply_ngx.call_args[0][0]
+            self.assertEqual(len(entries), 1)
+            self.assertIn("listen 50053 udp reuseport;", entries[0])
+            self.assertIn("proxy_timeout 60s;", entries[0])
+            self.assertIn("proxy_protocol on;", entries[0])
+
+
 if __name__ == "__main__":
     unittest.main()

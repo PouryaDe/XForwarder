@@ -1,8 +1,8 @@
 {
   "core/engine.py": {
-    "mtime": 1792693603.3617518,
-    "seen": 1792693904.499346,
-    "ast_hash": "cc4582c6a18058bc963f8a341790bffa",
+    "mtime": 1792695286.9236789,
+    "seen": 1792695555.794968,
+    "ast_hash": "06842ef46ded362c04a0b8e1b5b6c2c3",
     "semantic_hash": ""
   },
   "core/web_server.py": {
@@ -90,9 +90,9 @@
     "semantic_hash": ""
   },
   "xforwarder.sh": {
-    "mtime": 1792689804.56415,
-    "seen": 1792690360.4284399,
-    "ast_hash": "5141577ed1482141ec61f62309a80b50",
+    "mtime": 1792695420.4764423,
+    "seen": 1792695555.7949836,
+    "ast_hash": "430f0e522f6587def46e869dda0f8ee9",
     "semantic_hash": ""
   },
   ".agents/skills/xfwd-ops/SKILL.md": {
@@ -330,9 +330,9 @@
     "semantic_hash": ""
   },
   "tests/test_performance_and_optimizations.py": {
-    "mtime": 1792511290.955384,
-    "seen": 1792511499.3389544,
-    "ast_hash": "f9143d699ff773e15fe06ae80739d914",
+    "mtime": 1792695456.766676,
+    "seen": 1792695555.7949805,
+    "ast_hash": "9ca83e797e08356d34dcbaa1a8d35f1a",
     "semantic_hash": ""
   },
   ".agents/experiences/008-full-stack-performance-and-fast-ipc.md": {
