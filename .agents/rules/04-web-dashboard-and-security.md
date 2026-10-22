@@ -12,6 +12,7 @@ description: Web dashboard UI aesthetics, Vanilla stack constraints, session aut
 
 ## 2. Aesthetics & Design Guidelines
 - **Theme**: Nova Admin aesthetic with deep slate dark base (`#0B0E14`), floating Aurora ambient lighting (`.aurora`), sleek glassmorphism panels (`backdrop-filter: blur(20px)`), subtle borders (`rgba(255, 255, 255, 0.08)`), signature mint-to-violet gradients (`linear-gradient(135deg, #6EE7B7, #A78BFA)`), and restrained highlights (rose `#FB7185` for outages, amber `#FBBF6B` for warnings, mint `#6EE7B7` for healthy states).
+- **Rules Organization**: Default card view with optional compact list view toggle; multi-metric sorting (port, registration date, health, category); optional custom port categories with illuminated divider lines and autocomplete datalist suggestions.
 - **Responsiveness**: Fully usable on mobile viewports as well as ultra-wide monitors.
 - **Language**: English interface for universal usability.
 

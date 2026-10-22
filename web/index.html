@@ -634,7 +634,7 @@
                         </div>
                     </div>
 
-                    <!-- Search, Filters & Emergency Actions Toolbar -->
+                    <!-- Search, Filters, Sorting, View Toggle & Emergency Actions Toolbar -->
                     <div class="toolbar">
                         <div class="search-box">
                             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -643,7 +643,7 @@
                                 <line x1="21" y1="21" x2="16.65" y2="16.65" />
                             </svg>
                             <input type="text" id="searchInput"
-                                placeholder="Search ports, IPs, or comments (e.g. 2023, gre, ipv6)..."
+                                placeholder="Search ports, IPs, categories, or comments..."
                                 autocomplete="off">
                             <button class="clear-btn" id="btnClearSearch" style="display:none;"
                                 title="Clear search">&times;</button>
@@ -658,6 +658,42 @@
                                     class="tab-badge" id="filterCountP2">0</span></button>
                             <button type="button" class="filter-tab" data-filter="down">Down / Standby <span
                                     class="tab-badge" id="filterCountDown">0</span></button>
+                        </div>
+
+                        <!-- Sort Order Selector -->
+                        <div class="sort-actions">
+                            <select id="selectSortRules" class="form-control sort-select" title="Sort Rules Order">
+                                <option value="port_asc" selected>Sort: Port (Low → High)</option>
+                                <option value="port_desc">Sort: Port (High → Low)</option>
+                                <option value="date_desc">Sort: Newest Added</option>
+                                <option value="date_asc">Sort: Oldest Added</option>
+                                <option value="status">Sort: Status / Health</option>
+                                <option value="category">Sort: Category (A → Z)</option>
+                            </select>
+                        </div>
+
+                        <!-- View Toggle: Cards vs Compact List -->
+                        <div class="view-toggle-group" role="group" aria-label="Rules View Mode">
+                            <button type="button" class="view-toggle-btn active" id="btnViewCards" title="Card View (Default)">
+                                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <rect x="3" y="3" width="7" height="7" rx="1.5"></rect>
+                                    <rect x="14" y="3" width="7" height="7" rx="1.5"></rect>
+                                    <rect x="14" y="14" width="7" height="7" rx="1.5"></rect>
+                                    <rect x="3" y="14" width="7" height="7" rx="1.5"></rect>
+                                </svg>
+                                <span>Cards</span>
+                            </button>
+                            <button type="button" class="view-toggle-btn" id="btnViewList" title="Compact List View">
+                                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <line x1="8" y1="6" x2="21" y2="6"></line>
+                                    <line x1="8" y1="12" x2="21" y2="12"></line>
+                                    <line x1="8" y1="18" x2="21" y2="18"></line>
+                                    <line x1="3" y1="6" x2="3.01" y2="6"></line>
+                                    <line x1="3" y1="12" x2="3.01" y2="12"></line>
+                                    <line x1="3" y1="18" x2="3.01" y2="18"></line>
+                                </svg>
+                                <span>List</span>
+                            </button>
                         </div>
 
                         <div class="batch-actions">
@@ -1573,6 +1609,17 @@
                             <option value="tcp">TCP Only</option>
                             <option value="udp">UDP Only</option>
                         </select>
+                    </div>
+                </div>
+
+                <div class="form-group" style="margin-bottom: 16px;">
+                    <label for="formCategory">Category / Group <span style="font-size:0.75rem; color:var(--text-muted); font-weight:normal;">(Optional - for grouping ports with divider lines)</span></label>
+                    <div class="input-with-icon">
+                        <svg class="input-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+                        </svg>
+                        <input type="text" id="formCategory" class="form-control" placeholder="e.g. Tehran Tunnels, VIP Users, Games (leave empty for none)" maxlength="48" autocomplete="off" list="categoryDatalist">
+                        <datalist id="categoryDatalist"></datalist>
                     </div>
                 </div>
 

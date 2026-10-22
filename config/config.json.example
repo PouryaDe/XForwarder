@@ -26,6 +26,7 @@
       "id": "rule-2023",
       "port": 2023,
       "protocol": "both",
+      "category": "",
       "active_priority": 1,
       "force_override": 0,
       "destinations": [

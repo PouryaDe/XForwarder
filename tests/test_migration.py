@@ -206,6 +206,46 @@ class TestXForwarderMigration(unittest.TestCase):
         self.assertEqual(migrated_empty["web"]["ssl_cert"], "")
         self.assertEqual(migrated_empty["web"]["ssl_key"], "")
 
+    def test_rule_category_and_created_at_migration(self):
+        """Verifies that rule category and created_at timestamps are normalized and defaulted properly."""
+        raw_cfg = {
+            "rules": [
+                {
+                    "port": 443,
+                    "destinations": [{"target": "1.1.1.1"}],
+                    # Missing category and created_at
+                },
+                {
+                    "port": 80,
+                    "category": "  VIP Clients  ",
+                    "created_at": 1700000000,
+                    "destinations": [{"target": "1.0.0.1"}]
+                },
+                {
+                    "port": 8080,
+                    "category": "x" * 60,  # Exceeds max 48 characters
+                    "destinations": [{"target": "8.8.8.8"}]
+                }
+            ]
+        }
+        migrated, modified = XForwarderEngine.migrate_and_normalize_config(raw_cfg)
+        self.assertTrue(modified)
+        rules = migrated["rules"]
+
+        # Rule 1: missing category defaults to "", created_at is populated with 0.0
+        self.assertEqual(rules[0]["category"], "")
+        self.assertIsInstance(rules[0]["created_at"], float)
+        self.assertEqual(rules[0]["created_at"], 0.0)
+
+        # Rule 2: stripped category, preserved timestamp
+        self.assertEqual(rules[1]["category"], "VIP Clients")
+        self.assertEqual(rules[1]["created_at"], 1700000000.0)
+
+        # Rule 3: truncated category to max 48 chars
+        self.assertEqual(len(rules[2]["category"]), 48)
+        self.assertEqual(rules[2]["category"], "x" * 48)
+
 
 if __name__ == "__main__":
     unittest.main()
+

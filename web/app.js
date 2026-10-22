@@ -9,6 +9,8 @@ let lastRuntime = {};
 let pollTimer = null;
 let searchQuery = "";
 let activeFilter = "all";
+let currentViewMode = localStorage.getItem("xfwd_rules_view") || "cards";
+let currentSort = localStorage.getItem("xfwd_rules_sort") || "port_asc";
 let previousPortVal = "";
 let confirmResolve = null;
 
@@ -43,6 +45,11 @@ const filterCountP1 = document.getElementById("filterCountP1");
 const filterCountP2 = document.getElementById("filterCountP2");
 const filterCountDown = document.getElementById("filterCountDown");
 const batchSelect = document.getElementById("batchOverrideSelect");
+const selectSortRules = document.getElementById("selectSortRules");
+const btnViewCards = document.getElementById("btnViewCards");
+const btnViewList = document.getElementById("btnViewList");
+const formCategory = document.getElementById("formCategory");
+const categoryDatalist = document.getElementById("categoryDatalist");
 
 // Header System Resource Elements
 const ramText = document.getElementById("ramText");
@@ -599,6 +606,7 @@ async function fetchStatus() {
         const cfg = data.config || {};
         lastRuntime = data.runtime || {};
         currentRules = cfg.rules || [];
+        updateCategoryDatalist(currentRules);
 
         // Reconcile pending optimistic overrides to prevent UI flicker during background polling
         const now = Date.now();
@@ -1172,6 +1180,53 @@ function copyIpToClipboard(ipText, btnEl) {
 
 let lastRenderedRulesFingerprint = "";
 
+// Helper to dynamically populate category autocompletion datalist
+function updateCategoryDatalist(rules) {
+    const dl = document.getElementById("categoryDatalist");
+    if (!dl || !rules) return;
+    const cats = new Set();
+    rules.forEach(r => {
+        const c = String(r.category || "").trim();
+        if (c) cats.add(c);
+    });
+    dl.innerHTML = Array.from(cats).sort().map(c => `<option value="${escapeHtml(c)}">`).join("");
+}
+
+// Helper to sort rules based on active sort selector
+function sortRulesList(rulesList, sortMode, rulesState) {
+    const copy = [...rulesList];
+    switch (sortMode) {
+        case "port_desc":
+            return copy.sort((a, b) => (Number(b.port) || 0) - (Number(a.port) || 0));
+        case "date_desc":
+            return copy.sort((a, b) => (Number(b.created_at) || 0) - (Number(a.created_at) || 0) || ((Number(a.port) || 0) - (Number(b.port) || 0)));
+        case "date_asc":
+            return copy.sort((a, b) => (Number(a.created_at) || 0) - (Number(b.created_at) || 0) || ((Number(a.port) || 0) - (Number(b.port) || 0)));
+        case "status":
+            return copy.sort((a, b) => {
+                const aState = (rulesState[String(a.id || `rule-${a.port}`)] || {}).dest_stats || {};
+                const bState = (rulesState[String(b.id || `rule-${b.port}`)] || {}).dest_stats || {};
+                const aStat = aState[`prio_${a.active_priority || 1}`] || {};
+                const bStat = bState[`prio_${b.active_priority || 1}`] || {};
+                const aScore = aStat.status === 'healthy' ? 0 : (aStat.status ? 1 : 2);
+                const bScore = bStat.status === 'healthy' ? 0 : (bStat.status ? 1 : 2);
+                return aScore - bScore || ((Number(a.port) || 0) - (Number(b.port) || 0));
+            });
+        case "category":
+            return copy.sort((a, b) => {
+                const catA = String(a.category || "").toLowerCase();
+                const catB = String(b.category || "").toLowerCase();
+                if (!catA && catB) return 1;
+                if (catA && !catB) return -1;
+                const cmp = catA.localeCompare(catB);
+                return cmp !== 0 ? cmp : ((Number(a.port) || 0) - (Number(b.port) || 0));
+            });
+        case "port_asc":
+        default:
+            return copy.sort((a, b) => (Number(a.port) || 0) - (Number(b.port) || 0));
+    }
+}
+
 function computeRulesFingerprint(filteredRules, rulesState) {
     return filteredRules.map(r => {
         const rId = String(r.id || `rule-${r.port}`);
@@ -1182,11 +1237,279 @@ function computeRulesFingerprint(filteredRules, rulesState) {
             const st = destStats[`prio_${p}`] || {};
             return `${p}:${d.type}:${d.target}:${d.port}:${d.proxy_protocol}:${d.comment || ''}:${st.status}:${st.latency_ms}:${st.packet_loss}:${st.composite_score || ''}:${st.reason || ''}`;
         }).join(";");
-        return `${rId}|${r.port}|${r.protocol}|${r.comment || ''}|${r.active_priority}|${r.force_override}|${rState.cooldown_remaining || 0}|${rState.is_flapping || false}|${destsStr}`;
-    }).join("##") + `__f:${activeFilter}__s:${searchQuery}`;
+        return `${rId}|${r.port}|${r.protocol}|${r.category || ''}|${r.created_at || 0}|${r.comment || ''}|${r.active_priority}|${r.force_override}|${rState.cooldown_remaining || 0}|${rState.is_flapping || false}|${destsStr}`;
+    }).join("##") + `__f:${activeFilter}__s:${searchQuery}__v:${currentViewMode}__srt:${currentSort}`;
 }
 
-// Render Rule Cards with Filtering and Search
+// Render individual Rule Card (Card View)
+function renderRuleCard(rule, rulesState) {
+    const ruleId = String(rule.id || `rule-${rule.port}`);
+    const encodedId = encodeURIComponent(ruleId);
+    const rState = rulesState[ruleId] || {};
+    const destStats = rState.dest_stats || {};
+    const activePriority = rule.active_priority || 1;
+    const forceOverride = rule.force_override || 0;
+
+    const sortedDests = (rule.destinations && rule.destinations.length > 0)
+        ? [...rule.destinations].sort((a, b) => (a.priority || 1) - (b.priority || 1))
+        : [{ priority: 1, type: 'haproxy', target: 'Not configured', port: rule.port }];
+
+    const copyPortSvg = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>`;
+
+    // Build dynamic mode buttons for testing (Auto Failover vs Force Priority)
+    const modeButtonsHtml = [
+        `<button type="button" class="btn-mode-pill ${forceOverride === 0 ? 'is-active auto' : ''}" onclick="handleOverrideChange(decodeURIComponent('${encodedId}'), 0)" title="Automatic Multi-Path Failover (Routes in order of healthy priorities)">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+            <span>Auto Failover</span>
+        </button>`
+    ];
+
+    sortedDests.forEach(d => {
+        const p = d.priority || 1;
+        const isForcedThis = (forceOverride === p);
+        const dType = escapeHtml(String(d.type || 'haproxy').toUpperCase());
+        modeButtonsHtml.push(`
+            <button type="button" class="btn-mode-pill ${isForcedThis ? 'is-active forced' : ''}" onclick="handleOverrideChange(decodeURIComponent('${encodedId}'), ${p})" title="Manually force #${p} (${dType}) for testing">
+                <span class="pill-dot"></span>
+                <span>Force #${p}</span>
+            </button>
+        `);
+    });
+
+    // Build dynamic paths list (stacked vertically by priority order)
+    const pathsHtml = sortedDests.map((dest, destIndex) => {
+        const prio = dest.priority || (destIndex + 1);
+        const isPrimary = prio === 1;
+        const isActive = prio === activePriority;
+        const isFailover = isActive && !isPrimary;
+
+        const stat = destStats[`prio_${prio}`] || {};
+        const isHealthy = (stat.status === 'healthy');
+        const isDown = (stat.status === 'failed' || stat.status === 'down' || (stat.packet_loss !== undefined && parseInt(stat.packet_loss) >= 100));
+
+        let statusLabel = 'STANDBY';
+        let statusClass = 'status-standby';
+        if (isHealthy) {
+            statusLabel = 'HEALTHY';
+            statusClass = 'status-healthy';
+        } else if (isDown) {
+            statusLabel = 'DOWN';
+            statusClass = 'status-failed';
+        } else if (stat.status) {
+            statusLabel = String(stat.status).toUpperCase();
+        }
+
+        const rawTarget = String(dest.target || '');
+        const targetDisplay = rawTarget.includes(':') ? `[${escapeHtml(rawTarget)}]` : escapeHtml(rawTarget);
+        const latencyBadge = formatLatencyBadge(stat);
+        const tagClass = getPrioTagClass(prio);
+
+        // Quick path action button
+        let pathActionHtml = '';
+        if (forceOverride === prio) {
+            pathActionHtml = `
+                <button type="button" class="btn-path-test is-forced" onclick="handleOverrideChange(decodeURIComponent('${encodedId}'), 0)" title="Currently forced manually. Click to return to Automatic Failover.">
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 14 14"/></svg>
+                    <span>Forced</span>
+                </button>
+            `;
+        } else if (!isActive) {
+            pathActionHtml = `
+                <button type="button" class="btn-path-test" onclick="handleOverrideChange(decodeURIComponent('${encodedId}'), ${prio})" title="Click to manually force #${prio} for testing">
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+                    <span>Force #${prio}</span>
+                </button>
+            `;
+        }
+
+        // Concise meta text (concise reason when down, or comment)
+        const fullReason = (stat.reason && isDown) ? String(stat.reason) : '';
+        const conciseReason = fullReason ? formatConciseReason(fullReason) : '';
+        const commentText = escapeHtml(dest.comment || '');
+        let metaText = '';
+        if (conciseReason) {
+            const prefix = commentText ? `${commentText} · ` : '';
+            metaText = `<span class="text-amber" title="${escapeHtml(fullReason)}">${prefix}${escapeHtml(conciseReason)}</span>`;
+        } else if (commentText) {
+            metaText = commentText;
+        }
+
+        const pathBoxClasses = ['path-box'];
+        if (isActive) {
+            pathBoxClasses.push(isFailover ? 'is-failover' : 'is-active');
+        }
+        if (isDown) {
+            pathBoxClasses.push('is-down');
+        }
+
+        return `
+            <div class="${pathBoxClasses.join(' ')}"
+                 draggable="true"
+                 ondragstart="handlePathDragStart(event, decodeURIComponent('${encodedId}'), ${destIndex})"
+                 ondragover="handlePathDragOver(event, decodeURIComponent('${encodedId}'), ${destIndex})"
+                 ondragleave="handlePathDragLeave(event)"
+                 ondrop="handlePathDrop(event, decodeURIComponent('${encodedId}'), ${destIndex})"
+                 ondragend="handlePathDragEnd(event)">
+                <div class="path-header">
+                    <div class="path-header-left">
+                        <span class="drag-handle" title="Drag to reorder priority">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="9" cy="6" r="1.5"/><circle cx="15" cy="6" r="1.5"/><circle cx="9" cy="12" r="1.5"/><circle cx="15" cy="12" r="1.5"/><circle cx="9" cy="18" r="1.5"/><circle cx="15" cy="18" r="1.5"/></svg>
+                        </span>
+                        <span class="path-tag ${tagClass}">#${prio}</span>
+                        <span class="path-status ${statusClass}">
+                            <span class="status-indicator"></span>
+                            ${statusLabel}
+                        </span>
+                    </div>
+                    <div class="path-header-right">
+                        <button type="button" class="btn-path-test" onclick="runLivePacketLossTest(decodeURIComponent('${encodedId}'), decodeURIComponent('${encodeURIComponent(rawTarget)}'), ${dest.port || rule.port}, '${dest.type || 'haproxy'}', this)" title="Test live ping, latency and packet loss to this destination">
+                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+                            <span>Test Loss</span>
+                        </button>
+                        ${pathActionHtml}
+                    </div>
+                </div>
+                <div class="path-dest">
+                    <span>${escapeHtml(String(dest.type || 'haproxy').toUpperCase())}: ${targetDisplay}:${escapeHtml(dest.port || rule.port)}</span>
+                    <button class="btn-copy" onclick="copyText(decodeURIComponent('${encodeURIComponent(rawTarget)}'))" title="Copy Destination IP">${copyPortSvg}</button>
+                </div>
+                <div class="path-meta">
+                    <span>${metaText}</span>
+                    ${latencyBadge}
+                </div>
+            </div>
+        `;
+    }).join('');
+
+    return `
+        <div class="rule-card" id="rule-card-${encodedId}">
+            <div class="rule-top">
+                <div class="port-badge">
+                    <span class="port-num">:${escapeHtml(rule.port)}</span>
+                    <button class="btn-copy" onclick="copyText(decodeURIComponent('${encodeURIComponent(rule.port)}'))" title="Copy Port Number">${copyPortSvg}</button>
+                    <span class="proto-pill">${escapeHtml(formatProtoBadge(rule.protocol))}</span>
+                    ${rule.category ? `<span class="rule-category-pill" title="Category: ${escapeHtml(rule.category)}"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>${escapeHtml(rule.category)}</span>` : ''}
+                    ${rState.cooldown_remaining > 0 ? `<span class="badge-cooldown" title="Anti-Flap Cooldown active (Route held stable)"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 14 14"/></svg>Hold ${rState.cooldown_remaining}s</span>` : ''}
+                    ${rState.is_flapping ? `<span class="badge-flapping" title="Repeated route flapping detected. Cooldown extended."><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>Flap Guard</span>` : ''}
+                </div>
+                <div class="rule-actions">
+                    <button class="btn btn-secondary btn-sm" onclick="editRule(decodeURIComponent('${encodedId}'))" title="Edit Rule">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+                    </button>
+                    <button class="btn btn-secondary btn-sm" onclick="deleteRule(decodeURIComponent('${encodedId}'))" title="Delete Rule">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                    </button>
+                </div>
+            </div>
+
+            <div class="rule-test-bar">
+                <div class="test-bar-label">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+                    <span>Forwarding:</span>
+                </div>
+                <div class="mode-btn-group">
+                    ${modeButtonsHtml.join('')}
+                </div>
+            </div>
+
+            <div class="paths-grid">
+                ${pathsHtml}
+            </div>
+        </div>
+    `;
+}
+
+// Render individual Rule Row (Compact List View)
+function renderRuleListRow(rule, rulesState) {
+    const ruleId = String(rule.id || `rule-${rule.port}`);
+    const encodedId = encodeURIComponent(ruleId);
+    const rState = rulesState[ruleId] || {};
+    const destStats = rState.dest_stats || {};
+    const activePriority = rule.active_priority || 1;
+    const forceOverride = rule.force_override || 0;
+
+    const sortedDests = (rule.destinations && rule.destinations.length > 0)
+        ? [...rule.destinations].sort((a, b) => (a.priority || 1) - (b.priority || 1))
+        : [{ priority: 1, type: 'haproxy', target: 'Not configured', port: rule.port }];
+
+    const copyPortSvg = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>`;
+
+    // Build concise destination path pills
+    const pathsHtml = sortedDests.map((dest, idx) => {
+        const prio = dest.priority || (idx + 1);
+        const isActive = prio === activePriority;
+        const isPrimary = prio === 1;
+        const isFailover = isActive && !isPrimary;
+        const stat = destStats[`prio_${prio}`] || {};
+        const isHealthy = (stat.status === 'healthy');
+        const isDown = (stat.status === 'failed' || stat.status === 'down' || (stat.packet_loss !== undefined && parseInt(stat.packet_loss) >= 100));
+
+        let pillClass = 'rule-list-path-pill';
+        if (isActive) pillClass += (isFailover ? ' is-failover' : ' is-active');
+        if (isDown) pillClass += ' is-down';
+
+        let latText = '';
+        if (stat.latency_ms !== null && stat.latency_ms !== undefined && stat.latency_ms > 0) {
+            latText = ` · ${stat.latency_ms}ms`;
+        }
+
+        const rawTarget = String(dest.target || '');
+        const targetDisplay = rawTarget.includes(':') ? `[${escapeHtml(rawTarget)}]` : escapeHtml(rawTarget);
+
+        let dotColor = '#6EE7B7';
+        if (isDown) dotColor = '#FB7185';
+        else if (!isHealthy) dotColor = '#FBBF6B';
+
+        return `
+            <div class="${pillClass}" title="Priority #${prio}: ${escapeHtml(String(dest.type || 'haproxy').toUpperCase())} ${targetDisplay}:${escapeHtml(dest.port || rule.port)}${latText}">
+                <span style="width:7px; height:7px; border-radius:50%; background:${dotColor}; display:inline-block;"></span>
+                <span style="font-weight:700; color:var(--text-primary); font-family:var(--font-mono);">#${prio}</span>
+                <span class="font-mono" style="color:var(--text-secondary); font-size:0.75rem;">${targetDisplay}:${escapeHtml(dest.port || rule.port)}</span>
+                ${latText ? `<span class="font-mono" style="color:var(--accent-mint); font-size:0.72rem;">${latText}</span>` : ''}
+                ${isActive ? `<span style="font-size:0.68rem; font-weight:700; color:${isFailover ? 'var(--accent-amber)' : 'var(--accent-mint)'}; text-transform:uppercase;">${isFailover ? 'FAILOVER' : 'ACTIVE'}</span>` : ''}
+            </div>
+        `;
+    }).join("");
+
+    const activeDest = sortedDests.find(d => (d.priority || 1) === activePriority) || sortedDests[0];
+    const testTarget = String(activeDest ? activeDest.target : '');
+    const testPort = activeDest ? (activeDest.port || rule.port) : rule.port;
+    const testType = activeDest ? (activeDest.type || 'haproxy') : 'haproxy';
+
+    return `
+        <div class="rule-list-row" id="rule-card-${encodedId}">
+            <div class="rule-list-left">
+                <span class="rule-list-port">:${escapeHtml(rule.port)}</span>
+                <button class="btn-copy" onclick="copyText(decodeURIComponent('${encodeURIComponent(rule.port)}'))" title="Copy Port">${copyPortSvg}</button>
+                <span class="proto-pill">${escapeHtml(formatProtoBadge(rule.protocol))}</span>
+                ${rule.category ? `<span class="rule-category-pill" title="Category: ${escapeHtml(rule.category)}"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>${escapeHtml(rule.category)}</span>` : ''}
+                ${rState.cooldown_remaining > 0 ? `<span class="badge-cooldown" style="font-size:0.68rem; padding:2px 6px;">Hold ${rState.cooldown_remaining}s</span>` : ''}
+                ${rState.is_flapping ? `<span class="badge-flapping" style="font-size:0.68rem; padding:2px 6px;">Flap</span>` : ''}
+            </div>
+
+            <div class="rule-list-mid">
+                <div class="rule-list-paths">
+                    ${pathsHtml}
+                </div>
+            </div>
+
+            <div class="rule-list-right">
+                <button type="button" class="btn-path-test" style="height:32px; padding:0 10px;" onclick="runLivePacketLossTest(decodeURIComponent('${encodedId}'), decodeURIComponent('${encodeURIComponent(testTarget)}'), ${testPort}, '${testType}', this)" title="Test live latency & packet loss">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+                    <span>Test</span>
+                </button>
+                <button class="btn btn-secondary btn-sm" onclick="editRule(decodeURIComponent('${encodedId}'))" title="Edit Rule">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+                </button>
+                <button class="btn btn-secondary btn-sm" onclick="deleteRule(decodeURIComponent('${encodedId}'))" title="Delete Rule">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                </button>
+            </div>
+        </div>
+    `;
+}
+
+// Render Rule Cards/Rows with Filtering, Search, Sorting, and Categorization Dividers
 function renderRules(rules, runtime) {
     if (draggedPathInfo !== null) {
         return; // Don't interrupt user during drag & drop priority reordering
@@ -1194,8 +1517,9 @@ function renderRules(rules, runtime) {
 
     if (!rules || rules.length === 0) {
         lastRenderedRulesFingerprint = "__empty__";
+        rulesContainer.className = "rules-container";
         rulesContainer.innerHTML = `
-            <div style="text-align:center;padding:48px 20px;color:var(--text-secondary);border:1px dashed var(--border-color);border-radius:14px;">
+            <div style="text-align:center;padding:48px 20px;color:var(--text-secondary);border:1px dashed var(--border-color);border-radius:14px;width:100%;grid-column:1/-1;">
                 <p style="font-size:1.1rem;margin-bottom:8px;">No port forwarding rules configured yet.</p>
                 <p style="font-size:0.85rem;color:var(--text-muted);">Click "Add Port Rule" above to specify your ports and priority uplinks.</p>
             </div>
@@ -1211,13 +1535,15 @@ function renderRules(rules, runtime) {
         const portStr = String(rule.port || "");
         const protoStr = String(rule.protocol || "both").toLowerCase();
         const protoSearchStr = protoStr === "both" ? "tcp udp both tcp+udp" : protoStr;
+        const catStr = String(rule.category || "").toLowerCase();
 
-        // 1. Search Query Check across all destinations
+        // 1. Search Query Check across ports, IDs, categories, and all destinations
         if (searchQuery) {
             const matchesBasic = 
                 portStr.includes(searchQuery) ||
                 ruleId.includes(searchQuery) ||
-                protoSearchStr.includes(searchQuery);
+                protoSearchStr.includes(searchQuery) ||
+                catStr.includes(searchQuery);
             const matchesDest = (rule.destinations || []).some(d =>
                 String(d.target || "").toLowerCase().includes(searchQuery) ||
                 String(d.comment || "").toLowerCase().includes(searchQuery) ||
@@ -1245,9 +1571,10 @@ function renderRules(rules, runtime) {
     });
 
     if (filtered.length === 0) {
-        lastRenderedRulesFingerprint = `__nofilter__${activeFilter}__${searchQuery}`;
+        lastRenderedRulesFingerprint = `__nofilter__${activeFilter}__${searchQuery}__v:${currentViewMode}__srt:${currentSort}`;
+        rulesContainer.className = "rules-container";
         rulesContainer.innerHTML = `
-            <div style="text-align:center;padding:40px 20px;color:var(--text-secondary);border:1px dashed var(--border-color);border-radius:14px;">
+            <div style="text-align:center;padding:40px 20px;color:var(--text-secondary);border:1px dashed var(--border-color);border-radius:14px;width:100%;grid-column:1/-1;">
                 <p style="font-size:1rem;margin-bottom:6px;">No rules matching your search or active filter.</p>
                 <p style="font-size:0.8rem;color:var(--text-muted);">Try clearing the search input or switching filter tabs.</p>
             </div>
@@ -1255,188 +1582,68 @@ function renderRules(rules, runtime) {
         return;
     }
 
-    // Smart Fingerprint Check: If rules and stats haven't changed, skip DOM recreation
+    // Smart Fingerprint Check: If rules, sort, view mode, and stats haven't changed, skip DOM recreation
     const currentFingerprint = computeRulesFingerprint(filtered, rulesState);
     if (currentFingerprint === lastRenderedRulesFingerprint) {
         return;
     }
     lastRenderedRulesFingerprint = currentFingerprint;
 
-    rulesContainer.innerHTML = filtered.map(rule => {
-        const ruleId = String(rule.id || `rule-${rule.port}`);
-        const encodedId = encodeURIComponent(ruleId);
-        const rState = rulesState[ruleId] || {};
-        const destStats = rState.dest_stats || {};
-        const activePriority = rule.active_priority || 1;
-        const forceOverride = rule.force_override || 0;
+    // Apply Sort Order
+    const sorted = sortRulesList(filtered, currentSort, rulesState);
 
-        const sortedDests = (rule.destinations && rule.destinations.length > 0)
-            ? [...rule.destinations].sort((a, b) => (a.priority || 1) - (b.priority || 1))
-            : [{ priority: 1, type: 'haproxy', target: 'Not configured', port: rule.port }];
+    // Check if any rule in the active set has a non-empty category
+    const hasAnyCategory = sorted.some(r => Boolean((r.category || "").trim()));
 
-        const copyPortSvg = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>`;
-
-        // Build dynamic mode buttons for testing (Auto Failover vs Force Priority)
-        const modeButtonsHtml = [
-            `<button type="button" class="btn-mode-pill ${forceOverride === 0 ? 'is-active auto' : ''}" onclick="handleOverrideChange(decodeURIComponent('${encodedId}'), 0)" title="Automatic Multi-Path Failover (Routes in order of healthy priorities)">
-                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-                <span>Auto Failover</span>
-            </button>`
-        ];
-
-        sortedDests.forEach(d => {
-            const p = d.priority || 1;
-            const isForcedThis = (forceOverride === p);
-            const dType = escapeHtml(String(d.type || 'haproxy').toUpperCase());
-            modeButtonsHtml.push(`
-                <button type="button" class="btn-mode-pill ${isForcedThis ? 'is-active forced' : ''}" onclick="handleOverrideChange(decodeURIComponent('${encodedId}'), ${p})" title="Manually force #${p} (${dType}) for testing">
-                    <span class="pill-dot"></span>
-                    <span>Force #${p}</span>
-                </button>
-            `);
+    if (!hasAnyCategory) {
+        // Default layout: No categories assigned. Render directly without divider headers!
+        const itemsHtml = sorted.map(rule => currentViewMode === "list" ? renderRuleListRow(rule, rulesState) : renderRuleCard(rule, rulesState)).join("");
+        rulesContainer.className = currentViewMode === "list" ? "rules-list-container" : "rules-container";
+        rulesContainer.innerHTML = itemsHtml;
+    } else {
+        // Categorized layout: Group by category and render with visual divider lines!
+        const groups = new Map();
+        sorted.forEach(r => {
+            const cat = (r.category || "").trim();
+            const key = cat ? cat : "__uncategorized__";
+            if (!groups.has(key)) groups.set(key, []);
+            groups.get(key).push(r);
         });
 
-        // Build dynamic paths list (stacked vertically by priority order)
-        const pathsHtml = sortedDests.map((dest, destIndex) => {
-            const prio = dest.priority || (destIndex + 1);
-            const isPrimary = prio === 1;
-            const isActive = prio === activePriority;
-            const isFailover = isActive && !isPrimary;
+        const sortedKeys = Array.from(groups.keys()).sort((a, b) => {
+            if (a === "__uncategorized__") return 1;
+            if (b === "__uncategorized__") return -1;
+            return a.localeCompare(b);
+        });
 
-            const stat = destStats[`prio_${prio}`] || {};
-            const isHealthy = (stat.status === 'healthy');
-            const isDown = (stat.status === 'failed' || stat.status === 'down' || (stat.packet_loss !== undefined && parseInt(stat.packet_loss) >= 100));
-
-            let statusLabel = 'STANDBY';
-            let statusClass = 'status-standby';
-            if (isHealthy) {
-                statusLabel = 'HEALTHY';
-                statusClass = 'status-healthy';
-            } else if (isDown) {
-                statusLabel = 'DOWN';
-                statusClass = 'status-failed';
-            } else if (stat.status) {
-                statusLabel = String(stat.status).toUpperCase();
-            }
-
-            const rawTarget = String(dest.target || '');
-            const targetDisplay = rawTarget.includes(':') ? `[${escapeHtml(rawTarget)}]` : escapeHtml(rawTarget);
-            const latencyBadge = formatLatencyBadge(stat);
-            const tagClass = getPrioTagClass(prio);
-
-            // Quick path action button
-            let pathActionHtml = '';
-            if (forceOverride === prio) {
-                pathActionHtml = `
-                    <button type="button" class="btn-path-test is-forced" onclick="handleOverrideChange(decodeURIComponent('${encodedId}'), 0)" title="Currently forced manually. Click to return to Automatic Failover.">
-                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 14 14"/></svg>
-                        <span>Forced</span>
-                    </button>
-                `;
-            } else if (!isActive) {
-                pathActionHtml = `
-                    <button type="button" class="btn-path-test" onclick="handleOverrideChange(decodeURIComponent('${encodedId}'), ${prio})" title="Click to manually force #${prio} for testing">
-                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-                        <span>Force #${prio}</span>
-                    </button>
-                `;
-            }
-
-            // Concise meta text (concise reason when down, or comment)
-            const fullReason = (stat.reason && isDown) ? String(stat.reason) : '';
-            const conciseReason = fullReason ? formatConciseReason(fullReason) : '';
-            const commentText = escapeHtml(dest.comment || '');
-            let metaText = '';
-            if (conciseReason) {
-                const prefix = commentText ? `${commentText} · ` : '';
-                metaText = `<span class="text-amber" title="${escapeHtml(fullReason)}">${prefix}${escapeHtml(conciseReason)}</span>`;
-            } else if (commentText) {
-                metaText = commentText;
-            }
-
-            const pathBoxClasses = ['path-box'];
-            if (isActive) {
-                pathBoxClasses.push(isFailover ? 'is-failover' : 'is-active');
-            }
-            if (isDown) {
-                pathBoxClasses.push('is-down');
-            }
+        rulesContainer.className = ""; // Container wraps category sections
+        rulesContainer.innerHTML = sortedKeys.map(catKey => {
+            const groupRules = groups.get(catKey);
+            const isUncat = catKey === "__uncategorized__";
+            const catTitle = isUncat ? "General / Uncategorized" : escapeHtml(catKey);
+            const itemsHtml = groupRules.map(r => currentViewMode === "list" ? renderRuleListRow(r, rulesState) : renderRuleCard(r, rulesState)).join("");
 
             return `
-                <div class="${pathBoxClasses.join(' ')}"
-                     draggable="true"
-                     ondragstart="handlePathDragStart(event, decodeURIComponent('${encodedId}'), ${destIndex})"
-                     ondragover="handlePathDragOver(event, decodeURIComponent('${encodedId}'), ${destIndex})"
-                     ondragleave="handlePathDragLeave(event)"
-                     ondrop="handlePathDrop(event, decodeURIComponent('${encodedId}'), ${destIndex})"
-                     ondragend="handlePathDragEnd(event)">
-                    <div class="path-header">
-                        <div class="path-header-left">
-                            <span class="drag-handle" title="Drag to reorder priority">
-                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="9" cy="6" r="1.5"/><circle cx="15" cy="6" r="1.5"/><circle cx="9" cy="12" r="1.5"/><circle cx="15" cy="12" r="1.5"/><circle cx="9" cy="18" r="1.5"/><circle cx="15" cy="18" r="1.5"/></svg>
+                <div class="rule-category-section">
+                    <div class="rule-category-header">
+                        <div class="rule-category-title-group">
+                            <span class="rule-category-icon">
+                                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+                                </svg>
                             </span>
-                            <span class="path-tag ${tagClass}">#${prio}</span>
-                            <span class="path-status ${statusClass}">
-                                <span class="status-indicator"></span>
-                                ${statusLabel}
-                            </span>
+                            <span class="rule-category-name">${catTitle}</span>
+                            <span class="rule-category-count">${groupRules.length} Port${groupRules.length === 1 ? '' : 's'}</span>
                         </div>
-                        <div class="path-header-right">
-                            <button type="button" class="btn-path-test" onclick="runLivePacketLossTest(decodeURIComponent('${encodedId}'), decodeURIComponent('${encodeURIComponent(rawTarget)}'), ${dest.port || rule.port}, '${dest.type || 'haproxy'}', this)" title="Test live ping, latency and packet loss to this destination">
-                                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
-                                <span>Test Loss</span>
-                            </button>
-                            ${pathActionHtml}
-                        </div>
+                        <div class="rule-category-line"></div>
                     </div>
-                    <div class="path-dest">
-                        <span>${escapeHtml(String(dest.type || 'haproxy').toUpperCase())}: ${targetDisplay}:${escapeHtml(dest.port || rule.port)}</span>
-                        <button class="btn-copy" onclick="copyText(decodeURIComponent('${encodeURIComponent(rawTarget)}'))" title="Copy Destination IP">${copyPortSvg}</button>
-                    </div>
-                    <div class="path-meta">
-                        <span>${metaText}</span>
-                        ${latencyBadge}
+                    <div class="${currentViewMode === 'list' ? 'rules-list-container' : 'rules-container'}">
+                        ${itemsHtml}
                     </div>
                 </div>
             `;
-        }).join('');
-
-        return `
-            <div class="rule-card" id="rule-card-${encodedId}">
-                <div class="rule-top">
-                    <div class="port-badge">
-                        <span class="port-num">:${escapeHtml(rule.port)}</span>
-                        <button class="btn-copy" onclick="copyText(decodeURIComponent('${encodeURIComponent(rule.port)}'))" title="Copy Port Number">${copyPortSvg}</button>
-                        <span class="proto-pill">${escapeHtml(formatProtoBadge(rule.protocol))}</span>
-                        ${rState.cooldown_remaining > 0 ? `<span class="badge-cooldown" title="Anti-Flap Cooldown active (Route held stable)"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 14 14"/></svg>Hold ${rState.cooldown_remaining}s</span>` : ''}
-                        ${rState.is_flapping ? `<span class="badge-flapping" title="Repeated route flapping detected. Cooldown extended."><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>Flap Guard</span>` : ''}
-                    </div>
-                    <div class="rule-actions">
-                        <button class="btn btn-secondary btn-sm" onclick="editRule(decodeURIComponent('${encodedId}'))" title="Edit Rule">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
-                        </button>
-                        <button class="btn btn-secondary btn-sm" onclick="deleteRule(decodeURIComponent('${encodedId}'))" title="Delete Rule">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-                        </button>
-                    </div>
-                </div>
-
-                <div class="rule-test-bar">
-                    <div class="test-bar-label">
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
-                        <span>Forwarding:</span>
-                    </div>
-                    <div class="mode-btn-group">
-                        ${modeButtonsHtml.join('')}
-                    </div>
-                </div>
-
-                <div class="paths-grid">
-                    ${pathsHtml}
-                </div>
-            </div>
-        `;
-    }).join("");
+        }).join("");
+    }
 }
 
 // ── Drag & Drop Priority Reordering Handlers (Rules List) ──
@@ -1718,6 +1925,46 @@ filterTabs.forEach(tab => {
         renderRules(currentRules, lastRuntime);
     });
 });
+
+// View Mode Toggle (Cards vs Compact List)
+if (btnViewCards && btnViewList) {
+    function setViewMode(mode) {
+        currentViewMode = mode;
+        try { localStorage.setItem("xfwd_rules_view", mode); } catch (_) {}
+        if (mode === "list") {
+            btnViewList.classList.add("active");
+            btnViewCards.classList.remove("active");
+        } else {
+            btnViewCards.classList.add("active");
+            btnViewList.classList.remove("active");
+        }
+        lastRenderedRulesFingerprint = "";
+        renderRules(currentRules, lastRuntime);
+    }
+
+    btnViewCards.addEventListener("click", () => setViewMode("cards"));
+    btnViewList.addEventListener("click", () => setViewMode("list"));
+
+    // Set initial button active state based on persisted preference
+    if (currentViewMode === "list") {
+        btnViewList.classList.add("active");
+        btnViewCards.classList.remove("active");
+    } else {
+        btnViewCards.classList.add("active");
+        btnViewList.classList.remove("active");
+    }
+}
+
+// Rules Sorting
+if (selectSortRules) {
+    selectSortRules.value = currentSort;
+    selectSortRules.addEventListener("change", () => {
+        currentSort = selectSortRules.value;
+        try { localStorage.setItem("xfwd_rules_sort", currentSort); } catch (_) {}
+        lastRenderedRulesFingerprint = "";
+        renderRules(currentRules, lastRuntime);
+    });
+}
 
 // Manual Refresh with Rotation Animation
 btnManualRefresh.addEventListener("click", () => {
@@ -2075,6 +2322,7 @@ btnOpenAddModal.addEventListener("click", () => {
     previousPortVal = "";
     document.getElementById("editRuleId").value = "";
     document.getElementById("formProto").value = "both";
+    if (formCategory) formCategory.value = "";
     currentModalDestinations = [
         { priority: 1, type: "haproxy", target: "", port: "", comment: "Primary Direct IPv6" },
         { priority: 2, type: "nftables", target: "", port: "", comment: "Backup Tunnel" }
@@ -2099,6 +2347,7 @@ function editRule(ruleId) {
     document.getElementById("formPort").value = r.port;
     previousPortVal = String(r.port);
     document.getElementById("formProto").value = r.protocol || "both";
+    if (formCategory) formCategory.value = r.category || "";
 
     if (r.destinations && r.destinations.length > 0) {
         currentModalDestinations = JSON.parse(JSON.stringify(r.destinations)).sort((a, b) => (a.priority || 1) - (b.priority || 1));
@@ -2170,6 +2419,9 @@ ruleForm.addEventListener("submit", async (e) => {
     const port = parseInt(document.getElementById("formPort").value);
     const proto = document.getElementById("formProto").value;
     const ruleId = document.getElementById("editRuleId").value || `rule-${port}`;
+    const category = (formCategory ? formCategory.value : "").trim();
+    const existingRule = currentRules.find(x => x.id === ruleId);
+    const createdAt = existingRule && existingRule.created_at ? existingRule.created_at : Date.now() / 1000;
 
     syncDestinationsFromDom();
 
@@ -2197,6 +2449,8 @@ ruleForm.addEventListener("submit", async (e) => {
         id: ruleId,
         port: port,
         protocol: proto,
+        category: category,
+        created_at: createdAt,
         active_priority: 1,
         force_override: 0,
         destinations: currentModalDestinations.map((d, idx) => ({

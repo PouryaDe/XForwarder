@@ -331,6 +331,27 @@ class XForwarderEngine:
                 rule["force_override"] = force_ovr
                 modified = True
 
+            # Normalize category (default empty string, max 48 chars)
+            clean_category = str(rule.get("category", "") or "").strip()[:48]
+            if "category" not in rule:
+                rule["category"] = clean_category
+                modified = True
+            elif rule.get("category") != clean_category:
+                rule["category"] = clean_category
+                modified = True
+
+            # Normalize registration timestamp (created_at)
+            try:
+                created_at = float(rule.get("created_at", 0))
+            except (ValueError, TypeError):
+                created_at = 0.0
+            if "created_at" not in rule:
+                rule["created_at"] = created_at
+                modified = True
+            elif rule.get("created_at") != created_at:
+                rule["created_at"] = created_at
+                modified = True
+
             dests = rule.get("destinations", [])
             if not isinstance(dests, list):
                 dests = []

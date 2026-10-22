@@ -1373,9 +1373,103 @@ class TestUIAndAPIEdgeCases(unittest.TestCase):
         except Exception:
             pass
 
+    def test_rule_category_and_created_at_validation(self):
+        """Verifies validate_rule properly accepts, sanitizes, and rejects rule categories and created_at timestamps."""
+        # 1. Category defaults to "" if missing
+        rule_no_cat = {
+            "port": 8443,
+            "protocol": "tcp",
+            "destinations": [{"target": "1.1.1.1"}]
+        }
+        valid, msg = validate_rule(rule_no_cat)
+        self.assertTrue(valid, msg)
+        self.assertEqual(rule_no_cat["category"], "")
+        self.assertIsInstance(rule_no_cat["created_at"], float)
+
+        # 2. Valid trimmed category
+        rule_valid_cat = {
+            "port": 8444,
+            "protocol": "tcp",
+            "category": "  VIP-Gaming Tunnels  ",
+            "destinations": [{"target": "1.1.1.1"}]
+        }
+        valid, msg = validate_rule(rule_valid_cat)
+        self.assertTrue(valid, msg)
+        self.assertEqual(rule_valid_cat["category"], "VIP-Gaming Tunnels")
+
+        # 3. Category exceeding 48 characters is rejected
+        rule_too_long = {
+            "port": 8445,
+            "protocol": "tcp",
+            "category": "A" * 49,
+            "destinations": [{"target": "1.1.1.1"}]
+        }
+        valid, msg = validate_rule(rule_too_long)
+        self.assertFalse(valid)
+        self.assertIn("exceed 48 characters", msg)
+
+        # 4. Dangerous injection characters in category are rejected
+        for bad_char in ['<script>', '"quoted"', "foo;bar", "val$var", "`cmd`"]:
+            rule_bad = {
+                "port": 8446,
+                "protocol": "tcp",
+                "category": f"Cat {bad_char}",
+                "destinations": [{"target": "1.1.1.1"}]
+            }
+            valid, msg = validate_rule(rule_bad)
+            self.assertFalse(valid, f"Expected reject for bad character '{bad_char}'")
+            self.assertIn("invalid characters", msg)
+
+        # 5. Invalid created_at is sanitized
+        rule_bad_ts = {
+            "port": 8447,
+            "protocol": "tcp",
+            "created_at": "invalid_date",
+            "destinations": [{"target": "1.1.1.1"}]
+        }
+        valid, msg = validate_rule(rule_bad_ts)
+        self.assertTrue(valid, msg)
+        self.assertIsInstance(rule_bad_ts["created_at"], float)
+
+    def test_rules_view_toggle_and_category_assets(self):
+        """Verifies presence and integrity of view toggle buttons, sort dropdown, and category DOM/CSS."""
+        web_dir = os.path.join(REPO_ROOT, "web")
+        with open(os.path.join(web_dir, "index.html"), "r", encoding="utf-8") as f:
+            html = f.read()
+        with open(os.path.join(web_dir, "style.css"), "r", encoding="utf-8") as f:
+            css = f.read()
+        with open(os.path.join(web_dir, "app.js"), "r", encoding="utf-8") as f:
+            js = f.read()
+
+        # HTML elements
+        self.assertIn('id="selectSortRules"', html)
+        self.assertIn('id="btnViewCards"', html)
+        self.assertIn('id="btnViewList"', html)
+        self.assertIn('id="formCategory"', html)
+        self.assertIn('id="categoryDatalist"', html)
+
+        # CSS classes
+        self.assertIn('.view-toggle-group', css)
+        self.assertIn('.view-toggle-btn', css)
+        self.assertIn('.rule-category-section', css)
+        self.assertIn('.rule-category-header', css)
+        self.assertIn('.rule-category-line', css)
+        self.assertIn('.rule-category-pill', css)
+        self.assertIn('.rules-list-container', css)
+        self.assertIn('.rule-list-row', css)
+
+        # JS functions and state
+        self.assertIn('xfwd_rules_view', js)
+        self.assertIn('xfwd_rules_sort', js)
+        self.assertIn('sortRulesList', js)
+        self.assertIn('renderRuleCard', js)
+        self.assertIn('renderRuleListRow', js)
+        self.assertIn('updateCategoryDatalist', js)
+
 
 if __name__ == "__main__":
     unittest.main()
+
 
 
 

@@ -1470,6 +1470,20 @@ def validate_rule(body: dict) -> Tuple[bool, str]:
         return False, "Protocol must be 'tcp', 'udp', or 'both'"
     body["protocol"] = proto
 
+    # Normalize and sanitize category (optional group name, max 48 chars)
+    category = str(body.get("category", "") or "").strip()
+    if len(category) > 48:
+        return False, "Category name must not exceed 48 characters"
+    if any(c in category for c in "<>\";`$"):
+        return False, "Category name contains invalid characters"
+    body["category"] = category
+
+    try:
+        created_at = float(body.get("created_at", 0))
+    except (ValueError, TypeError):
+        created_at = 0.0
+    body["created_at"] = created_at
+
     dests = body.get("destinations", [])
     if not isinstance(dests, list) or len(dests) == 0:
         return False, "At least one destination is required"
@@ -2090,13 +2104,20 @@ class XForwarderWebHandler(BaseHTTPRequestHandler):
                 }, 409)
                 return
 
+            now_ts = time.time()
             updated = False
             for i, r in enumerate(rules):
                 if r.get("id") == rule_id:
+                    if "created_at" in r and r.get("created_at") and not body.get("created_at"):
+                        body["created_at"] = r["created_at"]
+                    elif not body.get("created_at"):
+                        body["created_at"] = now_ts
                     rules[i] = body
                     updated = True
                     break
             if not updated:
+                if not body.get("created_at"):
+                    body["created_at"] = now_ts
                 rules.append(body)
 
             cfg["rules"] = rules

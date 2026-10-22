@@ -34,8 +34,12 @@
     "Added automatic ruleset snapshot backup to /etc/xforwarder/backups/legacy_nftables_<timestamp>.nft and handle-based collision deactivation",
     "Integrated unified relay rule discovery and 1-click import across xforwarder.sh setup wizard, Option 8 CLI menu, and CLI dispatcher",
     "Expanded Web UI discovery alert banner and service scanner to discover and import both HAProxy and NFTables rules with per-source metrics",
-    "Created test suite tests/test_nftables_parser.py with 100% passing tests and verified zero regression across all 129 tests"
+    "Created test suite tests/test_nftables_parser.py with 100% passing tests and verified zero regression across all 129 tests",
+    "Implemented web dashboard in-panel update manager with decoupled execution, service control API, and persistent polling",
+    "Implemented port view switcher (Card view default vs compact List view) with localStorage persistence",
+    "Implemented port sorting subsystem (Port Low-High, Port High-Low, Newest/Oldest registered, Status, and Category A-Z)",
+    "Implemented port grouping & categorization with illuminated divider lines, category badge pills, and autocomplete datalist suggestions"
   ],
   "next_steps": [],
-  "notes": "NFTables active rules auto-discovery, safe backup, and collision deactivation completed and verified."
+  "notes": "Port rules organization, view toggle (cards default), sorting, and categorization completed with 100% unit tests passing."
 }
