@@ -1,7 +1,7 @@
 # Graph Report - Forward-Manager  (2026-10-23)
 
 ## Corpus Check
-- 65 files · ~84,562 words
+- 65 files · ~84,587 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 8 file(s) not represented in the graph (top: .service 4, (none) 2, .example 1)
 
@@ -11,7 +11,7 @@
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `bd4de515`
+- Built from commit: `3765fe52`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -288,7 +288,7 @@ Nodes (6): formatConciseReason(), formatLatencyBadge(), formatProtoBadge(), getP
 _Questions this graph is uniquely positioned to answer:_
 
 - **Why does `XForwarderEngine` connect `XForwarderEngine` to `TestPerformanceAndOptimizations`, `os`, `TestFastFailoverAndAntiFlap`, `TestNginxStreamEngine`, `.migrate_and_normalize_config`, `.check_destination`, `.test_nftables_dual_stack_rules_generation`, `TestEngineProbes`, `LossMonitorScheduler`, `.do_POST`, `sync_system_rules`, `TestUIAndAPIEdgeCases`, `3. Architecture & Solution Implemented`, `web_server.py`?**
-  _High betweenness centrality (0.301) - this node is a cross-community bridge._
+  _High betweenness centrality (0.302) - this node is a cross-community bridge._
 - **Are the 9 inferred relationships involving `XForwarderEngine` (e.g. with `2. Root Cause / Core Dynamics` and `LossMonitorScheduler`) actually correct?**
   _`XForwarderEngine` has 9 INFERRED edges - model-reasoned connections that need verification._
 - **What connects `basePath`, `currentRules`, `lastRuntime` to the rest of the system?**
@@ -296,7 +296,7 @@ _Questions this graph is uniquely positioned to answer:_
 - **Should `test_security.py` be split into smaller, more focused modules?**
   _Cohesion score 0.0545790934320074 - nodes in this community are weakly interconnected._
 - **Why does `3. Architecture & Solution Implemented` connect `get_update_status` to `.do_POST`, `escapeHtml`?**
-  _High betweenness centrality (0.281) - this node is a cross-community bridge._
+  _High betweenness centrality (0.282) - this node is a cross-community bridge._
 - **Are the 3 inferred relationships involving `TestUIAndAPIEdgeCases` (e.g. with `XForwarderEngine` and `XForwarderWebHandler`) actually correct?**
   _`TestUIAndAPIEdgeCases` has 3 INFERRED edges - model-reasoned connections that need verification._
 - **Should `app.js` be split into smaller, more focused modules?**

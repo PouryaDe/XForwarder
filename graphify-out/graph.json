@@ -1314,7 +1314,7 @@
       "file_type": "code",
       "norm_label": "handleservicerestart()",
       "source_file": "web/app.js",
-      "source_location": "L4026"
+      "source_location": "L4031"
     },
     {
       "id": "web_app_initnetworkqualitymonitor",
@@ -1338,7 +1338,7 @@
       "file_type": "code",
       "norm_label": "initservicerestartcontrols()",
       "source_file": "web/app.js",
-      "source_location": "L4092"
+      "source_location": "L4097"
     },
     {
       "id": "web_app_inittheme",
@@ -1362,7 +1362,7 @@
       "file_type": "code",
       "norm_label": "polldashboardreconnection()",
       "source_file": "web/app.js",
-      "source_location": "L4072"
+      "source_location": "L4077"
     },
     {
       "id": "web_app_showtoast",
@@ -1902,7 +1902,7 @@
       "file_type": "code",
       "norm_label": "closesystemupdatemodal()",
       "source_file": "web/app.js",
-      "source_location": "L3813"
+      "source_location": "L3818"
     },
     {
       "id": "web_app_fetchsystemversioninfo",
@@ -1914,7 +1914,7 @@
       "file_type": "code",
       "norm_label": "fetchsystemversioninfo()",
       "source_file": "web/app.js",
-      "source_location": "L3671"
+      "source_location": "L3676"
     },
     {
       "id": "web_app_initsystemupdatemanager",
@@ -1938,7 +1938,7 @@
       "file_type": "code",
       "norm_label": "opensystemupdatemodal()",
       "source_file": "web/app.js",
-      "source_location": "L3788"
+      "source_location": "L3793"
     },
     {
       "id": "web_app_showdashboard",
@@ -2730,7 +2730,7 @@
       "file_type": "code",
       "norm_label": "pollupdateprogress()",
       "source_file": "web/app.js",
-      "source_location": "L3880"
+      "source_location": "L3885"
     },
     {
       "id": "web_app_renderdisruptionstable",
@@ -2778,7 +2778,7 @@
       "file_type": "code",
       "norm_label": "startsystemupdateprocedure()",
       "source_file": "web/app.js",
-      "source_location": "L3819"
+      "source_location": "L3824"
     },
     {
       "id": "web_app_trackfailoverevents",
@@ -17531,7 +17531,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/app.js",
-      "source_location": "L3728",
+      "source_location": "L3733",
       "weight": 1.0
     },
     {
@@ -17687,7 +17687,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/app.js",
-      "source_location": "L4040",
+      "source_location": "L4045",
       "weight": 1.0
     },
     {
@@ -17699,7 +17699,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/app.js",
-      "source_location": "L4043",
+      "source_location": "L4048",
       "weight": 1.0
     },
     {
@@ -17711,7 +17711,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/app.js",
-      "source_location": "L4062",
+      "source_location": "L4067",
       "weight": 1.0
     },
     {
@@ -17723,7 +17723,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/app.js",
-      "source_location": "L4065",
+      "source_location": "L4070",
       "weight": 1.0
     },
     {
@@ -17807,7 +17807,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/app.js",
-      "source_location": "L4101",
+      "source_location": "L4106",
       "weight": 1.0
     },
     {
@@ -17843,7 +17843,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/app.js",
-      "source_location": "L3645",
+      "source_location": "L3650",
       "weight": 1.0
     },
     {
@@ -17855,7 +17855,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/app.js",
-      "source_location": "L3651",
+      "source_location": "L3656",
       "weight": 1.0
     },
     {
@@ -17867,7 +17867,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/app.js",
-      "source_location": "L3663",
+      "source_location": "L3668",
       "weight": 1.0
     },
     {
@@ -17951,7 +17951,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/app.js",
-      "source_location": "L3802",
+      "source_location": "L3807",
       "weight": 1.0
     },
     {
@@ -17975,7 +17975,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/app.js",
-      "source_location": "L4080",
+      "source_location": "L4085",
       "weight": 1.0
     },
     {
@@ -17987,7 +17987,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/app.js",
-      "source_location": "L3924",
+      "source_location": "L3929",
       "weight": 1.0
     },
     {
@@ -17999,7 +17999,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/app.js",
-      "source_location": "L3973",
+      "source_location": "L3978",
       "weight": 1.0
     },
     {
@@ -18467,7 +18467,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/app.js",
-      "source_location": "L3865",
+      "source_location": "L3870",
       "weight": 1.0
     },
     {
@@ -18479,7 +18479,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/app.js",
-      "source_location": "L3877",
+      "source_location": "L3882",
       "weight": 1.0
     },
     {
@@ -28673,7 +28673,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "web/app.js",
-      "source_location": "L3671",
+      "source_location": "L3676",
       "weight": 1.0
     },
     {
@@ -28695,7 +28695,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "web/app.js",
-      "source_location": "L3788",
+      "source_location": "L3793",
       "weight": 1.0
     },
     {
@@ -28706,7 +28706,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "web/app.js",
-      "source_location": "L3813",
+      "source_location": "L3818",
       "weight": 1.0
     },
     {
@@ -28717,7 +28717,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "web/app.js",
-      "source_location": "L3819",
+      "source_location": "L3824",
       "weight": 1.0
     },
     {
@@ -28728,7 +28728,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "web/app.js",
-      "source_location": "L3880",
+      "source_location": "L3885",
       "weight": 1.0
     },
     {
@@ -28761,7 +28761,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "web/app.js",
-      "source_location": "L4026",
+      "source_location": "L4031",
       "weight": 1.0
     },
     {
@@ -28772,7 +28772,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "web/app.js",
-      "source_location": "L4072",
+      "source_location": "L4077",
       "weight": 1.0
     },
     {
@@ -28783,7 +28783,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "web/app.js",
-      "source_location": "L4092",
+      "source_location": "L4097",
       "weight": 1.0
     },
     {
@@ -36155,5 +36155,5 @@
     }
   ],
   "hyperedges": [],
-  "built_at_commit": "bd4de5159c030e3f6e08b8a342f06087851cb3f6"
+  "built_at_commit": "3765fe52ee4d1c06b7cc805e362b06d4a0039913"
 }

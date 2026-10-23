@@ -3626,7 +3626,12 @@ function initSystemUpdateManager() {
                 if (info && info.update_available) {
                     showToast(`New release available: #${info.remote_commit || 'update'}`, "info");
                 } else if (info && info.check_error) {
-                    showToast(`Update check failed: ${info.check_error}`, "error");
+                    const errStr = String(info.check_error);
+                    if (errStr.includes("403") || errStr.toLowerCase().includes("rate limit")) {
+                        showToast("GitHub API rate-limited. Click 'Force Update' below to update directly via Git.", "warn");
+                    } else {
+                        showToast(`Update check failed: ${info.check_error}`, "error");
+                    }
                 } else {
                     showToast("XForwarder is up to date!", "success");
                 }
