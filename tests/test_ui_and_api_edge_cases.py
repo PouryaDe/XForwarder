@@ -899,6 +899,7 @@ class TestUIAndAPIEdgeCases(unittest.TestCase):
         self.assertIn('[data-theme="light"] .user-avatar {', css)
         self.assertIn('[data-theme="light"] .user-avatar svg {', css)
         self.assertIn('[data-theme="light"] .sidebar-user {', css)
+        self.assertIn('.user-meta .user-role {', css)
         self.assertIn("-webkit-font-smoothing: antialiased;", css)
 
     def test_system_version_and_update_apis(self):
