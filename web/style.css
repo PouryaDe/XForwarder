@@ -3847,14 +3847,14 @@ select option {
 #cpuText { min-width: 62px; }
 #ramText { min-width: 62px; }
 #loadText { min-width: 78px; }
-#trafficText { min-width: 185px; }
+#trafficText { min-width: 195px; }
 #connsText { min-width: 130px; }
 
 /* Stable minimum widths to prevent box jitter/shifting when numbers change */
 #cpuPill { min-width: 96px; }
 #ramPill { min-width: 96px; }
-#loadPill { min-width: 112px; }
-#trafficPill { min-width: 220px; }
+#loadPill { min-width: 114px; }
+#trafficPill { min-width: 235px; }
 #connsPill { min-width: 165px; }
 
 .pill-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }

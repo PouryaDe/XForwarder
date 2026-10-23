@@ -763,9 +763,9 @@ function renderStats(rules, runtime) {
 }
 
 let lastSystemStats = null;
-let _trafficModeRate = false;
+let _trafficModeRate = true;
 
-// Render Host System Metrics (RAM %, CPU, System Load, Network Traffic in MB, TCP/UDP Sockets)
+// Render Host System Metrics (RAM %, CPU, System Load, Live Network Speed in MB/s, TCP/UDP Sockets)
 function renderSystemStats(sys) {
     if (!sys) return;
     lastSystemStats = sys;
@@ -805,20 +805,22 @@ function renderSystemStats(sys) {
         }
     }
 
-    // 4. Network Traffic (strictly formatted in Megabytes with live rate toggle)
+    // 4. Live Network Bandwidth (strictly download/upload speed per second in MB/s by default)
     if (trafficText) {
         function formatTrafficMB(rawMb) {
-            if (rawMb === undefined || rawMb === null || isNaN(rawMb)) return "--";
+            if (rawMb === undefined || rawMb === null || isNaN(rawMb)) return "0.00";
             const num = Number(rawMb);
             if (num < 10) return num.toFixed(2);
             if (num < 100) return num.toFixed(1);
             return Math.round(num).toLocaleString();
         }
 
+        const rawRateRx = sys.net_rx_rate_mb !== undefined ? sys.net_rx_rate_mb : (sys.net_rx_rate_kb ? sys.net_rx_rate_kb / 1024 : 0);
+        const rawRateTx = sys.net_tx_rate_mb !== undefined ? sys.net_tx_rate_mb : (sys.net_tx_rate_kb ? sys.net_tx_rate_kb / 1024 : 0);
+        const rRx = formatTrafficMB(rawRateRx);
+        const rTx = formatTrafficMB(rawRateTx);
         const rxMb = formatTrafficMB(sys.net_rx_mb);
         const txMb = formatTrafficMB(sys.net_tx_mb);
-        const rRx = Number(sys.net_rx_rate_mb !== undefined ? sys.net_rx_rate_mb : (sys.net_rx_rate_kb ? sys.net_rx_rate_kb / 1024 : 0)).toFixed(2);
-        const rTx = Number(sys.net_tx_rate_mb !== undefined ? sys.net_tx_rate_mb : (sys.net_tx_rate_kb ? sys.net_tx_rate_kb / 1024 : 0)).toFixed(2);
 
         if (_trafficModeRate) {
             trafficText.textContent = `↓ ${rRx} MB/s · ↑ ${rTx} MB/s`;
@@ -828,7 +830,7 @@ function renderSystemStats(sys) {
 
         if (trafficPill) {
             const modeTip = _trafficModeRate ? "Mode: Live Speed (Click to view Total MB)" : "Mode: Total MB (Click to view Live MB/s)";
-            trafficPill.title = `Live Speed: ↓ ${rRx} MB/s, ↑ ${rTx} MB/s | Cumulative: ↓ ${rxMb} MB, ↑ ${txMb} MB (${modeTip})`;
+            trafficPill.title = `Live Bandwidth: ↓ ${rRx} MB/s, ↑ ${rTx} MB/s | Total Cumulative: ↓ ${rxMb} MB, ↑ ${txMb} MB (${modeTip})`;
             if (!trafficPill._hasToggle) {
                 trafficPill._hasToggle = true;
                 trafficPill.style.cursor = "pointer";

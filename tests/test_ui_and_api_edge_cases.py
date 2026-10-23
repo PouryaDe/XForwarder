@@ -1594,6 +1594,7 @@ class TestUIAndAPIEdgeCases(unittest.TestCase):
         self.assertIn('id="loadPill"', html)
         self.assertIn('id="trafficPill"', html)
         self.assertIn('id="connsPill"', html)
+        self.assertIn("0.00 MB/s", html)
 
         # 4. CSS pill dots, stable text widths, and responsive wrapping
         css_path = os.path.join(REPO_ROOT, "web", "style.css")
@@ -1619,6 +1620,7 @@ class TestUIAndAPIEdgeCases(unittest.TestCase):
         self.assertIn("RAM: ${pct}%", js)
         self.assertIn("formatTrafficMB", js)
         self.assertIn("_trafficModeRate", js)
+        self.assertIn("↓ ${rRx} MB/s · ↑ ${rTx} MB/s", js)
         self.assertIn("↓ ${rxMb} MB · ↑ ${txMb} MB", js)
         self.assertIn("${tcp} TCP · ${udp} UDP", js)
 
