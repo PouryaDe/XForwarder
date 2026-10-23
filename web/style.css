@@ -795,13 +795,13 @@ input:-webkit-autofill:active {
     justify-content: center;
     gap: 8px;
     flex: 1 1 auto;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     min-width: 0;
 }
 
 /* Responsive text toggles for tight viewports */
-.ram-full { display: inline; }
-.ram-short { display: none; }
+.ram-full { display: inline !important; }
+.ram-short { display: none !important; }
 .btn-text { display: inline; }
 
 .user-pill {
@@ -3853,18 +3853,18 @@ select option {
     font-variant-numeric: tabular-nums;
 }
 
-#cpuText { min-width: 62px; }
-#ramText { min-width: 62px; }
-#loadText { min-width: 78px; }
-#trafficText { min-width: 195px; }
-#connsText { min-width: 130px; }
+#cpuText { min-width: 58px; }
+#ramText { min-width: 60px; }
+#loadText { min-width: 64px; }
+#trafficText { min-width: 175px; }
+#connsText { min-width: 114px; }
 
 /* Stable minimum widths to prevent box jitter/shifting when numbers change */
-#cpuPill { min-width: 96px; }
-#ramPill { min-width: 96px; }
-#loadPill { min-width: 114px; }
-#trafficPill { min-width: 235px; }
-#connsPill { min-width: 165px; }
+#cpuPill { min-width: 86px; }
+#ramPill { min-width: 88px; }
+#loadPill { min-width: 92px; }
+#trafficPill { min-width: 205px; }
+#connsPill { min-width: 140px; }
 
 .pill-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
 .dot-emerald { background: var(--accent-emerald); }
@@ -4207,7 +4207,57 @@ select option {
     }
 }
 
-/* Laptop / Compressed Viewport (<= 1280px): Topbar auto-condensation */
+/* Laptop & Compact Desktop (<= 1440px): Dedicated Two-Row Topbar */
+@media (max-width: 1440px) {
+    .topbar {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        grid-template-areas:
+            "left actions"
+            "metrics metrics";
+        gap: 12px;
+        padding: 12px 18px;
+    }
+
+    .topbar-left {
+        grid-area: left;
+        min-width: 0;
+        flex-shrink: 0;
+    }
+
+    .topbar-actions {
+        grid-area: actions;
+        flex-shrink: 0;
+    }
+
+    .session-controls {
+        display: contents;
+    }
+
+    .sys-metrics {
+        grid-area: metrics;
+        width: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        flex-wrap: nowrap;
+        padding-top: 10px;
+        border-top: 1px solid var(--border-color);
+        overflow-x: auto;
+        scrollbar-width: none;
+    }
+
+    .sys-metrics::-webkit-scrollbar {
+        display: none;
+    }
+
+    .sys-pill {
+        flex: 0 0 auto;
+    }
+}
+
+/* Compact Laptop Viewport (<= 1280px): Auto-condensation & icon-only actions */
 @media (max-width: 1280px) {
     .ram-full {
         display: none !important;
@@ -4228,47 +4278,6 @@ select option {
         min-height: 36px;
         padding: 0;
         border-radius: 10px;
-        justify-content: center;
-    }
-}
-
-/* Medium Screen / Compressed Viewport (<= 1200px): Two-Row Fluid Topbar */
-@media (max-width: 1200px) {
-    .topbar {
-        display: flex;
-        flex-wrap: wrap;
-        align-items: center;
-        justify-content: space-between;
-        gap: 12px;
-        padding: 12px 16px;
-    }
-
-    .topbar-left {
-        order: 1;
-        flex-shrink: 0;
-    }
-
-    .topbar-actions {
-        order: 2;
-        flex-shrink: 0;
-    }
-
-    .session-controls {
-        display: contents;
-    }
-
-    .sys-metrics {
-        order: 3;
-        width: 100%;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 8px;
-        flex-wrap: wrap;
-    }
-
-    .sys-pill {
-        flex: 1 1 auto;
         justify-content: center;
     }
 }
@@ -4373,6 +4382,8 @@ select option {
         gap: 8px;
         width: 100%;
         margin-top: 2px;
+        padding-top: 10px;
+        border-top: 1px solid var(--border-color);
     }
 
     .sys-pill {

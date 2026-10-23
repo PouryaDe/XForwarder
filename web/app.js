@@ -785,7 +785,7 @@ function renderSystemStats(sys) {
         const used = Number(sys.ram_used_mb) || 0;
         const total = Number(sys.ram_total_mb) || 0;
         const pct = Number(sys.ram_percent) || 0;
-        if (ramText) ramText.innerHTML = `<span class="ram-full">RAM: ${pct}%</span><span class="ram-short">RAM: ${pct}%</span>`;
+        if (ramText) ramText.innerHTML = `<span class="ram-full">RAM: ${pct}%</span><span class="ram-short">${pct}%</span>`;
         if (ramPill) ramPill.title = `Memory Usage: ${used} MB / ${total} MB (${pct}%)`;
 
         const ovRamText = document.getElementById("ovRamText");
