@@ -365,13 +365,28 @@ def update_state_rules(rule_updates: Dict[str, dict]) -> None:
             pass
 
 
+_PREV_NET_IO: Dict[str, Any] = {"rx": 0, "tx": 0, "time": 0.0}
+_NET_IO_LOCK = threading.Lock()
+
+
 def get_system_stats() -> dict:
     stats = {
         "ram_used_mb": 0,
         "ram_total_mb": 0,
         "ram_percent": 0,
-        "cpu_percent": 0
+        "cpu_percent": 0,
+        "load_1": 0.0,
+        "load_5": 0.0,
+        "load_15": 0.0,
+        "load_str": "0.00",
+        "tcp_connections": 0,
+        "udp_connections": 0,
+        "net_rx_mb": 0.0,
+        "net_tx_mb": 0.0,
+        "net_rx_rate_kb": 0.0,
+        "net_tx_rate_kb": 0.0
     }
+    # 1. RAM Usage
     if os.path.exists("/proc/meminfo"):
         try:
             mem = {}
@@ -389,14 +404,83 @@ def get_system_stats() -> dict:
                 stats["ram_percent"] = round((used_kb / total_kb) * 100, 1)
         except Exception:
             pass
+
+    # 2. System Load & CPU Usage
     if os.path.exists("/proc/loadavg"):
         try:
             with open("/proc/loadavg", "r", encoding="utf-8") as f:
-                load = float(f.read().split()[0])
-                cpu_count = os.cpu_count() or 1
-                stats["cpu_percent"] = min(100.0, round((load / cpu_count) * 100, 1))
+                parts = f.read().split()
+                if len(parts) >= 3:
+                    l1 = float(parts[0])
+                    l5 = float(parts[1])
+                    l15 = float(parts[2])
+                    stats["load_1"] = l1
+                    stats["load_5"] = l5
+                    stats["load_15"] = l15
+                    stats["load_str"] = f"{l1:.2f}"
+                    cpu_count = os.cpu_count() or 1
+                    stats["cpu_percent"] = min(100.0, round((l1 / cpu_count) * 100, 1))
         except Exception:
             pass
+
+    # 3. Active TCP & UDP Socket Counts (via /proc/net/sockstat and sockstat6)
+    tcp_count = 0
+    udp_count = 0
+    for s_path in ("/proc/net/sockstat", "/proc/net/sockstat6"):
+        if os.path.exists(s_path):
+            try:
+                with open(s_path, "r", encoding="utf-8") as f:
+                    for line in f:
+                        line = line.strip()
+                        if line.startswith("TCP:") or line.startswith("TCP6:"):
+                            kvs = line.split()
+                            for idx in range(1, len(kvs) - 1, 2):
+                                if kvs[idx] == "inuse":
+                                    tcp_count += int(kvs[idx + 1])
+                        elif line.startswith("UDP:") or line.startswith("UDP6:"):
+                            kvs = line.split()
+                            for idx in range(1, len(kvs) - 1, 2):
+                                if kvs[idx] == "inuse":
+                                    udp_count += int(kvs[idx + 1])
+            except Exception:
+                pass
+    stats["tcp_connections"] = tcp_count
+    stats["udp_connections"] = udp_count
+
+    # 4. Total Network Traffic (RX & TX in MB, excluding loopback)
+    if os.path.exists("/proc/net/dev"):
+        try:
+            total_rx_bytes = 0
+            total_tx_bytes = 0
+            with open("/proc/net/dev", "r", encoding="utf-8") as f:
+                for line in f:
+                    if ":" not in line:
+                        continue
+                    iface, data = line.split(":", 1)
+                    if iface.strip() == "lo":
+                        continue
+                    fields = data.split()
+                    if len(fields) >= 9:
+                        total_rx_bytes += int(fields[0])
+                        total_tx_bytes += int(fields[8])
+
+            stats["net_rx_mb"] = round(total_rx_bytes / (1024 * 1024), 1)
+            stats["net_tx_mb"] = round(total_tx_bytes / (1024 * 1024), 1)
+
+            now = time.time()
+            with _NET_IO_LOCK:
+                if _PREV_NET_IO["time"] > 0:
+                    dt = max(0.5, now - _PREV_NET_IO["time"])
+                    drx = max(0, total_rx_bytes - _PREV_NET_IO["rx"])
+                    dtx = max(0, total_tx_bytes - _PREV_NET_IO["tx"])
+                    stats["net_rx_rate_kb"] = round((drx / 1024) / dt, 1)
+                    stats["net_tx_rate_kb"] = round((dtx / 1024) / dt, 1)
+                _PREV_NET_IO["rx"] = total_rx_bytes
+                _PREV_NET_IO["tx"] = total_tx_bytes
+                _PREV_NET_IO["time"] = now
+        except Exception:
+            pass
+
     return stats
 
 

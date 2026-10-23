@@ -1531,6 +1531,88 @@ class TestUIAndAPIEdgeCases(unittest.TestCase):
         self.assertIn("Rate Limited (GitHub API)", js)
         self.assertIn("rate limit", js)
 
+    def test_topbar_extended_system_metrics_and_api(self):
+        """Verifies get_system_stats returns load, sockets, and traffic metrics,
+        and that topbar HTML/CSS/JS contains RAM %, System Load, Traffic (MB), and TCP/UDP sockets."""
+        from core.web_server import get_system_stats
+
+        # 1. API Output verification
+        stats = get_system_stats()
+        self.assertIn("ram_percent", stats)
+        self.assertIn("cpu_percent", stats)
+        self.assertIn("load_1", stats)
+        self.assertIn("load_str", stats)
+        self.assertIn("tcp_connections", stats)
+        self.assertIn("udp_connections", stats)
+        self.assertIn("net_rx_mb", stats)
+        self.assertIn("net_tx_mb", stats)
+
+        # 2. Mock /proc/loadavg, /proc/net/sockstat, and /proc/net/dev to verify accurate parsing
+        sockstat_mock = (
+            "sockets: used 256\n"
+            "TCP: inuse 42 orphan 0 tw 5 alloc 50 mem 4\n"
+            "UDP: inuse 13 mem 2\n"
+        )
+        netdev_mock = (
+            "Inter-|   Receive                                                |  Transmit\n"
+            " face |bytes    packets errs drop fifo frame compressed multicast|bytes    packets errs drop fifo colls carrier compressed\n"
+            "    lo: 1000 10 0 0 0 0 0 0 1000 10 0 0 0 0 0 0\n"
+            "  eth0: 104857600 1000 0 0 0 0 0 0 52428800 500 0 0 0 0 0 0\n"
+        )
+        loadavg_mock = "1.75 2.50 3.25 2/150 12345\n"
+
+        def mock_open_proc(path, mode="r", **kwargs):
+            import io
+            if path == "/proc/loadavg":
+                return io.StringIO(loadavg_mock)
+            elif path == "/proc/net/sockstat":
+                return io.StringIO(sockstat_mock)
+            elif path == "/proc/net/dev":
+                return io.StringIO(netdev_mock)
+            return io.StringIO("")
+
+        with patch("os.path.exists", side_effect=lambda p: p in ("/proc/loadavg", "/proc/net/sockstat", "/proc/net/dev")), \
+             patch("builtins.open", side_effect=mock_open_proc):
+            mocked_stats = get_system_stats()
+            self.assertEqual(mocked_stats["load_1"], 1.75)
+            self.assertEqual(mocked_stats["load_str"], "1.75")
+            self.assertEqual(mocked_stats["tcp_connections"], 42)
+            self.assertEqual(mocked_stats["udp_connections"], 13)
+            self.assertEqual(mocked_stats["net_rx_mb"], 100.0)
+            self.assertEqual(mocked_stats["net_tx_mb"], 50.0)
+
+        # 3. HTML topbar pill elements
+        html_path = os.path.join(REPO_ROOT, "web", "index.html")
+        with open(html_path, "r", encoding="utf-8") as f:
+            html = f.read()
+
+        self.assertIn('id="ramPill"', html)
+        self.assertIn('id="cpuPill"', html)
+        self.assertIn('id="loadPill"', html)
+        self.assertIn('id="trafficPill"', html)
+        self.assertIn('id="connsPill"', html)
+
+        # 4. CSS pill dots and responsive wrapping
+        css_path = os.path.join(REPO_ROOT, "web", "style.css")
+        with open(css_path, "r", encoding="utf-8") as f:
+            css = f.read()
+
+        self.assertIn(".dot-amber {", css)
+        self.assertIn(".dot-violet {", css)
+        self.assertIn(".dot-mint {", css)
+
+        # 5. JS renderSystemStats functionality
+        js_path = os.path.join(REPO_ROOT, "web", "app.js")
+        with open(js_path, "r", encoding="utf-8") as f:
+            js = f.read()
+
+        self.assertIn("loadText", js)
+        self.assertIn("trafficText", js)
+        self.assertIn("connsText", js)
+        self.assertIn("RAM: ${pct}%", js)
+        self.assertIn("↓ ${rxMb} MB · ↑ ${txMb} MB", js)
+        self.assertIn("${tcp} TCP · ${udp} UDP", js)
+
 
 if __name__ == "__main__":
     unittest.main()

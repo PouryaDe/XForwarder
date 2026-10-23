@@ -300,13 +300,25 @@
                 <div class="session-controls">
                     <!-- System Resource Stats -->
                     <div class="sys-metrics" id="sysMetrics">
-                        <div class="sys-pill" id="ramPill" title="Server Memory Usage">
-                            <span class="pill-dot dot-emerald"></span>
-                            <span id="ramText"><span class="ram-full">RAM: --</span><span class="ram-short">RAM: --</span></span>
-                        </div>
                         <div class="sys-pill" id="cpuPill" title="Server CPU Load">
                             <span class="pill-dot dot-cyan"></span>
                             <span id="cpuText">CPU: --</span>
+                        </div>
+                        <div class="sys-pill" id="ramPill" title="Server Memory Usage">
+                            <span class="pill-dot dot-emerald"></span>
+                            <span id="ramText"><span class="ram-full">RAM: --%</span><span class="ram-short">RAM: --%</span></span>
+                        </div>
+                        <div class="sys-pill" id="loadPill" title="System Load Average">
+                            <span class="pill-dot dot-amber"></span>
+                            <span id="loadText">Load: --</span>
+                        </div>
+                        <div class="sys-pill" id="trafficPill" title="Network Traffic (Download / Upload)">
+                            <span class="pill-dot dot-mint"></span>
+                            <span id="trafficText">↓ -- MB · ↑ -- MB</span>
+                        </div>
+                        <div class="sys-pill" id="connsPill" title="Active Sockets: TCP & UDP">
+                            <span class="pill-dot dot-violet"></span>
+                            <span id="connsText">-- TCP · -- UDP</span>
                         </div>
                     </div>
 

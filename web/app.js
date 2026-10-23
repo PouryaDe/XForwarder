@@ -53,7 +53,15 @@ const categoryDatalist = document.getElementById("categoryDatalist");
 
 // Header System Resource Elements
 const ramText = document.getElementById("ramText");
+const ramPill = document.getElementById("ramPill");
 const cpuText = document.getElementById("cpuText");
+const cpuPill = document.getElementById("cpuPill");
+const loadText = document.getElementById("loadText");
+const loadPill = document.getElementById("loadPill");
+const trafficText = document.getElementById("trafficText");
+const trafficPill = document.getElementById("trafficPill");
+const connsText = document.getElementById("connsText");
+const connsPill = document.getElementById("connsPill");
 const btnManualRefresh = document.getElementById("btnManualRefresh");
 const refreshIcon = document.getElementById("refreshIcon");
 const pulseDot = document.getElementById("pulseDot");
@@ -754,26 +762,69 @@ function renderStats(rules, runtime) {
     }
 }
 
-// Render Host System Metrics (RAM & CPU)
+// Render Host System Metrics (RAM %, CPU, System Load, Network Traffic in MB, TCP/UDP Sockets)
 function renderSystemStats(sys) {
     if (!sys) return;
+
+    // 1. CPU Usage
+    if (sys.cpu_percent !== undefined) {
+        const cpuPct = Number(sys.cpu_percent) || 0;
+        if (cpuText) cpuText.textContent = `CPU: ${cpuPct}%`;
+        const ovCpuText = document.getElementById("ovCpuText");
+        const ovCpuBar = document.getElementById("ovCpuBar");
+        if (ovCpuText) ovCpuText.innerText = `${cpuPct}%`;
+        if (ovCpuBar) ovCpuBar.style.width = `${Math.min(100, Math.max(0, cpuPct))}%`;
+    }
+
+    // 2. RAM Usage (strictly percentage in topbar pill, full breakdown in tooltip)
     if (sys.ram_total_mb > 0) {
         const used = Number(sys.ram_used_mb) || 0;
         const total = Number(sys.ram_total_mb) || 0;
         const pct = Number(sys.ram_percent) || 0;
-        ramText.innerHTML = `<span class="ram-full">RAM: ${used}MB / ${total}MB (${pct}%)</span><span class="ram-short">RAM: ${pct}%</span>`;
+        if (ramText) ramText.innerHTML = `<span class="ram-full">RAM: ${pct}%</span><span class="ram-short">RAM: ${pct}%</span>`;
+        if (ramPill) ramPill.title = `Memory Usage: ${used} MB / ${total} MB (${pct}%)`;
+
         const ovRamText = document.getElementById("ovRamText");
         const ovRamBar = document.getElementById("ovRamBar");
         if (ovRamText) ovRamText.innerText = `${used} / ${total} MB (${pct}%)`;
         if (ovRamBar) ovRamBar.style.width = `${Math.min(100, Math.max(0, pct))}%`;
     }
-    if (sys.cpu_percent !== undefined) {
-        const cpuPct = Number(sys.cpu_percent) || 0;
-        cpuText.innerText = `CPU: ${cpuPct}%`;
-        const ovCpuText = document.getElementById("ovCpuText");
-        const ovCpuBar = document.getElementById("ovCpuBar");
-        if (ovCpuText) ovCpuText.innerText = `${cpuPct}%`;
-        if (ovCpuBar) ovCpuBar.style.width = `${Math.min(100, Math.max(0, cpuPct))}%`;
+
+    // 3. System Load Average
+    if (loadText) {
+        const l1 = sys.load_str || (sys.load_1 !== undefined ? Number(sys.load_1).toFixed(2) : "--");
+        loadText.textContent = `Load: ${l1}`;
+        if (loadPill) {
+            const l5 = sys.load_5 !== undefined ? Number(sys.load_5).toFixed(2) : "--";
+            const l15 = sys.load_15 !== undefined ? Number(sys.load_15).toFixed(2) : "--";
+            loadPill.title = `System Load Average: ${l1} (1m), ${l5} (5m), ${l15} (15m)`;
+        }
+    }
+
+    // 4. Network Traffic (in Megabytes)
+    if (trafficText) {
+        const rxMb = sys.net_rx_mb !== undefined ? Number(sys.net_rx_mb).toLocaleString(undefined, { maximumFractionDigits: 1 }) : "--";
+        const txMb = sys.net_tx_mb !== undefined ? Number(sys.net_tx_mb).toLocaleString(undefined, { maximumFractionDigits: 1 }) : "--";
+        trafficText.textContent = `↓ ${rxMb} MB · ↑ ${txMb} MB`;
+        if (trafficPill) {
+            let rateInfo = "";
+            if (sys.net_rx_rate_kb !== undefined && sys.net_tx_rate_kb !== undefined) {
+                const rxRate = (Number(sys.net_rx_rate_kb) / 1024).toFixed(2);
+                const txRate = (Number(sys.net_tx_rate_kb) / 1024).toFixed(2);
+                rateInfo = ` | Live Speed: ↓ ${rxRate} MB/s, ↑ ${txRate} MB/s`;
+            }
+            trafficPill.title = `Cumulative Traffic: Download ${rxMb} MB, Upload ${txMb} MB${rateInfo}`;
+        }
+    }
+
+    // 5. Active Sockets (TCP & UDP)
+    if (connsText) {
+        const tcp = sys.tcp_connections !== undefined ? Number(sys.tcp_connections).toLocaleString() : "--";
+        const udp = sys.udp_connections !== undefined ? Number(sys.udp_connections).toLocaleString() : "--";
+        connsText.textContent = `${tcp} TCP · ${udp} UDP`;
+        if (connsPill) {
+            connsPill.title = `Active Sockets: ${tcp} TCP connections, ${udp} UDP sockets`;
+        }
     }
 }
 

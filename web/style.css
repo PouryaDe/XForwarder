@@ -3808,6 +3808,7 @@ select option {
     display: flex;
     align-items: center;
     gap: 8px;
+    flex-wrap: wrap;
 }
 
 .sys-pill {
@@ -3826,11 +3827,20 @@ select option {
     color: var(--text-secondary);
     white-space: nowrap;
     flex-shrink: 0;
+    transition: background 0.18s ease, border-color 0.18s ease, color 0.18s ease;
 }
 
-.pill-dot { width: 6px; height: 6px; border-radius: 50%; }
+.sys-pill:hover {
+    background: rgba(150, 150, 150, 0.08);
+    color: var(--text-primary);
+}
+
+.pill-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
 .dot-emerald { background: var(--accent-emerald); }
 .dot-cyan { background: var(--accent-cyan); }
+.dot-amber { background: var(--accent-amber); }
+.dot-violet { background: var(--accent-violet); }
+.dot-mint { background: var(--accent-mint); }
 
 .spinning { animation: spinRotate 0.8s linear infinite; }
 @keyframes spinRotate {
