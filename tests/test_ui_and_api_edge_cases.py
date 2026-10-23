@@ -1373,6 +1373,34 @@ class TestUIAndAPIEdgeCases(unittest.TestCase):
         except Exception:
             pass
 
+    def test_get_remote_version_info_rate_limit_fallback(self):
+        """Verifies get_remote_version_info gracefully falls back to git ls-remote when GitHub REST API hits HTTP 403 rate limit."""
+        import urllib.error
+        from unittest.mock import MagicMock
+        from core.web_server import get_remote_version_info
+
+        # 1. Simulate GitHub REST API 403 Rate Limit, with git ls-remote available
+        mock_proc = MagicMock()
+        mock_proc.returncode = 0
+        mock_proc.stdout = "bd4de5159c030e3f6e08b8a342f06087851cb3f6\trefs/heads/main\n"
+
+        with patch("urllib.request.urlopen", side_effect=urllib.error.HTTPError("https://api.github.com", 403, "rate limit exceeded", {}, None)):
+            with patch("subprocess.run", return_value=mock_proc) as mock_sub:
+                info = get_remote_version_info(force=True)
+                self.assertEqual(info["remote_commit"], "bd4de51")
+                self.assertIsNone(info["error"])
+                mock_sub.assert_called_once()
+                self.assertIn("git", mock_sub.call_args[0][0])
+                self.assertIn("ls-remote", mock_sub.call_args[0][0])
+
+        # 2. Simulate both REST API and git failing
+        with patch("urllib.request.urlopen", side_effect=Exception("HTTP Error 403: rate limit exceeded")):
+            with patch("subprocess.run", side_effect=FileNotFoundError("git not found")):
+                info_failed = get_remote_version_info(force=True)
+                self.assertIsNone(info_failed["remote_commit"])
+                self.assertIsNotNone(info_failed["error"])
+                self.assertIn("403", info_failed["error"])
+
     def test_rule_category_and_created_at_validation(self):
         """Verifies validate_rule properly accepts, sanitizes, and rejects rule categories and created_at timestamps."""
         # 1. Category defaults to "" if missing

@@ -817,7 +817,10 @@ def get_local_version_info() -> dict:
 
 
 def get_remote_version_info(force: bool = False) -> dict:
-    """Checks remote GitHub repository for the latest commit on main. Cached for 60 seconds."""
+    """Checks remote GitHub repository for the latest commit on main.
+    Uses GitHub REST API with an automatic zero-quota git ls-remote fallback
+    to prevent HTTP 403 Rate Limit Exceeded errors on public/shared IPs.
+    """
     now = time.time()
     with _REMOTE_VERSION_LOCK:
         if not force and _REMOTE_VERSION_CACHE["data"] and now < _REMOTE_VERSION_CACHE["expires"]:
@@ -832,14 +835,17 @@ def get_remote_version_info(force: bool = False) -> dict:
         "error": None
     }
 
+    api_success = False
     url = "https://api.github.com/repos/PouryaDe/XForwarder/commits/main"
-    req = urllib.request.Request(
-        url,
-        headers={
-            "User-Agent": "XForwarder-Updater/1.0",
-            "Accept": "application/vnd.github.v3+json"
-        }
-    )
+    headers = {
+        "User-Agent": "XForwarder-Updater/1.0",
+        "Accept": "application/vnd.github.v3+json"
+    }
+    gh_token = os.environ.get("GITHUB_TOKEN") or os.environ.get("GH_TOKEN")
+    if gh_token:
+        headers["Authorization"] = f"Bearer {gh_token.strip()}"
+
+    req = urllib.request.Request(url, headers=headers)
     try:
         with urllib.request.urlopen(req, timeout=4.0) as resp:
             if resp.status == 200:
@@ -853,12 +859,31 @@ def get_remote_version_info(force: bool = False) -> dict:
                 author_date = commit_info.get("author", {}).get("date") or commit_info.get("committer", {}).get("date", "")
                 if author_date:
                     remote["remote_date"] = author_date[:10]
+                api_success = True
     except Exception as e:
         remote["error"] = str(e)
 
+    # Resilient fallback: If GitHub REST API is rate-limited (HTTP 403) or unreachable,
+    # use Git Smart HTTP (git ls-remote) which has ZERO REST quota restrictions.
+    if not api_success:
+        try:
+            res = subprocess.run(
+                ["git", "ls-remote", "https://github.com/PouryaDe/XForwarder.git", "refs/heads/main"],
+                capture_output=True, text=True, timeout=5.0
+            )
+            if res.returncode == 0 and res.stdout.strip():
+                parts = res.stdout.strip().split()
+                if parts and len(parts[0]) >= 7:
+                    remote["remote_commit"] = parts[0][:7]
+                    remote["remote_commit_msg"] = "Latest release on main"
+                    remote["error"] = None  # Clear error since git ls-remote succeeded
+                    api_success = True
+        except Exception:
+            pass
+
     with _REMOTE_VERSION_LOCK:
         _REMOTE_VERSION_CACHE["data"] = remote
-        _REMOTE_VERSION_CACHE["expires"] = now + 60.0
+        _REMOTE_VERSION_CACHE["expires"] = now + (180.0 if api_success else 30.0)
 
     return remote
 

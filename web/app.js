@@ -3753,11 +3753,11 @@ async function fetchSystemVersionInfo(force = false) {
                 updateStatusNotice.innerHTML = `<strong>Check Failed:</strong> ${errDetail}`;
             }
             if (btnTriggerUpdate) {
-                btnTriggerUpdate.disabled = true;
+                btnTriggerUpdate.disabled = false;
                 btnTriggerUpdate.classList.remove("pulse-glow");
-                btnTriggerUpdate.title = "Update check failed - cannot verify releases";
+                btnTriggerUpdate.title = "Click to run update procedure anyway";
             }
-            if (btnTriggerUpdateText) btnTriggerUpdateText.textContent = "Update to Latest";
+            if (btnTriggerUpdateText) btnTriggerUpdateText.textContent = "Force Update";
         } else {
             if (badgeUpdateStatus) {
                 badgeUpdateStatus.className = "stat-badge badge-active";
