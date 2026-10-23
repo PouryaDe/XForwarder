@@ -6,15 +6,15 @@
     "semantic_hash": ""
   },
   "core/web_server.py": {
-    "mtime": 1792783985.7320893,
-    "seen": 1792786629.4732113,
-    "ast_hash": "1cd0a394dd8a465802d3a5d3dd3c6002",
+    "mtime": 1792787591.8049455,
+    "seen": 1792788308.6604342,
+    "ast_hash": "1a88eeb811a326178fbfaa66e97461e9",
     "semantic_hash": ""
   },
   "web/app.js": {
-    "mtime": 1792786332.5713851,
-    "seen": 1792786629.473224,
-    "ast_hash": "471a8bcf1479d0c30632263e46b07860",
+    "mtime": 1792787720.981318,
+    "seen": 1792788308.6604466,
+    "ast_hash": "d0c1f926f07ba61c284ae6c5b8343ee5",
     "semantic_hash": ""
   },
   ".agents/rules/01-architecture-and-failover.md": {
@@ -72,9 +72,9 @@
     "semantic_hash": ""
   },
   "AGENTS.md": {
-    "mtime": 1792779210.9374344,
-    "seen": 1792779322.6129098,
-    "ast_hash": "96efda51aa19af949f8652da7aff664a",
+    "mtime": 1792788166.4817398,
+    "seen": 1792788308.6604805,
+    "ast_hash": "ea6cd1f6d513a1516843ede537aa9fda",
     "semantic_hash": ""
   },
   "README.md": {
@@ -144,15 +144,15 @@
     "semantic_hash": ""
   },
   ".agents/session-state.json": {
-    "mtime": 1792783258.3666158,
-    "seen": 1792786629.4732037,
-    "ast_hash": "606898713bac318e65aefa3cf4516eec",
+    "mtime": 1792788275.6711204,
+    "seen": 1792788308.6604257,
+    "ast_hash": "7a98f669c60b9359eaae6d03889e4d09",
     "semantic_hash": ""
   },
   ".agents/AGENTS.md": {
-    "mtime": 1792779258.977318,
-    "seen": 1792779322.612879,
-    "ast_hash": "3ad8d8f9f08ef7153d45b88f350a6282",
+    "mtime": 1792788187.356854,
+    "seen": 1792788308.6604486,
+    "ast_hash": "b1898b9190d70b755bb061038278df68",
     "semantic_hash": ""
   },
   ".agents/experiences/001-zero-collision-haproxy-nftables-failover.md": {
@@ -174,9 +174,9 @@
     "semantic_hash": ""
   },
   ".agents/experiences/README.md": {
-    "mtime": 1792773844.2581608,
-    "seen": 1792773977.733502,
-    "ast_hash": "ce4c7520e0b9d4bb858ad9297d3199d6",
+    "mtime": 1792788246.5344234,
+    "seen": 1792788308.6604614,
+    "ast_hash": "ca62cdcb9757ea29a14c43aca3b1e7fb",
     "semantic_hash": ""
   },
   ".agents/rules/blast-radius-analysis.md": {
@@ -414,15 +414,21 @@
     "semantic_hash": ""
   },
   "core/traffic.py": {
-    "mtime": 1792784497.3640788,
-    "seen": 1792786629.4732103,
-    "ast_hash": "562c4814ba94f6bacb9b07d84ed49c66",
+    "mtime": 1792787911.4810007,
+    "seen": 1792788308.6604328,
+    "ast_hash": "b11fe6aa2acee0fba04fa69afd637447",
     "semantic_hash": ""
   },
   "tests/test_traffic.py": {
-    "mtime": 1792784658.6643918,
-    "seen": 1792786629.4732223,
-    "ast_hash": "b9579cade12d5063c767a23a1de57147",
+    "mtime": 1792788062.5626543,
+    "seen": 1792788308.6604452,
+    "ast_hash": "432040db43244280277aa38b0f85ec5d",
+    "semantic_hash": ""
+  },
+  ".agents/experiences/014-per-port-and-per-tunnel-traffic-accounting-and-delta-engine.md": {
+    "mtime": 1792788224.7634706,
+    "seen": 1792788308.6604602,
+    "ast_hash": "8c0bf9d16cc0e5ec418a0a522fbfab22",
     "semantic_hash": ""
   }
 }

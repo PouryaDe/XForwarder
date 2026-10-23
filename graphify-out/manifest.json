@@ -6,15 +6,15 @@
     "semantic_hash": ""
   },
   "core/web_server.py": {
-    "mtime": 1792787591.8049455,
-    "seen": 1792788308.6604342,
-    "ast_hash": "1a88eeb811a326178fbfaa66e97461e9",
+    "mtime": 1792793320.4876666,
+    "seen": 1792793950.0683284,
+    "ast_hash": "8e80d8223577914ff4d4497042ddf9f4",
     "semantic_hash": ""
   },
   "web/app.js": {
-    "mtime": 1792787720.981318,
-    "seen": 1792788308.6604466,
-    "ast_hash": "d0c1f926f07ba61c284ae6c5b8343ee5",
+    "mtime": 1792793681.2041073,
+    "seen": 1792793950.0683417,
+    "ast_hash": "76d8bcca60b80a8442a179cdd03372f3",
     "semantic_hash": ""
   },
   ".agents/rules/01-architecture-and-failover.md": {
@@ -84,9 +84,9 @@
     "semantic_hash": ""
   },
   "web/index.html": {
-    "mtime": 1792785860.3805182,
-    "seen": 1792786629.4732566,
-    "ast_hash": "22fce3048486c67fcaae14234f8fdb06",
+    "mtime": 1792793416.4837828,
+    "seen": 1792793950.0683756,
+    "ast_hash": "9f52175307dd219a637b0af84a1198ba",
     "semantic_hash": ""
   },
   "xforwarder.sh": {
@@ -414,15 +414,15 @@
     "semantic_hash": ""
   },
   "core/traffic.py": {
-    "mtime": 1792787911.4810007,
-    "seen": 1792788308.6604328,
-    "ast_hash": "b11fe6aa2acee0fba04fa69afd637447",
+    "mtime": 1792793280.7302725,
+    "seen": 1792793950.068327,
+    "ast_hash": "6a02b61956ef1dc262b11d9846a00353",
     "semantic_hash": ""
   },
   "tests/test_traffic.py": {
-    "mtime": 1792788062.5626543,
-    "seen": 1792788308.6604452,
-    "ast_hash": "432040db43244280277aa38b0f85ec5d",
+    "mtime": 1792793859.236118,
+    "seen": 1792793950.06834,
+    "ast_hash": "530be91fe0b24cb4b4661d78df8a9540",
     "semantic_hash": ""
   },
   ".agents/experiences/014-per-port-and-per-tunnel-traffic-accounting-and-delta-engine.md": {

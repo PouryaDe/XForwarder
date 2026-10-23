@@ -2703,8 +2703,8 @@ class XForwarderWebHandler(BaseHTTPRequestHandler):
             entity_id = str(body.get("entity_id", "all")).strip()
             wipe_history = bool(body.get("wipe_history", False))
 
-            if entity_type not in ("all", "port", "tunnel"):
-                self.send_json({"ok": False, "error": f"Invalid entity_type '{entity_type}'. Must be 'all', 'port', or 'tunnel'."}, 400)
+            if entity_type not in ("all", "port", "tunnel", "method", "tunnel_type"):
+                self.send_json({"ok": False, "error": f"Invalid entity_type '{entity_type}'. Must be 'all', 'port', 'tunnel', 'method', or 'tunnel_type'."}, 400)
                 return
 
             if entity_type == "port" and entity_id.lower() != "all":
@@ -2716,9 +2716,9 @@ class XForwarderWebHandler(BaseHTTPRequestHandler):
                     self.send_json({"ok": False, "error": f"Invalid port number '{entity_id}'. Must be 1-65535 or 'all'."}, 400)
                     return
 
-            if entity_type == "tunnel" and entity_id.lower() != "all":
+            if entity_type in ("tunnel", "method", "tunnel_type") and entity_id.lower() != "all":
                 if not re.match(r"^[a-zA-Z0-9_.-]{1,32}$", entity_id):
-                    self.send_json({"ok": False, "error": f"Invalid tunnel interface name '{entity_id}'."}, 400)
+                    self.send_json({"ok": False, "error": f"Invalid {entity_type} identifier '{entity_id}'."}, 400)
                     return
 
             if reset_traffic_counter:

@@ -147,6 +147,46 @@ def read_proc_net_dev() -> Dict[str, Dict[str, int]]:
         return {}
 
 
+def classify_tunnel_type(iface_name: str) -> str:
+    """
+    Classifies a tunnel network interface name into its canonical protocol type:
+    - 'gre': GRE tunnels (gre*, gretap*)
+    - 'ipip': IPIP tunnels (ipip*, tunl*)
+    - 'wireguard': WireGuard / AmneziaWG (awg*, wg*)
+    - 'faketcp': FakeTCP streams (ftcp*)
+    - '6to4': IPv6 over IPv4 tunnels (sit*, ip6tnl*, ip6gre*)
+    - 'vxlan': Overlay networks (vxlan*, gnv*)
+    - 'tunnel_other': Generic/custom tunnel interface
+    """
+    name = (iface_name or "").lower().strip()
+    if name.startswith("gre"):
+        return "gre"
+    elif name.startswith("ipip") or name.startswith("tunl"):
+        return "ipip"
+    elif name.startswith("awg") or name.startswith("wg"):
+        return "wireguard"
+    elif name.startswith("ftcp") or name.startswith("tcp"):
+        return "faketcp"
+    elif name.startswith("sit") or name.startswith("ip6"):
+        return "6to4"
+    elif name.startswith("gnv") or name.startswith("vxlan"):
+        return "vxlan"
+    return "tunnel_other"
+
+
+TUNNEL_TYPE_LABELS: Dict[str, str] = {
+    "direct_ipv6": "Direct IPv6 Relay (HAProxy)",
+    "tunnel_dnat": "Kernel Tunnel DNAT (NFTables)",
+    "gre": "GRE Tunnel (gre*)",
+    "ipip": "IPIP Tunnel (ipip*)",
+    "wireguard": "WireGuard / AWG (awg*)",
+    "faketcp": "FakeTCP Tunnel (ftcp*)",
+    "6to4": "6to4 IPv6 Tunnel (sit*)",
+    "vxlan": "VXLAN Overlay (vxlan*)",
+    "tunnel_other": "Other Tunnel Interfaces"
+}
+
+
 def parse_haproxy_stats_csv(csv_text: str) -> Dict[int, Dict[str, int]]:
     """
     Parses HAProxy CSV output from 'show stat' command.
@@ -328,8 +368,17 @@ class TrafficCollector:
 
         deltas: Dict[Tuple[str, str], Dict[str, int]] = {}
 
+        def _record_delta(etype: str, eid: str, rx_d: int, tx_d: int) -> None:
+            if rx_d <= 0 and tx_d <= 0:
+                return
+            ekey = (etype, str(eid))
+            if ekey not in deltas:
+                deltas[ekey] = {"rx": 0, "tx": 0}
+            deltas[ekey]["rx"] += max(0, rx_d)
+            deltas[ekey]["tx"] += max(0, tx_d)
+
         with self.lock:
-            # 1. Process Ports (HAProxy source)
+            # 1. Process Ports (HAProxy source - Direct IPv6 Relay)
             for port, stats in raw_haproxy.items():
                 if ports is not None and port not in ports:
                     continue
@@ -345,13 +394,12 @@ class TrafficCollector:
 
                 self._last_counters[key] = {"rx_bytes": stats["rx_bytes"], "tx_bytes": stats["tx_bytes"]}
 
-                entity_key = ("port", str(port))
-                if entity_key not in deltas:
-                    deltas[entity_key] = {"rx": 0, "tx": 0}
-                deltas[entity_key]["rx"] += max(0, rx_delta)
-                deltas[entity_key]["tx"] += max(0, tx_delta)
+                _record_delta("port", str(port), rx_delta, tx_delta)
+                _record_delta("port_path", f"{port}:haproxy", rx_delta, tx_delta)
+                _record_delta("method", "haproxy", rx_delta, tx_delta)
+                _record_delta("tunnel_type", "direct_ipv6", rx_delta, tx_delta)
 
-            # 2. Process Ports (NFTables source)
+            # 2. Process Ports (NFTables source - Kernel Tunnel DNAT)
             for port, stats in raw_nft.items():
                 if ports is not None and port not in ports:
                     continue
@@ -366,11 +414,10 @@ class TrafficCollector:
 
                 self._last_counters[key] = {"rx_bytes": stats["rx_bytes"], "tx_bytes": stats["tx_bytes"]}
 
-                entity_key = ("port", str(port))
-                if entity_key not in deltas:
-                    deltas[entity_key] = {"rx": 0, "tx": 0}
-                deltas[entity_key]["rx"] += max(0, rx_delta)
-                deltas[entity_key]["tx"] += max(0, tx_delta)
+                _record_delta("port", str(port), rx_delta, tx_delta)
+                _record_delta("port_path", f"{port}:nftables", rx_delta, tx_delta)
+                _record_delta("method", "nftables", rx_delta, tx_delta)
+                _record_delta("tunnel_type", "tunnel_dnat", rx_delta, tx_delta)
 
             # 3. Process Tunnels from /proc/net/dev
             for iface, stats in raw_net_dev.items():
@@ -391,11 +438,9 @@ class TrafficCollector:
 
                 self._last_counters[key] = {"rx_bytes": stats["rx_bytes"], "tx_bytes": stats["tx_bytes"]}
 
-                entity_key = ("tunnel", iface)
-                if entity_key not in deltas:
-                    deltas[entity_key] = {"rx": 0, "tx": 0}
-                deltas[entity_key]["rx"] += max(0, rx_delta)
-                deltas[entity_key]["tx"] += max(0, tx_delta)
+                _record_delta("tunnel", iface, rx_delta, tx_delta)
+                ttype = classify_tunnel_type(iface)
+                _record_delta("tunnel_type", ttype, rx_delta, tx_delta)
 
             self._last_collect_time = now
 
@@ -558,6 +603,22 @@ def reset_traffic_counter(
                         reset_offset_rx = excluded.reset_offset_rx,
                         reset_offset_tx = excluded.reset_offset_tx;
                 """, (clean_type, clean_id, now, off_rx, off_tx))
+                if clean_type == "port":
+                    cursor.execute("SELECT entity_id, sum(rx_bytes), sum(tx_bytes) FROM traffic_hourly WHERE entity_type = 'port_path' AND entity_id LIKE ? GROUP BY entity_id;", (f"{clean_id}:%",))
+                    for sub_eid, s_rx, s_tx in cursor.fetchall():
+                        s_off_rx = 0 if wipe_history else int(s_rx or 0)
+                        s_off_tx = 0 if wipe_history else int(s_tx or 0)
+                        cursor.execute("""
+                            INSERT INTO traffic_resets (entity_type, entity_id, reset_timestamp, reset_offset_rx, reset_offset_tx)
+                            VALUES ('port_path', ?, ?, ?, ?)
+                            ON CONFLICT(entity_type, entity_id) DO UPDATE SET
+                                reset_timestamp = excluded.reset_timestamp,
+                                reset_offset_rx = excluded.reset_offset_rx,
+                                reset_offset_tx = excluded.reset_offset_tx;
+                        """, (sub_eid, now, s_off_rx, s_off_tx))
+                    if wipe_history:
+                        cursor.execute("DELETE FROM traffic_hourly WHERE entity_type = 'port_path' AND entity_id LIKE ?;", (f"{clean_id}:%",))
+
                 if wipe_history:
                     cursor.execute("DELETE FROM traffic_hourly WHERE entity_type = ? AND entity_id = ?;", (clean_type, clean_id))
 
@@ -635,12 +696,19 @@ def get_traffic_summary(
             """
             params: List[Any] = [cutoff_ts]
 
-            if entity_type:
+            clean_etype = entity_type.strip().lower() if entity_type else ""
+            clean_eid = entity_id.strip() if entity_id else ""
+
+            if clean_etype and clean_etype != "all":
                 query += " AND entity_type = ?"
-                params.append(entity_type.strip().lower())
-            if entity_id:
+                params.append(clean_etype)
+            else:
+                # When all entities requested, limit main summary query to 'port' and 'tunnel' so we don't double count sub-rollups
+                query += " AND entity_type IN ('port', 'tunnel')"
+
+            if clean_eid and clean_eid.lower() != "all":
                 query += " AND entity_id = ?"
-                params.append(entity_id.strip())
+                params.append(clean_eid)
 
             query += " ORDER BY period_start ASC;"
 
@@ -694,8 +762,8 @@ def get_traffic_summary(
                 summary["cycle_bytes"] += (c_rx + c_tx)
 
             # If a specific entity was requested, reflect that entity's stats directly in top-level fields
-            if entity_type and entity_id and entity_id.lower() != "all":
-                target_key = f"{entity_type.strip().lower()}:{entity_id.strip()}"
+            if clean_etype and clean_eid and clean_eid.lower() != "all":
+                target_key = f"{clean_etype}:{clean_eid}"
                 ent = summary["entities"].get(target_key)
                 if ent:
                     summary["cycle_rx"] = ent["cycle_rx"]
@@ -709,6 +777,72 @@ def get_traffic_summary(
             else:
                 summary["cycle_total"] = summary["cycle_bytes"]
                 summary["reset_timestamp"] = global_reset.get("reset_timestamp", 0.0) if isinstance(global_reset, dict) else float(global_reset or 0.0)
+
+            # 1. Path breakdown for a specific port (HAProxy vs NFTables)
+            if clean_etype == "port" and clean_eid and clean_eid != "all":
+                cursor.execute("""
+                    SELECT entity_id, sum(rx_bytes), sum(tx_bytes), sum(total_bytes)
+                    FROM traffic_hourly
+                    WHERE entity_type = 'port_path' AND entity_id LIKE ? AND period_start >= ?
+                    GROUP BY entity_id;
+                """, (f"{clean_eid}:%", cutoff_ts))
+                p_tot_sum = summary["total_bytes"]
+                path_list = []
+                for peid, prx, ptx, ptot in cursor.fetchall():
+                    sub_key = peid.split(":", 1)[1] if ":" in peid else peid
+                    lbl = "Direct IPv6 (HAProxy Relay)" if sub_key == "haproxy" else ("Kernel Tunnel DNAT (NFTables)" if sub_key == "nftables" else sub_key)
+                    pct = round((float(ptot) / p_tot_sum * 100.0), 1) if p_tot_sum > 0 else 0.0
+                    path_list.append({
+                        "key": sub_key,
+                        "label": lbl,
+                        "rx_bytes": int(prx or 0),
+                        "tx_bytes": int(ptx or 0),
+                        "total_bytes": int(ptot or 0),
+                        "percentage": pct
+                    })
+                summary["path_breakdown"] = path_list
+
+            # 2. Global Breakdown by Forwarding Method & Tunnel Type
+            elif not clean_etype or clean_etype == "all":
+                type_breakdown = []
+                port_sum = sum(e["total_bytes"] for k, e in summary["entities"].items() if e["entity_type"] == "port")
+                cursor.execute("""
+                    SELECT entity_id, sum(rx_bytes), sum(tx_bytes), sum(total_bytes)
+                    FROM traffic_hourly
+                    WHERE entity_type = 'method' AND period_start >= ?
+                    GROUP BY entity_id;
+                """, (cutoff_ts,))
+                for meid, mrx, mtx, mtot in cursor.fetchall():
+                    lbl = "Direct IPv6 Relay (HAProxy)" if meid == "haproxy" else ("Kernel Tunnel DNAT (NFTables)" if meid == "nftables" else meid)
+                    pct = round((float(mtot) / port_sum * 100.0), 1) if port_sum > 0 else 0.0
+                    type_breakdown.append({
+                        "key": f"method:{meid}",
+                        "label": lbl,
+                        "rx_bytes": int(mrx or 0),
+                        "tx_bytes": int(mtx or 0),
+                        "total_bytes": int(mtot or 0),
+                        "percentage": pct
+                    })
+
+                cursor.execute("""
+                    SELECT entity_id, sum(rx_bytes), sum(tx_bytes), sum(total_bytes)
+                    FROM traffic_hourly
+                    WHERE entity_type = 'tunnel_type' AND entity_id NOT IN ('direct_ipv6', 'tunnel_dnat') AND period_start >= ?
+                    GROUP BY entity_id;
+                """, (cutoff_ts,))
+                tunnel_sum = sum(e["total_bytes"] for k, e in summary["entities"].items() if e["entity_type"] == "tunnel")
+                for teid, trx, ttx, ttot in cursor.fetchall():
+                    lbl = TUNNEL_TYPE_LABELS.get(teid, f"Tunnel ({teid})")
+                    pct = round((float(ttot) / tunnel_sum * 100.0), 1) if tunnel_sum > 0 else 0.0
+                    type_breakdown.append({
+                        "key": f"tunnel_type:{teid}",
+                        "label": lbl,
+                        "rx_bytes": int(trx or 0),
+                        "tx_bytes": int(ttx or 0),
+                        "total_bytes": int(ttot or 0),
+                        "percentage": pct
+                    })
+                summary["type_breakdown"] = type_breakdown
 
         finally:
             conn.close()
@@ -771,12 +905,18 @@ def get_traffic_timeseries(
             """
             params: List[Any] = [cutoff_ts]
 
-            if entity_type:
+            clean_etype = entity_type.strip().lower() if entity_type else ""
+            clean_eid = entity_id.strip() if entity_id else ""
+
+            if clean_etype and clean_etype != "all":
                 query += " AND entity_type = ?"
-                params.append(entity_type.strip().lower())
-            if entity_id:
+                params.append(clean_etype)
+            else:
+                query += " AND entity_type IN ('port', 'tunnel')"
+
+            if clean_eid and clean_eid.lower() != "all":
                 query += " AND entity_id = ?"
-                params.append(entity_id.strip())
+                params.append(clean_eid)
 
             query += f" GROUP BY strftime('{group_fmt}', period_start, 'unixepoch') ORDER BY bucket_start ASC;"
 

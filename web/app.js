@@ -4390,6 +4390,7 @@ let trafficModalLoading = false;
 
 function populateTrafficEntitySelect(selectedType, selectedId) {
     const portOptgroup = document.getElementById("trafficPortOptgroup");
+    const typeOptgroup = document.getElementById("trafficTypeOptgroup");
     const tunnelOptgroup = document.getElementById("trafficTunnelOptgroup");
     const entitySelect = document.getElementById("trafficEntitySelect");
     if (!entitySelect) return;
@@ -4409,13 +4410,23 @@ function populateTrafficEntitySelect(selectedType, selectedId) {
         }
     }
 
+    if (typeOptgroup) {
+        typeOptgroup.innerHTML = `
+            <option value="method:haproxy">⚡ Direct IPv6 Relay (HAProxy)</option>
+            <option value="method:nftables">🛡️ Kernel Tunnel DNAT (NFTables)</option>
+            <option value="tunnel_type:gre">🌐 GRE Tunnels (gre*)</option>
+            <option value="tunnel_type:ipip">🌐 IPIP Tunnels (ipip*)</option>
+            <option value="tunnel_type:wireguard">🌐 WireGuard / AWG (awg*)</option>
+        `;
+    }
+
     if (tunnelOptgroup) {
         const tunnels = (lastRuntime && lastRuntime.tunnel_interfaces) || (lastTrafficData && lastTrafficData.tunnels ? Object.keys(lastTrafficData.tunnels).map(name => ({ name })) : []);
         const tunnelNames = Array.from(new Set(tunnels.map(t => (typeof t === 'string' ? t : t.name)).filter(Boolean)));
         if (tunnelNames.length > 0) {
             tunnelOptgroup.innerHTML = tunnelNames
                 .sort()
-                .map(name => `<option value="tunnel:${escapeHtml(name)}">Tunnel: ${escapeHtml(name)}</option>`)
+                .map(name => `<option value="tunnel:${escapeHtml(name)}">Tunnel Interface: ${escapeHtml(name)}</option>`)
                 .join("");
         } else {
             tunnelOptgroup.innerHTML = `<option disabled>No tunnel interfaces</option>`;
@@ -4432,7 +4443,8 @@ function populateTrafficEntitySelect(selectedType, selectedId) {
         } else {
             const opt = document.createElement("option");
             opt.value = targetVal;
-            opt.textContent = `${selectedType === 'port' ? 'Port :' : 'Tunnel: '}${selectedId}`;
+            const prefix = selectedType === 'port' ? 'Port :' : (selectedType === 'tunnel' ? 'Tunnel: ' : (selectedType === 'method' ? 'Method: ' : 'Type: '));
+            opt.textContent = `${prefix}${selectedId}`;
             entitySelect.appendChild(opt);
             entitySelect.value = targetVal;
         }
@@ -4485,6 +4497,65 @@ function handleTrafficPeriodChange(period) {
     loadTrafficModalData();
 }
 
+function renderTrafficBreakdown(summary, entityType, entityId) {
+    const section = document.getElementById("trafficBreakdownSection");
+    const grid = document.getElementById("trafficBreakdownGrid");
+    const titleEl = document.getElementById("trafficBreakdownTitle");
+    const subEl = document.getElementById("trafficBreakdownSubtitle");
+    if (!section || !grid) return;
+
+    let items = [];
+    if (entityType === "port" && summary.path_breakdown && summary.path_breakdown.length > 0) {
+        if (titleEl) titleEl.textContent = `Port :${entityId} Relay Paths Breakdown`;
+        if (subEl) subEl.textContent = "Traffic divided by active forwarding path";
+        items = summary.path_breakdown;
+    } else if (summary.type_breakdown && summary.type_breakdown.length > 0) {
+        if (titleEl) titleEl.textContent = "Forwarding Methods & Tunnel Types Breakdown";
+        if (subEl) subEl.textContent = "Distribution across Direct IPv6 and tunnel protocols";
+        items = summary.type_breakdown;
+    }
+
+    if (!items || items.length === 0) {
+        section.style.display = "none";
+        return;
+    }
+
+    section.style.display = "flex";
+
+    const colors = [
+        "var(--accent-mint)",
+        "var(--accent-cyan)",
+        "var(--accent-violet)",
+        "var(--accent-amber)",
+        "var(--accent-rose)",
+        "var(--accent-blue)"
+    ];
+
+    grid.innerHTML = items.map((it, idx) => {
+        const color = colors[idx % colors.length];
+        const pct = Math.min(100, Math.max(0, it.percentage || 0));
+        const total = it.total_bytes || 0;
+        const tx = it.tx_bytes || 0;
+        const rx = it.rx_bytes || 0;
+
+        return `
+            <div class="breakdown-card">
+                <div class="breakdown-card-top">
+                    <span class="breakdown-name" title="${escapeHtml(it.label)}">${escapeHtml(it.label)}</span>
+                    <span class="breakdown-pct-chip" style="color:${color}; background:${color}1f;">${pct}%</span>
+                </div>
+                <div class="breakdown-bar-track">
+                    <div class="breakdown-bar-fill" style="width:${pct}%; background:${color};"></div>
+                </div>
+                <div class="breakdown-meta-row">
+                    <span style="font-weight:700; color:var(--text-primary);">${formatBytes(total)}</span>
+                    <span>↓ ${formatBytes(tx)} · ↑ ${formatBytes(rx)}</span>
+                </div>
+            </div>
+        `;
+    }).join("");
+}
+
 async function loadTrafficModalData() {
     if (trafficModalLoading) return;
     trafficModalLoading = true;
@@ -4502,6 +4573,14 @@ async function loadTrafficModalData() {
         } else if (entityType === "port") {
             titleEl.textContent = `Port :${entityId} Bandwidth Analytics`;
             if (subEl) subEl.textContent = `Traffic accounting for forwarded port ${entityId} (HAProxy / NFTables / Nginx)`;
+        } else if (entityType === "method") {
+            const methodLabel = entityId === "haproxy" ? "Direct IPv6 (HAProxy Relay)" : "Kernel Tunnel DNAT (NFTables)";
+            titleEl.textContent = `${methodLabel} Analytics`;
+            if (subEl) subEl.textContent = `Aggregated bandwidth forwarded via ${methodLabel}`;
+        } else if (entityType === "tunnel_type") {
+            const tLabel = entityId.toUpperCase();
+            titleEl.textContent = `${tLabel} Tunnels Bandwidth Analytics`;
+            if (subEl) subEl.textContent = `Aggregated kernel wire traffic across all ${tLabel} interfaces`;
         } else {
             titleEl.textContent = `Tunnel [${entityId}] Bandwidth Analytics`;
             if (subEl) subEl.textContent = `Kernel wire-speed accounting on interface ${entityId}`;
@@ -4564,7 +4643,10 @@ async function loadTrafficModalData() {
         if (kpiTxMeta) kpiTxMeta.textContent = `Outbound in ${pLabel.toLowerCase()}`;
         if (kpiRxMeta) kpiRxMeta.textContent = `Inbound in ${pLabel.toLowerCase()}`;
 
-        // 2. Render Chart & Table
+        // 2. Render Forwarding Path & Tunnel Breakdown Section
+        renderTrafficBreakdown(summary, entityType, entityId);
+
+        // 3. Render Chart & Table
         renderTrafficBarsChart(rows);
         renderTrafficTable(rows);
 

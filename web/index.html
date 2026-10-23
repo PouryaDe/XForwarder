@@ -1988,7 +1988,7 @@
 
     <!-- Traffic Analytics Modal -->
     <div class="modal-backdrop" id="trafficModal">
-        <div class="modal" style="max-width: 860px; width: 95%;">
+        <div class="modal modal-traffic-dialog" style="max-width: 960px; width: 95%;">
             <div class="modal-header">
                 <div class="modal-title-wrap">
                     <div class="traffic-title-flex">
@@ -2016,6 +2016,7 @@
                         <select id="trafficEntitySelect" class="form-control form-control-sm select-styled" onchange="handleTrafficEntityChange()">
                             <option value="all:all">All Ports & Tunnels</option>
                             <optgroup label="Forwarded Ports" id="trafficPortOptgroup"></optgroup>
+                            <optgroup label="Forwarding Methods & Tunnel Types" id="trafficTypeOptgroup"></optgroup>
                             <optgroup label="Tunnel Interfaces" id="trafficTunnelOptgroup"></optgroup>
                         </select>
                     </div>
@@ -2027,14 +2028,14 @@
                     </div>
                 </div>
 
-                <!-- KPI Cards Grid -->
+                <!-- KPI Cards Grid (Fully Responsive) -->
                 <div class="traffic-kpi-grid">
                     <div class="traffic-kpi-card card-cycle-highlight">
                         <div class="kpi-top">
-                            <span class="kpi-title">Current Billing Cycle</span>
+                            <span class="kpi-title">Billing Cycle</span>
                             <button type="button" class="btn btn-secondary btn-xs btn-cycle-reset" onclick="triggerTrafficResetFromModal()" title="Reset current billing cycle counter">
                                 <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M23 4v6h-6"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
-                                <span>Reset Cycle</span>
+                                <span>Reset</span>
                             </button>
                         </div>
                         <div class="kpi-value kpi-val-mint" id="kpiCycleTotal">0 B</div>
@@ -2043,8 +2044,8 @@
 
                     <div class="traffic-kpi-card">
                         <div class="kpi-top">
-                            <span class="kpi-title">Total Download (TX)</span>
-                            <span class="kpi-badge badge-mint">↓ Download</span>
+                            <span class="kpi-title">Download (TX)</span>
+                            <span class="kpi-badge badge-mint">↓ Outbound</span>
                         </div>
                         <div class="kpi-value text-mint" id="kpiTotalTx">0 B</div>
                         <div class="kpi-meta" id="kpiTxMeta">Sent to clients / targets</div>
@@ -2052,8 +2053,8 @@
 
                     <div class="traffic-kpi-card">
                         <div class="kpi-top">
-                            <span class="kpi-title">Total Upload (RX)</span>
-                            <span class="kpi-badge badge-cyan">↑ Upload</span>
+                            <span class="kpi-title">Upload (RX)</span>
+                            <span class="kpi-badge badge-cyan">↑ Inbound</span>
                         </div>
                         <div class="kpi-value text-cyan" id="kpiTotalRx">0 B</div>
                         <div class="kpi-meta" id="kpiRxMeta">Received from clients</div>
@@ -2066,6 +2067,25 @@
                         </div>
                         <div class="kpi-value text-violet" id="kpiTotalBytes">0 B</div>
                         <div class="kpi-meta" id="kpiPeriodMeta">Across selected period</div>
+                    </div>
+                </div>
+
+                <!-- Forwarding Path & Tunnel Breakdown Section -->
+                <div class="traffic-breakdown-section" id="trafficBreakdownSection">
+                    <div class="traffic-breakdown-header">
+                        <div class="breakdown-title-flex">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect>
+                                <rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect>
+                                <line x1="6" y1="6" x2="6.01" y2="6"></line>
+                                <line x1="6" y1="18" x2="6.01" y2="18"></line>
+                            </svg>
+                            <span id="trafficBreakdownTitle">Forwarding Path & Tunnel Breakdown</span>
+                        </div>
+                        <span class="breakdown-subtitle" id="trafficBreakdownSubtitle">Distribution by relay method</span>
+                    </div>
+                    <div class="traffic-breakdown-grid" id="trafficBreakdownGrid">
+                        <!-- Dynamically populated path/tunnel distribution cards -->
                     </div>
                 </div>
 

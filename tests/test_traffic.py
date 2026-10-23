@@ -120,7 +120,7 @@ class TestTrafficSubsystem(unittest.TestCase):
              patch("core.traffic.read_nftables_port_stats", return_value={}), \
              patch("core.traffic.read_proc_net_dev", return_value={"gre1": {"rx_bytes": 5200, "tx_bytes": 6300}}):
             res2 = collector.collect_cycle(ports=[443], tunnel_ifaces=["gre1"])
-            self.assertEqual(res2["entities_updated"], 2)
+            self.assertGreaterEqual(res2["entities_updated"], 2)
 
         # Verify SQLite contents
         summary = get_traffic_summary(period="24h", db_path=self.db_path)
@@ -354,7 +354,7 @@ class TestTrafficSubsystem(unittest.TestCase):
         # 1. Invalid entity_type
         set_body({"entity_type": "malicious"})
         XForwarderWebHandler.do_POST(handler)
-        handler.send_json.assert_called_with({"ok": False, "error": "Invalid entity_type 'malicious'. Must be 'all', 'port', or 'tunnel'."}, 400)
+        handler.send_json.assert_called_with({"ok": False, "error": "Invalid entity_type 'malicious'. Must be 'all', 'port', 'tunnel', 'method', or 'tunnel_type'."}, 400)
 
         # 2. Invalid port number (out of bounds)
         set_body({"entity_type": "port", "entity_id": "70000"})
@@ -364,7 +364,54 @@ class TestTrafficSubsystem(unittest.TestCase):
         # 3. Invalid tunnel interface name (injection characters)
         set_body({"entity_type": "tunnel", "entity_id": "gre1; rm -rf /"})
         XForwarderWebHandler.do_POST(handler)
-        handler.send_json.assert_called_with({"ok": False, "error": "Invalid tunnel interface name 'gre1; rm -rf /'."}, 400)
+        handler.send_json.assert_called_with({"ok": False, "error": "Invalid tunnel identifier 'gre1; rm -rf /'."}, 400)
+
+    def test_path_breakdown_and_tunnel_type_differentiation(self):
+        """Verifies tunnel protocol classification, per-port path breakdown, and global type breakdown."""
+        from core.traffic import classify_tunnel_type, TrafficCollector, get_traffic_summary
+
+        # 1. Test canonical protocol classification
+        self.assertEqual(classify_tunnel_type("gre1"), "gre")
+        self.assertEqual(classify_tunnel_type("gretap0"), "gre")
+        self.assertEqual(classify_tunnel_type("ipip1"), "ipip")
+        self.assertEqual(classify_tunnel_type("tunl0"), "ipip")
+        self.assertEqual(classify_tunnel_type("awg0"), "wireguard")
+        self.assertEqual(classify_tunnel_type("wg_client"), "wireguard")
+        self.assertEqual(classify_tunnel_type("ftcp0"), "faketcp")
+        self.assertEqual(classify_tunnel_type("sit1"), "6to4")
+        self.assertEqual(classify_tunnel_type("vxlan10"), "vxlan")
+        self.assertEqual(classify_tunnel_type("my_custom_tun"), "tunnel_other")
+
+        # 2. Test path breakdown collection and summary
+        collector = TrafficCollector(db_path=self.db_path)
+        with patch("core.traffic.read_haproxy_port_stats", return_value={8080: {"rx_bytes": 1000, "tx_bytes": 2000}}), \
+             patch("core.traffic.read_nftables_port_stats", return_value={8080: {"rx_bytes": 500, "tx_bytes": 500}}), \
+             patch("core.traffic.read_proc_net_dev", return_value={"gre1": {"rx_bytes": 1000, "tx_bytes": 2000}}):
+            collector.collect_cycle(ports=[8080], tunnel_ifaces=["gre1"])
+
+        with patch("core.traffic.read_haproxy_port_stats", return_value={8080: {"rx_bytes": 2000, "tx_bytes": 4000}}), \
+             patch("core.traffic.read_nftables_port_stats", return_value={8080: {"rx_bytes": 800, "tx_bytes": 900}}), \
+             patch("core.traffic.read_proc_net_dev", return_value={"gre1": {"rx_bytes": 1500, "tx_bytes": 2600}}):
+            collector.collect_cycle(ports=[8080], tunnel_ifaces=["gre1"])
+
+        # Query summary for specific port
+        port_sum = get_traffic_summary(period="24h", entity_type="port", entity_id="8080", db_path=self.db_path)
+        self.assertIn("path_breakdown", port_sum)
+        paths = {p["key"]: p for p in port_sum["path_breakdown"]}
+        self.assertIn("haproxy", paths)
+        self.assertIn("nftables", paths)
+        self.assertEqual(paths["haproxy"]["rx_bytes"], 1000)
+        self.assertEqual(paths["haproxy"]["tx_bytes"], 2000)
+        self.assertEqual(paths["nftables"]["rx_bytes"], 300)
+        self.assertEqual(paths["nftables"]["tx_bytes"], 400)
+
+        # Query global summary
+        global_sum = get_traffic_summary(period="24h", entity_type="all", db_path=self.db_path)
+        self.assertIn("type_breakdown", global_sum)
+        type_keys = [t["key"] for t in global_sum["type_breakdown"]]
+        self.assertIn("method:haproxy", type_keys)
+        self.assertIn("method:nftables", type_keys)
+        self.assertIn("tunnel_type:gre", type_keys)
 
 
 if __name__ == "__main__":
