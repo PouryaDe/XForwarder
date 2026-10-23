@@ -25,11 +25,16 @@ try:
         summarize_cycle, aggregate_window, compute_score, classify_status, decide_route, pick_best_now
     )
     from core.metrics import parse_ping_output, sanitize_target_host
+    from core.traffic import TrafficCollector
 except ImportError:
     from route_quality import (
         summarize_cycle, aggregate_window, compute_score, classify_status, decide_route, pick_best_now
     )
     from metrics import parse_ping_output, sanitize_target_host
+    try:
+        from traffic import TrafficCollector
+    except ImportError:
+        TrafficCollector = None
 
 DEFAULT_CONFIG_PATH = "/etc/xforwarder/config.json"
 LEGACY_CONFIG_PATH = "/etc/forward-manager/config.json"
@@ -83,6 +88,8 @@ class XForwarderEngine:
         self._last_nft_content: Optional[str] = None
         self._pid_path: Optional[str] = None
         self._loss_scheduler: Optional[Any] = None
+        self._traffic_collector: Optional[Any] = None
+        self._last_traffic_cycle: float = 0.0
         self._probe_executor: Optional[ThreadPoolExecutor] = None
         self.load_config()
 
@@ -1475,12 +1482,42 @@ class XForwarderEngine:
 
         ipv4_block = "\n".join(ipv4_rules) if ipv4_rules else "        # No active NFTables IPv4 DNAT rules"
 
+        # Collect unique rule ports for traffic accounting named counters
+        counter_defs = []
+        forward_counters = []
+        rule_ports = set()
+        for r in self.config.get("rules", []):
+            try:
+                p = int(r.get("port", 0))
+                if p > 0:
+                    rule_ports.add(p)
+            except (ValueError, TypeError):
+                pass
+        for r in dnat_rules:
+            m = re.search(r"dport\s+(\d+)", r)
+            if m:
+                try:
+                    rule_ports.add(int(m.group(1)))
+                except ValueError:
+                    pass
+
+        for p in sorted(list(rule_ports)):
+            counter_defs.append(f"    counter cnt_in_{p} {{ }}")
+            counter_defs.append(f"    counter cnt_out_{p} {{ }}")
+            forward_counters.append(f"        tcp dport {p} counter name cnt_in_{p}")
+            forward_counters.append(f"        tcp sport {p} counter name cnt_out_{p}")
+            forward_counters.append(f"        udp dport {p} counter name cnt_in_{p}")
+            forward_counters.append(f"        udp sport {p} counter name cnt_out_{p}")
+
+        counter_defs_str = "\n".join(counter_defs) + "\n\n" if counter_defs else ""
+        forward_counters_str = "\n".join(forward_counters) + "\n" if forward_counters else ""
+
         tables_content = [
             f"""table ip xfwd_orchestrator
 delete table ip xfwd_orchestrator
 
 table ip xfwd_orchestrator {{
-    chain prerouting {{
+{counter_defs_str}    chain prerouting {{
         type nat hook prerouting priority dstnat; policy accept;
 {ipv4_block}
     }}
@@ -1499,7 +1536,7 @@ table ip xfwd_orchestrator {{
 
     chain forward {{
         type filter hook forward priority filter; policy accept;
-        ct status dnat accept
+{forward_counters_str}        ct status dnat accept
         ct state {{ established, related }} accept
     }}
 }}"""
@@ -1512,7 +1549,7 @@ table ip xfwd_orchestrator {{
 delete table ip6 xfwd_orchestrator
 
 table ip6 xfwd_orchestrator {{
-    chain prerouting {{
+{counter_defs_str}    chain prerouting {{
         type nat hook prerouting priority dstnat; policy accept;
 {ipv6_block}
     }}
@@ -1531,7 +1568,7 @@ table ip6 xfwd_orchestrator {{
 
     chain forward {{
         type filter hook forward priority filter; policy accept;
-        ct status dnat accept
+{forward_counters_str}        ct status dnat accept
         ct state {{ established, related }} accept
     }}
 }}"""
@@ -1924,6 +1961,12 @@ http {{
             self._loss_scheduler = LossMonitorScheduler(config_loader_fn=self.load_config)
             self._loss_scheduler.start()
 
+        if TrafficCollector and not self._traffic_collector:
+            try:
+                self._traffic_collector = TrafficCollector()
+            except Exception:
+                pass
+
         try:
             while self.running:
                 try:
@@ -1946,6 +1989,16 @@ http {{
                             changed_priorities[r_id] = rule.get("active_priority", 1)
 
                     self.runtime_state["last_check_timestamp"] = time.time()
+
+                    # Periodic traffic accounting sample (every ~30s)
+                    now_ts = time.time()
+                    if self._traffic_collector and (now_ts - self._last_traffic_cycle >= 30.0):
+                        try:
+                            rule_ports_list = [int(r["port"]) for r in rules if r.get("port")]
+                            self._traffic_collector.collect_cycle(ports=rule_ports_list)
+                            self._last_traffic_cycle = now_ts
+                        except Exception:
+                            pass
 
                     config_changed = (self._get_rules_fingerprint() != self._last_applied_rules)
 

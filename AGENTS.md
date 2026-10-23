@@ -123,6 +123,13 @@ XForwarder/
     - Import engine (`import_config_data`) and modal paste textarea support full configurations (`{"rules": [...]}`), raw rules arrays (`[...]`), and single-rule dictionaries (`{"port": 443, ...}`) with pre-import atomic backups.
     - Inline event parameters enforce safe quote-escaping (`safeInlineArg`) preventing attribute breakout or syntax errors on custom categories.
 
+16. **Per-Port & Per-Tunnel Traffic Accounting & Delta Engine (Mandatory)**:
+    - Zero-Overhead Kernel & Proxy Metrics: NFTables forwarding tracks established TCP/UDP streams via kernel named counters (`cnt_in_<port>`, `cnt_out_<port>`). HAProxy runtime stats socket streams client upload/download bytes (`bin`, `bout`). Tunnel interfaces track wire traffic directly via `/proc/net/dev`.
+    - Delta Engine: Raw kernel and proxy counters are sampled periodically (~30s), computing non-negative monotonic deltas immune to service reloads, system reboots, and counter roll-overs.
+    - Pre-Aggregated Hourly Rollups: Hourly traffic records (`traffic_hourly`) persist in SQLite (`metrics.db` in WAL mode) with 90-day retention and auto-pruning. Multi-granularity queries provide 24h (hourly), 7d/30d (daily), and 12m (monthly) analytical breakdowns with upload (RX), download (TX), and total usage.
+    - Baseline Offset Reset Model: Billing cycle resets persist current totals in `traffic_resets` as baseline offsets. The current billing cycle counter resets instantly to 0 while historical analytical time-series charts remain intact. Granular reset endpoints (`/api/traffic/reset`) support all entities, single ports (1-65535), and tunnel interfaces with optional permanent history wipe (`wipe_history=true`).
+
+
 
 ---
 

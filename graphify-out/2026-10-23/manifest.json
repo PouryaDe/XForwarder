@@ -1,8 +1,8 @@
 {
   "core/engine.py": {
-    "mtime": 1792778766.372063,
-    "seen": 1792778865.1673865,
-    "ast_hash": "198c30edae9b367d9e1fc50b38d78ea0",
+    "mtime": 1792779082.299959,
+    "seen": 1792779322.6128597,
+    "ast_hash": "8158b8ad68bbb8fecc5bea903276d1bd",
     "semantic_hash": ""
   },
   "core/web_server.py": {
@@ -72,9 +72,9 @@
     "semantic_hash": ""
   },
   "AGENTS.md": {
-    "mtime": 1792773631.0466783,
-    "seen": 1792773977.73352,
-    "ast_hash": "62c003706e0e3648a2d8dcefe82be04b",
+    "mtime": 1792779210.9374344,
+    "seen": 1792779322.6129098,
+    "ast_hash": "96efda51aa19af949f8652da7aff664a",
     "semantic_hash": ""
   },
   "README.md": {
@@ -144,15 +144,15 @@
     "semantic_hash": ""
   },
   ".agents/session-state.json": {
-    "mtime": 1792774805.0821874,
-    "seen": 1792774863.165049,
-    "ast_hash": "c79b7d5da7abbcb37fce47fda57543f1",
+    "mtime": 1792778890.7254872,
+    "seen": 1792779322.6128578,
+    "ast_hash": "18a8a8344e449a7f51fa54b00345b4f1",
     "semantic_hash": ""
   },
   ".agents/AGENTS.md": {
-    "mtime": 1792773722.158606,
-    "seen": 1792773977.7334907,
-    "ast_hash": "2ef21f265a7fb9794ae786912ee1fe5d",
+    "mtime": 1792779258.977318,
+    "seen": 1792779322.612879,
+    "ast_hash": "3ad8d8f9f08ef7153d45b88f350a6282",
     "semantic_hash": ""
   },
   ".agents/experiences/001-zero-collision-haproxy-nftables-failover.md": {
@@ -330,9 +330,9 @@
     "semantic_hash": ""
   },
   "tests/test_performance_and_optimizations.py": {
-    "mtime": 1792778819.2603884,
-    "seen": 1792778865.1674016,
-    "ast_hash": "160db31b154f23db135317be17d76603",
+    "mtime": 1792779115.663116,
+    "seen": 1792779322.6128743,
+    "ast_hash": "d23a80978a5c5bbb059903ab7a57e5d1",
     "semantic_hash": ""
   },
   ".agents/experiences/008-full-stack-performance-and-fast-ipc.md": {
@@ -390,9 +390,9 @@
     "semantic_hash": ""
   },
   ".agents/experiences/012-kernel-zero-copy-splicing-bbr-network-tuning-and-session-timeout-optimization.md": {
-    "mtime": 1792695620.090052,
-    "seen": 1792712162.6647525,
-    "ast_hash": "2aae9998585f280fd7f0eacd837f3435",
+    "mtime": 1792779288.2292724,
+    "seen": 1792779322.612889,
+    "ast_hash": "b685696c0743f339d8b03f33877c5b2f",
     "semantic_hash": ""
   },
   "core/route_quality.py": {

@@ -6,6 +6,9 @@ const API_BASE = basePath ? `${basePath}/api` : "/api";
 
 let currentRules = [];
 let lastRuntime = {};
+let lastTrafficData = null;
+let currentTrafficEntity = "all:all";
+let currentTrafficPeriod = "24h";
 let pollTimer = null;
 let searchQuery = "";
 let activeFilter = "all";
@@ -13,6 +16,20 @@ let currentViewMode = localStorage.getItem("xfwd_rules_view") || "cards";
 let currentSort = localStorage.getItem("xfwd_rules_sort") || "port_asc";
 let previousPortVal = "";
 let confirmResolve = null;
+
+// Byte unit formatter for human-readable traffic presentation
+function formatBytes(bytes, decimals = 2) {
+    if (bytes === undefined || bytes === null || isNaN(bytes)) return "0 B";
+    const b = Number(bytes);
+    if (b <= 0) return "0 B";
+    const k = 1024;
+    const dm = decimals < 0 ? 0 : decimals;
+    const sizes = ["B", "KB", "MB", "GB", "TB", "PB"];
+    const i = Math.floor(Math.log(b) / Math.log(k));
+    const idx = Math.min(i, sizes.length - 1);
+    const val = parseFloat((b / Math.pow(k, idx)).toFixed(dm));
+    return `${val} ${sizes[idx]}`;
+}
 
 // DOM Elements
 const loginScreen = document.getElementById("loginScreen");
@@ -756,6 +773,7 @@ async function fetchStatus() {
         const cfg = data.config || {};
         lastRuntime = data.runtime || {};
         currentRules = cfg.rules || [];
+        lastTrafficData = data.traffic || null;
         updateCategoryDatalist(currentRules);
 
         // Reconcile pending optimistic overrides to prevent UI flicker during background polling
@@ -901,6 +919,21 @@ function renderStats(rules, runtime) {
     if (runtime.active_services) {
         engineStatusBadge.innerText = "SYNCED";
         engineStatusBadge.className = "stat-badge badge-active";
+    }
+
+    // Update Overview Traffic Stat Card (24h roll-up)
+    const statTrafficTotal = document.getElementById("statTrafficTotal");
+    const statTrafficSubtext = document.getElementById("statTrafficSubtext");
+    if (statTrafficTotal) {
+        if (lastTrafficData && lastTrafficData.total_24h) {
+            statTrafficTotal.innerText = formatBytes(lastTrafficData.total_24h.total);
+            if (statTrafficSubtext) {
+                statTrafficSubtext.innerHTML = `↓ ${formatBytes(lastTrafficData.total_24h.tx)} &middot; ↑ ${formatBytes(lastTrafficData.total_24h.rx)}`;
+            }
+        } else {
+            statTrafficTotal.innerText = "0 B";
+            if (statTrafficSubtext) statTrafficSubtext.innerHTML = `↓ 0 B &middot; ↑ 0 B`;
+        }
     }
 }
 
@@ -1348,6 +1381,27 @@ function renderNetworkTopology(network) {
                     }
                 }
 
+                const tName = String(t.name || "");
+                const tTraffic = (lastTrafficData && lastTrafficData.tunnels) ? lastTrafficData.tunnels[tName] : null;
+                const tTrafficHtml = tTraffic ? `
+                    <div class="tunnel-traffic-bar">
+                        <div class="tunnel-traffic-info">
+                            <span class="tunnel-traffic-label">Cycle:</span>
+                            <span class="tunnel-traffic-val font-mono">${formatBytes(tTraffic.cycle_total)}</span>
+                            <span class="tunnel-traffic-sub font-mono">↓ ${formatBytes(tTraffic.cycle_rx)} · ↑ ${formatBytes(tTraffic.cycle_tx)}</span>
+                        </div>
+                        <div class="tunnel-traffic-actions">
+                            <button type="button" class="btn-tunnel-traffic" onclick="openTrafficModal('tunnel', '${escapeHtml(tName)}')" title="View Tunnel Bandwidth Analytics">
+                                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+                                <span>Stats</span>
+                            </button>
+                            <button type="button" class="btn-tunnel-traffic btn-reset" onclick="promptResetTraffic('tunnel', '${escapeHtml(tName)}')" title="Reset Billing Cycle">
+                                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+                            </button>
+                        </div>
+                    </div>
+                ` : '';
+
                 return `
                     <div class="tunnel-card ${isUp ? 'is-up' : 'is-down'}">
                         <div class="tunnel-card-top">
@@ -1371,6 +1425,7 @@ function renderNetworkTopology(network) {
                                 <span class="tunnel-val text-cyan">${escapeHtml(t.peer_ip)}</span>
                             </div>` : ""}
                         </div>
+                        ${tTrafficHtml}
                         <div class="tunnel-card-footer">
                             <div class="tunnel-ping-pill ${pingClass}" title="Real-time roundtrip latency probe">
                                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
@@ -1458,7 +1513,8 @@ function computeRulesFingerprint(filteredRules, rulesState) {
             const st = destStats[`prio_${p}`] || {};
             return `${p}:${d.type}:${d.target}:${d.port}:${d.proxy_protocol}:${d.comment || ''}:${st.status}:${st.latency_ms}:${st.jitter_ms || ''}:${st.packet_loss}:${st.composite_score || ''}:${st.reason || ''}`;
         }).join(";");
-        return `${rId}|${r.port}|${r.protocol}|${r.category || ''}|${r.created_at || 0}|${r.comment || ''}|${r.active_priority}|${r.force_override}|${rState.hold_remaining || 0}|${rState.cooldown_remaining || 0}|${rState.switch_pending_seconds || 0}|${rState.candidate_priority || 0}|${rState.is_flapping || false}|${destsStr}`;
+        const portTraffic = (lastTrafficData && lastTrafficData.ports) ? ((lastTrafficData.ports[String(r.port)] || {}).cycle_total || 0) : 0;
+        return `${rId}|${r.port}|${r.protocol}|${r.category || ''}|${r.created_at || 0}|${r.comment || ''}|${r.active_priority}|${r.force_override}|${rState.hold_remaining || 0}|${rState.cooldown_remaining || 0}|${rState.switch_pending_seconds || 0}|${rState.candidate_priority || 0}|${rState.is_flapping || false}|${portTraffic}|${destsStr}`;
     }).join("##") + `__f:${activeFilter}__s:${searchQuery}__v:${currentViewMode}__srt:${currentSort}`;
 }
 
@@ -1602,6 +1658,15 @@ function renderRuleCard(rule, rulesState) {
         `;
     }).join('');
 
+    const portKey = String(rule.port || "");
+    const pTraffic = (lastTrafficData && lastTrafficData.ports) ? lastTrafficData.ports[portKey] : null;
+    const trafficPillHtml = pTraffic ? `
+        <span class="traffic-pill-badge" onclick="openTrafficModal('port', '${escapeHtml(portKey)}')" title="Billing Cycle Traffic: ↓ ${formatBytes(pTraffic.cycle_tx)} · ↑ ${formatBytes(pTraffic.cycle_rx)} (Click for details & reset)">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+            <span>${formatBytes(pTraffic.cycle_total)}</span>
+        </span>
+    ` : '';
+
     return `
         <div class="rule-card" id="rule-card-${encodedId}">
             <div class="rule-top">
@@ -1609,12 +1674,16 @@ function renderRuleCard(rule, rulesState) {
                     <span class="port-num">:${escapeHtml(rule.port)}</span>
                     <button class="btn-copy" onclick="copyText(decodeURIComponent('${encodeURIComponent(rule.port)}'))" title="Copy Port Number">${copyPortSvg}</button>
                     <span class="proto-pill">${escapeHtml(formatProtoBadge(rule.protocol))}</span>
+                    ${trafficPillHtml}
                     ${rule.category ? `<span class="rule-category-pill" title="Category: ${escapeHtml(rule.category)}"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>${escapeHtml(rule.category)}</span>` : ''}
                     ${rState.switch_pending_seconds > 0 ? `<span class="badge-pending-switch" title="Candidate P${rState.candidate_priority || ''} sustained quality advantage. Switching after streak confirmation."><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>Switch in ${rState.switch_pending_seconds}s</span>` : ''}
                     ${rState.hold_remaining > 0 ? `<span class="badge-cooldown" title="Route held stable to prevent disruption (Min Hold: 10m)"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 14 14"/></svg>Hold ${rState.hold_remaining}s</span>` : (rState.cooldown_remaining > 0 ? `<span class="badge-cooldown" title="Post-Critical Cooldown active"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 14 14"/></svg>Cooldown ${rState.cooldown_remaining}s</span>` : '')}
                     ${rState.is_flapping ? `<span class="badge-flapping" title="Repeated route flapping detected. Cooldown extended."><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>Flap Guard</span>` : ''}
                 </div>
                 <div class="rule-actions">
+                    <button class="btn btn-secondary btn-sm" onclick="openTrafficModal('port', '${escapeHtml(portKey)}')" title="Traffic & Bandwidth Analytics">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+                    </button>
                     <button class="btn btn-secondary btn-sm btn-rule-copy" onclick="copyRuleJson(decodeURIComponent('${encodedId}'))" title="Copy Port Configuration (JSON)">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
                     </button>
@@ -1701,12 +1770,22 @@ function renderRuleListRow(rule, rulesState) {
     const testPort = activeDest ? (activeDest.port || rule.port) : rule.port;
     const testType = activeDest ? (activeDest.type || 'haproxy') : 'haproxy';
 
+    const portKey = String(rule.port || "");
+    const pTraffic = (lastTrafficData && lastTrafficData.ports) ? lastTrafficData.ports[portKey] : null;
+    const trafficPillHtml = pTraffic ? `
+        <span class="traffic-pill-badge" onclick="openTrafficModal('port', '${escapeHtml(portKey)}')" title="Billing Cycle Traffic: ↓ ${formatBytes(pTraffic.cycle_tx)} · ↑ ${formatBytes(pTraffic.cycle_rx)} (Click for details & reset)">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+            <span>${formatBytes(pTraffic.cycle_total)}</span>
+        </span>
+    ` : '';
+
     return `
         <div class="rule-list-row" id="rule-card-${encodedId}">
             <div class="rule-list-left">
                 <span class="rule-list-port">:${escapeHtml(rule.port)}</span>
                 <button class="btn-copy" onclick="copyText(decodeURIComponent('${encodeURIComponent(rule.port)}'))" title="Copy Port">${copyPortSvg}</button>
                 <span class="proto-pill">${escapeHtml(formatProtoBadge(rule.protocol))}</span>
+                ${trafficPillHtml}
                 ${rule.category ? `<span class="rule-category-pill" title="Category: ${escapeHtml(rule.category)}"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>${escapeHtml(rule.category)}</span>` : ''}
                 ${rState.switch_pending_seconds > 0 ? `<span class="badge-pending-switch" style="font-size:0.68rem; padding:2px 6px;" title="Switching to P${rState.candidate_priority || ''} in ${rState.switch_pending_seconds}s">Switch in ${rState.switch_pending_seconds}s</span>` : ''}
                 ${rState.hold_remaining > 0 ? `<span class="badge-cooldown" style="font-size:0.68rem; padding:2px 6px;" title="Min Hold 10m">Hold ${rState.hold_remaining}s</span>` : (rState.cooldown_remaining > 0 ? `<span class="badge-cooldown" style="font-size:0.68rem; padding:2px 6px;">Cooldown ${rState.cooldown_remaining}s</span>` : '')}
@@ -1723,6 +1802,9 @@ function renderRuleListRow(rule, rulesState) {
                 <button type="button" class="btn-path-test" style="height:32px; padding:0 10px;" onclick="runLivePacketLossTest(decodeURIComponent('${encodedId}'), decodeURIComponent('${encodeURIComponent(testTarget)}'), ${testPort}, '${testType}', this)" title="Test live latency & packet loss">
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
                     <span>Test</span>
+                </button>
+                <button class="btn btn-secondary btn-sm" onclick="openTrafficModal('port', '${escapeHtml(portKey)}')" title="Traffic & Bandwidth Analytics">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
                 </button>
                 <button class="btn btn-secondary btn-sm btn-rule-copy" onclick="copyRuleJson(decodeURIComponent('${encodedId}'))" title="Copy Port Configuration (JSON)">
                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
@@ -4302,11 +4384,440 @@ function initServiceRestartControls() {
     }
 }
 
+// ── Traffic & Bandwidth Accounting Subsystem ──
+
+let trafficModalLoading = false;
+
+function populateTrafficEntitySelect(selectedType, selectedId) {
+    const portOptgroup = document.getElementById("trafficPortOptgroup");
+    const tunnelOptgroup = document.getElementById("trafficTunnelOptgroup");
+    const entitySelect = document.getElementById("trafficEntitySelect");
+    if (!entitySelect) return;
+
+    if (portOptgroup) {
+        if (currentRules && currentRules.length > 0) {
+            portOptgroup.innerHTML = currentRules
+                .slice()
+                .sort((a, b) => (Number(a.port) || 0) - (Number(b.port) || 0))
+                .map(r => {
+                    const cat = r.category ? ` [${r.category}]` : "";
+                    return `<option value="port:${r.port}">Port :${escapeHtml(r.port)}${escapeHtml(cat)}</option>`;
+                })
+                .join("");
+        } else {
+            portOptgroup.innerHTML = `<option disabled>No forwarded ports</option>`;
+        }
+    }
+
+    if (tunnelOptgroup) {
+        const tunnels = (lastRuntime && lastRuntime.tunnel_interfaces) || (lastTrafficData && lastTrafficData.tunnels ? Object.keys(lastTrafficData.tunnels).map(name => ({ name })) : []);
+        const tunnelNames = Array.from(new Set(tunnels.map(t => (typeof t === 'string' ? t : t.name)).filter(Boolean)));
+        if (tunnelNames.length > 0) {
+            tunnelOptgroup.innerHTML = tunnelNames
+                .sort()
+                .map(name => `<option value="tunnel:${escapeHtml(name)}">Tunnel: ${escapeHtml(name)}</option>`)
+                .join("");
+        } else {
+            tunnelOptgroup.innerHTML = `<option disabled>No tunnel interfaces</option>`;
+        }
+    }
+
+    const targetVal = `${selectedType}:${selectedId}`;
+    if (selectedType === "all") {
+        entitySelect.value = "all:all";
+    } else {
+        const hasOption = Array.from(entitySelect.options).some(o => o.value === targetVal);
+        if (hasOption) {
+            entitySelect.value = targetVal;
+        } else {
+            const opt = document.createElement("option");
+            opt.value = targetVal;
+            opt.textContent = `${selectedType === 'port' ? 'Port :' : 'Tunnel: '}${selectedId}`;
+            entitySelect.appendChild(opt);
+            entitySelect.value = targetVal;
+        }
+    }
+}
+
+function openTrafficModal(entityType = "all", entityId = "all") {
+    const modal = document.getElementById("trafficModal");
+    if (!modal) return;
+
+    currentTrafficEntity = `${entityType}:${entityId}`;
+    populateTrafficEntitySelect(entityType, entityId);
+
+    // Reset period pills to current or 24h
+    const pills = document.querySelectorAll("#trafficPeriodPills .period-pill");
+    pills.forEach(p => {
+        if (p.getAttribute("data-period") === currentTrafficPeriod) {
+            p.classList.add("active");
+        } else {
+            p.classList.remove("active");
+        }
+    });
+
+    modal.classList.add("show");
+    loadTrafficModalData();
+}
+
+function closeTrafficModal() {
+    const modal = document.getElementById("trafficModal");
+    if (modal) modal.classList.remove("show");
+}
+
+function handleTrafficEntityChange() {
+    const entitySelect = document.getElementById("trafficEntitySelect");
+    if (!entitySelect) return;
+    currentTrafficEntity = entitySelect.value || "all:all";
+    loadTrafficModalData();
+}
+
+function handleTrafficPeriodChange(period) {
+    currentTrafficPeriod = period;
+    const pills = document.querySelectorAll("#trafficPeriodPills .period-pill");
+    pills.forEach(p => {
+        if (p.getAttribute("data-period") === period) {
+            p.classList.add("active");
+        } else {
+            p.classList.remove("active");
+        }
+    });
+    loadTrafficModalData();
+}
+
+async function loadTrafficModalData() {
+    if (trafficModalLoading) return;
+    trafficModalLoading = true;
+
+    const [entityType, entityId] = currentTrafficEntity.split(":");
+    const titleEl = document.getElementById("trafficModalTitle");
+    const subEl = document.getElementById("trafficModalSubtitle");
+    const tableBody = document.getElementById("trafficTableBody");
+    const recordsCountEl = document.getElementById("trafficRecordsCount");
+
+    if (titleEl) {
+        if (entityType === "all") {
+            titleEl.textContent = "Global Traffic & Bandwidth Analytics";
+            if (subEl) subEl.textContent = "Aggregated usage across all forwarded ports and kernel tunnels";
+        } else if (entityType === "port") {
+            titleEl.textContent = `Port :${entityId} Bandwidth Analytics`;
+            if (subEl) subEl.textContent = `Traffic accounting for forwarded port ${entityId} (HAProxy / NFTables / Nginx)`;
+        } else {
+            titleEl.textContent = `Tunnel [${entityId}] Bandwidth Analytics`;
+            if (subEl) subEl.textContent = `Kernel wire-speed accounting on interface ${entityId}`;
+        }
+    }
+
+    if (tableBody) {
+        tableBody.innerHTML = `<tr><td colspan="5" class="text-center py-4 text-muted">Loading traffic metrics...</td></tr>`;
+    }
+
+    try {
+        const [sumRes, tsRes] = await Promise.all([
+            fetch(`${API_BASE}/traffic/summary?entity_type=${encodeURIComponent(entityType)}&entity_id=${encodeURIComponent(entityId)}`),
+            fetch(`${API_BASE}/traffic/timeseries?entity_type=${encodeURIComponent(entityType)}&entity_id=${encodeURIComponent(entityId)}&period=${encodeURIComponent(currentTrafficPeriod)}`)
+        ]);
+
+        const sumJson = sumRes.ok ? await sumRes.json() : {};
+        const tsJson = tsRes.ok ? await tsRes.json() : {};
+
+        const summary = (sumJson && sumJson.data) ? sumJson.data : sumJson;
+        const rows = (tsJson && Array.isArray(tsJson.data)) ? tsJson.data : (Array.isArray(tsJson) ? tsJson : []);
+
+        // 1. Update KPI Cards
+        const kpiCycleTotal = document.getElementById("kpiCycleTotal");
+        const kpiCycleMeta = document.getElementById("kpiCycleMeta");
+        const kpiTotalTx = document.getElementById("kpiTotalTx");
+        const kpiTxMeta = document.getElementById("kpiTxMeta");
+        const kpiTotalRx = document.getElementById("kpiTotalRx");
+        const kpiRxMeta = document.getElementById("kpiRxMeta");
+        const kpiTotalBytes = document.getElementById("kpiTotalBytes");
+        const kpiPeriodMeta = document.getElementById("kpiPeriodMeta");
+
+        const cycleBytes = summary.cycle_bytes !== undefined ? summary.cycle_bytes : (summary.cycle_total !== undefined ? summary.cycle_total : 0);
+        if (kpiCycleTotal) kpiCycleTotal.textContent = formatBytes(cycleBytes);
+        if (kpiCycleMeta) {
+            if (summary.reset_timestamp) {
+                const dt = new Date(summary.reset_timestamp * 1000);
+                kpiCycleMeta.textContent = `Reset: ${dt.toLocaleDateString()} ${dt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+            } else {
+                kpiCycleMeta.textContent = "Active since service install";
+            }
+        }
+
+        const periodTx = rows.reduce((acc, r) => acc + (r.tx_bytes || 0), 0) || summary.total_tx || 0;
+        const periodRx = rows.reduce((acc, r) => acc + (r.rx_bytes || 0), 0) || summary.total_rx || 0;
+        const periodTotal = rows.reduce((acc, r) => acc + (r.total_bytes || 0), 0) || summary.total_bytes || 0;
+
+        if (kpiTotalTx) kpiTotalTx.textContent = formatBytes(periodTx);
+        if (kpiTotalRx) kpiTotalRx.textContent = formatBytes(periodRx);
+        if (kpiTotalBytes) kpiTotalBytes.textContent = formatBytes(periodTotal);
+
+        const periodLabels = {
+            "24h": "Past 24 Hours",
+            "7d": "Past 7 Days",
+            "30d": "Past 30 Days",
+            "12m": "Past 12 Months"
+        };
+        const pLabel = periodLabels[currentTrafficPeriod] || currentTrafficPeriod;
+        if (kpiPeriodMeta) kpiPeriodMeta.textContent = `${pLabel} combined usage`;
+        if (kpiTxMeta) kpiTxMeta.textContent = `Outbound in ${pLabel.toLowerCase()}`;
+        if (kpiRxMeta) kpiRxMeta.textContent = `Inbound in ${pLabel.toLowerCase()}`;
+
+        // 2. Render Chart & Table
+        renderTrafficBarsChart(rows);
+        renderTrafficTable(rows);
+
+        if (recordsCountEl) {
+            recordsCountEl.textContent = `${rows.length} record${rows.length === 1 ? '' : 's'}`;
+        }
+    } catch (err) {
+        console.warn("Failed to load traffic data:", err);
+        showToast("Error loading traffic metrics: " + err.message, "error");
+    } finally {
+        trafficModalLoading = false;
+    }
+}
+
+function renderTrafficBarsChart(rows) {
+    const container = document.getElementById("trafficBarsContainer");
+    if (!container) return;
+
+    if (!rows || rows.length === 0) {
+        container.innerHTML = `
+            <div style="display:flex;align-items:center;justify-content:center;width:100%;height:100%;color:var(--text-muted);font-size:0.8rem;">
+                No traffic recorded during this period yet.
+            </div>
+        `;
+        return;
+    }
+
+    const maxVal = Math.max(...rows.map(r => r.total_bytes || 0), 1);
+
+    container.innerHTML = rows.map(r => {
+        const total = r.total_bytes || 0;
+        const tx = r.tx_bytes || 0;
+        const rx = r.rx_bytes || 0;
+
+        // Total stack height: min 3% so zero or tiny bars are still visible
+        const stackHeightPct = total > 0 ? Math.min(100, Math.max(4, Math.round((total / maxVal) * 100))) : 2;
+
+        // Tx vs Rx segment proportion within stack
+        const txPct = total > 0 ? Math.round((tx / total) * 100) : 50;
+        const rxPct = 100 - txPct;
+
+        // Clean label formatting for X-axis
+        let label = r.period || r.label || "";
+        if (currentTrafficPeriod === "24h" && label.includes(" ")) {
+            label = label.split(" ")[1] || label;
+        } else if ((currentTrafficPeriod === "7d" || currentTrafficPeriod === "30d") && label.includes("-")) {
+            const parts = label.split("-");
+            if (parts.length === 3) label = `${parts[1]}/${parts[2]}`;
+        }
+
+        const fullTime = r.period || r.label || "";
+
+        return `
+            <div class="traffic-bar-col">
+                <div class="traffic-tooltip">
+                    <div style="font-weight:700; color:var(--text-primary); margin-bottom:2px;">${escapeHtml(fullTime)}</div>
+                    <div style="color:var(--accent-mint);">↓ Download (TX): ${formatBytes(tx)}</div>
+                    <div style="color:var(--accent-cyan);">↑ Upload (RX): ${formatBytes(rx)}</div>
+                    <div style="color:var(--accent-violet); font-weight:700; border-top:1px solid rgba(255,255,255,0.1); padding-top:2px;">Total: ${formatBytes(total)}</div>
+                </div>
+                <div class="traffic-bar-stack" style="height:${stackHeightPct}%;">
+                    <div class="bar-seg-tx" style="height:${txPct}%;"></div>
+                    <div class="bar-seg-rx" style="height:${rxPct}%;"></div>
+                </div>
+                <span class="bar-col-label">${escapeHtml(label)}</span>
+            </div>
+        `;
+    }).join("");
+}
+
+function renderTrafficTable(rows) {
+    const tableBody = document.getElementById("trafficTableBody");
+    if (!tableBody) return;
+
+    if (!rows || rows.length === 0) {
+        tableBody.innerHTML = `<tr><td colspan="5" class="text-center py-4 text-muted">No records found for this period.</td></tr>`;
+        return;
+    }
+
+    const totalSum = rows.reduce((acc, r) => acc + (r.total_bytes || 0), 0) || 1;
+
+    // Display rows in reverse chronological order (newest first)
+    const reversed = rows.slice().reverse();
+
+    tableBody.innerHTML = reversed.map(r => {
+        const total = r.total_bytes || 0;
+        const tx = r.tx_bytes || 0;
+        const rx = r.rx_bytes || 0;
+        const sharePct = Math.min(100, Math.round((total / totalSum) * 100));
+        const timeLabel = r.period || r.label || "";
+
+        return `
+            <tr>
+                <td style="color:var(--text-primary); font-weight:600;">${escapeHtml(timeLabel)}</td>
+                <td><span class="text-cyan font-mono">↑ ${formatBytes(rx)}</span></td>
+                <td><span class="text-mint font-mono">↓ ${formatBytes(tx)}</span></td>
+                <td><span class="text-violet font-mono" style="font-weight:700;">${formatBytes(total)}</span></td>
+                <td>
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        <div style="flex:1; height:6px; background:rgba(255,255,255,0.08); border-radius:3px; overflow:hidden;">
+                            <div style="width:${sharePct}%; height:100%; background:var(--accent-mint);"></div>
+                        </div>
+                        <span style="font-size:0.7rem; color:var(--text-muted);">${sharePct}%</span>
+                    </div>
+                </td>
+            </tr>
+        `;
+    }).join("");
+}
+
+async function triggerTrafficResetFromModal() {
+    const [entityType, entityId] = currentTrafficEntity.split(":");
+    const targetLabel = entityType === "all" ? "ALL ports and tunnels" : (entityType === "port" ? `Port :${entityId}` : `Tunnel ${entityId}`);
+
+    const confirmed = await askConfirm(
+        `Reset Billing Cycle?`,
+        `Reset current billing cycle counter for ${targetLabel}? Current usage will reset to 0, and historical hourly records will remain intact.`
+    );
+    if (!confirmed) return;
+
+    try {
+        const res = await fetch(`${API_BASE}/traffic/reset`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            },
+            body: JSON.stringify({
+                entity_type: entityType,
+                entity_id: entityId,
+                wipe_history: false
+            })
+        });
+        const data = await res.json().catch(() => ({}));
+        if (res.ok && data.ok) {
+            showToast(`Billing cycle reset successfully for ${targetLabel}!`, "success");
+            loadTrafficModalData();
+            fetchStatus();
+        } else {
+            showToast(data.error || "Failed to reset traffic cycle", "error");
+        }
+    } catch (err) {
+        showToast("Error resetting traffic: " + err.message, "error");
+    }
+}
+
+async function triggerWipeHistoryFromModal() {
+    const [entityType, entityId] = currentTrafficEntity.split(":");
+    const targetLabel = entityType === "all" ? "ALL ports and tunnels" : (entityType === "port" ? `Port :${entityId}` : `Tunnel ${entityId}`);
+
+    const confirmed = await askConfirm(
+        `Wipe All Traffic History?`,
+        `DANGER: Permanently wipe ALL recorded historical traffic data for ${targetLabel}? This cannot be undone.`
+    );
+    if (!confirmed) return;
+
+    try {
+        const res = await fetch(`${API_BASE}/traffic/reset`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            },
+            body: JSON.stringify({
+                entity_type: entityType,
+                entity_id: entityId,
+                wipe_history: true
+            })
+        });
+        const data = await res.json().catch(() => ({}));
+        if (res.ok && data.ok) {
+            showToast(`Traffic history permanently wiped for ${targetLabel}!`, "info");
+            loadTrafficModalData();
+            fetchStatus();
+        } else {
+            showToast(data.error || "Failed to wipe traffic history", "error");
+        }
+    } catch (err) {
+        showToast("Error wiping traffic: " + err.message, "error");
+    }
+}
+
+async function promptResetTraffic(entityType, entityId) {
+    const targetLabel = entityType === "port" ? `Port :${entityId}` : `Tunnel ${entityId}`;
+    const confirmed = await askConfirm(
+        `Reset Traffic for ${targetLabel}?`,
+        `Reset the current billing cycle counter for ${targetLabel} to 0? Historical hourly analytics will be preserved.`
+    );
+    if (!confirmed) return;
+
+    try {
+        const res = await fetch(`${API_BASE}/traffic/reset`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            },
+            body: JSON.stringify({
+                entity_type: entityType,
+                entity_id: entityId,
+                wipe_history: false
+            })
+        });
+        const data = await res.json().catch(() => ({}));
+        if (res.ok && data.ok) {
+            showToast(`Billing cycle reset for ${targetLabel}!`, "success");
+            fetchStatus();
+        } else {
+            showToast(data.error || "Failed to reset traffic", "error");
+        }
+    } catch (err) {
+        showToast("Error resetting traffic: " + err.message, "error");
+    }
+}
+
+function initTrafficAnalytics() {
+    const btnOpen = document.getElementById("btnOpenTrafficModal");
+    if (btnOpen) {
+        btnOpen.addEventListener("click", () => openTrafficModal("all", "all"));
+    }
+
+    const btnClose = document.getElementById("btnCloseTrafficModal");
+    if (btnClose) {
+        btnClose.addEventListener("click", closeTrafficModal);
+    }
+
+    const btnCloseFooter = document.getElementById("btnCloseTrafficModalFooter");
+    if (btnCloseFooter) {
+        btnCloseFooter.addEventListener("click", closeTrafficModal);
+    }
+
+    const modal = document.getElementById("trafficModal");
+    if (modal) {
+        modal.addEventListener("click", (e) => {
+            if (e.target === modal) {
+                closeTrafficModal();
+            }
+        });
+    }
+
+    document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape" && modal && modal.classList.contains("show")) {
+            closeTrafficModal();
+        }
+    });
+}
+
 // Initialize on page load
 initTheme();
 initDiagPacketLossTool();
 initNetworkQualityMonitor();
 initSystemUpdateManager();
 initServiceRestartControls();
+initTrafficAnalytics();
 checkAuth();
 

@@ -69,6 +69,16 @@ if CORE_DIR not in sys.path:
 if BASE_DIR not in sys.path:
     sys.path.insert(0, BASE_DIR)
 
+try:
+    from core.traffic import get_traffic_summary, get_traffic_timeseries, reset_traffic_counter
+except ImportError:
+    try:
+        from traffic import get_traffic_summary, get_traffic_timeseries, reset_traffic_counter
+    except ImportError:
+        get_traffic_summary = None
+        get_traffic_timeseries = None
+        reset_traffic_counter = None
+
 WEB_DIR = os.path.join(BASE_DIR, "web")
 CONFIG_PATH = "/etc/xforwarder/config.json"
 LEGACY_CONFIG_PATH = "/etc/forward-manager/config.json"
@@ -2014,7 +2024,12 @@ class XForwarderWebHandler(BaseHTTPRequestHandler):
                             r_copy["dest_stats"] = cleaned_dest_stats
                         cleaned_rules[p_key] = r_copy
                     runtime = dict(runtime)
-                    runtime["rules_state"] = cleaned_rules
+                traffic_data = None
+                if get_traffic_summary:
+                    try:
+                        traffic_data = get_traffic_summary(period="24h")
+                    except Exception:
+                        pass
                 self.send_json({
                     "version": get_installed_version(),
                     "config": cfg,
@@ -2022,6 +2037,7 @@ class XForwarderWebHandler(BaseHTTPRequestHandler):
                     "system": get_system_stats(),
                     "services": get_services_status(),
                     "network": get_network_interfaces_info(),
+                    "traffic": traffic_data,
                     "server_time": time.time()
                 })
                 return
@@ -2098,6 +2114,32 @@ class XForwarderWebHandler(BaseHTTPRequestHandler):
             elif subpath == "/api/system/update/status":
                 data = get_update_status()
                 self.send_json(data)
+                return
+
+            elif subpath == "/api/traffic/summary":
+                parsed_url = urlparse(self.path)
+                params = parse_qs(parsed_url.query)
+                period = params.get("period", ["24h"])[0]
+                etype = params.get("entity_type", [None])[0]
+                eid = params.get("entity_id", [None])[0]
+                if get_traffic_summary:
+                    data = get_traffic_summary(period=period, entity_type=etype, entity_id=eid)
+                    self.send_json({"ok": True, "data": data})
+                else:
+                    self.send_json({"ok": False, "error": "Traffic module unavailable"}, 500)
+                return
+
+            elif subpath == "/api/traffic/timeseries":
+                parsed_url = urlparse(self.path)
+                params = parse_qs(parsed_url.query)
+                period = params.get("period", ["24h"])[0]
+                etype = params.get("entity_type", [None])[0]
+                eid = params.get("entity_id", [None])[0]
+                if get_traffic_timeseries:
+                    data = get_traffic_timeseries(period=period, entity_type=etype, entity_id=eid)
+                    self.send_json({"ok": True, "data": data})
+                else:
+                    self.send_json({"ok": False, "error": "Traffic module unavailable"}, 500)
                 return
 
             else:
@@ -2654,6 +2696,39 @@ class XForwarderWebHandler(BaseHTTPRequestHandler):
                 self.send_json({"ok": True, "service": svc, "message": msg, "reconnecting": is_reconnecting})
             else:
                 self.send_json({"ok": False, "service": svc, "error": msg}, 400 if "Invalid" in msg else 500)
+            return
+
+        elif subpath == "/api/traffic/reset":
+            entity_type = str(body.get("entity_type", "all")).strip().lower()
+            entity_id = str(body.get("entity_id", "all")).strip()
+            wipe_history = bool(body.get("wipe_history", False))
+
+            if entity_type not in ("all", "port", "tunnel"):
+                self.send_json({"ok": False, "error": f"Invalid entity_type '{entity_type}'. Must be 'all', 'port', or 'tunnel'."}, 400)
+                return
+
+            if entity_type == "port" and entity_id.lower() != "all":
+                try:
+                    p_num = int(entity_id)
+                    if not (1 <= p_num <= 65535):
+                        raise ValueError()
+                except ValueError:
+                    self.send_json({"ok": False, "error": f"Invalid port number '{entity_id}'. Must be 1-65535 or 'all'."}, 400)
+                    return
+
+            if entity_type == "tunnel" and entity_id.lower() != "all":
+                if not re.match(r"^[a-zA-Z0-9_.-]{1,32}$", entity_id):
+                    self.send_json({"ok": False, "error": f"Invalid tunnel interface name '{entity_id}'."}, 400)
+                    return
+
+            if reset_traffic_counter:
+                res = reset_traffic_counter(entity_type=entity_type, entity_id=entity_id, wipe_history=wipe_history)
+                if res.get("success"):
+                    self.send_json({"ok": True, **res})
+                else:
+                    self.send_json({"ok": False, **res}, 500)
+            else:
+                self.send_json({"ok": False, "error": "Traffic module unavailable"}, 500)
             return
 
         else:

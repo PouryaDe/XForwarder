@@ -411,6 +411,16 @@
                                 </svg>
                                 <span class="btn-text">Import</span>
                             </button>
+                            <button class="btn btn-secondary btn-sm" id="btnOpenTrafficModal"
+                                title="Traffic & Bandwidth Analytics (Hourly, Daily, Monthly, Reset)">
+                                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
+                                    <line x1="18" y1="20" x2="18" y2="10" />
+                                    <line x1="12" y1="20" x2="12" y2="4" />
+                                    <line x1="6" y1="20" x2="6" y2="14" />
+                                </svg>
+                                <span class="btn-text">Traffic</span>
+                            </button>
                             <button class="btn btn-primary" id="btnOpenAddModal">
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                                     stroke-width="2">
@@ -602,6 +612,21 @@
                             <span class="stat-title">Network Quality (24h)</span>
                             <span class="stat-number text-emerald" id="statNetworkQuality">100%</span>
                             <span class="stat-subtext" id="statLossSubtext">0% Loss &middot; 15m Engine</span>
+                        </div>
+                    </div>
+
+                    <div class="stat-card" id="statCardTraffic" onclick="openTrafficModal('all', 'all')" style="cursor:pointer;" title="Click to view detailed Traffic & Bandwidth Analytics">
+                        <div class="stat-icon icon-cyan" id="statTrafficIcon">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <line x1="18" y1="20" x2="18" y2="10" />
+                                <line x1="12" y1="20" x2="12" y2="4" />
+                                <line x1="6" y1="20" x2="6" y2="14" />
+                            </svg>
+                        </div>
+                        <div class="stat-content">
+                            <span class="stat-title">Traffic (24h)</span>
+                            <span class="stat-number text-cyan" id="statTrafficTotal">0 B</span>
+                            <span class="stat-subtext" id="statTrafficSubtext">↓ 0 B &middot; ↑ 0 B</span>
                         </div>
                     </div>
                 </div>
@@ -1956,6 +1981,142 @@
                         </svg>
                         <span>Start Update Now</span>
                     </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Traffic Analytics Modal -->
+    <div class="modal-backdrop" id="trafficModal">
+        <div class="modal" style="max-width: 860px; width: 95%;">
+            <div class="modal-header">
+                <div class="modal-title-wrap">
+                    <div class="traffic-title-flex">
+                        <div class="stat-icon icon-emerald modal-traffic-icon">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <line x1="18" y1="20" x2="18" y2="10"></line>
+                                <line x1="12" y1="20" x2="12" y2="4"></line>
+                                <line x1="6" y1="20" x2="6" y2="14"></line>
+                            </svg>
+                        </div>
+                        <div>
+                            <h3 id="trafficModalTitle">Traffic & Bandwidth Analytics</h3>
+                            <p class="modal-subtitle" id="trafficModalSubtitle">Real-time bandwidth accounting across ports and tunnels</p>
+                        </div>
+                    </div>
+                </div>
+                <button type="button" class="modal-close" id="btnCloseTrafficModal" title="Close dialog">&times;</button>
+            </div>
+
+            <div class="modal-body traffic-modal-body">
+                <!-- Filter & Entity Selector Bar -->
+                <div class="traffic-filter-bar">
+                    <div class="traffic-filter-group">
+                        <label for="trafficEntitySelect" class="form-label-inline">Target:</label>
+                        <select id="trafficEntitySelect" class="form-control form-control-sm select-styled" onchange="handleTrafficEntityChange()">
+                            <option value="all:all">All Ports & Tunnels</option>
+                            <optgroup label="Forwarded Ports" id="trafficPortOptgroup"></optgroup>
+                            <optgroup label="Tunnel Interfaces" id="trafficTunnelOptgroup"></optgroup>
+                        </select>
+                    </div>
+                    <div class="traffic-period-pills" id="trafficPeriodPills">
+                        <button type="button" class="period-pill active" data-period="24h" onclick="handleTrafficPeriodChange('24h')">24h (Hourly)</button>
+                        <button type="button" class="period-pill" data-period="7d" onclick="handleTrafficPeriodChange('7d')">7 Days</button>
+                        <button type="button" class="period-pill" data-period="30d" onclick="handleTrafficPeriodChange('30d')">30 Days</button>
+                        <button type="button" class="period-pill" data-period="12m" onclick="handleTrafficPeriodChange('12m')">12 Months</button>
+                    </div>
+                </div>
+
+                <!-- KPI Cards Grid -->
+                <div class="traffic-kpi-grid">
+                    <div class="traffic-kpi-card card-cycle-highlight">
+                        <div class="kpi-top">
+                            <span class="kpi-title">Current Billing Cycle</span>
+                            <button type="button" class="btn btn-secondary btn-xs btn-cycle-reset" onclick="triggerTrafficResetFromModal()" title="Reset current billing cycle counter">
+                                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M23 4v6h-6"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+                                <span>Reset Cycle</span>
+                            </button>
+                        </div>
+                        <div class="kpi-value kpi-val-mint" id="kpiCycleTotal">0 B</div>
+                        <div class="kpi-meta" id="kpiCycleMeta">Active since: -</div>
+                    </div>
+
+                    <div class="traffic-kpi-card">
+                        <div class="kpi-top">
+                            <span class="kpi-title">Total Download (TX)</span>
+                            <span class="kpi-badge badge-mint">↓ Download</span>
+                        </div>
+                        <div class="kpi-value text-mint" id="kpiTotalTx">0 B</div>
+                        <div class="kpi-meta" id="kpiTxMeta">Sent to clients / targets</div>
+                    </div>
+
+                    <div class="traffic-kpi-card">
+                        <div class="kpi-top">
+                            <span class="kpi-title">Total Upload (RX)</span>
+                            <span class="kpi-badge badge-cyan">↑ Upload</span>
+                        </div>
+                        <div class="kpi-value text-cyan" id="kpiTotalRx">0 B</div>
+                        <div class="kpi-meta" id="kpiRxMeta">Received from clients</div>
+                    </div>
+
+                    <div class="traffic-kpi-card">
+                        <div class="kpi-top">
+                            <span class="kpi-title">Total Bandwidth</span>
+                            <span class="kpi-badge badge-violet">Combined</span>
+                        </div>
+                        <div class="kpi-value text-violet" id="kpiTotalBytes">0 B</div>
+                        <div class="kpi-meta" id="kpiPeriodMeta">Across selected period</div>
+                    </div>
+                </div>
+
+                <!-- Interactive Visual Bar Chart -->
+                <div class="traffic-chart-section">
+                    <div class="traffic-chart-header">
+                        <span class="chart-title" id="trafficChartTitle">Bandwidth Consumption Timeline</span>
+                        <div class="chart-legend">
+                            <span class="legend-item"><span class="legend-dot dot-mint"></span> Download (TX)</span>
+                            <span class="legend-item"><span class="legend-dot dot-cyan"></span> Upload (RX)</span>
+                        </div>
+                    </div>
+                    <div class="traffic-chart-canvas-wrap" id="trafficChartWrap">
+                        <div class="traffic-bars-container" id="trafficBarsContainer"></div>
+                    </div>
+                </div>
+
+                <!-- Detailed Tabular Breakdown -->
+                <div class="traffic-table-section">
+                    <div class="traffic-table-header">
+                        <h4>Detailed Records</h4>
+                        <span class="table-records-count" id="trafficRecordsCount">0 records</span>
+                    </div>
+                    <div class="traffic-table-wrap">
+                        <table class="traffic-table">
+                            <thead>
+                                <tr>
+                                    <th>Period / Time</th>
+                                    <th>Upload (RX)</th>
+                                    <th>Download (TX)</th>
+                                    <th>Total Usage</th>
+                                    <th>Share</th>
+                                </tr>
+                            </thead>
+                            <tbody id="trafficTableBody">
+                                <tr><td colspan="5" class="text-center py-4 text-muted">Loading traffic records...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer traffic-modal-footer">
+                <div class="traffic-footer-left">
+                    <button type="button" class="btn btn-danger-ghost btn-sm" onclick="triggerWipeHistoryFromModal()" title="Permanently delete recorded history for this entity">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                        <span>Wipe History</span>
+                    </button>
+                </div>
+                <div class="traffic-footer-right">
+                    <button type="button" class="btn btn-secondary" id="btnCloseTrafficModalFooter">Close</button>
                 </div>
             </div>
         </div>
