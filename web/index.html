@@ -343,78 +343,6 @@
                 </div>
             </header>
 
-            <!-- Stats Overview Cards (Always visible as quick summary) -->
-            <section class="stats-grid">
-                <div class="stat-card">
-                    <div class="stat-icon icon-cyan">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="2">
-                            <path
-                                d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
-                        </svg>
-                    </div>
-                    <div class="stat-content">
-                        <span class="stat-title">Forwarded Ports</span>
-                        <span class="stat-number" id="statTotalRules">0</span>
-                    </div>
-                </div>
-
-                <div class="stat-card">
-                    <div class="stat-icon icon-emerald">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="2">
-                            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
-                        </svg>
-                    </div>
-                    <div class="stat-content">
-                        <span class="stat-title">Active Proxy</span>
-                        <span class="stat-number" id="statActiveHaproxy">0</span>
-                        <span class="stat-subtext" id="statActiveProxyDetail" style="display: none;"></span>
-                    </div>
-                </div>
-
-                <div class="stat-card">
-                    <div class="stat-icon icon-amber">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="2">
-                            <rect x="2" y="2" width="20" height="8" rx="2" ry="2" />
-                            <rect x="2" y="14" width="20" height="8" rx="2" ry="2" />
-                            <line x1="6" y1="6" x2="6.01" y2="6" />
-                            <line x1="6" y1="18" x2="6.01" y2="18" />
-                        </svg>
-                    </div>
-                    <div class="stat-content">
-                        <span class="stat-title">Active NFTables</span>
-                        <span class="stat-number" id="statActiveNftables">0</span>
-                    </div>
-                </div>
-
-                <div class="stat-card">
-                    <div class="stat-icon icon-indigo">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="2">
-                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-                        </svg>
-                    </div>
-                    <div class="stat-content">
-                        <span class="stat-title">Kernel Engine</span>
-                        <span class="stat-badge badge-active" id="engineStatusBadge">SYNCED</span>
-                    </div>
-                </div>
-
-                <div class="stat-card" id="statCardLoss" onclick="switchSection('overview')" style="cursor:pointer;" title="Click to view Network Quality & Disruption History">
-                    <div class="stat-icon icon-emerald" id="statLossIcon">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
-                        </svg>
-                    </div>
-                    <div class="stat-content">
-                        <span class="stat-title">Network Quality (24h)</span>
-                        <span class="stat-number text-emerald" id="statNetworkQuality">100%</span>
-                        <span class="stat-subtext" id="statLossSubtext">0% Loss &middot; 15m Engine</span>
-                    </div>
-                </div>
-            </section>
 
             <!-- Missing Dependencies Warning Alert Banner -->
             <div id="servicesWarningBanner" class="services-warning-banner" style="display: none;">
@@ -444,139 +372,6 @@
 
             <!-- SECTION 1: Port Routing & Multi-Path Matrix -->
             <section class="dashboard-section active" id="sectionRules">
-                <!-- Topology & Relay Engines Grid (2 Balanced Columns, Zero-Waste Responsive Layout) -->
-                <div class="topology-engines-grid">
-                    <!-- Column 1: Server Network & Tunnel Topology Card -->
-                    <div class="network-card" id="networkCard">
-                        <div class="network-card-header">
-                            <div class="net-title-group">
-                                <div class="stat-icon icon-cyan" style="width:36px;height:36px;">
-                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                        stroke-width="2">
-                                        <circle cx="12" cy="12" r="10" />
-                                        <line x1="2" y1="12" x2="22" y2="12" />
-                                        <path
-                                            d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
-                                    </svg>
-                                </div>
-                                <div>
-                                    <div class="net-header-title">
-                                        <h3>Server Network & Tunnel Topology</h3>
-                                        <span class="net-pill-badge" id="netActiveTunnelsBadge">0 Tunnels</span>
-                                    </div>
-                                    <span class="net-subtitle">Server WAN public addresses, active tunnel interfaces, and latency</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Server Host WAN IPs Section -->
-                        <div class="server-wan-box">
-                            <div class="server-wan-header">
-                                <div style="display:flex; align-items:center; gap:6px;">
-                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                        stroke-width="2">
-                                        <rect x="2" y="2" width="20" height="8" rx="2" ry="2" />
-                                        <rect x="2" y="14" width="20" height="8" rx="2" ry="2" />
-                                        <line x1="6" y1="6" x2="6.01" y2="6" />
-                                        <line x1="6" y1="18" x2="6.01" y2="18" />
-                                    </svg>
-                                    <span>Server Host IP(s):</span>
-                                    <span class="wan-iface-tag" id="wanIfaceTag">eth0</span>
-                                </div>
-                            </div>
-                            <div class="server-ips-list" id="serverIpsList">
-                                <span class="ip-pill-loading">Detecting...</span>
-                            </div>
-                        </div>
-
-                        <!-- Tunnel Interfaces List / Grid -->
-                        <div class="tunnel-grid" id="tunnelGrid">
-                            <!-- Dynamically populated via app.js -->
-                        </div>
-                    </div>
-
-                    <!-- Column 2: Relay Engines Card -->
-                    <div class="engines-card" id="servicesStatusBar">
-                        <div class="engines-card-header">
-                            <div class="engines-title-group">
-                                <div class="stat-icon icon-emerald" style="width:36px;height:36px;">
-                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                        <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
-                                    </svg>
-                                </div>
-                                <div>
-                                    <div class="engines-header-title">
-                                        <h3>Relay Engines</h3>
-                                        <span class="stat-badge badge-active" id="topRelayActiveBadge">ALL ACTIVE</span>
-                                    </div>
-                                    <span class="engines-subtitle">Kernel NAT & user-space stream proxies</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="engines-list">
-                            <!-- NFTables Subsystem Row -->
-                            <div class="engine-item" id="svcPillNft" title="NFTables Kernel Forwarding Subsystem">
-                                <div class="engine-item-left">
-                                    <div class="engine-sub-icon icon-amber">
-                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-                                    </div>
-                                    <div class="engine-info">
-                                        <span class="engine-name">NFTables DNAT</span>
-                                        <span class="engine-desc">Kernel Layer-3 Tunnel Forwarding</span>
-                                    </div>
-                                </div>
-                                <div class="svc-status-pill">
-                                    <span class="svc-pill-dot dot-checking" id="svcDotNft"></span>
-                                    <span class="svc-pill-val" id="svcValNft">Checking...</span>
-                                </div>
-                            </div>
-
-                            <!-- HAProxy Subsystem Row -->
-                            <div class="engine-item" id="svcPillHaproxy" title="HAProxy Layer-4 Relay Engine">
-                                <div class="engine-item-left">
-                                    <div class="engine-sub-icon icon-emerald">
-                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-                                    </div>
-                                    <div class="engine-info">
-                                        <span class="engine-name">HAProxy Relay</span>
-                                        <span class="engine-desc">Layer-4 Direct TCP/UDP Stream</span>
-                                    </div>
-                                </div>
-                                <div class="svc-status-pill">
-                                    <span class="svc-pill-dot dot-checking" id="svcDotHaproxy"></span>
-                                    <span class="svc-pill-val" id="svcValHaproxy">Checking...</span>
-                                </div>
-                            </div>
-
-                            <!-- Nginx Subsystem Row -->
-                            <div class="engine-item" id="svcPillNginx" title="Nginx Stream Proxy Engine">
-                                <div class="engine-item-left">
-                                    <div class="engine-sub-icon icon-cyan">
-                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"/><rect x="2" y="14" width="20" height="8" rx="2" ry="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg>
-                                    </div>
-                                    <div class="engine-info">
-                                        <span class="engine-name">Nginx Stream</span>
-                                        <span class="engine-desc">High-Concurrency TCP/UDP Proxy</span>
-                                    </div>
-                                </div>
-                                <div class="svc-status-pill">
-                                    <span class="svc-pill-dot dot-checking" id="svcDotNginx"></span>
-                                    <span class="svc-pill-val" id="svcValNginx">Checking...</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Bottom Zero-Collision Guard -->
-                        <div class="engines-footer">
-                            <span class="engines-footer-icon">
-                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-                            </span>
-                            <span class="engines-footer-text">Zero-Collision Isolation Active</span>
-                        </div>
-                    </div>
-                </div>
-
                 <main class="main-panel">
                     <div class="panel-header">
                         <div>
@@ -727,6 +522,212 @@
 
             <!-- SECTION 2: System Overview & Health -->
             <section class="dashboard-section" id="sectionOverview" style="display:none;">
+                <!-- Stats Overview Cards -->
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon icon-cyan">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <path
+                                    d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
+                            </svg>
+                        </div>
+                        <div class="stat-content">
+                            <span class="stat-title">Forwarded Ports</span>
+                            <span class="stat-number" id="statTotalRules">0</span>
+                        </div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-icon icon-emerald">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+                            </svg>
+                        </div>
+                        <div class="stat-content">
+                            <span class="stat-title">Active Proxy</span>
+                            <span class="stat-number" id="statActiveHaproxy">0</span>
+                            <span class="stat-subtext" id="statActiveProxyDetail" style="display: none;"></span>
+                        </div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-icon icon-amber">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <rect x="2" y="2" width="20" height="8" rx="2" ry="2" />
+                                <rect x="2" y="14" width="20" height="8" rx="2" ry="2" />
+                                <line x1="6" y1="6" x2="6.01" y2="6" />
+                                <line x1="6" y1="18" x2="6.01" y2="18" />
+                            </svg>
+                        </div>
+                        <div class="stat-content">
+                            <span class="stat-title">Active NFTables</span>
+                            <span class="stat-number" id="statActiveNftables">0</span>
+                        </div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-icon icon-indigo">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                            </svg>
+                        </div>
+                        <div class="stat-content">
+                            <span class="stat-title">Kernel Engine</span>
+                            <span class="stat-badge badge-active" id="engineStatusBadge">SYNCED</span>
+                        </div>
+                    </div>
+
+                    <div class="stat-card" id="statCardLoss" onclick="document.getElementById('lossHistoryCard')?.scrollIntoView({behavior:'smooth'});" style="cursor:pointer;" title="Click to view Network Quality & Disruption History">
+                        <div class="stat-icon icon-emerald" id="statLossIcon">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+                            </svg>
+                        </div>
+                        <div class="stat-content">
+                            <span class="stat-title">Network Quality (24h)</span>
+                            <span class="stat-number text-emerald" id="statNetworkQuality">100%</span>
+                            <span class="stat-subtext" id="statLossSubtext">0% Loss &middot; 15m Engine</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Topology & Relay Engines Grid (2 Balanced Columns, Zero-Waste Responsive Layout) -->
+                <div class="topology-engines-grid">
+                    <!-- Column 1: Server Network & Tunnel Topology Card -->
+                    <div class="network-card" id="networkCard">
+                        <div class="network-card-header">
+                            <div class="net-title-group">
+                                <div class="stat-icon icon-cyan" style="width:36px;height:36px;">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                        stroke-width="2">
+                                        <circle cx="12" cy="12" r="10" />
+                                        <line x1="2" y1="12" x2="22" y2="12" />
+                                        <path
+                                            d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+                                    </svg>
+                                </div>
+                                <div>
+                                    <div class="net-header-title">
+                                        <h3>Server Network & Tunnel Topology</h3>
+                                        <span class="net-pill-badge" id="netActiveTunnelsBadge">0 Tunnels</span>
+                                    </div>
+                                    <span class="net-subtitle">Server WAN public addresses, active tunnel interfaces, and latency</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Server Host WAN IPs Section -->
+                        <div class="server-wan-box">
+                            <div class="server-wan-header">
+                                <div style="display:flex; align-items:center; gap:6px;">
+                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                        stroke-width="2">
+                                        <rect x="2" y="2" width="20" height="8" rx="2" ry="2" />
+                                        <rect x="2" y="14" width="20" height="8" rx="2" ry="2" />
+                                        <line x1="6" y1="6" x2="6.01" y2="6" />
+                                        <line x1="6" y1="18" x2="6.01" y2="18" />
+                                    </svg>
+                                    <span>Server Host IP(s):</span>
+                                    <span class="wan-iface-tag" id="wanIfaceTag">eth0</span>
+                                </div>
+                            </div>
+                            <div class="server-ips-list" id="serverIpsList">
+                                <span class="ip-pill-loading">Detecting...</span>
+                            </div>
+                        </div>
+
+                        <!-- Tunnel Interfaces List / Grid -->
+                        <div class="tunnel-grid" id="tunnelGrid">
+                            <!-- Dynamically populated via app.js -->
+                        </div>
+                    </div>
+
+                    <!-- Column 2: Relay Engines Card -->
+                    <div class="engines-card" id="servicesStatusBar">
+                        <div class="engines-card-header">
+                            <div class="engines-title-group">
+                                <div class="stat-icon icon-emerald" style="width:36px;height:36px;">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
+                                    </svg>
+                                </div>
+                                <div>
+                                    <div class="engines-header-title">
+                                        <h3>Relay Engines</h3>
+                                        <span class="stat-badge badge-active" id="topRelayActiveBadge">ALL ACTIVE</span>
+                                    </div>
+                                    <span class="engines-subtitle">Kernel NAT & user-space stream proxies</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="engines-list">
+                            <!-- NFTables Subsystem Row -->
+                            <div class="engine-item" id="svcPillNft" title="NFTables Kernel Forwarding Subsystem">
+                                <div class="engine-item-left">
+                                    <div class="engine-sub-icon icon-amber">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                                    </div>
+                                    <div class="engine-info">
+                                        <span class="engine-name">NFTables DNAT</span>
+                                        <span class="engine-desc">Kernel Layer-3 Tunnel Forwarding</span>
+                                    </div>
+                                </div>
+                                <div class="svc-status-pill">
+                                    <span class="svc-pill-dot dot-checking" id="svcDotNft"></span>
+                                    <span class="svc-pill-val" id="svcValNft">Checking...</span>
+                                </div>
+                            </div>
+
+                            <!-- HAProxy Subsystem Row -->
+                            <div class="engine-item" id="svcPillHaproxy" title="HAProxy Layer-4 Relay Engine">
+                                <div class="engine-item-left">
+                                    <div class="engine-sub-icon icon-emerald">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+                                    </div>
+                                    <div class="engine-info">
+                                        <span class="engine-name">HAProxy Relay</span>
+                                        <span class="engine-desc">Layer-4 Direct TCP/UDP Stream</span>
+                                    </div>
+                                </div>
+                                <div class="svc-status-pill">
+                                    <span class="svc-pill-dot dot-checking" id="svcDotHaproxy"></span>
+                                    <span class="svc-pill-val" id="svcValHaproxy">Checking...</span>
+                                </div>
+                            </div>
+
+                            <!-- Nginx Subsystem Row -->
+                            <div class="engine-item" id="svcPillNginx" title="Nginx Stream Proxy Engine">
+                                <div class="engine-item-left">
+                                    <div class="engine-sub-icon icon-cyan">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"/><rect x="2" y="14" width="20" height="8" rx="2" ry="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg>
+                                    </div>
+                                    <div class="engine-info">
+                                        <span class="engine-name">Nginx Stream</span>
+                                        <span class="engine-desc">High-Concurrency TCP/UDP Proxy</span>
+                                    </div>
+                                </div>
+                                <div class="svc-status-pill">
+                                    <span class="svc-pill-dot dot-checking" id="svcDotNginx"></span>
+                                    <span class="svc-pill-val" id="svcValNginx">Checking...</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Bottom Zero-Collision Guard -->
+                        <div class="engines-footer">
+                            <span class="engines-footer-icon">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                            </span>
+                            <span class="engines-footer-text">Zero-Collision Isolation Active</span>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="overview-grid">
                     <!-- Host Resources Card -->
                     <div class="overview-card">
