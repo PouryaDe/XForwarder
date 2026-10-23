@@ -254,30 +254,40 @@ function copyCategoryJson(catKey) {
     copyJsonToClipboard(jsonStr, `Category "${catName}" (${categoryRules.length} ports) JSON copied! Ready to import.`);
 }
 
-// Latency & Quality Badge Formatter (shows latency, real packet loss %, and quality score)
+// Latency & Quality Badge Formatter (shows latency, jitter, real packet loss %, and quality score)
 function formatLatencyBadge(stat) {
     if (!stat) return '';
     const isHealthy = (stat.status === 'healthy');
     const isDegraded = (stat.status === 'degraded');
+    const isCritical = (stat.status === 'critical');
     const isFailed = (stat.status === 'failed' || stat.status === 'down');
     const loss = stat.packet_loss !== undefined && stat.packet_loss !== null ? parseInt(stat.packet_loss) : (isHealthy ? 0 : 100);
-    const scoreText = stat.composite_score !== undefined ? ` · Quality Score: ${stat.composite_score}` : '';
+    const ms = parseFloat(stat.latency_ms);
+    const jitter = stat.jitter_ms !== undefined && stat.jitter_ms !== null ? parseFloat(stat.jitter_ms) : null;
+    const score = stat.composite_score !== undefined && stat.composite_score !== null ? stat.composite_score : null;
 
-    if (isFailed || (!isHealthy && !isDegraded)) {
-        return `<span class="latency-pill latency-bad" title="${loss}% Packet Loss${scoreText}"><span class="latency-dot"></span>${loss}% loss</span>`;
+    let tooltipParts = [];
+    if (!isNaN(ms) && ms > 0) tooltipParts.push(`Avg: ${ms} ms`);
+    if (jitter !== null && !isNaN(jitter)) tooltipParts.push(`Jitter: ${jitter} ms`);
+    tooltipParts.push(`Loss: ${loss}% (5m)`);
+    if (score !== null) tooltipParts.push(`Score: ${score}`);
+    const tooltipText = tooltipParts.join(' · ');
+
+    if (isFailed || isCritical || (!isHealthy && !isDegraded)) {
+        const badgeLabel = isCritical ? `${loss}% critical` : `${loss}% loss`;
+        return `<span class="latency-pill latency-bad" title="${escapeHtml(tooltipText)}"><span class="latency-dot"></span>${badgeLabel}</span>`;
     }
 
-    const ms = parseFloat(stat.latency_ms);
     if (isNaN(ms) || ms <= 0) {
-        return `<span class="latency-pill latency-good" title="0% Packet Loss${scoreText}"><span class="latency-dot"></span>0% loss</span>`;
+        return `<span class="latency-pill latency-good" title="${escapeHtml(tooltipText)}"><span class="latency-dot"></span>0% loss</span>`;
     }
 
     let cls = "latency-good";
-    if (isDegraded || loss > 25 || ms > 250) cls = "latency-bad";
-    else if (loss > 0 || ms > 150) cls = "latency-medium";
+    if (isDegraded || loss > 20 || ms > 250) cls = "latency-bad";
+    else if (loss > 0 || ms > 150 || (jitter !== null && jitter > 30)) cls = "latency-medium";
 
-    const label = isDegraded ? `${loss}% loss (Degraded)` : (loss > 0 ? `${ms} ms · ${loss}% loss` : `${ms} ms`);
-    return `<span class="latency-pill ${cls}" title="Latency: ${ms} ms · Packet Loss: ${loss}%${scoreText}"><span class="latency-dot"></span>${label}</span>`;
+    const label = isDegraded ? `${loss}% loss (Degraded)` : (loss > 0 ? `${ms} ms · ${loss}%` : `${ms} ms`);
+    return `<span class="latency-pill ${cls}" title="${escapeHtml(tooltipText)}"><span class="latency-dot"></span>${label}</span>`;
 }
 
 // Concise Failure Reason Formatter
@@ -1446,9 +1456,9 @@ function computeRulesFingerprint(filteredRules, rulesState) {
         const destsStr = (r.destinations || []).map(d => {
             const p = d.priority || 1;
             const st = destStats[`prio_${p}`] || {};
-            return `${p}:${d.type}:${d.target}:${d.port}:${d.proxy_protocol}:${d.comment || ''}:${st.status}:${st.latency_ms}:${st.packet_loss}:${st.composite_score || ''}:${st.reason || ''}`;
+            return `${p}:${d.type}:${d.target}:${d.port}:${d.proxy_protocol}:${d.comment || ''}:${st.status}:${st.latency_ms}:${st.jitter_ms || ''}:${st.packet_loss}:${st.composite_score || ''}:${st.reason || ''}`;
         }).join(";");
-        return `${rId}|${r.port}|${r.protocol}|${r.category || ''}|${r.created_at || 0}|${r.comment || ''}|${r.active_priority}|${r.force_override}|${rState.cooldown_remaining || 0}|${rState.is_flapping || false}|${destsStr}`;
+        return `${rId}|${r.port}|${r.protocol}|${r.category || ''}|${r.created_at || 0}|${r.comment || ''}|${r.active_priority}|${r.force_override}|${rState.hold_remaining || 0}|${rState.cooldown_remaining || 0}|${rState.switch_pending_seconds || 0}|${rState.candidate_priority || 0}|${rState.is_flapping || false}|${destsStr}`;
     }).join("##") + `__f:${activeFilter}__s:${searchQuery}__v:${currentViewMode}__srt:${currentSort}`;
 }
 
@@ -1600,7 +1610,8 @@ function renderRuleCard(rule, rulesState) {
                     <button class="btn-copy" onclick="copyText(decodeURIComponent('${encodeURIComponent(rule.port)}'))" title="Copy Port Number">${copyPortSvg}</button>
                     <span class="proto-pill">${escapeHtml(formatProtoBadge(rule.protocol))}</span>
                     ${rule.category ? `<span class="rule-category-pill" title="Category: ${escapeHtml(rule.category)}"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>${escapeHtml(rule.category)}</span>` : ''}
-                    ${rState.cooldown_remaining > 0 ? `<span class="badge-cooldown" title="Anti-Flap Cooldown active (Route held stable)"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 14 14"/></svg>Hold ${rState.cooldown_remaining}s</span>` : ''}
+                    ${rState.switch_pending_seconds > 0 ? `<span class="badge-pending-switch" title="Candidate P${rState.candidate_priority || ''} sustained quality advantage. Switching after streak confirmation."><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>Switch in ${rState.switch_pending_seconds}s</span>` : ''}
+                    ${rState.hold_remaining > 0 ? `<span class="badge-cooldown" title="Route held stable to prevent disruption (Min Hold: 10m)"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 14 14"/></svg>Hold ${rState.hold_remaining}s</span>` : (rState.cooldown_remaining > 0 ? `<span class="badge-cooldown" title="Post-Critical Cooldown active"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 14 14"/></svg>Cooldown ${rState.cooldown_remaining}s</span>` : '')}
                     ${rState.is_flapping ? `<span class="badge-flapping" title="Repeated route flapping detected. Cooldown extended."><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>Flap Guard</span>` : ''}
                 </div>
                 <div class="rule-actions">
@@ -1697,7 +1708,8 @@ function renderRuleListRow(rule, rulesState) {
                 <button class="btn-copy" onclick="copyText(decodeURIComponent('${encodeURIComponent(rule.port)}'))" title="Copy Port">${copyPortSvg}</button>
                 <span class="proto-pill">${escapeHtml(formatProtoBadge(rule.protocol))}</span>
                 ${rule.category ? `<span class="rule-category-pill" title="Category: ${escapeHtml(rule.category)}"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>${escapeHtml(rule.category)}</span>` : ''}
-                ${rState.cooldown_remaining > 0 ? `<span class="badge-cooldown" style="font-size:0.68rem; padding:2px 6px;">Hold ${rState.cooldown_remaining}s</span>` : ''}
+                ${rState.switch_pending_seconds > 0 ? `<span class="badge-pending-switch" style="font-size:0.68rem; padding:2px 6px;" title="Switching to P${rState.candidate_priority || ''} in ${rState.switch_pending_seconds}s">Switch in ${rState.switch_pending_seconds}s</span>` : ''}
+                ${rState.hold_remaining > 0 ? `<span class="badge-cooldown" style="font-size:0.68rem; padding:2px 6px;" title="Min Hold 10m">Hold ${rState.hold_remaining}s</span>` : (rState.cooldown_remaining > 0 ? `<span class="badge-cooldown" style="font-size:0.68rem; padding:2px 6px;">Cooldown ${rState.cooldown_remaining}s</span>` : '')}
                 ${rState.is_flapping ? `<span class="badge-flapping" style="font-size:0.68rem; padding:2px 6px;">Flap</span>` : ''}
             </div>
 

@@ -57,7 +57,7 @@ class TestXForwarderMigration(unittest.TestCase):
         migrated, modified = XForwarderEngine.migrate_and_normalize_config(legacy_cfg)
 
         self.assertTrue(modified)
-        self.assertEqual(migrated.get("schema_version"), 2)
+        self.assertEqual(migrated.get("schema_version"), 3)
         self.assertEqual(migrated["wan_interface"], "eth0")
         self.assertEqual(migrated["check_interval_seconds"], 8)
         self.assertEqual(migrated["web"]["bind_host"], "0.0.0.0")
@@ -129,7 +129,7 @@ class TestXForwarderMigration(unittest.TestCase):
         """Verifies graceful self-healing when encountering malformed or empty config dictionaries."""
         migrated, modified = XForwarderEngine.migrate_and_normalize_config({})
         self.assertTrue(modified)
-        self.assertEqual(migrated["schema_version"], 2)
+        self.assertEqual(migrated["schema_version"], 3)
         self.assertIn("web", migrated)
         self.assertIn("rules", migrated)
         self.assertEqual(migrated["web"]["port"], 8090)
@@ -145,7 +145,7 @@ class TestXForwarderMigration(unittest.TestCase):
             # Verify persisted data
             with open(target_cfg, "r", encoding="utf-8") as f:
                 loaded = json.load(f)
-            self.assertEqual(loaded.get("schema_version"), 2)
+            self.assertEqual(loaded.get("schema_version"), 3)
 
     def test_cli_migrate_flag(self):
         """Verifies the --migrate CLI entry point in core/engine.py."""
@@ -169,7 +169,7 @@ class TestXForwarderMigration(unittest.TestCase):
 
             with open(test_file, "r", encoding="utf-8") as f:
                 upgraded = json.load(f)
-            self.assertEqual(upgraded["schema_version"], 2)
+            self.assertEqual(upgraded["schema_version"], 3)
             self.assertEqual(upgraded["rules"][0]["port"], 5000)
 
     def test_secret_path_normalization(self):

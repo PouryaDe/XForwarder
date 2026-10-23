@@ -143,12 +143,15 @@ WINDOW_DURATION = 300   # 5 minutes failure evaluation window
 try:
     from engine import XForwarderEngine
     migrate_config = XForwarderEngine.migrate_and_normalize_config
+    from route_quality import pick_best_now
 except ImportError:
     try:
         from core.engine import XForwarderEngine
         migrate_config = XForwarderEngine.migrate_and_normalize_config
+        from core.route_quality import pick_best_now
     except ImportError:
         migrate_config = None
+        pick_best_now = None
 
 
 def get_config_path() -> str:
@@ -221,17 +224,25 @@ def export_config_data(cfg: dict = None) -> dict:
     return {
         "_comment": "XForwarder Configuration Backup",
         "exported_at": int(time.time()),
-        "version": cfg.get("schema_version", 2),
+        "version": cfg.get("schema_version", 3),
         "wan_interface": cfg.get("wan_interface", "auto"),
         "check_interval_seconds": cfg.get("check_interval_seconds", 8),
+        "probe_count": cfg.get("probe_count", 10),
+        "probe_interval_ms": cfg.get("probe_interval_ms", 200),
+        "quality_window_seconds": cfg.get("quality_window_seconds", 300),
         "failure_threshold": cfg.get("failure_threshold", 3),
         "recovery_threshold": cfg.get("recovery_threshold", 3),
         "fast_failover_enabled": cfg.get("fast_failover_enabled", True),
         "max_acceptable_loss": cfg.get("max_acceptable_loss", 25),
+        "critical_loss_percent": cfg.get("critical_loss_percent", 30),
         "cooldown_seconds": cfg.get("cooldown_seconds", 60),
-        "hysteresis_percent": cfg.get("hysteresis_percent", 10),
-        "loss_penalty_weight": cfg.get("loss_penalty_weight", 10),
-        "fast_probe_burst": cfg.get("fast_probe_burst", 3),
+        "min_hold_seconds": cfg.get("min_hold_seconds", 600),
+        "switch_confirm_seconds": cfg.get("switch_confirm_seconds", 120),
+        "hysteresis_percent": cfg.get("hysteresis_percent", 20),
+        "loss_penalty_weight": cfg.get("loss_penalty_weight", 20),
+        "jitter_penalty_weight": cfg.get("jitter_penalty_weight", 2),
+        "priority_bias_ms": cfg.get("priority_bias_ms", 0),
+        "fast_probe_burst": cfg.get("fast_probe_burst", 5),
         "rules": cfg.get("rules", [])
     }
 
@@ -312,9 +323,14 @@ def import_config_data(imported_raw, mode: str = "merge") -> tuple:
         current_cfg["rules"] = validated_rules
         if "wan_interface" in imported_cfg and imported_cfg["wan_interface"]:
             current_cfg["wan_interface"] = imported_cfg["wan_interface"]
-        for param in ("check_interval_seconds", "failure_threshold", "recovery_threshold",
-                      "fast_failover_enabled", "max_acceptable_loss", "cooldown_seconds",
-                      "hysteresis_percent", "loss_penalty_weight", "fast_probe_burst"):
+        for param in (
+            "check_interval_seconds", "failure_threshold", "recovery_threshold",
+            "fast_failover_enabled", "max_acceptable_loss", "cooldown_seconds",
+            "hysteresis_percent", "loss_penalty_weight", "fast_probe_burst",
+            "probe_count", "probe_interval_ms", "quality_window_seconds",
+            "critical_loss_percent", "min_hold_seconds", "switch_confirm_seconds",
+            "jitter_penalty_weight", "priority_bias_ms",
+        ):
             if param in imported_cfg:
                 current_cfg[param] = imported_cfg[param]
     else:  # merge
@@ -1980,10 +1996,29 @@ class XForwarderWebHandler(BaseHTTPRequestHandler):
             if subpath == "/api/status":
                 cfg = load_config()
                 state = load_state()
+                runtime = state.get("runtime", {})
+                if isinstance(runtime, dict) and "rules_state" in runtime and isinstance(runtime["rules_state"], dict):
+                    cleaned_rules = {}
+                    for p_key, r_st in runtime["rules_state"].items():
+                        if not isinstance(r_st, dict):
+                            cleaned_rules[p_key] = r_st
+                            continue
+                        r_copy = dict(r_st)
+                        if "dest_stats" in r_copy and isinstance(r_copy["dest_stats"], dict):
+                            cleaned_dest_stats = {}
+                            for d_key, d_val in r_copy["dest_stats"].items():
+                                if isinstance(d_val, dict):
+                                    cleaned_dest_stats[d_key] = {k: v for k, v in d_val.items() if k != "samples"}
+                                else:
+                                    cleaned_dest_stats[d_key] = d_val
+                            r_copy["dest_stats"] = cleaned_dest_stats
+                        cleaned_rules[p_key] = r_copy
+                    runtime = dict(runtime)
+                    runtime["rules_state"] = cleaned_rules
                 self.send_json({
                     "version": get_installed_version(),
                     "config": cfg,
-                    "runtime": state.get("runtime", {}),
+                    "runtime": runtime,
                     "system": get_system_stats(),
                     "services": get_services_status(),
                     "network": get_network_interfaces_info(),
@@ -2080,6 +2115,12 @@ class XForwarderWebHandler(BaseHTTPRequestHandler):
 
         # CSRF Protection: Verify Origin matches Host
         if not self.check_origin():
+            try:
+                drain_len = int(self.headers.get("Content-Length", 0))
+                if 0 < drain_len <= 65536:
+                    self.rfile.read(drain_len)
+            except Exception:
+                pass
             self.send_json({"ok": False, "error": "Cross-origin request rejected"}, 403)
             return
 
@@ -2296,31 +2337,25 @@ class XForwarderWebHandler(BaseHTTPRequestHandler):
                     if override_prio > 0:
                         r["active_priority"] = override_prio
                     else:
-                        # Auto Failover: immediately recalculate active_priority from healthy states & composite scores
+                        # Auto Failover: recalculate active_priority from healthy states & composite scores
                         state = load_state()
                         r_state = state.get("runtime", {}).get("rules_state", {}).get(rule_id, {})
                         r_state["last_switch_time"] = 0
                         r_state["cooldown_remaining"] = 0
                         dest_stats = r_state.get("dest_stats", {})
-                        chosen = None
                         dests = sorted(r.get("destinations", []), key=lambda d: d.get("priority", 99))
-                        for d in dests:
-                            p = d.get("priority", 1)
-                            st = dest_stats.get(f"prio_{p}", {})
-                            if st.get("status") == "healthy" and st.get("packet_loss", 0) <= 25:
-                                chosen = p
-                                break
-                        if chosen is None:
-                            best_score = 999999.0
+                        current_prio = r.get("active_priority", 1)
+                        if callable(pick_best_now):
+                            r["active_priority"] = pick_best_now(dest_stats, dests, current_prio)
+                        else:
+                            chosen = None
                             for d in dests:
                                 p = d.get("priority", 1)
                                 st = dest_stats.get(f"prio_{p}", {})
-                                if st.get("packet_loss", 100) < 100:
-                                    sc = st.get("composite_score", 999.0)
-                                    if sc < best_score:
-                                        best_score = sc
-                                        chosen = p
-                        r["active_priority"] = chosen if chosen is not None else (dests[0].get("priority", 1) if dests else 1)
+                                if st.get("status") == "healthy" and st.get("packet_loss", 0) <= 25:
+                                    chosen = p
+                                    break
+                            r["active_priority"] = chosen if chosen is not None else (dests[0].get("priority", 1) if dests else 1)
                     found = True
                     break
             if not found:
@@ -2371,25 +2406,19 @@ class XForwarderWebHandler(BaseHTTPRequestHandler):
                     r["active_priority"] = override_prio
                 else:
                     dest_stats = r_state.get("dest_stats", {})
-                    chosen = None
                     dests = sorted(r.get("destinations", []), key=lambda d: d.get("priority", 99))
-                    for d in dests:
-                        p = d.get("priority", 1)
-                        st = dest_stats.get(f"prio_{p}", {})
-                        if st.get("status") == "healthy" and st.get("packet_loss", 0) <= 25:
-                            chosen = p
-                            break
-                    if chosen is None:
-                        best_score = 999999.0
+                    current_prio = r.get("active_priority", 1)
+                    if callable(pick_best_now):
+                        r["active_priority"] = pick_best_now(dest_stats, dests, current_prio)
+                    else:
+                        chosen = None
                         for d in dests:
                             p = d.get("priority", 1)
                             st = dest_stats.get(f"prio_{p}", {})
-                            if st.get("packet_loss", 100) < 100:
-                                sc = st.get("composite_score", 999.0)
-                                if sc < best_score:
-                                    best_score = sc
-                                    chosen = p
-                    r["active_priority"] = chosen if chosen is not None else (dests[0].get("priority", 1) if dests else 1)
+                            if st.get("status") == "healthy" and st.get("packet_loss", 0) <= 25:
+                                chosen = p
+                                break
+                        r["active_priority"] = chosen if chosen is not None else (dests[0].get("priority", 1) if dests else 1)
 
             if save_config(cfg):
                 batch_updates = {
@@ -2637,6 +2666,12 @@ class XForwarderWebHandler(BaseHTTPRequestHandler):
             return
 
         if not self.check_origin():
+            try:
+                drain_len = int(self.headers.get("Content-Length", 0))
+                if 0 < drain_len <= 65536:
+                    self.rfile.read(drain_len)
+            except Exception:
+                pass
             self.send_json({"ok": False, "error": "Cross-origin request rejected"}, 403)
             return
 

@@ -90,11 +90,11 @@ XForwarder/
    - Selective service reloads: HAProxy, Nginx, and NFTables rules are compared before issuing reloads, preventing redundant service signals.
    - Fast IPC: Core engine uses `SIGUSR1` signal wake-up via candidate PID files for instant evaluation when the web dashboard commits changes.
 
-10. **Sub-Second Failover, Multi-Metric Routing & Anti-Flapping (Mandatory)**:
-    - Adaptive Fast Probing: Outages on active routes trigger rapid micro-probe bursts (`_fast_confirm_burst`) confirming failure in <1s.
-    - Multi-Metric Evaluation: Route selection balances latency and rolling packet loss via composite quality scoring (`Score = Latency + (Loss% * 10)`).
-    - Anti-Flapping Stability: Route switches require a 10% quality advantage margin (`hysteresis_percent = 10%`), hold-down cooldown (`cooldown_seconds = 60s`), and exponential flap damping on frequent oscillations.
-    - Zero-Interruption Hot Handover: Frontends are hot-toggled via HAProxy runtime socket (<2ms) and stale conntrack states are flushed. Nginx is stopped when 0 rules use Nginx.
+10. **Two-Tier Intelligent Failover, Quality Scoring & Anti-Flapping (Mandatory)**:
+    - 10-Probe ICMP Precision & Jitter: Probes execute 10-ping bursts (`ping -c 10 -i 0.2 -W 1`) extracting latency, loss %, and within-cycle jitter (`mdev`). Parallel probing deduplicates endpoints across rules.
+    - Composite Quality Scoring: Evaluates routes over a 5-minute sliding window via `Score = Latency + 2*Jitter + 20*Loss% + Priority Bias`.
+    - Tier 1 Emergency Outage Failover: Total failure (100% loss), route invalidation, or critical degradation (>=30% loss) triggers sub-second micro-probe confirmation (<1s) and immediate failover bypassing hold times, with conntrack flushed.
+    - Tier 2 Conservative Planned Switching: Prevents disruptive route flapping on live client sessions via 10-minute hold guard (`min_hold_seconds = 600s`), 60% window warm-up, packet loss protection (never switch to higher loss), 20% & 15-point score margin, and 120s sustained streak confirmation. Planned switches reload HAProxy seamlessly without flushing conntrack, preserving existing client connections. Nginx is stopped when 0 rules use Nginx.
 
 11. **Long-Term Packet Loss Monitoring & Deduplicated Probing (Mandatory)**:
     - 50-Probe Precision: Detailed packet loss measurement uses `ping [ip] -c 50 -i 0.2 -W 1` (<10s) with UI loading states.

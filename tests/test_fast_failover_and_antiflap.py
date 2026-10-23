@@ -55,13 +55,13 @@ class TestFastFailoverAndAntiFlap(unittest.TestCase):
         }
         migrated, modified = XForwarderEngine.migrate_and_normalize_config(raw_cfg)
         self.assertTrue(modified)
-        self.assertEqual(migrated["schema_version"], 2)
+        self.assertEqual(migrated["schema_version"], 3)
         self.assertTrue(migrated["fast_failover_enabled"])
         self.assertEqual(migrated["max_acceptable_loss"], 25)
         self.assertEqual(migrated["cooldown_seconds"], 60)
-        self.assertEqual(migrated["hysteresis_percent"], 10)
-        self.assertEqual(migrated["loss_penalty_weight"], 10)
-        self.assertEqual(migrated["fast_probe_burst"], 3)
+        self.assertEqual(migrated["hysteresis_percent"], 20)
+        self.assertEqual(migrated["loss_penalty_weight"], 20)
+        self.assertEqual(migrated["fast_probe_burst"], 5)
 
         # Clamping check: out of bound values should clamp cleanly
         bad_cfg = {
@@ -152,7 +152,7 @@ class TestFastFailoverAndAntiFlap(unittest.TestCase):
 
         # P1 has 50% packet loss (2 out of 4 failed)
         self.assertEqual(p1_stat["packet_loss"], 50)
-        self.assertEqual(p1_stat["status"], "degraded")  # > max_acceptable_loss (25%)
+        self.assertIn(p1_stat["status"], ("degraded", "critical"))  # > max_acceptable_loss (25%) / >= 30%
         # Score = 40ms + (50 * 10) = 540.0
         self.assertEqual(p1_stat["composite_score"], 540.0)
 
@@ -232,6 +232,8 @@ class TestFastFailoverAndAntiFlap(unittest.TestCase):
         }
         self.engine.config["rules"] = [rule]
         self.engine.config["cooldown_seconds"] = 0  # cooldown expired
+        self.engine.config["min_hold_seconds"] = 0
+        self.engine.config["switch_confirm_seconds"] = 0
         self.engine.config["hysteresis_percent"] = 10  # 10% threshold
 
         # Current active is Priority 2 with score = 100.0 (100ms, 0% loss)
@@ -259,6 +261,10 @@ class TestFastFailoverAndAntiFlap(unittest.TestCase):
             self.assertEqual(rule["active_priority"], 2)
 
         # Now Priority 1 has score = 75.0 (25% better, passes 10% hysteresis)
+        rule_st = self.engine.runtime_state["rules_state"]["rule-3000"]
+        rule_st["dest_stats"]["prio_1"]["samples"] = []
+        rule_st["dest_stats"]["prio_2"]["samples"] = []
+
         def mock_check_significant(dest, rule_port=None, protocol=None):
             if dest["priority"] == 1:
                 return {"healthy": True, "latency_ms": 75.0, "packet_loss": 0}

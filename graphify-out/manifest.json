@@ -1,26 +1,26 @@
 {
   "core/engine.py": {
-    "mtime": 1792720028.9283254,
-    "seen": 1792721992.8508613,
-    "ast_hash": "fac257a9e778747c2623d43a1446988c",
+    "mtime": 1792774686.9663086,
+    "seen": 1792774863.1650503,
+    "ast_hash": "44ceba18f25ff092319a9c0cfddda2b6",
     "semantic_hash": ""
   },
   "core/web_server.py": {
-    "mtime": 1792742132.8521056,
-    "seen": 1792742242.2720954,
-    "ast_hash": "59ad3d76abf2f1ef76fa8e259c947702",
+    "mtime": 1792774142.6745074,
+    "seen": 1792774863.1650565,
+    "ast_hash": "da8620d3078654a4eba23ce884fe4254",
     "semantic_hash": ""
   },
   "web/app.js": {
-    "mtime": 1792743784.1510155,
-    "seen": 1792743925.6743956,
-    "ast_hash": "16a3d5168efd74baa12cd9a55824b5d9",
+    "mtime": 1792771546.2678616,
+    "seen": 1792773977.7334888,
+    "ast_hash": "5e38fa516dcb90dbda5b2c9193753ae3",
     "semantic_hash": ""
   },
   ".agents/rules/01-architecture-and-failover.md": {
-    "mtime": 1792687745.9327943,
-    "seen": 1792687801.265905,
-    "ast_hash": "75a0052dd9af549eac58dc7a55914d46",
+    "mtime": 1792773558.4838872,
+    "seen": 1792773977.7335026,
+    "ast_hash": "8850c824323bcc41a99c3a11deaa8470",
     "semantic_hash": ""
   },
   ".agents/rules/02-python-core-standards.md": {
@@ -72,9 +72,9 @@
     "semantic_hash": ""
   },
   "AGENTS.md": {
-    "mtime": 1792741869.9793174,
-    "seen": 1792742242.2721364,
-    "ast_hash": "7e9a501a54c203bd543ba69e975c59c0",
+    "mtime": 1792773631.0466783,
+    "seen": 1792773977.73352,
+    "ast_hash": "62c003706e0e3648a2d8dcefe82be04b",
     "semantic_hash": ""
   },
   "README.md": {
@@ -84,9 +84,9 @@
     "semantic_hash": ""
   },
   "web/index.html": {
-    "mtime": 1792743628.4979112,
-    "seen": 1792743925.6744485,
-    "ast_hash": "54a773dc8753e557248ca66922a38458",
+    "mtime": 1792771593.6992106,
+    "seen": 1792773977.733522,
+    "ast_hash": "62f5620db1899180e1652d42449ce6d3",
     "semantic_hash": ""
   },
   "xforwarder.sh": {
@@ -144,15 +144,15 @@
     "semantic_hash": ""
   },
   ".agents/session-state.json": {
-    "mtime": 1792742223.926256,
-    "seen": 1792742242.2720895,
-    "ast_hash": "178701593453a9c9a6880bc0a3cab6b9",
+    "mtime": 1792774805.0821874,
+    "seen": 1792774863.165049,
+    "ast_hash": "c79b7d5da7abbcb37fce47fda57543f1",
     "semantic_hash": ""
   },
   ".agents/AGENTS.md": {
-    "mtime": 1792741958.846683,
-    "seen": 1792742242.2721078,
-    "ast_hash": "66635d549cbacbc76eec937a2db57f25",
+    "mtime": 1792773722.158606,
+    "seen": 1792773977.7334907,
+    "ast_hash": "2ef21f265a7fb9794ae786912ee1fe5d",
     "semantic_hash": ""
   },
   ".agents/experiences/001-zero-collision-haproxy-nftables-failover.md": {
@@ -174,9 +174,9 @@
     "semantic_hash": ""
   },
   ".agents/experiences/README.md": {
-    "mtime": 1792695584.0855873,
-    "seen": 1792712162.6647534,
-    "ast_hash": "9753ac8af94750d26dc4b6da44de7797",
+    "mtime": 1792773844.2581608,
+    "seen": 1792773977.733502,
+    "ast_hash": "ce4c7520e0b9d4bb858ad9297d3199d6",
     "semantic_hash": ""
   },
   ".agents/rules/blast-radius-analysis.md": {
@@ -258,9 +258,9 @@
     "semantic_hash": ""
   },
   "tests/test_migration.py": {
-    "mtime": 1792693795.3188815,
-    "seen": 1792693904.4993563,
-    "ast_hash": "455539dc5246c6f4b021117a8513f9ef",
+    "mtime": 1792772188.7533734,
+    "seen": 1792773977.7334828,
+    "ast_hash": "eae5b12e2ae9d591ec0516379e318384",
     "semantic_hash": ""
   },
   "tests/test_security.py": {
@@ -342,9 +342,9 @@
     "semantic_hash": ""
   },
   "tests/test_fast_failover_and_antiflap.py": {
-    "mtime": 1792573980.0554686,
-    "seen": 1792589450.4919138,
-    "ast_hash": "050a5c3b2d84730af105474b2d2926d0",
+    "mtime": 1792772934.1745257,
+    "seen": 1792773977.7334802,
+    "ast_hash": "ad7e8bb93fd286c4cf92c61d02f82e5f",
     "semantic_hash": ""
   },
   ".agents/experiences/009-fast-failover-multi-metric-and-anti-flapping.md": {
@@ -354,9 +354,9 @@
     "semantic_hash": ""
   },
   "core/metrics.py": {
-    "mtime": 1792671869.7448456,
-    "seen": 1792672364.3369637,
-    "ast_hash": "8ffa5d93b98ac1fa96302026c1371c7b",
+    "mtime": 1792769740.4326212,
+    "seen": 1792773977.7334743,
+    "ast_hash": "fb7f30118218854f8a8601a68bb6d7f1",
     "semantic_hash": ""
   },
   "tests/test_metrics_subsystem.py": {
@@ -393,6 +393,24 @@
     "mtime": 1792695620.090052,
     "seen": 1792712162.6647525,
     "ast_hash": "2aae9998585f280fd7f0eacd837f3435",
+    "semantic_hash": ""
+  },
+  "core/route_quality.py": {
+    "mtime": 1792772608.2724736,
+    "seen": 1792773977.7334764,
+    "ast_hash": "7364f5a96eb4bad976ad30662b254b46",
+    "semantic_hash": ""
+  },
+  "tests/test_route_quality.py": {
+    "mtime": 1792774758.1869953,
+    "seen": 1792774863.1650677,
+    "ast_hash": "2875da3f7aa9c02ade0d4388c4ee1ad1",
+    "semantic_hash": ""
+  },
+  ".agents/experiences/013-two-tier-intelligent-route-switching-and-jitter-monitoring.md": {
+    "mtime": 1792773788.0726597,
+    "seen": 1792773977.7335012,
+    "ast_hash": "c8e1a8a277a82f217cbd180856bf9f9c",
     "semantic_hash": ""
   }
 }

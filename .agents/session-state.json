@@ -1,6 +1,6 @@
 {
-  "last_updated": "2026-10-23T11:27:00+03:30",
-  "active_task": "Granular Port & Category JSON Export/Import, Quote Sanitization, and Security Audit",
+  "last_updated": "2026-10-23T20:15:00+03:30",
+  "active_task": "Intelligent 10-Ping Route Quality Engine & Anti-Flapping Failover",
   "active_spec": null,
   "phase": "Completed",
   "completed_milestones": [
@@ -43,8 +43,12 @@
     "Implemented 1-click category rules JSON batch export/copy (copyCategoryJson) with safeInlineArg quote protection",
     "Upgraded configuration import modal with enlarged vertical textarea, clipboard paste, JSON formatting, and clear tools",
     "Expanded backend and frontend import engines to auto-adapt full configs, raw arrays, single-rule dicts, and JSON strings",
-    "Hardened HTTP import endpoint failure handling with explicit 400 JSON error responses"
+    "Hardened HTTP import endpoint failure handling with explicit 400 JSON error responses",
+    "Implemented 10-probe route quality engine (core/route_quality.py) evaluating weighted latency, jitter (mdev), packet loss, 5-minute sliding window, 10-minute hold-down, and 2-minute streak confirmation",
+    "Integrated socket-preserving non-disruptive HAProxy reloads for planned switches and emergency conntrack flushes for critical failovers",
+    "Updated Web UI with real-time hold/pending countdown badges, enriched latency tooltips (jitter, loss, score), and stripped raw samples from /api/status payload",
+    "Added test suite tests/test_route_quality.py with 100% pass rate across 167 total unit tests"
   ],
   "next_steps": [],
-  "notes": "Granular rule and category export/import, enlarged textarea toolbar, safeInlineArg quoting, and 152 unit tests passing cleanly with zero regression."
+  "notes": "10-probe route quality failover engine complete with 5m window aggregation, 10m hold-down, 2m streak confirmation, zero pip dependencies, socket-preserving reloads, and 167 passing tests."
 }

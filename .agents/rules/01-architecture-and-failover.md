@@ -25,25 +25,33 @@ A port must **NEVER** be bound by HAProxy and forwarded by NFTables DNAT at the 
    - Kernel DNAT rules are added to `table ip xfwd_orchestrator prerouting` chain:
      `iifname "<WAN>" (tcp|udp) dport <port> dnat to <tunnel_target>:<target_port>`.
 
-## 3. Failover & Recovery Dynamics
-- **Detection Cycle**: Configurable via `check_interval_seconds` (default: 8s).
-- **Failure Threshold**: Configurable via `failure_threshold` (default: 3 consecutive failed probes before marking `failed`).
-- **Recovery Threshold**: Configurable via `recovery_threshold` (default: 3 consecutive healthy probes before marking `healthy`).
-- **Sub-Second Fast Probe Burst**: Active route probe failures trigger an immediate 3-probe micro-burst (`_fast_confirm_burst`, 100ms interval, 250ms timeout) confirming failure in <1s.
-- **Multi-Metric Composite Scoring**: Destinations evaluate both latency and rolling packet loss over a sliding window ($W=8$):
-  $$\text{Composite Score} = \text{Avg Latency (ms)} + (\text{Loss Pct} \times 10)$$
-- **Max Acceptable Loss**: Routes exceeding `max_acceptable_loss` (default: 25%) are marked degraded and deprioritized.
-- **Anti-Flapping Route Damping & 10% Hysteresis**:
-  - Route switches require an alternative to be at least 10% better (`hysteresis_percent = 10%`).
-  - Active routes observe a hold-down cooldown (`cooldown_seconds = 60s`). Total failure (100% loss) bypasses cooldown immediately.
-  - $\ge 3$ switches within 10 minutes triggers flap damping, dynamically doubling the hold-down cooldown.
-- **Failback**: As soon as Priority 1 recovers with sustained clean health (0% loss, consecutive successes >= threshold), the engine switches back to Priority 1.
-- **Nginx Dynamic Lifecycle**: When 0 rules use Nginx, the daemon stops Nginx (`systemctl stop nginx`); starts/reloads Nginx when rules are active.
+## 3. Two-Tier Intelligent Failover & Route Quality Architecture
+- **ICMP Multi-Probe Precision (10-Ping Sampling)**:
+  - Probing uses native 10-probe ICMP ping bursts (`ping -c 10 -i 0.2 -W 1`) with `LC_ALL=C` and IPv4/IPv6 support.
+  - Extracts average latency, packet loss, and within-cycle jitter (`mdev` on Linux / `(max-min)/2` fallback).
+  - Cross-rule deduplicated parallel probing (`_probe_all_destinations`) executes via a persistent worker pool, probing each unique (IP, interface) endpoint only once per cycle.
+- **Two-Tier Decision Engine (`core/route_quality.py`)**:
+  - **Tier 1 (Emergency Outage / Critical Loss Bypass)**:
+    - Triggers on total failure (100% loss), route invalidation (WAN leak), or critical degradation ($\ge \text{critical\_loss\_percent}$, default: 30%).
+    - Active outages trigger sub-second micro-probe bursts (`_fast_confirm_burst`, 5 packets, <1s confirmation).
+    - Bypasses minimum hold-down and streak confirmation immediately.
+    - Critical switches execute conntrack flushing (`conntrack -D`) to clear dead states.
+  - **Tier 2 (Conservative Planned Quality Switching)**:
+    - Designed to prevent frequent, disruptive route flapping on live client sessions.
+    - Evaluates performance over a 5-minute sliding window (`quality_window_seconds = 300s`) requiring $\ge 60\%$ window warm-up.
+    - **10-Minute Hold-Down**: Newly activated routes remain locked for at least 10 minutes (`min_hold_seconds = 600s`).
+    - **Packet Loss Shield**: Never trades lower latency for higher packet loss (`cand_loss > curr_loss + 0.5` is rejected).
+    - **Significant Advantage Margin**: Candidate must beat current score by $\ge 20\%$ (`hysteresis_percent = 20%`) AND $\ge 15$ points.
+    - **120-Second Streak Confirmation**: Candidate must maintain superior quality continuously for 120 seconds (`switch_confirm_seconds = 120s`). UI displays countdown badge (`Switch in Ns`).
+    - **Socket Preservation**: Planned switches reload HAProxy seamlessly without flushing conntrack, preserving existing client connections while new traffic routes via the superior path.
+- **Composite Quality Formula**:
+  $$\text{Composite Score} = \text{Avg Latency (ms)} + 2 \times \text{Jitter (ms)} + 20 \times \text{Loss Pct} + \text{Priority Bias}$$
+- **Anti-Flap Damping**: $\ge 3$ route switches within 10 minutes triggers flap damping, dynamically doubling `min_hold` (to 20m) and `cooldown` (to 2m).
 - **Force Override Modes**:
   - `0`: Auto Failover (default)
   - `1`: Force Priority 1 (Primary)
   - `2`: Force Priority 2 (Backup)
-  - *Changing override mode immediately clears active cooldown hold-downs.*
+  - *Changing override mode immediately clears hold-down guards and recalculates best priority via `pick_best_now`.*
 
 ## 4. State & Configuration Persistence
 - **Persistent Configuration**: `/etc/xforwarder/config.json` (fallback: `/etc/forward-manager/config.json` or `config/config.json`).

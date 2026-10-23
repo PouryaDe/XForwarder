@@ -157,18 +157,23 @@ def parse_ping_output(stdout_text: str, returncode: int, sent_default: int = 50)
     elif sent > 0:
         loss_pct = round(((sent - received) / sent) * 100.0, 1)
 
-    # 2. Round-trip Latency
+    # 2. Round-trip Latency & Jitter
     avg_lat: Optional[float] = None
     min_lat: Optional[float] = None
     max_lat: Optional[float] = None
+    jitter_ms: float = 0.0
 
     # Linux: "rtt min/avg/max/mdev = 13.912/14.502/16.120/0.450 ms"
-    m_rtt = re.search(r'min/avg/max(?:/mdev)?\s*=\s*([\d.]+)/([\d.]+)/([\d.]+)', text)
+    m_rtt = re.search(r'min/avg/max(?:/mdev)?\s*=\s*([\d.]+)/([\d.]+)/([\d.]+)(?:/([\d.]+))?', text)
     if m_rtt:
         try:
             min_lat = round(float(m_rtt.group(1)), 1)
             avg_lat = round(float(m_rtt.group(2)), 1)
             max_lat = round(float(m_rtt.group(3)), 1)
+            if m_rtt.group(4):
+                jitter_ms = round(float(m_rtt.group(4)), 1)
+            elif max_lat is not None and min_lat is not None:
+                jitter_ms = round((max_lat - min_lat) / 2.0, 1)
         except ValueError:
             pass
     else:
@@ -179,6 +184,7 @@ def parse_ping_output(stdout_text: str, returncode: int, sent_default: int = 50)
                 min_lat = float(m_win_rtt.group(1))
                 max_lat = float(m_win_rtt.group(2))
                 avg_lat = float(m_win_rtt.group(3))
+                jitter_ms = round((max_lat - min_lat) / 2.0, 1)
             except ValueError:
                 pass
         else:
@@ -202,6 +208,7 @@ def parse_ping_output(stdout_text: str, returncode: int, sent_default: int = 50)
         "latency_ms": avg_lat,
         "min_lat": min_lat,
         "max_lat": max_lat,
+        "jitter_ms": jitter_ms,
         "is_disrupted": is_disrupted
     }
 

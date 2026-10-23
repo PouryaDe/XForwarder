@@ -825,20 +825,20 @@
                         <div class="overview-card-body">
                             <div class="overview-info-list">
                                 <div class="info-item">
-                                    <span class="info-label">Check Interval</span>
-                                    <span class="info-value">8 seconds</span>
+                                    <span class="info-label">Sampling &amp; Precision</span>
+                                    <span class="info-value">10 Probes (200ms) &middot; Jitter (mdev)</span>
                                 </div>
                                 <div class="info-item">
-                                    <span class="info-label">Fast Outage Burst</span>
-                                    <span class="info-value text-emerald">&lt; 1.0s Adaptive Confirmation</span>
+                                    <span class="info-label">Evaluation Window</span>
+                                    <span class="info-value text-emerald">5-Min Sliding Window (Score)</span>
                                 </div>
                                 <div class="info-item">
-                                    <span class="info-label">Packet Loss Threshold</span>
-                                    <span class="info-value">25% Max Acceptable</span>
+                                    <span class="info-label">Planned Stability Guard</span>
+                                    <span class="info-value">10m Hold &middot; 2m Streak &middot; 20% Margin</span>
                                 </div>
                                 <div class="info-item">
-                                    <span class="info-label">Anti-Flapping &amp; Hold</span>
-                                    <span class="info-value">60s Cooldown &middot; 10% Hysteresis</span>
+                                    <span class="info-label">Critical Emergency Trigger</span>
+                                    <span class="info-value text-rose">&ge; 30% Loss or Outage (&lt;1s Burst)</span>
                                 </div>
                                 <div class="info-item">
                                     <span class="info-label">Failover Architecture</span>
