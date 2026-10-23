@@ -243,7 +243,13 @@ def import_config_data(imported_raw, mode: str = "merge") -> tuple:
     if mode not in ("merge", "replace"):
         mode = "merge"
 
-    # Support raw rules array or single rule dict as valid import payload
+    # Support raw JSON string, rules array, or single rule dict as valid import payload
+    if isinstance(imported_raw, str):
+        try:
+            imported_raw = json.loads(imported_raw)
+        except Exception as e:
+            return False, f"Invalid JSON string payload: Must be a valid JSON object or rules array ({e})", {}
+
     if isinstance(imported_raw, list):
         imported_raw = {"rules": imported_raw}
     elif isinstance(imported_raw, dict) and "rules" not in imported_raw and "port" in imported_raw:
@@ -2471,6 +2477,8 @@ class XForwarderWebHandler(BaseHTTPRequestHandler):
             if ok:
                 sync_ok, sync_errors = sync_rules_and_notify(max_retries=2)
                 self.send_json({"ok": True, "sync_ok": sync_ok, "sync_errors": sync_errors, **info})
+            else:
+                self.send_json({"ok": False, "error": err}, 400)
         elif subpath == "/api/test-target":
             target = str(body.get("target", "")).strip().strip("[]")
             try:

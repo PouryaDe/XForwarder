@@ -118,6 +118,11 @@ XForwarder/
     - UDP stream proxying must strictly enforce bounded timeouts (`proxy_timeout 60s`) and large buffers (`proxy_buffer_size 64k`) to eliminate UDP socket and memory accumulation.
     - Dynamic host network profiling (`tune_network` in `xforwarder.sh`) automatically configures BBR congestion control, scales `somaxconn` to 65,535, expands socket buffers, sets `LimitNOFILE=1048576` for HAProxy, and scales conntrack tables.
 
+15. **Granular Port & Category JSON Export/Import (Mandatory)**:
+    - Web dashboard provides 1-click single-port rule JSON copy (`copyRuleJson`) and entire category JSON batch copy (`copyCategoryJson`) formatted for immediate import into external panels.
+    - Import engine (`import_config_data`) and modal paste textarea support full configurations (`{"rules": [...]}`), raw rules arrays (`[...]`), and single-rule dictionaries (`{"port": 443, ...}`) with pre-import atomic backups.
+    - Inline event parameters enforce safe quote-escaping (`safeInlineArg`) preventing attribute breakout or syntax errors on custom categories.
+
 
 ---
 

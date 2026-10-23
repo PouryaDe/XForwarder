@@ -161,6 +161,11 @@ function fallbackCopyRaw(text) {
     document.body.removeChild(el);
 }
 
+// Safely escape parameters passed inside inline HTML event handlers (e.g. onclick="fn(decodeURIComponent('...'))")
+function safeInlineArg(str) {
+    return encodeURIComponent(String(str || "")).replace(/'/g, "%27");
+}
+
 // Prepare clean sanitized rule for JSON export & import
 function getSanitizedRuleForExport(rule) {
     if (!rule) return null;
@@ -184,11 +189,12 @@ function getSanitizedRuleForExport(rule) {
 
     if (Array.isArray(rule.destinations)) {
         clean.destinations = rule.destinations.map(d => {
+            const destPort = parseInt(d.port || rule.port, 10);
             const cd = {
                 priority: d.priority || 1,
                 type: d.type || "haproxy",
-                target: d.target,
-                port: d.port || rule.port
+                target: String(d.target || "").trim(),
+                port: (destPort > 0 && destPort <= 65535) ? destPort : parseInt(rule.port, 10)
             };
             if (d.proxy_protocol) cd.proxy_protocol = true;
             if (d.is_tunnel) cd.is_tunnel = true;
@@ -1429,7 +1435,7 @@ function computeRulesFingerprint(filteredRules, rulesState) {
 // Render individual Rule Card (Card View)
 function renderRuleCard(rule, rulesState) {
     const ruleId = String(rule.id || `rule-${rule.port}`);
-    const encodedId = encodeURIComponent(ruleId);
+    const encodedId = safeInlineArg(ruleId);
     const rState = rulesState[ruleId] || {};
     const destStats = rState.dest_stats || {};
     const activePriority = rule.active_priority || 1;
@@ -1610,7 +1616,7 @@ function renderRuleCard(rule, rulesState) {
 // Render individual Rule Row (Compact List View)
 function renderRuleListRow(rule, rulesState) {
     const ruleId = String(rule.id || `rule-${rule.port}`);
-    const encodedId = encodeURIComponent(ruleId);
+    const encodedId = safeInlineArg(ruleId);
     const rState = rulesState[ruleId] || {};
     const destStats = rState.dest_stats || {};
     const activePriority = rule.active_priority || 1;
@@ -1827,7 +1833,7 @@ function renderRules(rules, runtime) {
                             <span class="rule-category-count">${groupRules.length} Port${groupRules.length === 1 ? '' : 's'}</span>
                         </div>
                         <div class="rule-category-line"></div>
-                        <button type="button" class="btn-category-copy" onclick="copyCategoryJson(decodeURIComponent('${encodeURIComponent(catKey)}'))" title="Copy all ports in category '${catTitle}' as JSON">
+                        <button type="button" class="btn-category-copy" onclick="copyCategoryJson(decodeURIComponent('${safeInlineArg(catKey)}'))" title="Copy all ports in category '${catTitle}' as JSON">
                             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
                                 <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>

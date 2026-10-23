@@ -289,6 +289,71 @@ class TestExportImport(unittest.TestCase):
         self.assertEqual(rule_4040["category"], "Custom")
 
 
+    def test_import_json_string_payload(self):
+        # A raw JSON string payload should be parsed and imported seamlessly
+        raw_json_str = json.dumps({
+            "rules": [
+                {
+                    "name": "String Service",
+                    "port": 5050,
+                    "protocol": "tcp",
+                    "destinations": [{"priority": 1, "target": "2001:cafe::5050", "port": 5050}]
+                }
+            ]
+        })
+        ok, err, info = import_config_data(raw_json_str, mode="merge")
+        self.assertTrue(ok)
+        self.assertEqual(info["imported_count"], 1)
+        reloaded = load_config()
+        self.assertIn(5050, [r["port"] for r in reloaded["rules"]])
+
+    def test_import_invalid_json_string_payload(self):
+        # Malformed JSON string must fail gracefully with error message
+        ok, err, _ = import_config_data("{bad: json}", mode="merge")
+        self.assertFalse(ok)
+        self.assertIn("Invalid JSON string payload", err)
+
+    def test_http_import_endpoint_failure_returns_400(self):
+        # End-to-end HTTP test ensuring do_POST /api/config/import returns 400 on error
+        import threading
+        import urllib.request
+        from http.server import HTTPServer
+        from core.web_server import XForwarderWebHandler, ACTIVE_SESSIONS, SESSION_LOCK
+
+        server = HTTPServer(("127.0.0.1", 0), XForwarderWebHandler)
+        port = server.server_port
+        t = threading.Thread(target=server.handle_request, daemon=True)
+        t.start()
+
+        token = "test_e2e_import_token"
+        with SESSION_LOCK:
+            ACTIVE_SESSIONS[token] = {
+                "username": "admin",
+                "created_at": time.time(),
+                "last_active": time.time(),
+                "expires_at": time.time() + 3600
+            }
+
+        try:
+            req = urllib.request.Request(
+                f"http://127.0.0.1:{port}/api/config/import",
+                data=json.dumps({"mode": "merge", "config": {"rules": [{"port": 999999}]}}).encode("utf-8"),
+                headers={
+                    "Content-Type": "application/json",
+                    "Cookie": f"xfwd_session={token}",
+                    "Origin": f"http://127.0.0.1:{port}"
+                }
+            )
+            with self.assertRaises(urllib.error.HTTPError) as ctx:
+                urllib.request.urlopen(req, timeout=3.0)
+            self.assertEqual(ctx.exception.code, 400)
+            err_body = json.loads(ctx.exception.read().decode("utf-8"))
+            self.assertFalse(err_body.get("ok"))
+            self.assertIn("Invalid port", err_body.get("error", ""))
+        finally:
+            server.server_close()
+
+
 if __name__ == "__main__":
     unittest.main()
 

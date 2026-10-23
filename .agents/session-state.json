@@ -1,6 +1,6 @@
 {
-  "last_updated": "2026-10-22T19:40:00.000000+00:00",
-  "active_task": "NFTables Active Rules Auto-Discovery, Import & Conflict Deactivation Subsystem",
+  "last_updated": "2026-10-23T11:27:00+03:30",
+  "active_task": "Granular Port & Category JSON Export/Import, Quote Sanitization, and Security Audit",
   "active_spec": null,
   "phase": "Completed",
   "completed_milestones": [
@@ -38,8 +38,13 @@
     "Implemented web dashboard in-panel update manager with decoupled execution, service control API, and persistent polling",
     "Implemented port view switcher (Card view default vs compact List view) with localStorage persistence",
     "Implemented port sorting subsystem (Port Low-High, Port High-Low, Newest/Oldest registered, Status, and Category A-Z)",
-    "Implemented port grouping & categorization with illuminated divider lines, category badge pills, and autocomplete datalist suggestions"
+    "Implemented port grouping & categorization with illuminated divider lines, category badge pills, and autocomplete datalist suggestions",
+    "Implemented single port rule JSON export/copy (copyRuleJson) in Card and List views",
+    "Implemented 1-click category rules JSON batch export/copy (copyCategoryJson) with safeInlineArg quote protection",
+    "Upgraded configuration import modal with enlarged vertical textarea, clipboard paste, JSON formatting, and clear tools",
+    "Expanded backend and frontend import engines to auto-adapt full configs, raw arrays, single-rule dicts, and JSON strings",
+    "Hardened HTTP import endpoint failure handling with explicit 400 JSON error responses"
   ],
   "next_steps": [],
-  "notes": "Port rules organization, view toggle (cards default), sorting, and categorization completed with 100% unit tests passing."
+  "notes": "Granular rule and category export/import, enlarged textarea toolbar, safeInlineArg quoting, and 152 unit tests passing cleanly with zero regression."
 }

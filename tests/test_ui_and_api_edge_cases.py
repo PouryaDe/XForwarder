@@ -1678,6 +1678,7 @@ class TestUIAndAPIEdgeCases(unittest.TestCase):
         self.assertIn('class="paste-json-textarea', html)
 
         # JS functions & button actions
+        self.assertIn("safeInlineArg", js)
         self.assertIn("copyRuleJson", js)
         self.assertIn("copyCategoryJson", js)
         self.assertIn("copyJsonToClipboard", js)
