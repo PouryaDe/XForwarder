@@ -17,10 +17,10 @@ When heavy proxy/VPN traffic was routed through XForwarder relay servers, signif
 
 ## 3. Architecture & Solution Implemented
 1. **HAProxy Zero-Copy Splicing & Dynamic Pipes:**
-   - Added `option splice-auto`, `tune.pipesize 262144`, and `tune.bufsize 65536` in `core/engine.py`.
+   - Added `option splice-auto`, `tune.pipesize 262144`, `tune.bufsize 65536`, and multi-core CPU thread affinity (`nbthread` + `cpu-map`) in `core/engine.py`.
    - Replaced `option tcplog` with quiet `notice`-level logging (`log /dev/log local0 notice`, `option dontlognull`).
    - Enabled `option clitcpka` and `option srvtcpka` to sweep zombie client connections.
-   - Built a pre-validation fallback: if an esoteric HAProxy build rejects `splice-auto`, the engine automatically strips tuning directives and verifies syntax cleanly.
+   - Built a pre-validation fallback: if an esoteric HAProxy build rejects `splice-auto` or threading directives, the engine automatically strips tuning directives and verifies syntax cleanly.
 2. **60-Second UDP Session Timeout & 64k Buffers:**
    - Configured `proxy_timeout 60s;` on Nginx stream UDP servers and HAProxy UDP helper listeners.
    - Increased Nginx stream buffer size to `proxy_buffer_size 64k;`.

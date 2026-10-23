@@ -1,14 +1,14 @@
 {
   "core/engine.py": {
-    "mtime": 1792773168.0013342,
-    "seen": 1792773977.7334723,
-    "ast_hash": "363cb846a358aafa41be1629d5417678",
+    "mtime": 1792778766.372063,
+    "seen": 1792778865.1673865,
+    "ast_hash": "198c30edae9b367d9e1fc50b38d78ea0",
     "semantic_hash": ""
   },
   "core/web_server.py": {
-    "mtime": 1792771019.740542,
-    "seen": 1792773977.7334774,
-    "ast_hash": "a01c661f6a145e2ddf23e6e957b8e1cd",
+    "mtime": 1792774142.6745074,
+    "seen": 1792774863.1650565,
+    "ast_hash": "da8620d3078654a4eba23ce884fe4254",
     "semantic_hash": ""
   },
   "web/app.js": {
@@ -144,9 +144,9 @@
     "semantic_hash": ""
   },
   ".agents/session-state.json": {
-    "mtime": 1792773960.5797138,
-    "seen": 1792773977.733471,
-    "ast_hash": "d1e9c542dce3f19857d1dc0f93958a6c",
+    "mtime": 1792774805.0821874,
+    "seen": 1792774863.165049,
+    "ast_hash": "c79b7d5da7abbcb37fce47fda57543f1",
     "semantic_hash": ""
   },
   ".agents/AGENTS.md": {
@@ -330,9 +330,9 @@
     "semantic_hash": ""
   },
   "tests/test_performance_and_optimizations.py": {
-    "mtime": 1792714300.546853,
-    "seen": 1792714435.8988886,
-    "ast_hash": "919e63fbd89915b2eb66a8eb63174769",
+    "mtime": 1792778819.2603884,
+    "seen": 1792778865.1674016,
+    "ast_hash": "160db31b154f23db135317be17d76603",
     "semantic_hash": ""
   },
   ".agents/experiences/008-full-stack-performance-and-fast-ipc.md": {
@@ -402,9 +402,9 @@
     "semantic_hash": ""
   },
   "tests/test_route_quality.py": {
-    "mtime": 1792773335.301378,
-    "seen": 1792773977.7334867,
-    "ast_hash": "42e2e7c3918a0d430989c300cd3aff2b",
+    "mtime": 1792774758.1869953,
+    "seen": 1792774863.1650677,
+    "ast_hash": "2875da3f7aa9c02ade0d4388c4ee1ad1",
     "semantic_hash": ""
   },
   ".agents/experiences/013-two-tier-intelligent-route-switching-and-jitter-monitoring.md": {

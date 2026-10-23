@@ -47,8 +47,9 @@
     "Implemented 10-probe route quality engine (core/route_quality.py) evaluating weighted latency, jitter (mdev), packet loss, 5-minute sliding window, 10-minute hold-down, and 2-minute streak confirmation",
     "Integrated socket-preserving non-disruptive HAProxy reloads for planned switches and emergency conntrack flushes for critical failovers",
     "Updated Web UI with real-time hold/pending countdown badges, enriched latency tooltips (jitter, loss, score), and stripped raw samples from /api/status payload",
-    "Added test suite tests/test_route_quality.py with 100% pass rate across 167 total unit tests"
+    "Added test suite tests/test_route_quality.py with 100% pass rate across 167 total unit tests",
+    "Optimized HAProxy CPU utilization by adding explicit multi-core nbthread declaration alongside cpu-map in global config with defensive fallback"
   ],
   "next_steps": [],
-  "notes": "10-probe route quality failover engine complete with 5m window aggregation, 10m hold-down, 2m streak confirmation, zero pip dependencies, socket-preserving reloads, and 167 passing tests."
+  "notes": "HAProxy multi-core CPU scaling optimized via explicit nbthread and cpu-map affinity. All 167 unit tests pass."
 }

@@ -405,13 +405,14 @@ class TestPerformanceAndOptimizations(unittest.TestCase):
                 # Ensure verbose tcplog is NOT in defaults
                 self.assertNotIn("option  tcplog", content)
                 if os.cpu_count() and os.cpu_count() > 1:
+                    self.assertIn("nbthread ", content)
                     self.assertIn("cpu-map auto:1/1-", content)
         finally:
             if os.path.exists(test_haproxy_conf):
                 os.remove(test_haproxy_conf)
 
     def test_haproxy_performance_fallback_on_old_binary(self):
-        """Verifies fallback removes splice-auto and pipesize if validation fails."""
+        """Verifies fallback removes splice-auto, pipesize, and multi-thread directives if validation fails."""
         engine = XForwarderEngine()
         with tempfile.NamedTemporaryFile("w+", delete=False, encoding="utf-8") as tf:
             test_haproxy_conf = tf.name
@@ -435,6 +436,52 @@ class TestPerformanceAndOptimizations(unittest.TestCase):
 
                 self.assertNotIn("option  splice-auto", content)
                 self.assertNotIn("tune.pipesize", content)
+                self.assertNotIn("nbthread", content)
+                self.assertNotIn("cpu-map", content)
+                self.assertIn("listen test_p1", content)
+        finally:
+            if os.path.exists(test_haproxy_conf):
+                os.remove(test_haproxy_conf)
+
+    def test_haproxy_single_core_omits_nbthread_and_cpumap(self):
+        """Edge Case: On 1-core VPS or when os.cpu_count() returns None, nbthread and cpu-map are cleanly omitted."""
+        engine = XForwarderEngine()
+        with tempfile.NamedTemporaryFile("w+", delete=False, encoding="utf-8") as tf:
+            test_haproxy_conf = tf.name
+
+        try:
+            with patch("core.engine.HAPROXY_CONF_PATH", test_haproxy_conf), \
+                 patch("shutil.which", return_value=None), \
+                 patch("os.cpu_count", return_value=1):
+                ok, err = engine._apply_haproxy(["listen test_p1\n    bind *:8080\n    server s1 10.0.0.1:8080"])
+                self.assertTrue(ok)
+                with open(test_haproxy_conf, "r", encoding="utf-8") as f:
+                    content = f.read()
+
+                self.assertNotIn("nbthread", content)
+                self.assertNotIn("cpu-map", content)
+                self.assertIn("listen test_p1", content)
+        finally:
+            if os.path.exists(test_haproxy_conf):
+                os.remove(test_haproxy_conf)
+
+    def test_haproxy_multicore_renders_both_nbthread_and_cpumap(self):
+        """Edge Case: On multi-core host (4 cores), both nbthread 4 and cpu-map auto:1/1-4 0-3 are generated."""
+        engine = XForwarderEngine()
+        with tempfile.NamedTemporaryFile("w+", delete=False, encoding="utf-8") as tf:
+            test_haproxy_conf = tf.name
+
+        try:
+            with patch("core.engine.HAPROXY_CONF_PATH", test_haproxy_conf), \
+                 patch("shutil.which", return_value=None), \
+                 patch("os.cpu_count", return_value=4):
+                ok, err = engine._apply_haproxy(["listen test_p1\n    bind *:8080\n    server s1 10.0.0.1:8080"])
+                self.assertTrue(ok)
+                with open(test_haproxy_conf, "r", encoding="utf-8") as f:
+                    content = f.read()
+
+                self.assertIn("    nbthread 4\n", content)
+                self.assertIn("    cpu-map auto:1/1-4 0-3\n", content)
                 self.assertIn("listen test_p1", content)
         finally:
             if os.path.exists(test_haproxy_conf):
