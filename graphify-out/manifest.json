@@ -1,8 +1,8 @@
 {
   "core/engine.py": {
-    "mtime": 1792695286.9236789,
-    "seen": 1792695555.794968,
-    "ast_hash": "06842ef46ded362c04a0b8e1b5b6c2c3",
+    "mtime": 1792714236.2050157,
+    "seen": 1792714435.8988755,
+    "ast_hash": "d97b88798e2257cc9a84eb9f1ffd1b91",
     "semantic_hash": ""
   },
   "core/web_server.py": {
@@ -330,9 +330,9 @@
     "semantic_hash": ""
   },
   "tests/test_performance_and_optimizations.py": {
-    "mtime": 1792696285.3251977,
-    "seen": 1792712162.664737,
-    "ast_hash": "31c2bbc5fc7c499dbca289c22af47a8a",
+    "mtime": 1792714300.546853,
+    "seen": 1792714435.8988886,
+    "ast_hash": "919e63fbd89915b2eb66a8eb63174769",
     "semantic_hash": ""
   },
   ".agents/experiences/008-full-stack-performance-and-fast-ipc.md": {

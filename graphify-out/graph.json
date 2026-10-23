@@ -786,7 +786,7 @@
       "file_type": "code",
       "norm_label": ".test_haproxy_performance_fallback_on_old_binary()",
       "source_file": "tests/test_performance_and_optimizations.py",
-      "source_location": "L411"
+      "source_location": "L413"
     },
     {
       "id": "tests_test_performance_and_optimizations_testperformanceandoptimizations_test_haproxy_performance_fallback_on_old_binary_mock_run_validator",
@@ -798,7 +798,7 @@
       "file_type": "code",
       "norm_label": "mock_run_validator()",
       "source_file": "tests/test_performance_and_optimizations.py",
-      "source_location": "L420"
+      "source_location": "L422"
     },
     {
       "id": "tests_test_performance_and_optimizations_testperformanceandoptimizations_test_haproxy_performance_options_rendered",
@@ -822,7 +822,7 @@
       "file_type": "code",
       "norm_label": ".test_haproxy_syntax_validation_real_error_fails()",
       "source_file": "tests/test_performance_and_optimizations.py",
-      "source_location": "L465"
+      "source_location": "L467"
     },
     {
       "id": "tests_test_performance_and_optimizations_testperformanceandoptimizations_test_nginx_stream_sync_firewall_udp_and_proxy_protocol",
@@ -834,7 +834,7 @@
       "file_type": "code",
       "norm_label": ".test_nginx_stream_sync_firewall_udp_and_proxy_protocol()",
       "source_file": "tests/test_performance_and_optimizations.py",
-      "source_location": "L482"
+      "source_location": "L484"
     },
     {
       "id": "tests_test_performance_and_optimizations_testperformanceandoptimizations_test_nginx_udp_proxy_timeout_rendered",
@@ -846,7 +846,7 @@
       "file_type": "code",
       "norm_label": ".test_nginx_udp_proxy_timeout_rendered()",
       "source_file": "tests/test_performance_and_optimizations.py",
-      "source_location": "L441"
+      "source_location": "L443"
     },
     {
       "id": "tests_test_performance_and_optimizations_testperformanceandoptimizations_test_notify_engine_wakeup_graceful_handling",
@@ -1410,7 +1410,7 @@
       "file_type": "code",
       "norm_label": "sync_system_rules()",
       "source_file": "core/engine.py",
-      "source_location": "L1694"
+      "source_location": "L1698"
     },
     {
       "id": "core_web_server_check_rate_limit",
@@ -3258,7 +3258,7 @@
       "file_type": "code",
       "norm_label": "handle_sig()",
       "source_file": "core/engine.py",
-      "source_location": "L1729"
+      "source_location": "L1733"
     },
     {
       "id": "core_engine_is_private_or_tunnel_target",
@@ -3450,7 +3450,7 @@
       "file_type": "code",
       "norm_label": "._apply_nginx()",
       "source_file": "core/engine.py",
-      "source_location": "L1399"
+      "source_location": "L1403"
     },
     {
       "id": "core_engine_xforwarderengine_detect_wan_interface",
@@ -3534,7 +3534,7 @@
       "file_type": "code",
       "norm_label": "._remove_pid_file()",
       "source_file": "core/engine.py",
-      "source_location": "L1606"
+      "source_location": "L1610"
     },
     {
       "id": "core_engine_xforwarderengine_resolve_config_path",
@@ -3558,7 +3558,7 @@
       "file_type": "code",
       "norm_label": ".run_loop()",
       "source_file": "core/engine.py",
-      "source_location": "L1616"
+      "source_location": "L1620"
     },
     {
       "id": "core_engine_xforwarderengine_save_config",
@@ -3594,7 +3594,7 @@
       "file_type": "code",
       "norm_label": ".stop()",
       "source_file": "core/engine.py",
-      "source_location": "L1685"
+      "source_location": "L1689"
     },
     {
       "id": "core_engine_xforwarderengine_sync_firewall_and_proxies",
@@ -3618,7 +3618,7 @@
       "file_type": "code",
       "norm_label": "._write_pid_file()",
       "source_file": "core/engine.py",
-      "source_location": "L1594"
+      "source_location": "L1598"
     },
     {
       "id": "core_web_server_export_config_data",
@@ -4170,7 +4170,7 @@
       "file_type": "code",
       "norm_label": "._save_state_file()",
       "source_file": "core/engine.py",
-      "source_location": "L1551"
+      "source_location": "L1555"
     },
     {
       "id": "core_web_server_is_haproxy_listening",
@@ -7656,7 +7656,7 @@
       "source_location": "L386"
     },
     {
-      "id": "tests_test_performance_and_optimizations_rationale_412",
+      "id": "tests_test_performance_and_optimizations_rationale_414",
       "label": "Verifies fallback removes splice-auto and pipesize if validation fails.",
       "_origin": "ast",
       "community": 2,
@@ -7664,10 +7664,10 @@
       "file_type": "rationale",
       "norm_label": "verifies fallback removes splice-auto and pipesize if validation fails.",
       "source_file": "tests/test_performance_and_optimizations.py",
-      "source_location": "L412"
+      "source_location": "L414"
     },
     {
-      "id": "tests_test_performance_and_optimizations_rationale_442",
+      "id": "tests_test_performance_and_optimizations_rationale_444",
       "label": "Verifies that UDP rules and HAProxy UDP helper set proxy_timeout 60s and 64k\u2026",
       "_origin": "ast",
       "community": 2,
@@ -7675,10 +7675,10 @@
       "file_type": "rationale",
       "norm_label": "verifies that udp rules and haproxy udp helper set proxy_timeout 60s and 64k...",
       "source_file": "tests/test_performance_and_optimizations.py",
-      "source_location": "L442"
+      "source_location": "L444"
     },
     {
-      "id": "tests_test_performance_and_optimizations_rationale_466",
+      "id": "tests_test_performance_and_optimizations_rationale_468",
       "label": "Verifies that legitimate syntax errors in HAProxy config fail gracefully\u2026",
       "_origin": "ast",
       "community": 2,
@@ -7686,10 +7686,10 @@
       "file_type": "rationale",
       "norm_label": "verifies that legitimate syntax errors in haproxy config fail gracefully...",
       "source_file": "tests/test_performance_and_optimizations.py",
-      "source_location": "L466"
+      "source_location": "L468"
     },
     {
-      "id": "tests_test_performance_and_optimizations_rationale_483",
+      "id": "tests_test_performance_and_optimizations_rationale_485",
       "label": "Verifies sync_firewall_and_proxies generates proxy_timeout 60s and\u2026",
       "_origin": "ast",
       "community": 2,
@@ -7697,7 +7697,7 @@
       "file_type": "rationale",
       "norm_label": "verifies sync_firewall_and_proxies generates proxy_timeout 60s and...",
       "source_file": "tests/test_performance_and_optimizations.py",
-      "source_location": "L483"
+      "source_location": "L485"
     },
     {
       "id": "agents_rules_04_web_dashboard_and_security",
@@ -8171,7 +8171,7 @@
       "source_location": "L1"
     },
     {
-      "id": "core_engine_rationale_1695",
+      "id": "core_engine_rationale_1699",
       "label": "Synchronizes firewall (NFTables) and proxy layers (HAProxy, Nginx) on demand.\u2026",
       "_origin": "ast",
       "community": 28,
@@ -8179,7 +8179,7 @@
       "file_type": "rationale",
       "norm_label": "synchronizes firewall (nftables) and proxy layers (haproxy, nginx) on demand....",
       "source_file": "core/engine.py",
-      "source_location": "L1695"
+      "source_location": "L1699"
     },
     {
       "id": "core_engine_rationale_2",
@@ -9919,7 +9919,7 @@
       "source_location": "L106"
     },
     {
-      "id": "core_engine_rationale_1595",
+      "id": "core_engine_rationale_1599",
       "label": "Persists current engine PID to candidate paths to enable instant IPC wakeups.",
       "_origin": "ast",
       "community": 45,
@@ -9927,10 +9927,10 @@
       "file_type": "rationale",
       "norm_label": "persists current engine pid to candidate paths to enable instant ipc wakeups.",
       "source_file": "core/engine.py",
-      "source_location": "L1595"
+      "source_location": "L1599"
     },
     {
-      "id": "core_engine_rationale_1607",
+      "id": "core_engine_rationale_1611",
       "label": "Removes persisted engine PID file on process termination.",
       "_origin": "ast",
       "community": 45,
@@ -9938,7 +9938,7 @@
       "file_type": "rationale",
       "norm_label": "removes persisted engine pid file on process termination.",
       "source_file": "core/engine.py",
-      "source_location": "L1607"
+      "source_location": "L1611"
     },
     {
       "id": "core_engine_rationale_417",
@@ -13281,7 +13281,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "core/engine.py",
-      "source_location": "L1732",
+      "source_location": "L1736",
       "weight": 1.0
     },
     {
@@ -13305,7 +13305,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "core/engine.py",
-      "source_location": "L1700",
+      "source_location": "L1704",
       "weight": 1.0
     },
     {
@@ -13317,7 +13317,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "core/engine.py",
-      "source_location": "L1709",
+      "source_location": "L1713",
       "weight": 1.0
     },
     {
@@ -13509,7 +13509,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "core/engine.py",
-      "source_location": "L1619",
+      "source_location": "L1623",
       "weight": 1.0
     },
     {
@@ -13521,7 +13521,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "core/engine.py",
-      "source_location": "L1627",
+      "source_location": "L1631",
       "weight": 1.0
     },
     {
@@ -13533,7 +13533,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "core/engine.py",
-      "source_location": "L1645",
+      "source_location": "L1649",
       "weight": 1.0
     },
     {
@@ -13545,7 +13545,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "core/engine.py",
-      "source_location": "L1656",
+      "source_location": "L1660",
       "weight": 1.0
     },
     {
@@ -13557,7 +13557,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "core/engine.py",
-      "source_location": "L1661",
+      "source_location": "L1665",
       "weight": 1.0
     },
     {
@@ -13569,7 +13569,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "core/engine.py",
-      "source_location": "L1666",
+      "source_location": "L1670",
       "weight": 1.0
     },
     {
@@ -13581,7 +13581,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "core/engine.py",
-      "source_location": "L1668",
+      "source_location": "L1672",
       "weight": 1.0
     },
     {
@@ -13593,7 +13593,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "core/engine.py",
-      "source_location": "L1683",
+      "source_location": "L1687",
       "weight": 1.0
     },
     {
@@ -13617,7 +13617,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "core/engine.py",
-      "source_location": "L1691",
+      "source_location": "L1695",
       "weight": 1.0
     },
     {
@@ -16413,7 +16413,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "tests/test_performance_and_optimizations.py",
-      "source_location": "L413",
+      "source_location": "L415",
       "weight": 1.0
     },
     {
@@ -16437,7 +16437,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "tests/test_performance_and_optimizations.py",
-      "source_location": "L467",
+      "source_location": "L469",
       "weight": 1.0
     },
     {
@@ -16449,7 +16449,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "tests/test_performance_and_optimizations.py",
-      "source_location": "L484",
+      "source_location": "L486",
       "weight": 1.0
     },
     {
@@ -16461,7 +16461,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "tests/test_performance_and_optimizations.py",
-      "source_location": "L443",
+      "source_location": "L445",
       "weight": 1.0
     },
     {
@@ -20769,7 +20769,7 @@
       "confidence_score": 1.0,
       "context": "import",
       "source_file": "core/engine.py",
-      "source_location": "L1631",
+      "source_location": "L1635",
       "weight": 1.0
     },
     {
@@ -26022,7 +26022,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "core/engine.py",
-      "source_location": "L1694",
+      "source_location": "L1698",
       "weight": 1.0
     },
     {
@@ -26033,7 +26033,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "core/engine.py",
-      "source_location": "L1729",
+      "source_location": "L1733",
       "weight": 1.0
     },
     {
@@ -29542,7 +29542,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "core/engine.py",
-      "source_location": "L1399",
+      "source_location": "L1403",
       "weight": 1.0
     },
     {
@@ -29553,7 +29553,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "core/engine.py",
-      "source_location": "L1551",
+      "source_location": "L1555",
       "weight": 1.0
     },
     {
@@ -29564,7 +29564,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "core/engine.py",
-      "source_location": "L1594",
+      "source_location": "L1598",
       "weight": 1.0
     },
     {
@@ -29575,7 +29575,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "core/engine.py",
-      "source_location": "L1606",
+      "source_location": "L1610",
       "weight": 1.0
     },
     {
@@ -29586,7 +29586,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "core/engine.py",
-      "source_location": "L1616",
+      "source_location": "L1620",
       "weight": 1.0
     },
     {
@@ -29597,7 +29597,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "core/engine.py",
-      "source_location": "L1685",
+      "source_location": "L1689",
       "weight": 1.0
     },
     {
@@ -31115,7 +31115,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "tests/test_performance_and_optimizations.py",
-      "source_location": "L411",
+      "source_location": "L413",
       "weight": 1.0
     },
     {
@@ -31126,7 +31126,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "tests/test_performance_and_optimizations.py",
-      "source_location": "L441",
+      "source_location": "L443",
       "weight": 1.0
     },
     {
@@ -31137,7 +31137,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "tests/test_performance_and_optimizations.py",
-      "source_location": "L465",
+      "source_location": "L467",
       "weight": 1.0
     },
     {
@@ -31148,7 +31148,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "tests/test_performance_and_optimizations.py",
-      "source_location": "L482",
+      "source_location": "L484",
       "weight": 1.0
     },
     {
@@ -31823,36 +31823,36 @@
       "weight": 1.0
     },
     {
-      "source": "core_engine_rationale_1595",
+      "source": "core_engine_rationale_1599",
       "target": "core_engine_xforwarderengine_write_pid_file",
       "relation": "rationale_for",
       "_origin": "ast",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "core/engine.py",
-      "source_location": "L1595",
+      "source_location": "L1599",
       "weight": 1.0
     },
     {
-      "source": "core_engine_rationale_1607",
+      "source": "core_engine_rationale_1611",
       "target": "core_engine_xforwarderengine_remove_pid_file",
       "relation": "rationale_for",
       "_origin": "ast",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "core/engine.py",
-      "source_location": "L1607",
+      "source_location": "L1611",
       "weight": 1.0
     },
     {
-      "source": "core_engine_rationale_1695",
+      "source": "core_engine_rationale_1699",
       "target": "core_engine_sync_system_rules",
       "relation": "rationale_for",
       "_origin": "ast",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "core/engine.py",
-      "source_location": "L1695",
+      "source_location": "L1699",
       "weight": 1.0
     },
     {
@@ -33451,47 +33451,47 @@
       "weight": 1.0
     },
     {
-      "source": "tests_test_performance_and_optimizations_rationale_412",
+      "source": "tests_test_performance_and_optimizations_rationale_414",
       "target": "tests_test_performance_and_optimizations_testperformanceandoptimizations_test_haproxy_performance_fallback_on_old_binary",
       "relation": "rationale_for",
       "_origin": "ast",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "tests/test_performance_and_optimizations.py",
-      "source_location": "L412",
+      "source_location": "L414",
       "weight": 1.0
     },
     {
-      "source": "tests_test_performance_and_optimizations_rationale_442",
+      "source": "tests_test_performance_and_optimizations_rationale_444",
       "target": "tests_test_performance_and_optimizations_testperformanceandoptimizations_test_nginx_udp_proxy_timeout_rendered",
       "relation": "rationale_for",
       "_origin": "ast",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "tests/test_performance_and_optimizations.py",
-      "source_location": "L442",
+      "source_location": "L444",
       "weight": 1.0
     },
     {
-      "source": "tests_test_performance_and_optimizations_rationale_466",
+      "source": "tests_test_performance_and_optimizations_rationale_468",
       "target": "tests_test_performance_and_optimizations_testperformanceandoptimizations_test_haproxy_syntax_validation_real_error_fails",
       "relation": "rationale_for",
       "_origin": "ast",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "tests/test_performance_and_optimizations.py",
-      "source_location": "L466",
+      "source_location": "L468",
       "weight": 1.0
     },
     {
-      "source": "tests_test_performance_and_optimizations_rationale_483",
+      "source": "tests_test_performance_and_optimizations_rationale_485",
       "target": "tests_test_performance_and_optimizations_testperformanceandoptimizations_test_nginx_stream_sync_firewall_udp_and_proxy_protocol",
       "relation": "rationale_for",
       "_origin": "ast",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "tests/test_performance_and_optimizations.py",
-      "source_location": "L483",
+      "source_location": "L485",
       "weight": 1.0
     },
     {
@@ -34734,7 +34734,7 @@
       "confidence_score": 0.85,
       "context": "argument",
       "source_file": "tests/test_performance_and_optimizations.py",
-      "source_location": "L428",
+      "source_location": "L430",
       "weight": 1.0
     },
     {
@@ -35621,7 +35621,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.95,
       "source_file": "core/engine.py",
-      "source_location": "L1636",
+      "source_location": "L1640",
       "weight": 0.8
     },
     {
@@ -35769,5 +35769,5 @@
     }
   ],
   "hyperedges": [],
-  "built_at_commit": "1ea0e6df35b0f6a0d38ff2dad63cc8a3925ed957"
+  "built_at_commit": "b6656291b02afd1b6aabefe546a6f8c588f75e0c"
 }

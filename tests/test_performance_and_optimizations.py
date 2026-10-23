@@ -404,6 +404,8 @@ class TestPerformanceAndOptimizations(unittest.TestCase):
                 self.assertIn("log /dev/log local0 notice", content)
                 # Ensure verbose tcplog is NOT in defaults
                 self.assertNotIn("option  tcplog", content)
+                if os.cpu_count() and os.cpu_count() > 1:
+                    self.assertIn("cpu-map auto:1/1-", content)
         finally:
             if os.path.exists(test_haproxy_conf):
                 os.remove(test_haproxy_conf)
