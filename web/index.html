@@ -297,31 +297,31 @@
                     </div>
                 </div>
 
-                <div class="session-controls">
-                    <!-- System Resource Stats -->
-                    <div class="sys-metrics" id="sysMetrics">
-                        <div class="sys-pill" id="cpuPill" title="Server CPU Load">
-                            <span class="pill-dot dot-cyan"></span>
-                            <span id="cpuText">CPU: --</span>
-                        </div>
-                        <div class="sys-pill" id="ramPill" title="Server Memory Usage">
-                            <span class="pill-dot dot-emerald"></span>
-                            <span id="ramText"><span class="ram-full">RAM: --%</span><span class="ram-short">RAM: --%</span></span>
-                        </div>
-                        <div class="sys-pill" id="loadPill" title="System Load Average">
-                            <span class="pill-dot dot-amber"></span>
-                            <span id="loadText">Load: --</span>
-                        </div>
-                        <div class="sys-pill" id="trafficPill" title="Network Bandwidth (Download / Upload per second in MB/s)">
-                            <span class="pill-dot dot-mint"></span>
-                            <span id="trafficText">↓ 0.00 MB/s · ↑ 0.00 MB/s</span>
-                        </div>
-                        <div class="sys-pill" id="connsPill" title="Active Sockets: TCP & UDP">
-                            <span class="pill-dot dot-violet"></span>
-                            <span id="connsText">-- TCP · -- UDP</span>
-                        </div>
+                <!-- System Resource Stats & Live Bandwidth -->
+                <div class="sys-metrics" id="sysMetrics">
+                    <div class="sys-pill" id="cpuPill" title="Server CPU Load">
+                        <span class="pill-dot dot-cyan"></span>
+                        <span id="cpuText">CPU: --</span>
                     </div>
+                    <div class="sys-pill" id="ramPill" title="Server Memory Usage">
+                        <span class="pill-dot dot-emerald"></span>
+                        <span id="ramText"><span class="ram-full">RAM: --%</span><span class="ram-short">RAM: --%</span></span>
+                    </div>
+                    <div class="sys-pill" id="loadPill" title="System Load Average">
+                        <span class="pill-dot dot-amber"></span>
+                        <span id="loadText">Load: --</span>
+                    </div>
+                    <div class="sys-pill" id="connsPill" title="Active Sockets: TCP & UDP">
+                        <span class="pill-dot dot-violet"></span>
+                        <span id="connsText">-- TCP · -- UDP</span>
+                    </div>
+                    <div class="sys-pill" id="trafficPill" title="Network Bandwidth (Download / Upload per second in MB/s)">
+                        <span class="pill-dot dot-mint"></span>
+                        <span id="trafficText">↓ 0.00 MB/s · ↑ 0.00 MB/s</span>
+                    </div>
+                </div>
 
+                <div class="topbar-actions" id="topbarActions">
                     <button class="btn btn-secondary btn-icon" id="btnManualRefresh" title="Refresh Now">
                         <svg id="refreshIcon" width="14" height="14" viewBox="0 0 24 24" fill="none"
                             stroke="currentColor" stroke-width="2">
@@ -769,6 +769,18 @@
                                 </div>
                             </div>
                             <div class="overview-info-list" style="margin-top: 20px;">
+                                <div class="info-item">
+                                    <span class="info-label">Live Bandwidth</span>
+                                    <span class="info-value font-mono text-mint" id="ovTrafficText">↓ 0.00 MB/s · ↑ 0.00 MB/s</span>
+                                </div>
+                                <div class="info-item">
+                                    <span class="info-label">Active Sockets</span>
+                                    <span class="info-value font-mono text-violet" id="ovConnsText">-- TCP · -- UDP</span>
+                                </div>
+                                <div class="info-item">
+                                    <span class="info-label">System Load Average</span>
+                                    <span class="info-value font-mono text-amber" id="ovLoadText">--</span>
+                                </div>
                                 <div class="info-item">
                                     <span class="info-label">Idle Engine Overhead</span>
                                     <span class="info-value text-emerald">&lt; 15 MB RAM (Zero pip deps)</span>

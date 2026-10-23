@@ -1,7 +1,7 @@
 # Graph Report - Forward-Manager  (2026-10-23)
 
 ## Corpus Check
-- 65 files · ~84,212 words
+- 65 files · ~84,337 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 8 file(s) not represented in the graph (top: .service 4, (none) 2, .example 1)
 
@@ -11,7 +11,7 @@
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `35cfaeff`
+- Built from commit: `09311203`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 

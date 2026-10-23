@@ -803,6 +803,12 @@ function renderSystemStats(sys) {
             const l15 = sys.load_15 !== undefined ? Number(sys.load_15).toFixed(2) : "--";
             loadPill.title = `System Load Average: ${l1} (1m), ${l5} (5m), ${l15} (15m)`;
         }
+        const ovLoadText = document.getElementById("ovLoadText");
+        if (ovLoadText) {
+            const l5 = sys.load_5 !== undefined ? Number(sys.load_5).toFixed(2) : "--";
+            const l15 = sys.load_15 !== undefined ? Number(sys.load_15).toFixed(2) : "--";
+            ovLoadText.textContent = `${l1} (1m), ${l5} (5m), ${l15} (15m)`;
+        }
     }
 
     // 4. Live Network Bandwidth (strictly download/upload speed per second in MB/s by default)
@@ -828,6 +834,11 @@ function renderSystemStats(sys) {
             trafficText.textContent = `↓ ${rxMb} MB · ↑ ${txMb} MB`;
         }
 
+        const ovTrafficText = document.getElementById("ovTrafficText");
+        if (ovTrafficText) {
+            ovTrafficText.textContent = `↓ ${rRx} MB/s · ↑ ${rTx} MB/s`;
+        }
+
         if (trafficPill) {
             const modeTip = _trafficModeRate ? "Mode: Live Speed (Click to view Total MB)" : "Mode: Total MB (Click to view Live MB/s)";
             trafficPill.title = `Live Bandwidth: ↓ ${rRx} MB/s, ↑ ${rTx} MB/s | Total Cumulative: ↓ ${rxMb} MB, ↑ ${txMb} MB (${modeTip})`;
@@ -847,6 +858,10 @@ function renderSystemStats(sys) {
         const tcp = sys.tcp_connections !== undefined ? Number(sys.tcp_connections).toLocaleString() : "--";
         const udp = sys.udp_connections !== undefined ? Number(sys.udp_connections).toLocaleString() : "--";
         connsText.textContent = `${tcp} TCP · ${udp} UDP`;
+        const ovConnsText = document.getElementById("ovConnsText");
+        if (ovConnsText) {
+            ovConnsText.textContent = `${tcp} TCP · ${udp} UDP`;
+        }
         if (connsPill) {
             connsPill.title = `Active Sockets: ${tcp} TCP connections, ${udp} UDP sockets`;
         }

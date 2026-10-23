@@ -1594,9 +1594,11 @@ class TestUIAndAPIEdgeCases(unittest.TestCase):
         self.assertIn('id="loadPill"', html)
         self.assertIn('id="trafficPill"', html)
         self.assertIn('id="connsPill"', html)
+        self.assertIn('id="topbarActions"', html)
+        self.assertIn('id="ovTrafficText"', html)
         self.assertIn("0.00 MB/s", html)
 
-        # 4. CSS pill dots, stable text widths, and responsive wrapping
+        # 4. CSS pill dots, stable text widths, and responsive grid layout
         css_path = os.path.join(REPO_ROOT, "web", "style.css")
         with open(css_path, "r", encoding="utf-8") as f:
             css = f.read()
@@ -1608,6 +1610,7 @@ class TestUIAndAPIEdgeCases(unittest.TestCase):
         self.assertIn("#cpuText {", css)
         self.assertIn("#connsText {", css)
         self.assertIn("tabular-nums", css)
+        self.assertIn("grid-template-areas", css)
 
         # 5. JS renderSystemStats functionality
         js_path = os.path.join(REPO_ROOT, "web", "app.js")
@@ -1617,6 +1620,7 @@ class TestUIAndAPIEdgeCases(unittest.TestCase):
         self.assertIn("loadText", js)
         self.assertIn("trafficText", js)
         self.assertIn("connsText", js)
+        self.assertIn("ovTrafficText", js)
         self.assertIn("RAM: ${pct}%", js)
         self.assertIn("formatTrafficMB", js)
         self.assertIn("_trafficModeRate", js)

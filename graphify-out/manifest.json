@@ -12,9 +12,9 @@
     "semantic_hash": ""
   },
   "web/app.js": {
-    "mtime": 1792722907.338354,
-    "seen": 1792723210.6569564,
-    "ast_hash": "52353d0b18b5486c677975767863f146",
+    "mtime": 1792726344.0146697,
+    "seen": 1792726610.2691653,
+    "ast_hash": "9a1728438bf8a857e7ef561d98bbcc14",
     "semantic_hash": ""
   },
   ".agents/rules/01-architecture-and-failover.md": {
@@ -84,9 +84,9 @@
     "semantic_hash": ""
   },
   "web/index.html": {
-    "mtime": 1792722818.4827363,
-    "seen": 1792723210.65699,
-    "ast_hash": "1b59e87e94e2ba77f23c840cbab6b96a",
+    "mtime": 1792726252.009982,
+    "seen": 1792726610.269198,
+    "ast_hash": "5e51d20301b2db9a6f1fd6348156408b",
     "semantic_hash": ""
   },
   "xforwarder.sh": {
@@ -288,9 +288,9 @@
     "semantic_hash": ""
   },
   "tests/test_ui_and_api_edge_cases.py": {
-    "mtime": 1792723091.966578,
-    "seen": 1792723210.6569555,
-    "ast_hash": "2e29b80d0fc3aa36189a5cc3f799a2d7",
+    "mtime": 1792726437.0007336,
+    "seen": 1792726610.2691638,
+    "ast_hash": "54c2b7733af199c7815ee986865a538b",
     "semantic_hash": ""
   },
   "tests/test_network_interfaces.py": {
