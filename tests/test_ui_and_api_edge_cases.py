@@ -1580,6 +1580,9 @@ class TestUIAndAPIEdgeCases(unittest.TestCase):
             self.assertEqual(mocked_stats["udp_connections"], 13)
             self.assertEqual(mocked_stats["net_rx_mb"], 100.0)
             self.assertEqual(mocked_stats["net_tx_mb"], 50.0)
+            self.assertEqual(mocked_stats["net_total_mb"], 150.0)
+            self.assertIn("net_rx_rate_mb", mocked_stats)
+            self.assertIn("net_tx_rate_mb", mocked_stats)
 
         # 3. HTML topbar pill elements
         html_path = os.path.join(REPO_ROOT, "web", "index.html")
@@ -1592,7 +1595,7 @@ class TestUIAndAPIEdgeCases(unittest.TestCase):
         self.assertIn('id="trafficPill"', html)
         self.assertIn('id="connsPill"', html)
 
-        # 4. CSS pill dots and responsive wrapping
+        # 4. CSS pill dots, stable text widths, and responsive wrapping
         css_path = os.path.join(REPO_ROOT, "web", "style.css")
         with open(css_path, "r", encoding="utf-8") as f:
             css = f.read()
@@ -1600,6 +1603,10 @@ class TestUIAndAPIEdgeCases(unittest.TestCase):
         self.assertIn(".dot-amber {", css)
         self.assertIn(".dot-violet {", css)
         self.assertIn(".dot-mint {", css)
+        self.assertIn("#trafficText {", css)
+        self.assertIn("#cpuText {", css)
+        self.assertIn("#connsText {", css)
+        self.assertIn("tabular-nums", css)
 
         # 5. JS renderSystemStats functionality
         js_path = os.path.join(REPO_ROOT, "web", "app.js")
@@ -1610,6 +1617,8 @@ class TestUIAndAPIEdgeCases(unittest.TestCase):
         self.assertIn("trafficText", js)
         self.assertIn("connsText", js)
         self.assertIn("RAM: ${pct}%", js)
+        self.assertIn("formatTrafficMB", js)
+        self.assertIn("_trafficModeRate", js)
         self.assertIn("↓ ${rxMb} MB · ↑ ${txMb} MB", js)
         self.assertIn("${tcp} TCP · ${udp} UDP", js)
 

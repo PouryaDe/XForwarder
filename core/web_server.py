@@ -383,8 +383,11 @@ def get_system_stats() -> dict:
         "udp_connections": 0,
         "net_rx_mb": 0.0,
         "net_tx_mb": 0.0,
+        "net_total_mb": 0.0,
         "net_rx_rate_kb": 0.0,
-        "net_tx_rate_kb": 0.0
+        "net_tx_rate_kb": 0.0,
+        "net_rx_rate_mb": 0.0,
+        "net_tx_rate_mb": 0.0
     }
     # 1. RAM Usage
     if os.path.exists("/proc/meminfo"):
@@ -447,7 +450,7 @@ def get_system_stats() -> dict:
     stats["tcp_connections"] = tcp_count
     stats["udp_connections"] = udp_count
 
-    # 4. Total Network Traffic (RX & TX in MB, excluding loopback)
+    # 4. Total Network Traffic & Live Speed (RX & TX in MB, excluding loopback)
     if os.path.exists("/proc/net/dev"):
         try:
             total_rx_bytes = 0
@@ -457,24 +460,40 @@ def get_system_stats() -> dict:
                     if ":" not in line:
                         continue
                     iface, data = line.split(":", 1)
-                    if iface.strip() == "lo":
+                    if is_ignored_interface(iface.strip()):
                         continue
                     fields = data.split()
                     if len(fields) >= 9:
-                        total_rx_bytes += int(fields[0])
-                        total_tx_bytes += int(fields[8])
+                        try:
+                            rx_b = int(fields[0])
+                            tx_b = int(fields[8])
+                            total_rx_bytes += rx_b
+                            total_tx_bytes += tx_b
+                        except (ValueError, IndexError):
+                            continue
 
-            stats["net_rx_mb"] = round(total_rx_bytes / (1024 * 1024), 1)
-            stats["net_tx_mb"] = round(total_tx_bytes / (1024 * 1024), 1)
+            # Convert cumulative transfer strictly to Megabytes (1 MB = 1024 * 1024 bytes)
+            stats["net_rx_mb"] = round(total_rx_bytes / (1024 * 1024), 2)
+            stats["net_tx_mb"] = round(total_tx_bytes / (1024 * 1024), 2)
+            stats["net_total_mb"] = round((total_rx_bytes + total_tx_bytes) / (1024 * 1024), 2)
 
             now = time.time()
             with _NET_IO_LOCK:
                 if _PREV_NET_IO["time"] > 0:
-                    dt = max(0.5, now - _PREV_NET_IO["time"])
+                    dt = max(0.2, now - _PREV_NET_IO["time"])
                     drx = max(0, total_rx_bytes - _PREV_NET_IO["rx"])
                     dtx = max(0, total_tx_bytes - _PREV_NET_IO["tx"])
                     stats["net_rx_rate_kb"] = round((drx / 1024) / dt, 1)
                     stats["net_tx_rate_kb"] = round((dtx / 1024) / dt, 1)
+                    # Live speed in MB/s (Megabytes per second)
+                    stats["net_rx_rate_mb"] = round((drx / (1024 * 1024)) / dt, 2)
+                    stats["net_tx_rate_mb"] = round((dtx / (1024 * 1024)) / dt, 2)
+                else:
+                    stats["net_rx_rate_kb"] = 0.0
+                    stats["net_tx_rate_kb"] = 0.0
+                    stats["net_rx_rate_mb"] = 0.0
+                    stats["net_tx_rate_mb"] = 0.0
+
                 _PREV_NET_IO["rx"] = total_rx_bytes
                 _PREV_NET_IO["tx"] = total_tx_bytes
                 _PREV_NET_IO["time"] = now

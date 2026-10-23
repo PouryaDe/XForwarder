@@ -762,9 +762,13 @@ function renderStats(rules, runtime) {
     }
 }
 
+let lastSystemStats = null;
+let _trafficModeRate = false;
+
 // Render Host System Metrics (RAM %, CPU, System Load, Network Traffic in MB, TCP/UDP Sockets)
 function renderSystemStats(sys) {
     if (!sys) return;
+    lastSystemStats = sys;
 
     // 1. CPU Usage
     if (sys.cpu_percent !== undefined) {
@@ -801,19 +805,38 @@ function renderSystemStats(sys) {
         }
     }
 
-    // 4. Network Traffic (in Megabytes)
+    // 4. Network Traffic (strictly formatted in Megabytes with live rate toggle)
     if (trafficText) {
-        const rxMb = sys.net_rx_mb !== undefined ? Number(sys.net_rx_mb).toLocaleString(undefined, { maximumFractionDigits: 1 }) : "--";
-        const txMb = sys.net_tx_mb !== undefined ? Number(sys.net_tx_mb).toLocaleString(undefined, { maximumFractionDigits: 1 }) : "--";
-        trafficText.textContent = `↓ ${rxMb} MB · ↑ ${txMb} MB`;
+        function formatTrafficMB(rawMb) {
+            if (rawMb === undefined || rawMb === null || isNaN(rawMb)) return "--";
+            const num = Number(rawMb);
+            if (num < 10) return num.toFixed(2);
+            if (num < 100) return num.toFixed(1);
+            return Math.round(num).toLocaleString();
+        }
+
+        const rxMb = formatTrafficMB(sys.net_rx_mb);
+        const txMb = formatTrafficMB(sys.net_tx_mb);
+        const rRx = Number(sys.net_rx_rate_mb !== undefined ? sys.net_rx_rate_mb : (sys.net_rx_rate_kb ? sys.net_rx_rate_kb / 1024 : 0)).toFixed(2);
+        const rTx = Number(sys.net_tx_rate_mb !== undefined ? sys.net_tx_rate_mb : (sys.net_tx_rate_kb ? sys.net_tx_rate_kb / 1024 : 0)).toFixed(2);
+
+        if (_trafficModeRate) {
+            trafficText.textContent = `↓ ${rRx} MB/s · ↑ ${rTx} MB/s`;
+        } else {
+            trafficText.textContent = `↓ ${rxMb} MB · ↑ ${txMb} MB`;
+        }
+
         if (trafficPill) {
-            let rateInfo = "";
-            if (sys.net_rx_rate_kb !== undefined && sys.net_tx_rate_kb !== undefined) {
-                const rxRate = (Number(sys.net_rx_rate_kb) / 1024).toFixed(2);
-                const txRate = (Number(sys.net_tx_rate_kb) / 1024).toFixed(2);
-                rateInfo = ` | Live Speed: ↓ ${rxRate} MB/s, ↑ ${txRate} MB/s`;
+            const modeTip = _trafficModeRate ? "Mode: Live Speed (Click to view Total MB)" : "Mode: Total MB (Click to view Live MB/s)";
+            trafficPill.title = `Live Speed: ↓ ${rRx} MB/s, ↑ ${rTx} MB/s | Cumulative: ↓ ${rxMb} MB, ↑ ${txMb} MB (${modeTip})`;
+            if (!trafficPill._hasToggle) {
+                trafficPill._hasToggle = true;
+                trafficPill.style.cursor = "pointer";
+                trafficPill.addEventListener("click", () => {
+                    _trafficModeRate = !_trafficModeRate;
+                    if (lastSystemStats) renderSystemStats(lastSystemStats);
+                });
             }
-            trafficPill.title = `Cumulative Traffic: Download ${rxMb} MB, Upload ${txMb} MB${rateInfo}`;
         }
     }
 
