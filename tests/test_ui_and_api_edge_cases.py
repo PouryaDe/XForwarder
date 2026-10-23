@@ -1252,7 +1252,6 @@ class TestUIAndAPIEdgeCases(unittest.TestCase):
             "btnReloadHaproxy",
             "btnResyncNftables",
             "btnReloadNginx",
-            "btnOvRestartServices"
         ):
             self.assertIn(f'id="{btn_id}"', html, f"Missing restart button: {btn_id}")
 

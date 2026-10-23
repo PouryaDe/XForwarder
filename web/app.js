@@ -1116,18 +1116,6 @@ function renderServicesStatus(services) {
     }
     const svcNginxVersion = document.getElementById("svcNginxVersion");
     if (svcNginxVersion) svcNginxVersion.innerText = ngx.version || (ngx.installed ? "Installed" : "--");
-
-    // Sidebar badge
-    const navServicesBadge = document.getElementById("navServicesBadge");
-    if (navServicesBadge) {
-        if (missing.length === 0) {
-            navServicesBadge.innerText = "SYNCED";
-            navServicesBadge.className = "nav-badge nav-badge-ok";
-        } else {
-            navServicesBadge.innerText = `${3 - missing.length}/3`;
-            navServicesBadge.className = "nav-badge";
-        }
-    }
 }
 
 // Render Server Network & Tunnel Topology
@@ -2727,24 +2715,7 @@ if (btnSidebarLogout) {
     });
 }
 
-// Overview quick action shortcuts
-const btnOvAddRule = document.getElementById("btnOvAddRule");
-if (btnOvAddRule) {
-    btnOvAddRule.addEventListener("click", () => {
-        switchSection("rules");
-        if (btnOpenAddModal) btnOpenAddModal.click();
-    });
-}
 
-const btnOvGotoServices = document.getElementById("btnOvGotoServices");
-if (btnOvGotoServices) {
-    btnOvGotoServices.addEventListener("click", () => switchSection("services"));
-}
-
-const btnOvGotoSecurity = document.getElementById("btnOvGotoSecurity");
-if (btnOvGotoSecurity) {
-    btnOvGotoSecurity.addEventListener("click", () => switchSection("security"));
-}
 
 // ── Relay Services Scanner & Importer ──
 const btnScanHaproxy = document.getElementById("btnScanHaproxy");
@@ -3693,6 +3664,10 @@ async function fetchSystemVersionInfo(force = false) {
         if (valInstalledVersion && data.current_version) {
             valInstalledVersion.textContent = `v${data.current_version}`;
         }
+        const brandVersionBadge = document.getElementById("brandVersionBadge");
+        if (brandVersionBadge && data.current_version) {
+            brandVersionBadge.textContent = `v${data.current_version}`;
+        }
         if (valLocalCommit) {
             if (data.current_commit) {
                 const dateStr = data.current_date ? ` (${data.current_date})` : "";
@@ -4100,7 +4075,6 @@ function initServiceRestartControls() {
     const btnReloadHaproxy = document.getElementById("btnReloadHaproxy");
     const btnResyncNftables = document.getElementById("btnResyncNftables");
     const btnReloadNginx = document.getElementById("btnReloadNginx");
-    const btnOvRestartServices = document.getElementById("btnOvRestartServices");
 
     if (btnRestartAllServices) {
         btnRestartAllServices.addEventListener("click", () => handleServiceRestart("all"));
@@ -4116,9 +4090,6 @@ function initServiceRestartControls() {
     }
     if (btnReloadNginx) {
         btnReloadNginx.addEventListener("click", () => handleServiceRestart("nginx"));
-    }
-    if (btnOvRestartServices) {
-        btnOvRestartServices.addEventListener("click", () => handleServiceRestart("all"));
     }
 }
 
