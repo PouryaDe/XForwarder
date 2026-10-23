@@ -219,13 +219,15 @@ h1, h2, h3, .brand-title, .stat-number, .port-num, .login-brand-meta h2, .sectio
     border-radius: 14px;
     margin: 0 auto 14px auto;
     display: inline-flex;
-    background: linear-gradient(135deg, var(--accent-mint), var(--accent-violet));
-    color: #0B0E14;
-    box-shadow: 0 8px 24px rgba(167, 139, 250, 0.35);
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #7C3AED, #6366F1);
+    color: #FFFFFF;
+    box-shadow: 0 8px 24px rgba(124, 58, 237, 0.45);
 }
 
 .login-logo svg {
-    stroke: #0B0E14;
+    stroke: #FFFFFF;
 }
 
 [data-theme="light"] .login-logo {
@@ -398,18 +400,18 @@ input:-webkit-autofill:active {
     width: 36px;
     height: 36px;
     border-radius: 10px;
-    background: linear-gradient(135deg, var(--accent-mint), var(--accent-violet));
-    box-shadow: 0 4px 14px rgba(167, 139, 250, 0.3);
+    background: linear-gradient(135deg, #7C3AED, #6366F1);
+    box-shadow: 0 4px 16px rgba(124, 58, 237, 0.4);
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    color: #0B0E14;
+    color: #FFFFFF;
     flex-shrink: 0;
     transition: box-shadow 0.2s ease;
 }
 
 .logo-orb svg {
-    stroke: #0B0E14;
+    stroke: #FFFFFF;
 }
 
 [data-theme="light"] .logo-orb {
@@ -440,14 +442,16 @@ input:-webkit-autofill:active {
     font-weight: 800;
     padding: 2px 7px;
     border-radius: 6px;
-    background: linear-gradient(135deg, var(--accent-mint), var(--accent-violet));
-    color: #0B0E14;
+    background: linear-gradient(135deg, #7C3AED, #6366F1);
+    color: #FFFFFF;
     letter-spacing: 0.05em;
+    box-shadow: 0 2px 8px rgba(124, 58, 237, 0.35);
 }
 
 [data-theme="light"] .brand-badge {
     background: linear-gradient(135deg, #7C3AED, #6366F1);
     color: #FFFFFF;
+    box-shadow: 0 2px 6px rgba(124, 58, 237, 0.2);
 }
 
 .btn-sidebar-close {
