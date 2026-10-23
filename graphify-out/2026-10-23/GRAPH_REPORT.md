@@ -1,7 +1,7 @@
 # Graph Report - Forward-Manager  (2026-10-23)
 
 ## Corpus Check
-- 65 files · ~85,814 words
+- 65 files · ~85,818 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 8 file(s) not represented in the graph (top: .service 4, (none) 2, .example 1)
 
@@ -11,7 +11,7 @@
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `9bc8d59a`
+- Built from commit: `34bcb25e`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -305,7 +305,7 @@ Nodes (3): 1. When to Log an Experience, 2. Standard Logging Protocol, Architect
 _Questions this graph is uniquely positioned to answer:_
 
 - **Why does `XForwarderEngine` connect `XForwarderEngine` to `TestPerformanceAndOptimizations`, `TestFastFailoverAndAntiFlap`, `get_network_interfaces_info`, `TestNginxStreamEngine`, `.migrate_and_normalize_config`, `LossMonitorScheduler`, `.check_destination`, `TestEngineProbes`, `.do_POST`, `.sync_firewall_and_proxies`, `.test_packet_loss_calculation_and_probes`, `TestUIAndAPIEdgeCases`, `3. Architecture & Solution Implemented`, `os`, `web_server.py`?**
-  _High betweenness centrality (0.339) - this node is a cross-community bridge._
+  _High betweenness centrality (0.337) - this node is a cross-community bridge._
 - **Are the 9 inferred relationships involving `XForwarderEngine` (e.g. with `2. Root Cause / Core Dynamics` and `LossMonitorScheduler`) actually correct?**
   _`XForwarderEngine` has 9 INFERRED edges - model-reasoned connections that need verification._
 - **What connects `basePath`, `currentRules`, `lastRuntime` to the rest of the system?**
@@ -313,7 +313,7 @@ _Questions this graph is uniquely positioned to answer:_
 - **Should `TestXForwarderSecurity` be split into smaller, more focused modules?**
   _Cohesion score 0.057692307692307696 - nodes in this community are weakly interconnected._
 - **Why does `2. Non-Negotiable Architectural Constraints` connect `⚡ Core Rules & Constraints` to `.migrate_and_normalize_config`, `test_metrics_subsystem.py`, `.check_destination`, `XForwarder Master Architecture Constitution`, `nftables_parser.py`, `.do_POST`, `3. Architecture & Solution Implemented`?**
-  _High betweenness centrality (0.216) - this node is a cross-community bridge._
+  _High betweenness centrality (0.217) - this node is a cross-community bridge._
 - **Are the 3 inferred relationships involving `TestUIAndAPIEdgeCases` (e.g. with `XForwarderEngine` and `XForwarderWebHandler`) actually correct?**
   _`TestUIAndAPIEdgeCases` has 3 INFERRED edges - model-reasoned connections that need verification._
 - **Should `app.js` be split into smaller, more focused modules?**

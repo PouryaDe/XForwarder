@@ -22,6 +22,16 @@ const loginError = document.getElementById("loginError");
 const currentUsernameEl = document.getElementById("currentUsername");
 const btnLogout = document.getElementById("btnLogout");
 
+// Pre-populate cached username to prevent UI layout shift or text flicker
+try {
+    const cachedUser = localStorage.getItem("xfwd_username");
+    if (cachedUser) {
+        if (currentUsernameEl) currentUsernameEl.innerText = cachedUser;
+        const sidebarUsername = document.getElementById("sidebarUsername");
+        if (sidebarUsername) sidebarUsername.innerText = cachedUser;
+    }
+} catch (e) {}
+
 const rulesContainer = document.getElementById("rulesContainer");
 const ruleModal = document.getElementById("ruleModal");
 const ruleForm = document.getElementById("ruleForm");
@@ -337,11 +347,21 @@ async function checkAuth() {
 function showLogin() {
     if (pollTimer) clearInterval(pollTimer);
     pollTimer = null;
+    document.documentElement.classList.remove("pre-auth");
+    try {
+        localStorage.removeItem("xfwd_authenticated");
+        localStorage.removeItem("xfwd_username");
+    } catch (e) {}
     loginScreen.style.display = "flex";
     dashboardScreen.style.display = "none";
 }
 
 function showDashboard(username) {
+    document.documentElement.classList.add("pre-auth");
+    try {
+        localStorage.setItem("xfwd_authenticated", "1");
+        if (username) localStorage.setItem("xfwd_username", username);
+    } catch (e) {}
     loginScreen.style.display = "none";
     dashboardScreen.style.display = "flex";
     if (username) {

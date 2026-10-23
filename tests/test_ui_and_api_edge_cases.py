@@ -598,6 +598,40 @@ class TestUIAndAPIEdgeCases(unittest.TestCase):
         self.assertIn('self.send_header("Cache-Control", "no-cache, no-store, must-revalidate")', web_code)
         self.assertIn('self.send_header("Pragma", "no-cache")', web_code)
 
+    def test_pre_auth_flicker_prevention(self):
+        """Verifies that pre-auth pre-hydration styles, script, and app.js state management eliminate login screen flicker on reload."""
+        html_path = os.path.join(REPO_ROOT, "web", "index.html")
+        css_path = os.path.join(REPO_ROOT, "web", "style.css")
+        js_path = os.path.join(REPO_ROOT, "web", "app.js")
+
+        with open(html_path, "r", encoding="utf-8") as f:
+            html = f.read()
+        with open(css_path, "r", encoding="utf-8") as f:
+            css = f.read()
+        with open(js_path, "r", encoding="utf-8") as f:
+            js = f.read()
+
+        # 1. Inline preHydrationStyles in head prevents flash of login screen before any CSS loads
+        self.assertIn('id="preHydrationStyles"', html)
+        self.assertIn("html.pre-auth #loginScreen", html)
+        self.assertIn("html.pre-auth #dashboardScreen", html)
+
+        # 2. Pre-hydration script checks localStorage and adds pre-auth class synchronously
+        self.assertIn('localStorage.getItem("xfwd_authenticated") === "1"', html)
+        self.assertIn('document.documentElement.classList.add("pre-auth")', html)
+
+        # 3. Dedicated rules in style.css
+        self.assertIn("html.pre-auth #loginScreen", css)
+        self.assertIn("html.pre-auth #dashboardScreen", css)
+
+        # 4. app.js showDashboard adds pre-auth and persists token
+        self.assertIn('document.documentElement.classList.add("pre-auth")', js)
+        self.assertIn('localStorage.setItem("xfwd_authenticated", "1")', js)
+
+        # 5. app.js showLogin cleans up pre-auth and clears token
+        self.assertIn('document.documentElement.classList.remove("pre-auth")', js)
+        self.assertIn('localStorage.removeItem("xfwd_authenticated")', js)
+
     def test_tcp_udp_protocol_formatting_and_no_both(self):
         """Verifies that BOTH is replaced by TCP + UDP across the frontend."""
         html_path = os.path.join(REPO_ROOT, "web", "index.html")

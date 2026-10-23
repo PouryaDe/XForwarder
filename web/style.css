@@ -162,6 +162,14 @@ h1, h2, h3, .brand-title, .stat-number, .port-num, .login-brand-meta h2, .sectio
     .aurora span { animation: none !important; }
 }
 
+/* ── Pre-Auth Screen Pre-Hydration (Eliminates Login Screen Reload Flicker) ── */
+html.pre-auth #loginScreen {
+    display: none !important;
+}
+html.pre-auth #dashboardScreen {
+    display: flex !important;
+}
+
 /* ── Login Screen ── */
 .login-wrapper {
     display: flex;

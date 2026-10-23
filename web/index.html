@@ -5,7 +5,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>XForwarder - Multi-Path Relay Dashboard</title>
-    <!-- Prevent Theme Flicker Pre-Hydration -->
+    <!-- Prevent Theme & Auth Screen Flicker Pre-Hydration -->
+    <style id="preHydrationStyles">
+        html.pre-auth #loginScreen {
+            display: none !important;
+        }
+        html.pre-auth #dashboardScreen {
+            display: flex !important;
+        }
+    </style>
     <script>
         (function () {
             try {
@@ -14,6 +22,10 @@
                     document.documentElement.setAttribute("data-theme", "light");
                 } else {
                     document.documentElement.setAttribute("data-theme", "dark");
+                }
+
+                if (localStorage.getItem("xfwd_authenticated") === "1") {
+                    document.documentElement.classList.add("pre-auth");
                 }
             } catch (e) { }
         })();
@@ -1952,7 +1964,7 @@
     <!-- Notification Toast Container -->
     <div class="toast-container" id="toastContainer"></div>
 
-    <script src="app.js?v=3.1.0"></script>
+    <script src="app.js?v=3.1.1"></script>
 </body>
 
 </html>
