@@ -1837,9 +1837,35 @@
                         </svg>
                         <span>Or paste raw JSON directly</span>
                     </button>
-                    <div id="pasteJsonContainer" style="display:none; margin-top: 8px;">
-                        <textarea id="importJsonTextarea" class="form-control font-mono" rows="5"
-                            placeholder='{"rules": [ ... ]}' spellcheck="false"></textarea>
+                    <div id="pasteJsonContainer" class="paste-json-container" style="display:none;">
+                        <div class="paste-json-toolbar">
+                            <span class="paste-json-hint">Paste backup JSON, category rules, or single port JSON</span>
+                            <div class="paste-json-actions">
+                                <button type="button" class="btn-paste-tool" id="btnPasteFromClipboard" title="Paste from clipboard">
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>
+                                        <rect x="8" y="2" width="8" height="4" rx="1" ry="1"/>
+                                    </svg>
+                                    <span>Paste</span>
+                                </button>
+                                <button type="button" class="btn-paste-tool" id="btnFormatJson" title="Format JSON">
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <polyline points="16 18 22 12 16 6"/>
+                                        <polyline points="8 6 2 12 8 18"/>
+                                    </svg>
+                                    <span>Format</span>
+                                </button>
+                                <button type="button" class="btn-paste-tool" id="btnClearJsonText" title="Clear text">
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <line x1="18" y1="6" x2="6" y2="18"/>
+                                        <line x1="6" y1="6" x2="18" y2="18"/>
+                                    </svg>
+                                    <span>Clear</span>
+                                </button>
+                            </div>
+                        </div>
+                        <textarea id="importJsonTextarea" class="paste-json-textarea font-mono" rows="12"
+                            placeholder='{"rules": [ ... ]} or {"port": 443, ...}' spellcheck="false"></textarea>
                     </div>
                 </div>
 

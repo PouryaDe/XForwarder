@@ -243,11 +243,13 @@ def import_config_data(imported_raw, mode: str = "merge") -> tuple:
     if mode not in ("merge", "replace"):
         mode = "merge"
 
-    # Support raw rules array as valid import payload
+    # Support raw rules array or single rule dict as valid import payload
     if isinstance(imported_raw, list):
         imported_raw = {"rules": imported_raw}
+    elif isinstance(imported_raw, dict) and "rules" not in imported_raw and "port" in imported_raw:
+        imported_raw = {"rules": [imported_raw]}
     elif not isinstance(imported_raw, dict):
-        return False, "Invalid configuration payload. Must be a JSON object or rules array.", {}
+        return False, "Invalid configuration payload. Must be a JSON object, rules array, or rule object.", {}
 
     if migrate_config:
         imported_cfg, _ = migrate_config(imported_raw)
@@ -2460,7 +2462,10 @@ class XForwarderWebHandler(BaseHTTPRequestHandler):
             })
 
         elif subpath == "/api/config/import":
-            imported_raw = body.get("config") if (isinstance(body, dict) and isinstance(body.get("config"), dict)) else body
+            if isinstance(body, dict) and "config" in body:
+                imported_raw = body["config"]
+            else:
+                imported_raw = body
             mode = body.get("mode", "merge") if isinstance(body, dict) else "merge"
             ok, err, info = import_config_data(imported_raw, mode=mode)
             if ok:

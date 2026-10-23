@@ -132,6 +132,112 @@ function fallbackCopy(text) {
     showToast(`Copied: ${text}`);
 }
 
+// Copy multi-line JSON payload to clipboard without spilling large text in toasts
+function copyJsonToClipboard(jsonString, successMsg = "Configuration JSON copied to clipboard!") {
+    if (!jsonString) return;
+    const notify = () => showToast(successMsg, "success");
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(jsonString).then(notify).catch(() => {
+            fallbackCopyRaw(jsonString);
+            notify();
+        });
+    } else {
+        fallbackCopyRaw(jsonString);
+        notify();
+    }
+}
+
+function fallbackCopyRaw(text) {
+    const el = document.createElement("textarea");
+    el.value = text;
+    el.style.position = "fixed";
+    el.style.opacity = "0";
+    el.style.left = "-9999px";
+    document.body.appendChild(el);
+    el.select();
+    try {
+        document.execCommand("copy");
+    } catch (_) {}
+    document.body.removeChild(el);
+}
+
+// Prepare clean sanitized rule for JSON export & import
+function getSanitizedRuleForExport(rule) {
+    if (!rule) return null;
+    const clean = {
+        name: rule.name || `Port ${rule.port}`,
+        port: parseInt(rule.port, 10),
+        protocol: rule.protocol || "both"
+    };
+    if (rule.category && String(rule.category).trim()) {
+        clean.category = String(rule.category).trim();
+    }
+    if (rule.comment && String(rule.comment).trim()) {
+        clean.comment = String(rule.comment).trim();
+    }
+    if (rule.force_override !== undefined && rule.force_override !== 0) {
+        clean.force_override = rule.force_override;
+    }
+    if (rule.active_priority !== undefined) {
+        clean.active_priority = rule.active_priority;
+    }
+
+    if (Array.isArray(rule.destinations)) {
+        clean.destinations = rule.destinations.map(d => {
+            const cd = {
+                priority: d.priority || 1,
+                type: d.type || "haproxy",
+                target: d.target,
+                port: d.port || rule.port
+            };
+            if (d.proxy_protocol) cd.proxy_protocol = true;
+            if (d.is_tunnel) cd.is_tunnel = true;
+            if (d.tunnel_iface) cd.tunnel_iface = d.tunnel_iface;
+            return cd;
+        });
+    }
+    return clean;
+}
+
+// 1-Click Copy Individual Port Rule JSON (ready to import in another panel)
+function copyRuleJson(ruleId) {
+    if (!Array.isArray(currentRules)) return;
+    const rule = currentRules.find(r => String(r.id || `rule-${r.port}`) === String(ruleId));
+    if (!rule) {
+        showToast("Port rule not found", "error");
+        return;
+    }
+    const cleanRule = getSanitizedRuleForExport(rule);
+    const exportPayload = {
+        rules: [cleanRule]
+    };
+    const jsonStr = JSON.stringify(exportPayload, null, 2);
+    copyJsonToClipboard(jsonStr, `Port :${rule.port} configuration JSON copied! Ready to import.`);
+}
+
+// 1-Click Copy Entire Category Rules JSON (ready to import in another panel)
+function copyCategoryJson(catKey) {
+    if (!Array.isArray(currentRules)) return;
+    const isUncat = (catKey === "__uncategorized__");
+    const categoryRules = currentRules.filter(r => {
+        const cat = (r.category || "").trim();
+        return isUncat ? !cat : cat === catKey;
+    });
+
+    if (categoryRules.length === 0) {
+        showToast("No rules found in this category", "warning");
+        return;
+    }
+
+    const cleanRules = categoryRules.map(getSanitizedRuleForExport);
+    const exportPayload = {
+        rules: cleanRules
+    };
+    const jsonStr = JSON.stringify(exportPayload, null, 2);
+    const catName = isUncat ? "General / Uncategorized" : catKey;
+    copyJsonToClipboard(jsonStr, `Category "${catName}" (${categoryRules.length} ports) JSON copied! Ready to import.`);
+}
+
 // Latency & Quality Badge Formatter (shows latency, real packet loss %, and quality score)
 function formatLatencyBadge(stat) {
     if (!stat) return '';
@@ -1472,6 +1578,9 @@ function renderRuleCard(rule, rulesState) {
                     ${rState.is_flapping ? `<span class="badge-flapping" title="Repeated route flapping detected. Cooldown extended."><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>Flap Guard</span>` : ''}
                 </div>
                 <div class="rule-actions">
+                    <button class="btn btn-secondary btn-sm btn-rule-copy" onclick="copyRuleJson(decodeURIComponent('${encodedId}'))" title="Copy Port Configuration (JSON)">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                    </button>
                     <button class="btn btn-secondary btn-sm" onclick="editRule(decodeURIComponent('${encodedId}'))" title="Edit Rule">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
                     </button>
@@ -1576,6 +1685,9 @@ function renderRuleListRow(rule, rulesState) {
                 <button type="button" class="btn-path-test" style="height:32px; padding:0 10px;" onclick="runLivePacketLossTest(decodeURIComponent('${encodedId}'), decodeURIComponent('${encodeURIComponent(testTarget)}'), ${testPort}, '${testType}', this)" title="Test live latency & packet loss">
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
                     <span>Test</span>
+                </button>
+                <button class="btn btn-secondary btn-sm btn-rule-copy" onclick="copyRuleJson(decodeURIComponent('${encodedId}'))" title="Copy Port Configuration (JSON)">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
                 </button>
                 <button class="btn btn-secondary btn-sm" onclick="editRule(decodeURIComponent('${encodedId}'))" title="Edit Rule">
                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
@@ -1715,6 +1827,13 @@ function renderRules(rules, runtime) {
                             <span class="rule-category-count">${groupRules.length} Port${groupRules.length === 1 ? '' : 's'}</span>
                         </div>
                         <div class="rule-category-line"></div>
+                        <button type="button" class="btn-category-copy" onclick="copyCategoryJson(decodeURIComponent('${encodeURIComponent(catKey)}'))" title="Copy all ports in category '${catTitle}' as JSON">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                            </svg>
+                            <span>Copy Category JSON</span>
+                        </button>
                     </div>
                     <div class="${currentViewMode === 'list' ? 'rules-list-container' : 'rules-container'}">
                         ${itemsHtml}
@@ -2882,6 +3001,9 @@ const importPreviewDetails = document.getElementById("importPreviewDetails");
 const btnTogglePasteJson = document.getElementById("btnTogglePasteJson");
 const pasteJsonContainer = document.getElementById("pasteJsonContainer");
 const importJsonTextarea = document.getElementById("importJsonTextarea");
+const btnPasteFromClipboard = document.getElementById("btnPasteFromClipboard");
+const btnFormatJson = document.getElementById("btnFormatJson");
+const btnClearJsonText = document.getElementById("btnClearJsonText");
 const importError = document.getElementById("importError");
 const btnConfirmImport = document.getElementById("btnConfirmImport");
 
@@ -2917,6 +3039,53 @@ if (btnTogglePasteJson) {
         if (!pasteJsonContainer) return;
         const isHidden = pasteJsonContainer.style.display === "none";
         pasteJsonContainer.style.display = isHidden ? "block" : "none";
+        if (isHidden && importJsonTextarea) {
+            setTimeout(() => importJsonTextarea.focus(), 50);
+        }
+    });
+}
+
+if (btnPasteFromClipboard && importJsonTextarea) {
+    btnPasteFromClipboard.addEventListener("click", async () => {
+        try {
+            if (navigator.clipboard && navigator.clipboard.readText) {
+                const text = await navigator.clipboard.readText();
+                if (text && text.trim()) {
+                    importJsonTextarea.value = text;
+                    parseAndValidateImportJson(text, "Clipboard Content");
+                    showToast("JSON pasted from clipboard!", "success");
+                } else {
+                    showToast("Clipboard is empty", "warning");
+                }
+            } else {
+                showToast("Press Ctrl+V to paste into the box", "info");
+                importJsonTextarea.focus();
+            }
+        } catch (_) {
+            showToast("Press Ctrl+V to paste into the box", "info");
+            importJsonTextarea.focus();
+        }
+    });
+}
+
+if (btnFormatJson && importJsonTextarea) {
+    btnFormatJson.addEventListener("click", () => {
+        const val = (importJsonTextarea.value || "").trim();
+        if (!val) return;
+        try {
+            const obj = JSON.parse(val);
+            importJsonTextarea.value = JSON.stringify(obj, null, 2);
+            showToast("JSON formatted!", "success");
+        } catch (e) {
+            showToast("Cannot format invalid JSON: " + e.message, "error");
+        }
+    });
+}
+
+if (btnClearJsonText && importJsonTextarea) {
+    btnClearJsonText.addEventListener("click", () => {
+        importJsonTextarea.value = "";
+        parseAndValidateImportJson("", "");
     });
 }
 
@@ -2930,6 +3099,8 @@ function parseAndValidateImportJson(rawText, sourceName) {
         let parsed = JSON.parse(rawText);
         if (Array.isArray(parsed)) {
             parsed = { rules: parsed };
+        } else if (parsed && typeof parsed === "object" && !parsed.rules && parsed.port) {
+            parsed = { rules: [parsed] };
         } else if (!parsed || typeof parsed !== "object") {
             throw new Error("Configuration must be a valid JSON object or rules array");
         }

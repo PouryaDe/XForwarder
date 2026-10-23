@@ -269,6 +269,26 @@ class TestExportImport(unittest.TestCase):
             server.server_close()
 
 
+    def test_import_single_rule_dict(self):
+        # A single rule dictionary (without "rules" array wrapper) should be accepted seamlessly
+        single_rule = {
+            "name": "Single Port Service",
+            "port": 4040,
+            "protocol": "both",
+            "category": "Custom",
+            "destinations": [{"priority": 1, "target": "2001:cafe::4040", "port": 4040}]
+        }
+        ok, err, info = import_config_data(single_rule, mode="merge")
+        self.assertTrue(ok)
+        self.assertEqual(info["imported_count"], 1)
+
+        reloaded = load_config()
+        ports = [r["port"] for r in reloaded["rules"]]
+        self.assertIn(4040, ports)
+        rule_4040 = next(r for r in reloaded["rules"] if r["port"] == 4040)
+        self.assertEqual(rule_4040["category"], "Custom")
+
+
 if __name__ == "__main__":
     unittest.main()
 

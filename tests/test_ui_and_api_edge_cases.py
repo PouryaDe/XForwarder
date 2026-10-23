@@ -1655,6 +1655,44 @@ class TestUIAndAPIEdgeCases(unittest.TestCase):
         self.assertIn("↓ ${rxMb} MB · ↑ ${txMb} MB", js)
         self.assertIn("${tcp} TCP · ${udp} UDP", js)
 
+    def test_copy_port_and_category_json_and_import_modal(self):
+        """Verifies individual port copy, category copy, and enlarged JSON paste area."""
+        html_path = os.path.join(REPO_ROOT, "web", "index.html")
+        with open(html_path, "r", encoding="utf-8") as f:
+            html = f.read()
+
+        js_path = os.path.join(REPO_ROOT, "web", "app.js")
+        with open(js_path, "r", encoding="utf-8") as f:
+            js = f.read()
+
+        css_path = os.path.join(REPO_ROOT, "web", "style.css")
+        with open(css_path, "r", encoding="utf-8") as f:
+            css = f.read()
+
+        # HTML elements
+        self.assertIn('id="pasteJsonContainer"', html)
+        self.assertIn('id="importJsonTextarea"', html)
+        self.assertIn('id="btnPasteFromClipboard"', html)
+        self.assertIn('id="btnFormatJson"', html)
+        self.assertIn('id="btnClearJsonText"', html)
+        self.assertIn('class="paste-json-textarea', html)
+
+        # JS functions & button actions
+        self.assertIn("copyRuleJson", js)
+        self.assertIn("copyCategoryJson", js)
+        self.assertIn("copyJsonToClipboard", js)
+        self.assertIn("getSanitizedRuleForExport", js)
+        self.assertIn("btnPasteFromClipboard", js)
+        self.assertIn("btnFormatJson", js)
+        self.assertIn("btn-category-copy", js)
+        self.assertIn("btn-rule-copy", js)
+
+        # CSS styles
+        self.assertIn(".paste-json-container", css)
+        self.assertIn(".paste-json-textarea", css)
+        self.assertIn(".btn-category-copy", css)
+        self.assertIn(".btn-rule-copy", css)
+
 
 if __name__ == "__main__":
     unittest.main()

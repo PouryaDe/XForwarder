@@ -2810,6 +2810,40 @@ input:-webkit-autofill:active {
     border-color: rgba(139, 92, 246, 0.25);
 }
 
+.btn-category-copy {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border-radius: 8px;
+    font-size: 0.74rem;
+    font-weight: 600;
+    background: rgba(167, 139, 250, 0.10);
+    border: 1px solid rgba(167, 139, 250, 0.25);
+    color: var(--accent-violet);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+    user-select: none;
+    line-height: 1;
+}
+
+.btn-category-copy:hover {
+    background: rgba(167, 139, 250, 0.22);
+    color: #FFFFFF;
+}
+
+[data-theme="light"] .btn-category-copy {
+    background: rgba(124, 58, 237, 0.08);
+    border-color: rgba(124, 58, 237, 0.25);
+    color: #6D28D9;
+}
+
+[data-theme="light"] .btn-category-copy:hover {
+    background: rgba(124, 58, 237, 0.16);
+    color: #5B21B6;
+}
+
 /* ── Compact List View ── */
 .rules-list-container {
     display: flex;
@@ -3777,6 +3811,113 @@ select option {
 
 .btn-text-toggle:hover {
     color: var(--accent-primary);
+}
+
+/* ── Paste Raw JSON Container & Toolbar ── */
+#importConfigModal .modal-card {
+    max-width: 780px;
+}
+
+.paste-json-container {
+    margin-top: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.paste-json-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.paste-json-hint {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+}
+
+.paste-json-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.btn-paste-tool {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    padding: 3px 8px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.btn-paste-tool:hover {
+    color: var(--accent-violet);
+    background: rgba(167, 139, 250, 0.12);
+}
+
+[data-theme="light"] .btn-paste-tool {
+    background: #FFFFFF;
+    color: var(--text-secondary);
+    border-color: rgba(20, 25, 45, 0.12);
+}
+
+[data-theme="light"] .btn-paste-tool:hover {
+    color: #6D28D9;
+    background: rgba(124, 58, 237, 0.08);
+}
+
+.paste-json-textarea {
+    width: 100%;
+    min-height: 240px;
+    height: 280px;
+    max-height: 520px;
+    resize: vertical;
+    font-family: var(--font-mono);
+    font-size: 0.82rem;
+    line-height: 1.5;
+    padding: 14px;
+    border-radius: 12px;
+    background: #06090F;
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
+    box-sizing: border-box;
+    outline: none;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.paste-json-textarea:focus {
+    border-color: var(--accent-violet);
+    box-shadow: 0 0 0 2px rgba(167, 139, 250, 0.25);
+}
+
+[data-theme="light"] .paste-json-textarea {
+    background: #F8FAFC;
+    color: #0F172A;
+    border-color: rgba(20, 25, 45, 0.15);
+}
+
+[data-theme="light"] .paste-json-textarea:focus {
+    border-color: #8B5CF6;
+    box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.2);
+}
+
+.btn-rule-copy:hover {
+    color: var(--accent-violet) !important;
+    background: var(--bg-card-hover) !important;
+}
+
+[data-theme="light"] .btn-rule-copy:hover {
+    color: #6D28D9 !important;
+    background: #F8FAFC !important;
 }
 
 /* ── Toasts ── */
