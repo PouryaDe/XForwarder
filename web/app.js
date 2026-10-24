@@ -25,7 +25,7 @@ import {
     setLastTrafficData
 } from "./js/modules/state.js";
 import { initTheme, toggleTheme } from "./js/modules/theme.js";
-import { initNavigation, switchSection, closeMobileSidebar } from "./js/modules/navigation.js";
+import { initNavigation, switchSection, openMobileSidebar, closeMobileSidebar } from "./js/modules/navigation.js";
 import { showLogin, showDashboard, checkSession, handleLogin, handleLogout, initAuth } from "./js/modules/auth.js";
 import { renderStats, renderSystemStats, renderServicesStatus, renderNetworkTopology, copyIpToClipboard } from "./js/modules/stats.js";
 import {

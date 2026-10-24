@@ -865,6 +865,114 @@
       "source_location": "L96"
     },
     {
+      "id": "web_js_modules_import_export_closeimportmodal",
+      "label": "closeImportModal()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 110,
+      "community_name": "import_export.js",
+      "file_type": "code",
+      "norm_label": "closeimportmodal()",
+      "source_file": "web/js/modules/import_export.js",
+      "source_location": "L167"
+    },
+    {
+      "id": "web_js_modules_import_export_copycategoryjson",
+      "label": "copyCategoryJson()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 110,
+      "community_name": "import_export.js",
+      "file_type": "code",
+      "norm_label": "copycategoryjson()",
+      "source_file": "web/js/modules/import_export.js",
+      "source_location": "L64"
+    },
+    {
+      "id": "web_js_modules_import_export_copyrulejson",
+      "label": "copyRuleJson()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 110,
+      "community_name": "import_export.js",
+      "file_type": "code",
+      "norm_label": "copyrulejson()",
+      "source_file": "web/js/modules/import_export.js",
+      "source_location": "L49"
+    },
+    {
+      "id": "web_js_modules_import_export_getsanitizedruleforexport",
+      "label": "getSanitizedRuleForExport()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 110,
+      "community_name": "import_export.js",
+      "file_type": "code",
+      "norm_label": "getsanitizedruleforexport()",
+      "source_file": "web/js/modules/import_export.js",
+      "source_location": "L11"
+    },
+    {
+      "id": "web_js_modules_import_export_handleexportconfig",
+      "label": "handleExportConfig()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 110,
+      "community_name": "import_export.js",
+      "file_type": "code",
+      "norm_label": "handleexportconfig()",
+      "source_file": "web/js/modules/import_export.js",
+      "source_location": "L112"
+    },
+    {
+      "id": "web_js_modules_import_export_initimportexport",
+      "label": "initImportExport()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 110,
+      "community_name": "import_export.js",
+      "file_type": "code",
+      "norm_label": "initimportexport()",
+      "source_file": "web/js/modules/import_export.js",
+      "source_location": "L245"
+    },
+    {
+      "id": "web_js_modules_import_export_openimportmodal",
+      "label": "openImportModal()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 110,
+      "community_name": "import_export.js",
+      "file_type": "code",
+      "norm_label": "openimportmodal()",
+      "source_file": "web/js/modules/import_export.js",
+      "source_location": "L142"
+    },
+    {
+      "id": "web_js_modules_import_export_parseandvalidateimportjson",
+      "label": "parseAndValidateImportJson()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 110,
+      "community_name": "import_export.js",
+      "file_type": "code",
+      "norm_label": "parseandvalidateimportjson()",
+      "source_file": "web/js/modules/import_export.js",
+      "source_location": "L172"
+    },
+    {
+      "id": "web_js_modules_utils_copyjsontoclipboard",
+      "label": "copyJsonToClipboard()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 110,
+      "community_name": "import_export.js",
+      "file_type": "code",
+      "norm_label": "copyjsontoclipboard()",
+      "source_file": "web/js/modules/utils.js",
+      "source_location": "L104"
+    },
+    {
       "id": "tests_test_ui_and_api_edge_cases_testuiandapiedgecases_test_dark_theme_tokens_and_restrained_highlights",
       "label": ".test_dark_theme_tokens_and_restrained_highlights()",
       "_callable": true,
@@ -1741,6 +1849,18 @@
       "source_location": "L80"
     },
     {
+      "id": "web_js_modules_rules_deleterule",
+      "label": "deleteRule()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 25,
+      "community_name": "rules.js",
+      "file_type": "code",
+      "norm_label": "deleterule()",
+      "source_file": "web/js/modules/rules.js",
+      "source_location": "L642"
+    },
+    {
       "id": "web_js_modules_rules_getpriotagclass",
       "label": "getPrioTagClass()",
       "_callable": true,
@@ -1885,6 +2005,30 @@
       "source_location": "L24"
     },
     {
+      "id": "web_js_modules_utils_copytext",
+      "label": "copyText()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 25,
+      "community_name": "rules.js",
+      "file_type": "code",
+      "norm_label": "copytext()",
+      "source_file": "web/js/modules/utils.js",
+      "source_location": "L134"
+    },
+    {
+      "id": "web_js_modules_utils_fallbackcopy",
+      "label": "fallbackCopy()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 25,
+      "community_name": "rules.js",
+      "file_type": "code",
+      "norm_label": "fallbackcopy()",
+      "source_file": "web/js/modules/utils.js",
+      "source_location": "L145"
+    },
+    {
       "id": "web_js_modules_utils_formatconcisereason",
       "label": "formatConciseReason()",
       "_callable": true,
@@ -1895,6 +2039,18 @@
       "norm_label": "formatconcisereason()",
       "source_file": "web/js/modules/utils.js",
       "source_location": "L67"
+    },
+    {
+      "id": "web_js_modules_utils_formatengineversion",
+      "label": "formatEngineVersion()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 25,
+      "community_name": "rules.js",
+      "file_type": "code",
+      "norm_label": "formatengineversion()",
+      "source_file": "web/js/modules/utils.js",
+      "source_location": "L26"
     },
     {
       "id": "web_js_modules_utils_formatlatencybadge",
@@ -2387,54 +2543,6 @@
       "norm_label": "checkimportablerules()",
       "source_file": "web/js/modules/import_export.js",
       "source_location": "L86"
-    },
-    {
-      "id": "web_js_modules_import_export_closeimportmodal",
-      "label": "closeImportModal()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 3,
-      "community_name": "app.js",
-      "file_type": "code",
-      "norm_label": "closeimportmodal()",
-      "source_file": "web/js/modules/import_export.js",
-      "source_location": "L167"
-    },
-    {
-      "id": "web_js_modules_import_export_initimportexport",
-      "label": "initImportExport()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 3,
-      "community_name": "app.js",
-      "file_type": "code",
-      "norm_label": "initimportexport()",
-      "source_file": "web/js/modules/import_export.js",
-      "source_location": "L245"
-    },
-    {
-      "id": "web_js_modules_import_export_openimportmodal",
-      "label": "openImportModal()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 3,
-      "community_name": "app.js",
-      "file_type": "code",
-      "norm_label": "openimportmodal()",
-      "source_file": "web/js/modules/import_export.js",
-      "source_location": "L142"
-    },
-    {
-      "id": "web_js_modules_import_export_parseandvalidateimportjson",
-      "label": "parseAndValidateImportJson()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 3,
-      "community_name": "app.js",
-      "file_type": "code",
-      "norm_label": "parseandvalidateimportjson()",
-      "source_file": "web/js/modules/import_export.js",
-      "source_location": "L172"
     },
     {
       "id": "web_js_modules_navigation_closemobilesidebar",
@@ -4465,12 +4573,24 @@
       "source_location": "L167"
     },
     {
+      "id": "web_js_modules_api_fetchapi",
+      "label": "fetchApi()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 46,
+      "community_name": "showToast",
+      "file_type": "code",
+      "norm_label": "fetchapi()",
+      "source_file": "web/js/modules/api.js",
+      "source_location": "L46"
+    },
+    {
       "id": "web_js_modules_auth_checksession",
       "label": "checkSession()",
       "_callable": true,
       "_origin": "ast",
       "community": 46,
-      "community_name": "auth.js",
+      "community_name": "showToast",
       "file_type": "code",
       "norm_label": "checksession()",
       "source_file": "web/js/modules/auth.js",
@@ -4482,7 +4602,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 46,
-      "community_name": "auth.js",
+      "community_name": "showToast",
       "file_type": "code",
       "norm_label": "closesecuritymodal()",
       "source_file": "web/js/modules/auth.js",
@@ -4494,7 +4614,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 46,
-      "community_name": "auth.js",
+      "community_name": "showToast",
       "file_type": "code",
       "norm_label": "evaluatepasswordstrength()",
       "source_file": "web/js/modules/auth.js",
@@ -4506,7 +4626,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 46,
-      "community_name": "auth.js",
+      "community_name": "showToast",
       "file_type": "code",
       "norm_label": "handlelogin()",
       "source_file": "web/js/modules/auth.js",
@@ -4518,7 +4638,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 46,
-      "community_name": "auth.js",
+      "community_name": "showToast",
       "file_type": "code",
       "norm_label": "handlelogout()",
       "source_file": "web/js/modules/auth.js",
@@ -4530,7 +4650,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 46,
-      "community_name": "auth.js",
+      "community_name": "showToast",
       "file_type": "code",
       "norm_label": "initauth()",
       "source_file": "web/js/modules/auth.js",
@@ -4542,7 +4662,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 46,
-      "community_name": "auth.js",
+      "community_name": "showToast",
       "file_type": "code",
       "norm_label": "initinlinesecurityform()",
       "source_file": "web/js/modules/auth.js",
@@ -4554,7 +4674,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 46,
-      "community_name": "auth.js",
+      "community_name": "showToast",
       "file_type": "code",
       "norm_label": "initsecuritymodal()",
       "source_file": "web/js/modules/auth.js",
@@ -4566,7 +4686,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 46,
-      "community_name": "auth.js",
+      "community_name": "showToast",
       "file_type": "code",
       "norm_label": "setupcapslockdetection()",
       "source_file": "web/js/modules/auth.js",
@@ -4578,7 +4698,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 46,
-      "community_name": "auth.js",
+      "community_name": "showToast",
       "file_type": "code",
       "norm_label": "setuppasswordtoggle()",
       "source_file": "web/js/modules/auth.js",
@@ -4590,7 +4710,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 46,
-      "community_name": "auth.js",
+      "community_name": "showToast",
       "file_type": "code",
       "norm_label": "showdashboard()",
       "source_file": "web/js/modules/auth.js",
@@ -4602,7 +4722,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 46,
-      "community_name": "auth.js",
+      "community_name": "showToast",
       "file_type": "code",
       "norm_label": "showlogin()",
       "source_file": "web/js/modules/auth.js",
@@ -4614,11 +4734,23 @@
       "_callable": true,
       "_origin": "ast",
       "community": 46,
-      "community_name": "auth.js",
+      "community_name": "showToast",
       "file_type": "code",
       "norm_label": "startlockouttimer()",
       "source_file": "web/js/modules/auth.js",
       "source_location": "L38"
+    },
+    {
+      "id": "web_js_modules_utils_showtoast",
+      "label": "showToast()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 46,
+      "community_name": "showToast",
+      "file_type": "code",
+      "norm_label": "showtoast()",
+      "source_file": "web/js/modules/utils.js",
+      "source_location": "L77"
     },
     {
       "id": "tests_test_ui_and_api_edge_cases_testuiandapiedgecases_test_api_test_target_http_endpoint",
@@ -4729,72 +4861,12 @@
       "source_location": "L762"
     },
     {
-      "id": "web_js_modules_api_fetchapi",
-      "label": "fetchApi()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 49,
-      "community_name": "showToast",
-      "file_type": "code",
-      "norm_label": "fetchapi()",
-      "source_file": "web/js/modules/api.js",
-      "source_location": "L46"
-    },
-    {
-      "id": "web_js_modules_import_export_copycategoryjson",
-      "label": "copyCategoryJson()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 49,
-      "community_name": "showToast",
-      "file_type": "code",
-      "norm_label": "copycategoryjson()",
-      "source_file": "web/js/modules/import_export.js",
-      "source_location": "L64"
-    },
-    {
-      "id": "web_js_modules_import_export_copyrulejson",
-      "label": "copyRuleJson()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 49,
-      "community_name": "showToast",
-      "file_type": "code",
-      "norm_label": "copyrulejson()",
-      "source_file": "web/js/modules/import_export.js",
-      "source_location": "L49"
-    },
-    {
-      "id": "web_js_modules_import_export_getsanitizedruleforexport",
-      "label": "getSanitizedRuleForExport()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 49,
-      "community_name": "showToast",
-      "file_type": "code",
-      "norm_label": "getsanitizedruleforexport()",
-      "source_file": "web/js/modules/import_export.js",
-      "source_location": "L11"
-    },
-    {
-      "id": "web_js_modules_import_export_handleexportconfig",
-      "label": "handleExportConfig()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 49,
-      "community_name": "showToast",
-      "file_type": "code",
-      "norm_label": "handleexportconfig()",
-      "source_file": "web/js/modules/import_export.js",
-      "source_location": "L112"
-    },
-    {
       "id": "web_js_modules_logs_addlogentry",
       "label": "addLogEntry()",
       "_callable": true,
       "_origin": "ast",
       "community": 49,
-      "community_name": "showToast",
+      "community_name": "quality.js",
       "file_type": "code",
       "norm_label": "addlogentry()",
       "source_file": "web/js/modules/logs.js",
@@ -4806,7 +4878,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 49,
-      "community_name": "showToast",
+      "community_name": "quality.js",
       "file_type": "code",
       "norm_label": "appendlogentry()",
       "source_file": "web/js/modules/logs.js",
@@ -4818,7 +4890,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 49,
-      "community_name": "showToast",
+      "community_name": "quality.js",
       "file_type": "code",
       "norm_label": "initlogs()",
       "source_file": "web/js/modules/logs.js",
@@ -4830,7 +4902,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 49,
-      "community_name": "showToast",
+      "community_name": "quality.js",
       "file_type": "code",
       "norm_label": "initdiagpacketlosstool()",
       "source_file": "web/js/modules/quality.js",
@@ -4842,83 +4914,11 @@
       "_callable": true,
       "_origin": "ast",
       "community": 49,
-      "community_name": "showToast",
+      "community_name": "quality.js",
       "file_type": "code",
       "norm_label": "runlivepacketlosstest()",
       "source_file": "web/js/modules/quality.js",
       "source_location": "L9"
-    },
-    {
-      "id": "web_js_modules_rules_deleterule",
-      "label": "deleteRule()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 49,
-      "community_name": "showToast",
-      "file_type": "code",
-      "norm_label": "deleterule()",
-      "source_file": "web/js/modules/rules.js",
-      "source_location": "L642"
-    },
-    {
-      "id": "web_js_modules_utils_copyjsontoclipboard",
-      "label": "copyJsonToClipboard()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 49,
-      "community_name": "showToast",
-      "file_type": "code",
-      "norm_label": "copyjsontoclipboard()",
-      "source_file": "web/js/modules/utils.js",
-      "source_location": "L104"
-    },
-    {
-      "id": "web_js_modules_utils_copytext",
-      "label": "copyText()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 49,
-      "community_name": "showToast",
-      "file_type": "code",
-      "norm_label": "copytext()",
-      "source_file": "web/js/modules/utils.js",
-      "source_location": "L134"
-    },
-    {
-      "id": "web_js_modules_utils_fallbackcopy",
-      "label": "fallbackCopy()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 49,
-      "community_name": "showToast",
-      "file_type": "code",
-      "norm_label": "fallbackcopy()",
-      "source_file": "web/js/modules/utils.js",
-      "source_location": "L145"
-    },
-    {
-      "id": "web_js_modules_utils_formatengineversion",
-      "label": "formatEngineVersion()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 49,
-      "community_name": "showToast",
-      "file_type": "code",
-      "norm_label": "formatengineversion()",
-      "source_file": "web/js/modules/utils.js",
-      "source_location": "L26"
-    },
-    {
-      "id": "web_js_modules_utils_showtoast",
-      "label": "showToast()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 49,
-      "community_name": "showToast",
-      "file_type": "code",
-      "norm_label": "showtoast()",
-      "source_file": "web/js/modules/utils.js",
-      "source_location": "L77"
     },
     {
       "id": "core_auth_check_rate_limit",
@@ -6694,7 +6694,7 @@
       "file_type": "code",
       "norm_label": ".test_session_token_header_authentication_flow()",
       "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L1781"
+      "source_location": "L1806"
     },
     {
       "id": "tests_test_ui_and_api_edge_cases_testuiandapiedgecases_test_frontend_css_no_hover_borders_and_subtle_transitions",
@@ -7541,6 +7541,17 @@
       "norm_label": "workflow: add port rule",
       "source_file": ".agents/workflows/add-port-rule.md",
       "source_location": "L6"
+    },
+    {
+      "id": "web_js_modules_import_export",
+      "label": "import_export.js",
+      "_origin": "ast",
+      "community": 110,
+      "community_name": "import_export.js",
+      "file_type": "code",
+      "norm_label": "import_export.js",
+      "source_file": "web/js/modules/import_export.js",
+      "source_location": "L1"
     },
     {
       "id": "tests_test_ui_and_api_edge_cases_rationale_774",
@@ -9389,6 +9400,17 @@
       "norm_label": "pendingoverrides",
       "source_file": "web/js/modules/rules.js",
       "source_location": "L15"
+    },
+    {
+      "id": "web_js_modules_utils",
+      "label": "utils.js",
+      "_origin": "ast",
+      "community": 25,
+      "community_name": "rules.js",
+      "file_type": "code",
+      "norm_label": "utils.js",
+      "source_file": "web/js/modules/utils.js",
+      "source_location": "L1"
     },
     {
       "id": "agents_skills_xfwd_ops_skill_configuration_schema_etc_xforwarder_config_json",
@@ -11472,11 +11494,44 @@
       "source_location": "L243"
     },
     {
+      "id": "web_js_modules_api",
+      "label": "api.js",
+      "_origin": "ast",
+      "community": 46,
+      "community_name": "showToast",
+      "file_type": "code",
+      "norm_label": "api.js",
+      "source_file": "web/js/modules/api.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "web_js_modules_api_api_base",
+      "label": "API_BASE",
+      "_origin": "ast",
+      "community": 46,
+      "community_name": "showToast",
+      "file_type": "code",
+      "norm_label": "api_base",
+      "source_file": "web/js/modules/api.js",
+      "source_location": "L9"
+    },
+    {
+      "id": "web_js_modules_api_cleanpath",
+      "label": "cleanPath",
+      "_origin": "ast",
+      "community": 46,
+      "community_name": "showToast",
+      "file_type": "code",
+      "norm_label": "cleanpath",
+      "source_file": "web/js/modules/api.js",
+      "source_location": "L8"
+    },
+    {
       "id": "web_js_modules_auth",
       "label": "auth.js",
       "_origin": "ast",
       "community": 46,
-      "community_name": "auth.js",
+      "community_name": "showToast",
       "file_type": "code",
       "norm_label": "auth.js",
       "source_file": "web/js/modules/auth.js",
@@ -11656,55 +11711,11 @@
       "source_location": "L105"
     },
     {
-      "id": "web_js_modules_api",
-      "label": "api.js",
-      "_origin": "ast",
-      "community": 49,
-      "community_name": "showToast",
-      "file_type": "code",
-      "norm_label": "api.js",
-      "source_file": "web/js/modules/api.js",
-      "source_location": "L1"
-    },
-    {
-      "id": "web_js_modules_api_api_base",
-      "label": "API_BASE",
-      "_origin": "ast",
-      "community": 49,
-      "community_name": "showToast",
-      "file_type": "code",
-      "norm_label": "api_base",
-      "source_file": "web/js/modules/api.js",
-      "source_location": "L9"
-    },
-    {
-      "id": "web_js_modules_api_cleanpath",
-      "label": "cleanPath",
-      "_origin": "ast",
-      "community": 49,
-      "community_name": "showToast",
-      "file_type": "code",
-      "norm_label": "cleanpath",
-      "source_file": "web/js/modules/api.js",
-      "source_location": "L8"
-    },
-    {
-      "id": "web_js_modules_import_export",
-      "label": "import_export.js",
-      "_origin": "ast",
-      "community": 49,
-      "community_name": "showToast",
-      "file_type": "code",
-      "norm_label": "import_export.js",
-      "source_file": "web/js/modules/import_export.js",
-      "source_location": "L1"
-    },
-    {
       "id": "web_js_modules_logs",
       "label": "logs.js",
       "_origin": "ast",
       "community": 49,
-      "community_name": "showToast",
+      "community_name": "quality.js",
       "file_type": "code",
       "norm_label": "logs.js",
       "source_file": "web/js/modules/logs.js",
@@ -11715,21 +11726,10 @@
       "label": "quality.js",
       "_origin": "ast",
       "community": 49,
-      "community_name": "showToast",
+      "community_name": "quality.js",
       "file_type": "code",
       "norm_label": "quality.js",
       "source_file": "web/js/modules/quality.js",
-      "source_location": "L1"
-    },
-    {
-      "id": "web_js_modules_utils",
-      "label": "utils.js",
-      "_origin": "ast",
-      "community": 49,
-      "community_name": "showToast",
-      "file_type": "code",
-      "norm_label": "utils.js",
-      "source_file": "web/js/modules/utils.js",
       "source_location": "L1"
     },
     {
@@ -14565,7 +14565,7 @@
       "source_location": "L1694"
     },
     {
-      "id": "tests_test_ui_and_api_edge_cases_rationale_1782",
+      "id": "tests_test_ui_and_api_edge_cases_rationale_1807",
       "label": "Verifies that X-Session-Token header provides full authentication without\u2026",
       "_origin": "ast",
       "community": 94,
@@ -14573,7 +14573,7 @@
       "file_type": "rationale",
       "norm_label": "verifies that x-session-token header provides full authentication without...",
       "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L1782"
+      "source_location": "L1807"
     },
     {
       "id": "tests_test_ui_and_api_edge_cases_rationale_368",
@@ -29862,6 +29862,18 @@
     },
     {
       "source": "web_app",
+      "target": "web_js_modules_navigation_openmobilesidebar",
+      "relation": "imports",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "import",
+      "source_file": "web/app.js",
+      "source_location": "L28",
+      "weight": 1.0
+    },
+    {
+      "source": "web_app",
       "target": "web_js_modules_navigation_switchsection",
       "relation": "imports",
       "_origin": "ast",
@@ -41307,7 +41319,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L1781",
+      "source_location": "L1806",
       "weight": 1.0
     },
     {
@@ -44633,14 +44645,14 @@
       "weight": 1.0
     },
     {
-      "source": "tests_test_ui_and_api_edge_cases_rationale_1782",
+      "source": "tests_test_ui_and_api_edge_cases_rationale_1807",
       "target": "tests_test_ui_and_api_edge_cases_testuiandapiedgecases_test_session_token_header_authentication_flow",
       "relation": "rationale_for",
       "_origin": "ast",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L1782",
+      "source_location": "L1807",
       "weight": 1.0
     },
     {
@@ -47454,5 +47466,5 @@
     }
   ],
   "hyperedges": [],
-  "built_at_commit": "6fa76999f698b733d3a1f282ead98373d4eba28f"
+  "built_at_commit": "9d85bd5d5a220b5285deeaa4ee0564da440ea247"
 }

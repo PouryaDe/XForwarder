@@ -1777,6 +1777,31 @@ class TestUIAndAPIEdgeCases(unittest.TestCase):
         self.assertIn("initAuth", app_js)
         self.assertIn("startAuthenticatedSession", app_js)
         self.assertIn("stopAuthenticatedSession", app_js)
+        self.assertIn("openMobileSidebar", app_js)
+        self.assertIn("closeMobileSidebar", app_js)
+
+        # Full ES module linking integrity check across all modules in web/
+        import_re = re.compile(r'import\s+\{([^}]+)\}\s+from\s+["\']([^"\']+)["\']')
+        export_re = re.compile(r'export\s+(?:let|const|var|function|async\s+function|class)\s+([a-zA-Z0-9_$]+)')
+        web_dir = os.path.join(REPO_ROOT, "web")
+        exports_map = {}
+        for root, _, files in os.walk(web_dir):
+            for f in files:
+                if f.endswith(".js"):
+                    p = os.path.normpath(os.path.join(root, f))
+                    with open(p, "r", encoding="utf-8") as fh:
+                        exports_map[p] = set(export_re.findall(fh.read()))
+
+        for p, exps in exports_map.items():
+            dir_p = os.path.dirname(p)
+            with open(p, "r", encoding="utf-8") as fh:
+                content = fh.read()
+            for m in import_re.finditer(content):
+                symbols = [s.strip().split(" as ")[0].strip() for s in m.group(1).split(",") if s.strip()]
+                target = os.path.normpath(os.path.join(dir_p, m.group(2)))
+                self.assertIn(target, exports_map, f"Module {m.group(2)} imported by {os.path.basename(p)} does not exist")
+                for s in symbols:
+                    self.assertIn(s, exports_map[target], f"Symbol '{s}' is imported by {os.path.basename(p)} but not exported by {os.path.basename(target)}")
 
     def test_session_token_header_authentication_flow(self):
         """Verifies that X-Session-Token header provides full authentication without relying on browser cookies."""
