@@ -12,9 +12,9 @@
     "semantic_hash": ""
   },
   "web/app.js": {
-    "mtime": 1792809012.5731685,
-    "seen": 1792809162.279103,
-    "ast_hash": "41d291e9265c57a9a737bc22fccc79a3",
+    "mtime": 1792810024.6435027,
+    "seen": 1792810646.9239872,
+    "ast_hash": "941609474931a7a099f16ad689e5f5fc",
     "semantic_hash": ""
   },
   ".agents/rules/01-architecture-and-failover.md": {
@@ -72,9 +72,9 @@
     "semantic_hash": ""
   },
   "AGENTS.md": {
-    "mtime": 1792788166.4817398,
-    "seen": 1792788308.6604805,
-    "ast_hash": "ea6cd1f6d513a1516843ede537aa9fda",
+    "mtime": 1792810514.6466067,
+    "seen": 1792810646.924059,
+    "ast_hash": "dba52004a7f667d8d19e0ff6d8da5c68",
     "semantic_hash": ""
   },
   "README.md": {
@@ -144,15 +144,15 @@
     "semantic_hash": ""
   },
   ".agents/session-state.json": {
-    "mtime": 1792803292.9845455,
-    "seen": 1792809162.2790625,
-    "ast_hash": "7ab332cb3a3e4284092b215ac4608683",
+    "mtime": 1792810572.6589718,
+    "seen": 1792810646.9239407,
+    "ast_hash": "90db9a4e3d8c0d00304a802ff33fd8bc",
     "semantic_hash": ""
   },
   ".agents/AGENTS.md": {
-    "mtime": 1792788187.356854,
-    "seen": 1792788308.6604486,
-    "ast_hash": "b1898b9190d70b755bb061038278df68",
+    "mtime": 1792810544.391448,
+    "seen": 1792810646.9240084,
+    "ast_hash": "c2379c201766a5a5805bd9e0de992bb5",
     "semantic_hash": ""
   },
   ".agents/experiences/001-zero-collision-haproxy-nftables-failover.md": {
@@ -438,9 +438,9 @@
     "semantic_hash": ""
   },
   "core/config_manager.py": {
-    "mtime": 1792803629.903893,
-    "seen": 1792809162.2790666,
-    "ast_hash": "75bb0ae02ab5b4d9d932156227a11975",
+    "mtime": 1792810310.1701193,
+    "seen": 1792810646.9239447,
+    "ast_hash": "d8c11a130744c4522702de2691bdc314",
     "semantic_hash": ""
   },
   "core/firewall.py": {
@@ -555,6 +555,12 @@
     "mtime": 1792806993.6635945,
     "seen": 1792809162.2791188,
     "ast_hash": "bd6c27b142d79ebf412b5f4261297d5d",
+    "semantic_hash": ""
+  },
+  "tests/test_modular_subsystems.py": {
+    "mtime": 1792810428.6661494,
+    "seen": 1792810646.923975,
+    "ast_hash": "26ad375bb19bc5b70f210ce93c2d5766",
     "semantic_hash": ""
   }
 }

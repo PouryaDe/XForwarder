@@ -26,7 +26,7 @@ import {
 } from "./js/modules/state.js";
 import { initTheme, toggleTheme } from "./js/modules/theme.js";
 import { initNavigation, switchSection, closeMobileSidebar } from "./js/modules/navigation.js";
-import { showLogin, showDashboard, checkSession, handleLogin, handleLogout } from "./js/modules/auth.js";
+import { showLogin, showDashboard, checkSession, handleLogin, handleLogout, initAuth } from "./js/modules/auth.js";
 import { renderStats, renderSystemStats, renderServicesStatus, renderNetworkTopology, copyIpToClipboard } from "./js/modules/stats.js";
 import {
     sortRulesList,
@@ -300,6 +300,25 @@ export function _architecturalCompliance() {
     };
 }
 
+// Master Session Lifecycle & Polling
+let statusPollInterval = null;
+
+async function startAuthenticatedSession(username) {
+    showDashboard(username);
+    await fetchStatus();
+    checkImportableRules();
+    if (!statusPollInterval) {
+        statusPollInterval = setInterval(fetchStatus, 3500);
+    }
+}
+
+function stopAuthenticatedSession() {
+    if (statusPollInterval) {
+        clearInterval(statusPollInterval);
+        statusPollInterval = null;
+    }
+}
+
 // Master Initialization
 document.addEventListener("DOMContentLoaded", async () => {
     initTheme();
@@ -313,22 +332,18 @@ document.addEventListener("DOMContentLoaded", async () => {
     initServiceRestartControls(fetchStatus);
     initLogs();
 
-    const loginForm = document.getElementById("loginForm");
-    if (loginForm) {
-        loginForm.addEventListener("submit", handleLogin);
-    }
-
-    const btnLogout = document.getElementById("btnLogout");
-    if (btnLogout) {
-        btnLogout.addEventListener("click", handleLogout);
-    }
+    initAuth(
+        async (username) => {
+            await startAuthenticatedSession(username);
+        },
+        () => {
+            stopAuthenticatedSession();
+        }
+    );
 
     const isAuthed = await checkSession();
     if (isAuthed) {
-        showDashboard();
-        await fetchStatus();
-        checkImportableRules();
-        setInterval(fetchStatus, 3500);
+        await startAuthenticatedSession();
     } else {
         showLogin();
     }

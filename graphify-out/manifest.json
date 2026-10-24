@@ -12,9 +12,9 @@
     "semantic_hash": ""
   },
   "web/app.js": {
-    "mtime": 1792810024.6435027,
-    "seen": 1792810646.9239872,
-    "ast_hash": "941609474931a7a099f16ad689e5f5fc",
+    "mtime": 1792851662.438284,
+    "seen": 1792851975.5518541,
+    "ast_hash": "c6452f6317878f7e581ff7847168d2e7",
     "semantic_hash": ""
   },
   ".agents/rules/01-architecture-and-failover.md": {
@@ -288,9 +288,9 @@
     "semantic_hash": ""
   },
   "tests/test_ui_and_api_edge_cases.py": {
-    "mtime": 1792743843.6823685,
-    "seen": 1792743925.6743937,
-    "ast_hash": "b3833981158f355858d474416cbe309f",
+    "mtime": 1792851782.4207177,
+    "seen": 1792851975.551853,
+    "ast_hash": "39ae640b0c902cbc9f0572eedc6689b4",
     "semantic_hash": ""
   },
   "tests/test_network_interfaces.py": {
@@ -474,15 +474,15 @@
     "semantic_hash": ""
   },
   "web/js/modules/api.js": {
-    "mtime": 1792807014.831776,
-    "seen": 1792809162.279104,
-    "ast_hash": "034a3056d5e5bcfdf0e4f247eef27e08",
+    "mtime": 1792851511.0507407,
+    "seen": 1792851975.551855,
+    "ast_hash": "c780acb61e5cc73404a99b7b3999f0a0",
     "semantic_hash": ""
   },
   "web/js/modules/auth.js": {
-    "mtime": 1792807095.190517,
-    "seen": 1792809162.2791052,
-    "ast_hash": "9436ecd19c939ae0b52495a04a171921",
+    "mtime": 1792851559.0157378,
+    "seen": 1792851975.5518558,
+    "ast_hash": "8683e38be8a81e583e7e4ca401179519",
     "semantic_hash": ""
   },
   "web/js/modules/import_export.js": {

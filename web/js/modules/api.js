@@ -5,8 +5,8 @@
 import { showToast } from "./utils.js";
 
 // Dynamically compute base API prefix (supports custom security secret paths)
-const basePath = window.location.pathname.replace(/\/+$/, "");
-export const API_BASE = basePath ? `${basePath}/api` : "/api";
+const cleanPath = window.location.pathname.replace(/\/index\.html?$/i, "").replace(/\/+$/, "");
+export const API_BASE = cleanPath ? `${cleanPath}/api` : "/api";
 
 export async function fetchApi(endpoint, options = {}) {
     const url = endpoint.startsWith("http") ? endpoint : `${API_BASE}${endpoint.startsWith("/") ? "" : "/"}${endpoint}`;

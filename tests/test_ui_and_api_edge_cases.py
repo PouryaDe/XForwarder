@@ -1729,6 +1729,42 @@ class TestUIAndAPIEdgeCases(unittest.TestCase):
         self.assertIn(".btn-category-copy", css)
         self.assertIn(".btn-rule-copy", css)
 
+    def test_login_form_event_prevention_and_auth_integrity(self):
+        """Verifies that login form properly prevents default reload and includes lockout & security controls."""
+        html_path = os.path.join(REPO_ROOT, "web", "index.html")
+        auth_js_path = os.path.join(REPO_ROOT, "web", "js", "modules", "auth.js")
+        app_js_path = os.path.join(REPO_ROOT, "web", "app.js")
+
+        with open(html_path, "r", encoding="utf-8") as f:
+            html = f.read()
+        with open(auth_js_path, "r", encoding="utf-8") as f:
+            auth_js = f.read()
+        with open(app_js_path, "r", encoding="utf-8") as f:
+            app_js = f.read()
+
+        # HTML elements
+        self.assertIn('id="loginForm"', html)
+        self.assertIn('id="btnLogin"', html)
+        self.assertIn('id="loginUsername"', html)
+        self.assertIn('id="loginPassword"', html)
+        self.assertIn('id="btnToggleLoginPwd"', html)
+        self.assertIn('id="capsLockWarning"', html)
+        self.assertIn('id="lockoutAlert"', html)
+
+        # auth.js event prevention & handlers
+        self.assertIn("e.preventDefault()", auth_js)
+        self.assertIn("handleLogin", auth_js)
+        self.assertIn("startLockoutTimer", auth_js)
+        self.assertIn("setupPasswordToggle", auth_js)
+        self.assertIn("setupCapsLockDetection", auth_js)
+        self.assertIn("initSecurityModal", auth_js)
+        self.assertIn("initInlineSecurityForm", auth_js)
+
+        # app.js wiring
+        self.assertIn("initAuth", app_js)
+        self.assertIn("startAuthenticatedSession", app_js)
+        self.assertIn("stopAuthenticatedSession", app_js)
+
 
 if __name__ == "__main__":
     unittest.main()
