@@ -1,7 +1,7 @@
 # Graph Report - Forward-Manager  (2026-10-24)
 
 ## Corpus Check
-- 94 files · ~101,431 words
+- 94 files · ~101,774 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 13 file(s) not represented in the graph (top: .css 6, .service 4, (none) 2)
 
@@ -11,7 +11,7 @@
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `db60d171`
+- Built from commit: `105585d8`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -368,7 +368,7 @@ Nodes (4): export_config_data(), get_config_path(), load_config(), save_config()
 _Questions this graph is uniquely positioned to answer:_
 
 - **Why does `XForwarderEngine` connect `XForwarderEngine` to `web_server.py`, `engine.py`, `TestPerformanceAndOptimizations`, `TestFastFailoverAndAntiFlap`, `TestNginxStreamEngine`, `TestXForwarderMigration`, `TrafficCollector`, `TestEngineProbes`, `os`, `TestUIAndAPIEdgeCases`, `.load_config`, `.test_packet_loss_calculation_and_probes`, `.sync_firewall_and_proxies`, `LossMonitorScheduler`, `.test_nftables_dual_stack_rules_generation`, `showToast`, `sync_system_rules`?**
-  _High betweenness centrality (0.271) - this node is a cross-community bridge._
+  _High betweenness centrality (0.272) - this node is a cross-community bridge._
 - **Are the 9 inferred relationships involving `XForwarderEngine` (e.g. with `2. Root Cause / Core Dynamics` and `LossMonitorScheduler`) actually correct?**
   _`XForwarderEngine` has 9 INFERRED edges - model-reasoned connections that need verification._
 - **What connects `previousActivePriorities`, `pendingOverrides`, `cleanPath` to the rest of the system?**

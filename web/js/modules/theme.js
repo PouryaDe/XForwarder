@@ -4,7 +4,7 @@
 
 export function initTheme() {
     const saved = localStorage.getItem("xfwd_theme");
-    if (saved === "light" || (!saved && window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches)) {
+    if (saved === "light") {
         document.documentElement.setAttribute("data-theme", "light");
     } else {
         document.documentElement.setAttribute("data-theme", "dark");

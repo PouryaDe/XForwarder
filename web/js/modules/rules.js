@@ -340,36 +340,44 @@ export function renderRuleCard(rule, rulesState) {
     return `
         <div class="rule-card" id="rule-card-${encodedId}">
             <div class="rule-top">
-                <div class="rule-port-wrap">
-                    <span class="rule-port">:${escapeHtml(rule.port)}</span>
-                    <button class="btn-copy" onclick="copyText(decodeURIComponent('${encodeURIComponent(rule.port)}'))" title="Copy Port">${copyPortSvg}</button>
+                <div class="port-badge">
+                    <span class="port-num">:${escapeHtml(rule.port)}</span>
+                    <button class="btn-copy" onclick="copyText(decodeURIComponent('${encodeURIComponent(rule.port)}'))" title="Copy Port Number">${copyPortSvg}</button>
                     <span class="proto-pill">${escapeHtml(formatProtoBadge(rule.protocol))}</span>
-                    ${rule.category ? `<span class="category-pill" title="Category: ${escapeHtml(rule.category)}">${escapeHtml(rule.category)}</span>` : ''}
                     ${trafficPillHtml}
+                    ${rule.category ? `<span class="rule-category-pill" title="Category: ${escapeHtml(rule.category)}"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>${escapeHtml(rule.category)}</span>` : ''}
+                    ${rState.switch_pending_seconds > 0 ? `<span class="badge-pending-switch" title="Candidate P${rState.candidate_priority || ''} sustained quality advantage. Switching after streak confirmation."><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>Switch in ${rState.switch_pending_seconds}s</span>` : ''}
+                    ${rState.hold_remaining > 0 ? `<span class="badge-cooldown" title="Route held stable to prevent disruption (Min Hold: 10m)"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 14 14"/></svg>Hold ${rState.hold_remaining}s</span>` : (rState.cooldown_remaining > 0 ? `<span class="badge-cooldown" title="Post-Critical Cooldown active"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 14 14"/></svg>Cooldown ${rState.cooldown_remaining}s</span>` : '')}
+                    ${rState.is_flapping ? `<span class="badge-flapping" title="Repeated route flapping detected. Cooldown extended."><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>Flap Guard</span>` : ''}
                 </div>
                 <div class="rule-actions">
-                    <button type="button" class="btn-action btn-rule-copy" onclick="copyRuleJson(decodeURIComponent('${encodedId}'))" title="Copy Rule JSON to clipboard">
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-                        <span>JSON</span>
+                    <button class="btn btn-secondary btn-sm" onclick="openTrafficModal('port', '${escapeHtml(portKey)}')" title="Traffic & Bandwidth Analytics">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
                     </button>
-                    <button type="button" class="btn-action" onclick="openEditRuleModal(decodeURIComponent('${encodedId}'))" title="Edit this rule">
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
-                        <span>Edit</span>
+                    <button class="btn btn-secondary btn-sm btn-rule-copy" onclick="copyRuleJson(decodeURIComponent('${encodedId}'))" title="Copy Port Configuration (JSON)">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
                     </button>
-                    <button type="button" class="btn-action btn-danger" onclick="deleteRule(decodeURIComponent('${encodedId}'))" title="Delete this rule">
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-                        <span>Delete</span>
+                    <button class="btn btn-secondary btn-sm" onclick="openEditRuleModal(decodeURIComponent('${encodedId}'))" title="Edit Rule">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+                    </button>
+                    <button class="btn btn-secondary btn-sm" onclick="deleteRule(decodeURIComponent('${encodedId}'))" title="Delete Rule">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
                     </button>
                 </div>
             </div>
-            <div class="rule-paths-label">PRIORITY RELAY PATHS & HEALTH METRICS</div>
-            <div class="rule-paths">
-                ${pathsHtml}
-            </div>
-            <div class="rule-footer">
-                <div class="rule-mode-group">
+
+            <div class="rule-test-bar">
+                <div class="test-bar-label">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+                    <span>Forwarding:</span>
+                </div>
+                <div class="mode-btn-group">
                     ${modeButtonsHtml.join('')}
                 </div>
+            </div>
+
+            <div class="paths-grid">
+                ${pathsHtml}
             </div>
         </div>
     `;
@@ -389,6 +397,7 @@ export function renderRuleListRow(rule, rulesState) {
 
     const copyPortSvg = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>`;
 
+    // Build concise destination path pills
     const pathsHtml = sortedDests.map((dest, idx) => {
         const prio = dest.priority || (idx + 1);
         const isActive = prio === activePriority;
@@ -445,28 +454,35 @@ export function renderRuleListRow(rule, rulesState) {
                 <span class="rule-list-port">:${escapeHtml(rule.port)}</span>
                 <button class="btn-copy" onclick="copyText(decodeURIComponent('${encodeURIComponent(rule.port)}'))" title="Copy Port">${copyPortSvg}</button>
                 <span class="proto-pill">${escapeHtml(formatProtoBadge(rule.protocol))}</span>
-                ${rule.category ? `<span class="category-pill" title="Category: ${escapeHtml(rule.category)}">${escapeHtml(rule.category)}</span>` : ''}
                 ${trafficPillHtml}
+                ${rule.category ? `<span class="rule-category-pill" title="Category: ${escapeHtml(rule.category)}"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>${escapeHtml(rule.category)}</span>` : ''}
+                ${rState.switch_pending_seconds > 0 ? `<span class="badge-pending-switch" style="font-size:0.68rem; padding:2px 6px;" title="Switching to P${rState.candidate_priority || ''} in ${rState.switch_pending_seconds}s">Switch in ${rState.switch_pending_seconds}s</span>` : ''}
+                ${rState.hold_remaining > 0 ? `<span class="badge-cooldown" style="font-size:0.68rem; padding:2px 6px;" title="Min Hold 10m">Hold ${rState.hold_remaining}s</span>` : (rState.cooldown_remaining > 0 ? `<span class="badge-cooldown" style="font-size:0.68rem; padding:2px 6px;">Cooldown ${rState.cooldown_remaining}s</span>` : '')}
+                ${rState.is_flapping ? `<span class="badge-flapping" style="font-size:0.68rem; padding:2px 6px;">Flap</span>` : ''}
             </div>
-            <div class="rule-list-paths">
-                ${pathsHtml}
+
+            <div class="rule-list-mid">
+                <div class="rule-list-paths">
+                    ${pathsHtml}
+                </div>
             </div>
-            <div class="rule-list-actions">
-                <button type="button" class="btn-action btn-path-test" onclick="runLivePacketLossTest(decodeURIComponent('${encodedId}'), decodeURIComponent('${encodeURIComponent(testTarget)}'), ${testPort}, '${testType}', this)" title="Run 50-probe packet loss burst to active path">
-                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
-                    <span>Test Loss</span>
+
+            <div class="rule-list-right">
+                <button type="button" class="btn-path-test" style="height:32px; padding:0 10px;" onclick="runLivePacketLossTest(decodeURIComponent('${encodedId}'), decodeURIComponent('${encodeURIComponent(testTarget)}'), ${testPort}, '${testType}', this)" title="Test live latency & packet loss">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+                    <span>Test</span>
                 </button>
-                <button type="button" class="btn-action btn-rule-copy" onclick="copyRuleJson(decodeURIComponent('${encodedId}'))" title="Copy Rule JSON to clipboard">
-                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-                    <span>JSON</span>
+                <button class="btn btn-secondary btn-sm" onclick="openTrafficModal('port', '${escapeHtml(portKey)}')" title="Traffic & Bandwidth Analytics">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
                 </button>
-                <button type="button" class="btn-action" onclick="openEditRuleModal(decodeURIComponent('${encodedId}'))" title="Edit this rule">
-                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
-                    <span>Edit</span>
+                <button class="btn btn-secondary btn-sm btn-rule-copy" onclick="copyRuleJson(decodeURIComponent('${encodedId}'))" title="Copy Port Configuration (JSON)">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
                 </button>
-                <button type="button" class="btn-action btn-danger" onclick="deleteRule(decodeURIComponent('${encodedId}'))" title="Delete this rule">
-                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-                    <span>Delete</span>
+                <button class="btn btn-secondary btn-sm" onclick="openEditRuleModal(decodeURIComponent('${encodedId}'))" title="Edit Rule">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+                </button>
+                <button class="btn btn-secondary btn-sm" onclick="deleteRule(decodeURIComponent('${encodedId}'))" title="Delete Rule">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
                 </button>
             </div>
         </div>
