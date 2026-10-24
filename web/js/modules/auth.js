@@ -75,10 +75,13 @@ export function startLockoutTimer(remainingSeconds) {
     }, 1000);
 }
 
-export function showDashboard(username) {
+export function showDashboard(username, token) {
     document.documentElement.classList.add("pre-auth");
     try {
         localStorage.setItem("xfwd_authenticated", "1");
+        if (token) {
+            localStorage.setItem("xfwd_token", token);
+        }
         if (username) {
             localStorage.setItem("xfwd_username", username);
         }
@@ -101,6 +104,7 @@ export function showLogin() {
     try {
         localStorage.removeItem("xfwd_authenticated");
         localStorage.removeItem("xfwd_username");
+        localStorage.removeItem("xfwd_token");
     } catch (e) {}
 
     const loginScreen = document.getElementById("loginScreen");
@@ -111,11 +115,19 @@ export function showLogin() {
 
 export async function checkSession() {
     try {
-        const res = await fetch(`${API_BASE}/me`);
+        const token = localStorage.getItem("xfwd_token") || "";
+        const headers = {};
+        if (token) {
+            headers["X-Session-Token"] = token;
+        }
+        const res = await fetch(`${API_BASE}/me`, {
+            credentials: "same-origin",
+            headers
+        });
         if (res.ok) {
             const data = await res.json();
             if (data && data.authenticated) {
-                showDashboard(data.username || "admin");
+                showDashboard(data.username || "admin", token);
                 return true;
             }
         }
@@ -125,8 +137,9 @@ export async function checkSession() {
 }
 
 export async function handleLogin(e, onLoginSuccess) {
-    if (e && e.preventDefault) {
-        e.preventDefault();
+    if (e) {
+        if (typeof e.preventDefault === "function") e.preventDefault();
+        if (typeof e.stopPropagation === "function") e.stopPropagation();
     }
 
     const loginError = document.getElementById("loginError");
@@ -167,6 +180,12 @@ export async function handleLogin(e, onLoginSuccess) {
         const data = await res.json().catch(() => ({}));
 
         if (res.ok && data.ok) {
+            if (data.token) {
+                try {
+                    localStorage.setItem("xfwd_token", data.token);
+                } catch (e) {}
+            }
+
             if (btnLogin) {
                 btnLogin.classList.remove("is-loading");
                 btnLogin.classList.add("is-success");
@@ -191,7 +210,7 @@ export async function handleLogin(e, onLoginSuccess) {
                     btnLogin.innerHTML = originalBtnHtml;
                 }
                 const authedUser = data.username || username || "admin";
-                showDashboard(authedUser);
+                showDashboard(authedUser, data.token);
                 showToast(`Authenticated securely · Welcome, ${authedUser}!`, "success");
 
                 if (typeof onLoginSuccess === "function") {
@@ -238,6 +257,11 @@ export async function handleLogin(e, onLoginSuccess) {
 export async function handleLogout(onLogout) {
     try {
         await fetch(`${API_BASE}/logout`, { method: "POST" });
+    } catch (e) {}
+    try {
+        localStorage.removeItem("xfwd_authenticated");
+        localStorage.removeItem("xfwd_username");
+        localStorage.removeItem("xfwd_token");
     } catch (e) {}
     showLogin();
     showToast("Logged out successfully", "info");

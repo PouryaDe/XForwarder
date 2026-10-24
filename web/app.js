@@ -184,6 +184,7 @@ export async function fetchStatus() {
     try {
         const res = await fetch(`${API_BASE}/status`);
         if (res.status === 401) {
+            stopAuthenticatedSession();
             showLogin();
             return;
         }

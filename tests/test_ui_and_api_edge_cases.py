@@ -1734,6 +1734,7 @@ class TestUIAndAPIEdgeCases(unittest.TestCase):
         html_path = os.path.join(REPO_ROOT, "web", "index.html")
         auth_js_path = os.path.join(REPO_ROOT, "web", "js", "modules", "auth.js")
         app_js_path = os.path.join(REPO_ROOT, "web", "app.js")
+        api_js_path = os.path.join(REPO_ROOT, "web", "js", "modules", "api.js")
 
         with open(html_path, "r", encoding="utf-8") as f:
             html = f.read()
@@ -1741,10 +1742,14 @@ class TestUIAndAPIEdgeCases(unittest.TestCase):
             auth_js = f.read()
         with open(app_js_path, "r", encoding="utf-8") as f:
             app_js = f.read()
+        with open(api_js_path, "r", encoding="utf-8") as f:
+            api_js = f.read()
 
-        # HTML elements
+        # HTML elements & anti-reload attributes
         self.assertIn('id="loginForm"', html)
+        self.assertIn('onsubmit="event.preventDefault(); return false;"', html)
         self.assertIn('id="btnLogin"', html)
+        self.assertIn('onclick="event.preventDefault();"', html)
         self.assertIn('id="loginUsername"', html)
         self.assertIn('id="loginPassword"', html)
         self.assertIn('id="btnToggleLoginPwd"', html)
@@ -1759,11 +1764,66 @@ class TestUIAndAPIEdgeCases(unittest.TestCase):
         self.assertIn("setupCapsLockDetection", auth_js)
         self.assertIn("initSecurityModal", auth_js)
         self.assertIn("initInlineSecurityForm", auth_js)
+        self.assertIn('localStorage.setItem("xfwd_token",', auth_js)
+        self.assertIn('localStorage.removeItem("xfwd_token")', auth_js)
+        self.assertIn("X-Session-Token", auth_js)
+
+        # api.js transparent interceptor & token persistence
+        self.assertIn("window.fetch", api_js)
+        self.assertIn("X-Session-Token", api_js)
+        self.assertNotIn("window.location.reload()", api_js)
 
         # app.js wiring
         self.assertIn("initAuth", app_js)
         self.assertIn("startAuthenticatedSession", app_js)
         self.assertIn("stopAuthenticatedSession", app_js)
+
+    def test_session_token_header_authentication_flow(self):
+        """Verifies that X-Session-Token header provides full authentication without relying on browser cookies."""
+        server = HTTPServer(("127.0.0.1", 0), XForwarderWebHandler)
+        port = server.server_port
+        t = threading.Thread(target=server.serve_forever, daemon=True)
+        t.start()
+
+        try:
+            # 1. Unauthenticated request without token or cookie under secret_path should fail with 401
+            req_unauth = urllib.request.Request(f"http://127.0.0.1:{port}/xfwd-admin/api/status")
+            with self.assertRaises(urllib.error.HTTPError) as ctx:
+                urllib.request.urlopen(req_unauth)
+            self.assertEqual(ctx.exception.code, 401)
+
+            # 2. Register active session in server
+            test_token = "test_valid_session_token_abcdef123456"
+            now = time.time()
+            with SESSION_LOCK:
+                ACTIVE_SESSIONS[test_token] = {
+                    "username": "admin",
+                    "created_at": now,
+                    "last_active": now,
+                    "expires_at": now + 3600,
+                    "ip": "127.0.0.1"
+                }
+
+            # 3. Authenticated request using X-Session-Token header (NO Cookie header sent)
+            req_auth = urllib.request.Request(f"http://127.0.0.1:{port}/xfwd-admin/api/status")
+            req_auth.add_header("X-Session-Token", test_token)
+            with urllib.request.urlopen(req_auth, timeout=3.0) as resp:
+                self.assertEqual(resp.status, 200)
+                data = json.loads(resp.read().decode("utf-8"))
+                self.assertIn("config", data)
+                self.assertIn("runtime", data)
+
+            # 4. Check /api/me with X-Session-Token
+            req_me = urllib.request.Request(f"http://127.0.0.1:{port}/xfwd-admin/api/me")
+            req_me.add_header("X-Session-Token", test_token)
+            with urllib.request.urlopen(req_me, timeout=3.0) as resp:
+                self.assertEqual(resp.status, 200)
+                me_data = json.loads(resp.read().decode("utf-8"))
+                self.assertTrue(me_data.get("authenticated"))
+                self.assertEqual(me_data.get("username"), "admin")
+        finally:
+            server.shutdown()
+            server.server_close()
 
 
 if __name__ == "__main__":
