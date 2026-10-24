@@ -27,7 +27,7 @@ export function openAddRuleModal() {
     if (form) form.reset();
     if (title) title.innerText = "Add Forwarding Port";
 
-    const ruleIdInput = document.getElementById("ruleId");
+    const ruleIdInput = document.getElementById("editRuleId") || document.getElementById("ruleId");
     if (ruleIdInput) ruleIdInput.value = "";
 
     const activePriorityInput = document.getElementById("activePriority");
@@ -68,7 +68,7 @@ export function openEditRuleModal(ruleId) {
     if (form) form.reset();
     if (title) title.innerText = `Edit Port :${rule.port}`;
 
-    const ruleIdInput = document.getElementById("ruleId");
+    const ruleIdInput = document.getElementById("editRuleId") || document.getElementById("ruleId");
     if (ruleIdInput) ruleIdInput.value = rule.id || `rule-${rule.port}`;
 
     const portInput = document.getElementById("formPort");
@@ -398,15 +398,15 @@ export async function testModalDestination(index) {
 }
 
 export function initRuleModal(fetchStatusCallback) {
-    const btnOpenAddRuleModal = document.getElementById("btnOpenAddRuleModal");
-    const btnCloseRuleModal = document.getElementById("btnCloseRuleModal");
-    const btnCancelRuleModal = document.getElementById("btnCancelRuleModal");
+    const btnOpenAddModal = document.getElementById("btnOpenAddModal") || document.getElementById("btnOpenAddRuleModal");
+    const btnCloseModal = document.getElementById("btnCloseModal") || document.getElementById("btnCloseRuleModal");
+    const btnCancelModal = document.getElementById("btnCancelModal") || document.getElementById("btnCancelRuleModal");
     const btnAddDestination = document.getElementById("btnAddDestination");
     const ruleForm = document.getElementById("ruleForm");
 
-    if (btnOpenAddRuleModal) btnOpenAddRuleModal.addEventListener("click", openAddRuleModal);
-    if (btnCloseRuleModal) btnCloseRuleModal.addEventListener("click", closeRuleModal);
-    if (btnCancelRuleModal) btnCancelRuleModal.addEventListener("click", closeRuleModal);
+    if (btnOpenAddModal) btnOpenAddModal.addEventListener("click", openAddRuleModal);
+    if (btnCloseModal) btnCloseModal.addEventListener("click", closeRuleModal);
+    if (btnCancelModal) btnCancelModal.addEventListener("click", closeRuleModal);
 
     if (btnAddDestination) {
         btnAddDestination.addEventListener("click", () => {
@@ -449,18 +449,26 @@ export function initRuleModal(fetchStatusCallback) {
                 }
             }
 
+            const ruleIdInput = document.getElementById("editRuleId") || document.getElementById("ruleId");
+            const nameInput = document.getElementById("formName");
+            const protoInput = document.getElementById("formProto");
+            const catInput = document.getElementById("formCategory");
+            const activePriorityInput = document.getElementById("activePriority");
+            const forceOverrideInput = document.getElementById("forceOverride");
+            const ruleCreatedAtInput = document.getElementById("ruleCreatedAt");
+
             const rulePayload = {
-                id: document.getElementById("ruleId").value || `rule-${portVal}`,
-                name: (document.getElementById("formName").value || "").trim() || `Port ${portVal}`,
+                id: (ruleIdInput && ruleIdInput.value) ? ruleIdInput.value : `rule-${portVal}`,
+                name: (nameInput && nameInput.value ? nameInput.value.trim() : "") || `Port ${portVal}`,
                 port: portVal,
-                protocol: document.getElementById("formProto").value || "both",
-                category: (document.getElementById("formCategory").value || "").trim(),
-                active_priority: parseInt(document.getElementById("activePriority").value || "1", 10),
-                force_override: parseInt(document.getElementById("forceOverride").value || "0", 10),
+                protocol: (protoInput && protoInput.value) ? protoInput.value : "both",
+                category: (catInput && catInput.value ? catInput.value.trim() : ""),
+                active_priority: parseInt((activePriorityInput && activePriorityInput.value) || "1", 10),
+                force_override: parseInt((forceOverrideInput && forceOverrideInput.value) || "0", 10),
                 destinations: currentModalDestinations
             };
 
-            const createdAtStr = document.getElementById("ruleCreatedAt").value;
+            const createdAtStr = ruleCreatedAtInput ? ruleCreatedAtInput.value : "";
             if (createdAtStr && !isNaN(parseFloat(createdAtStr))) {
                 rulePayload.created_at = parseFloat(createdAtStr);
             }

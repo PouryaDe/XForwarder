@@ -297,15 +297,32 @@ export async function loadTrafficModalData() {
         const summary = data.summary || {};
         const rows = data.rows || [];
 
-        const rxEl = document.getElementById("trafficStatRx");
-        const txEl = document.getElementById("trafficStatTx");
-        const totalEl = document.getElementById("trafficStatTotal");
+        const rxEl = document.getElementById("kpiTotalRx") || document.getElementById("trafficStatRx");
+        const txEl = document.getElementById("kpiTotalTx") || document.getElementById("trafficStatTx");
+        const totalEl = document.getElementById("kpiTotalBytes") || document.getElementById("trafficStatTotal");
         const peakEl = document.getElementById("trafficStatPeak");
+        const cycleTotalEl = document.getElementById("kpiCycleTotal");
+        const cycleMetaEl = document.getElementById("kpiCycleMeta");
 
-        if (rxEl) rxEl.textContent = formatBytes(summary.total_rx_bytes || 0);
-        if (txEl) txEl.textContent = formatBytes(summary.total_tx_bytes || 0);
-        if (totalEl) totalEl.textContent = formatBytes(summary.total_bytes || 0);
+        const totalRx = summary.total_rx_bytes || 0;
+        const totalTx = summary.total_tx_bytes || 0;
+        const totalBytes = summary.total_bytes || 0;
+
+        if (rxEl) rxEl.textContent = formatBytes(totalRx);
+        if (txEl) txEl.textContent = formatBytes(totalTx);
+        if (totalEl) totalEl.textContent = formatBytes(totalBytes);
         if (peakEl) peakEl.textContent = formatBytes(summary.peak_hour_bytes || 0);
+
+        const cycleBytes = summary.cycle_bytes !== undefined ? summary.cycle_bytes : (summary.cycle_total !== undefined ? summary.cycle_total : 0);
+        if (cycleTotalEl) cycleTotalEl.textContent = formatBytes(cycleBytes);
+        if (cycleMetaEl) {
+            if (summary.reset_timestamp) {
+                const dt = new Date(summary.reset_timestamp * 1000);
+                cycleMetaEl.textContent = `Reset: ${dt.toLocaleDateString()} ${dt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+            } else {
+                cycleMetaEl.textContent = "Active since service install";
+            }
+        }
 
         renderTrafficBarsChart(rows);
         renderTrafficTable(rows);

@@ -2,6 +2,8 @@
  * XForwarder - Dashboard Navigation & Section Switcher
  */
 
+export const SECTIONS = ["rules", "overview", "services", "security", "logs"];
+
 export function initNavigation() {
     const navItems = document.querySelectorAll(".nav-item[data-section]");
     navItems.forEach(item => {
@@ -12,12 +14,12 @@ export function initNavigation() {
         });
     });
 
-    const btnHamburger = document.getElementById("btnHamburger");
+    const btnHamburger = document.getElementById("btnToggleSidebar") || document.getElementById("btnHamburger");
     if (btnHamburger) {
         btnHamburger.addEventListener("click", openMobileSidebar);
     }
 
-    const btnSidebarClose = document.getElementById("btnSidebarClose");
+    const btnSidebarClose = document.getElementById("btnCloseSidebar") || document.getElementById("btnSidebarClose");
     if (btnSidebarClose) {
         btnSidebarClose.addEventListener("click", closeMobileSidebar);
     }
@@ -26,33 +28,80 @@ export function initNavigation() {
     if (backdrop) {
         backdrop.addEventListener("click", closeMobileSidebar);
     }
+
+    // Support URL hash routing on initial load and popstate/hashchange
+    const hash = (window.location.hash || "").replace("#", "").toLowerCase().trim();
+    if (hash && SECTIONS.includes(hash)) {
+        switchSection(hash);
+    }
+
+    window.addEventListener("hashchange", () => {
+        const currentHash = (window.location.hash || "").replace("#", "").toLowerCase().trim();
+        if (currentHash && SECTIONS.includes(currentHash)) {
+            switchSection(currentHash);
+        }
+    });
 }
 
 export function switchSection(sectionId) {
     if (!sectionId) return;
-
-    // Hide all dashboard sections
-    const sections = document.querySelectorAll(".dashboard-section");
-    sections.forEach(s => s.classList.remove("active"));
+    let sec = String(sectionId).toLowerCase().trim();
+    if (sec.startsWith("section")) {
+        sec = sec.replace(/^section/, "").toLowerCase();
+    }
+    if (!SECTIONS.includes(sec)) sec = "rules";
 
     // Deactivate nav items
-    const navItems = document.querySelectorAll(".nav-item");
-    navItems.forEach(n => n.classList.remove("active"));
+    const navItems = document.querySelectorAll(".sidebar-nav .nav-item, .nav-item[data-section]");
+    navItems.forEach(item => {
+        if (item.getAttribute("data-section") === sec) {
+            item.classList.add("active");
+        } else {
+            item.classList.remove("active");
+        }
+    });
 
-    // Activate selected section
-    const targetSection = document.getElementById(sectionId);
-    if (targetSection) {
-        targetSection.classList.add("active");
+    // Toggle sections visibility and active class
+    SECTIONS.forEach(s => {
+        const secId = `section${s.charAt(0).toUpperCase() + s.slice(1)}`;
+        const el = document.getElementById(secId) || document.getElementById(s);
+        if (el) {
+            const isActive = (s === sec);
+            el.style.display = isActive ? "block" : "none";
+            if (isActive) {
+                el.classList.add("active");
+            } else {
+                el.classList.remove("active");
+            }
+        }
+    });
+
+    // Update breadcrumb
+    const breadcrumb = document.getElementById("breadcrumbSection") || document.getElementById("breadcrumbCurrent");
+    if (breadcrumb) {
+        const titles = {
+            rules: "Port Matrix",
+            overview: "Overview & Health",
+            services: "Relay Services",
+            security: "Security & Access",
+            logs: "Logs & Probes"
+        };
+        breadcrumb.innerText = titles[sec] || "Dashboard";
     }
 
-    const activeNav = document.querySelector(`.nav-item[data-section="${sectionId}"]`);
-    if (activeNav) {
-        activeNav.classList.add("active");
-        const title = activeNav.querySelector(".nav-label") ? activeNav.querySelector(".nav-label").innerText : "";
-        const breadcrumbEl = document.getElementById("breadcrumbCurrent");
-        if (breadcrumbEl && title) {
-            breadcrumbEl.innerText = title;
-        }
+    // Sync URL hash
+    if (window.location.hash !== `#${sec}`) {
+        try {
+            history.replaceState(null, "", `#${sec}`);
+        } catch (_) {}
+    }
+
+    // Section specific triggers
+    if (sec === "overview" && typeof window.loadNetworkQualityMetrics === "function") {
+        window.loadNetworkQualityMetrics();
+    }
+    if (sec === "security" && typeof window.fetchSystemVersionInfo === "function") {
+        window.fetchSystemVersionInfo(false);
     }
 }
 

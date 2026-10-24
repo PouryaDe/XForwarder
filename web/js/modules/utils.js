@@ -172,7 +172,7 @@ export function askConfirm(title, message) {
 if (typeof document !== "undefined") {
     const bindConfirmModalEvents = () => {
         const btnCancel = document.getElementById("btnCancelConfirm");
-        const btnConfirm = document.getElementById("btnConfirmAction");
+        const btnConfirm = document.getElementById("btnProceedConfirm") || document.getElementById("btnConfirmAction");
         const modalEl = document.getElementById("confirmModal");
 
         if (btnCancel) {

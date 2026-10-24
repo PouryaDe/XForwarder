@@ -18,7 +18,7 @@
         (function () {
             try {
                 var saved = localStorage.getItem("xfwd_theme");
-                if (saved === "light" || (!saved && window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches)) {
+                if (saved === "light") {
                     document.documentElement.setAttribute("data-theme", "light");
                 } else {
                     document.documentElement.setAttribute("data-theme", "dark");
@@ -35,7 +35,7 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap"
         rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=3.2.4">
+    <link rel="stylesheet" href="style.css?v=3.2.5">
 </head>
 
 <body>
@@ -602,7 +602,7 @@
                         </div>
                     </div>
 
-                    <div class="stat-card" id="statCardLoss" onclick="document.getElementById('lossHistoryCard')?.scrollIntoView({behavior:'smooth'});" style="cursor:pointer;" title="Click to view Network Quality & Disruption History">
+                    <div class="stat-card" id="statCardLoss" onclick="switchSection('overview'); document.getElementById('cardNetworkQualityMonitor')?.scrollIntoView({behavior:'smooth'});" style="cursor:pointer;" title="Click to view Network Quality & Disruption History">
                         <div class="stat-icon icon-emerald" id="statLossIcon">
                             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
@@ -2145,7 +2145,7 @@
     <!-- Notification Toast Container -->
     <div class="toast-container" id="toastContainer"></div>
 
-    <script type="module" src="app.js?v=3.2.4"></script>
+    <script type="module" src="app.js?v=3.2.5"></script>
 </body>
 
 </html>

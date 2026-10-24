@@ -72,7 +72,9 @@ import {
 } from "./js/modules/traffic.js";
 import {
     runLivePacketLossTest,
-    initDiagPacketLossTool
+    initDiagPacketLossTool,
+    loadNetworkQualityMetrics,
+    initNetworkQualityMonitor
 } from "./js/modules/quality.js";
 import {
     initSystemUpdateManager,
@@ -105,8 +107,11 @@ import {
 // Re-expose public functions on window for inline HTML event handlers (e.g. onclick="...")
 window.openAddRuleModal = openAddRuleModal;
 window.openEditRuleModal = openEditRuleModal;
+window.editRule = openEditRuleModal;
 window.closeRuleModal = closeRuleModal;
+window.closeModal = closeRuleModal;
 window.switchSection = switchSection;
+window.loadNetworkQualityMetrics = loadNetworkQualityMetrics;
 window.copyRuleJson = copyRuleJson;
 window.copyCategoryJson = copyCategoryJson;
 window.openImportModal = openImportModal;
@@ -334,6 +339,7 @@ async function initApp() {
     initImportExport(fetchStatus);
     initTrafficAnalytics();
     initDiagPacketLossTool();
+    initNetworkQualityMonitor();
     initSystemUpdateManager();
     initServiceRestartControls(fetchStatus);
     initLogs();

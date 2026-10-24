@@ -10,27 +10,52 @@ export function renderSystemStats(sys) {
 
     const cpuText = document.getElementById("cpuText");
     const ramText = document.getElementById("ramText");
+    const ramPill = document.getElementById("ramPill");
     const loadText = document.getElementById("loadText");
     const trafficText = document.getElementById("trafficText");
     const connsText = document.getElementById("connsText");
     const ovTrafficText = document.getElementById("ovTrafficText");
 
-    if (cpuText) {
-        cpuText.innerText = `${Math.round(Number(sys.cpu_percent) || 0)}%`;
+    // 1. CPU Usage
+    if (sys.cpu_percent !== undefined) {
+        const cpuPct = Math.round(Number(sys.cpu_percent) || 0);
+        if (cpuText) cpuText.textContent = `CPU: ${cpuPct}%`;
+        const ovCpuText = document.getElementById("ovCpuText");
+        const ovCpuBar = document.getElementById("ovCpuBar");
+        if (ovCpuText) ovCpuText.innerText = `${cpuPct}%`;
+        if (ovCpuBar) ovCpuBar.style.width = `${Math.min(100, Math.max(0, cpuPct))}%`;
     }
 
-    if (ramText) {
+    // 2. RAM Usage
+    if (sys.ram_total_mb > 0 || sys.ram_used_mb > 0) {
         const used = Math.round(Number(sys.ram_used_mb) || 0);
         const total = Math.round(Number(sys.ram_total_mb) || 0);
         const pct = Math.round(Number(sys.ram_percent) || 0);
-        ramText.innerHTML = `<span class="ram-full">${used}/${total} MB (${pct}%)</span><span class="ram-short">${pct}%</span>`;
+        if (ramText) ramText.innerHTML = `<span class="ram-full">RAM: ${pct}%</span><span class="ram-short">${pct}%</span>`;
+        if (ramPill) ramPill.title = `Memory Usage: ${used} MB / ${total} MB (${pct}%)`;
+
+        const ovRamText = document.getElementById("ovRamText");
+        const ovRamBar = document.getElementById("ovRamBar");
+        if (ovRamText) ovRamText.innerText = `${used} / ${total} MB (${pct}%)`;
+        if (ovRamBar) ovRamBar.style.width = `${Math.min(100, Math.max(0, pct))}%`;
     }
 
-    if (loadText && sys.load_avg) {
-        const l1 = Number(sys.load_avg[0] || 0).toFixed(2);
-        loadText.innerText = l1;
+    // 3. System Load Average
+    if (loadText) {
+        let l1 = "--";
+        if (sys.load_str) {
+            l1 = sys.load_str;
+        } else if (sys.load_avg && Array.isArray(sys.load_avg) && sys.load_avg.length > 0) {
+            l1 = Number(sys.load_avg[0] || 0).toFixed(2);
+        } else if (sys.load_1 !== undefined) {
+            l1 = Number(sys.load_1 || 0).toFixed(2);
+        }
+        loadText.textContent = `Load: ${l1}`;
+        const ovLoadText = document.getElementById("ovLoadText");
+        if (ovLoadText) ovLoadText.innerText = l1;
     }
 
+    // 4. Bandwidth
     if (trafficText) {
         const rRx = (Number(sys.net_rx_rate_bytes || 0) / (1024 * 1024)).toFixed(2);
         const rTx = (Number(sys.net_tx_rate_bytes || 0) / (1024 * 1024)).toFixed(2);
@@ -48,6 +73,8 @@ export function renderSystemStats(sys) {
         const tcp = Number(sys.established_conns_tcp || 0);
         const udp = Number(sys.active_conns_udp || 0);
         connsText.innerText = `${tcp} TCP · ${udp} UDP`;
+        const ovConnsText = document.getElementById("ovConnsText");
+        if (ovConnsText) ovConnsText.innerText = `${tcp} TCP · ${udp} UDP`;
     }
 
     if (ovTrafficText && sys.net_rx_bytes !== undefined) {

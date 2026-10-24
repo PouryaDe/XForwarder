@@ -664,7 +664,8 @@ export function initRulesViewControls(fetchStatusCallback) {
     const btnViewCards = document.getElementById("btnViewCards");
     const btnViewList = document.getElementById("btnViewList");
     const selectSort = document.getElementById("selectSortRules");
-    const searchInput = document.getElementById("searchRulesInput");
+    const searchInput = document.getElementById("searchInput") || document.getElementById("searchRulesInput");
+    const btnClearSearch = document.getElementById("btnClearSearch");
 
     if (btnViewCards && btnViewList) {
         if (currentViewMode === "list") {
@@ -704,6 +705,16 @@ export function initRulesViewControls(fetchStatusCallback) {
     if (searchInput) {
         searchInput.addEventListener("input", (e) => {
             searchQuery = e.target.value.toLowerCase().trim();
+            if (btnClearSearch) btnClearSearch.style.display = searchQuery ? "block" : "none";
+            renderRules(currentRules, lastRuntime);
+        });
+    }
+
+    if (btnClearSearch && searchInput) {
+        btnClearSearch.addEventListener("click", () => {
+            searchInput.value = "";
+            searchQuery = "";
+            btnClearSearch.style.display = "none";
             renderRules(currentRules, lastRuntime);
         });
     }
