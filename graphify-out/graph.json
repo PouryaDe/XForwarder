@@ -173,19 +173,6 @@
       "source_location": "L14"
     },
     {
-      "id": "core_engine_xforwarderengine",
-      "label": "XForwarderEngine",
-      "_callable": true,
-      "_callable_class": true,
-      "_origin": "ast",
-      "community": 45,
-      "community_name": "XForwarderEngine",
-      "file_type": "code",
-      "norm_label": "xforwarderengine",
-      "source_file": "core/engine.py",
-      "source_location": "L67"
-    },
-    {
       "id": "tests_test_ui_and_api_edge_cases_testuiandapiedgecases",
       "label": "TestUIAndAPIEdgeCases",
       "_callable": true,
@@ -197,6 +184,19 @@
       "norm_label": "testuiandapiedgecases",
       "source_file": "tests/test_ui_and_api_edge_cases.py",
       "source_location": "L49"
+    },
+    {
+      "id": "core_engine_xforwarderengine",
+      "label": "XForwarderEngine",
+      "_callable": true,
+      "_callable_class": true,
+      "_origin": "ast",
+      "community": 48,
+      "community_name": "XForwarderEngine",
+      "file_type": "code",
+      "norm_label": "xforwarderengine",
+      "source_file": "core/engine.py",
+      "source_location": "L67"
     },
     {
       "id": "tests_test_modular_subsystems_testmodularsubsystems",
@@ -244,7 +244,7 @@
       "_callable_class": true,
       "_origin": "ast",
       "community": 72,
-      "community_name": ".do_POST",
+      "community_name": "XForwarderWebHandler",
       "file_type": "code",
       "norm_label": "xforwarderwebhandler",
       "source_file": "core/web_server.py",
@@ -1069,18 +1069,6 @@
       "source_location": "L845"
     },
     {
-      "id": "core_config_manager_export_config_data",
-      "label": "export_config_data()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 113,
-      "community_name": "load_config",
-      "file_type": "code",
-      "norm_label": "export_config_data()",
-      "source_file": "core/config_manager.py",
-      "source_location": "L688"
-    },
-    {
       "id": "core_config_manager_get_config_path",
       "label": "get_config_path()",
       "_callable": true,
@@ -1115,30 +1103,6 @@
       "norm_label": "save_config()",
       "source_file": "core/config_manager.py",
       "source_location": "L467"
-    },
-    {
-      "id": "tests_test_export_import_testexportimport_test_export_sanitization",
-      "label": ".test_export_sanitization()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 113,
-      "community_name": "load_config",
-      "file_type": "code",
-      "norm_label": ".test_export_sanitization()",
-      "source_file": "tests/test_export_import.py",
-      "source_location": "L72"
-    },
-    {
-      "id": "tests_test_modular_subsystems_testmodularsubsystems_test_export_and_import_config_data",
-      "label": ".test_export_and_import_config_data()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 113,
-      "community_name": "load_config",
-      "file_type": "code",
-      "norm_label": ".test_export_and_import_config_data()",
-      "source_file": "tests/test_modular_subsystems.py",
-      "source_location": "L187"
     },
     {
       "id": "tests_test_ui_and_api_edge_cases_testuiandapiedgecases_test_get_remote_version_info_rate_limit_fallback",
@@ -2122,7 +2086,7 @@
       "file_type": "code",
       "norm_label": "handleoverridechange()",
       "source_file": "web/js/modules/rules.js",
-      "source_location": "L623"
+      "source_location": "L601"
     },
     {
       "id": "web_js_modules_rules_handlepathdragend",
@@ -2194,7 +2158,7 @@
       "file_type": "code",
       "norm_label": "initrulesviewcontrols()",
       "source_file": "web/js/modules/rules.js",
-      "source_location": "L679"
+      "source_location": "L657"
     },
     {
       "id": "web_js_modules_rules_renderrulecard",
@@ -2218,7 +2182,7 @@
       "file_type": "code",
       "norm_label": "renderrules()",
       "source_file": "web/js/modules/rules.js",
-      "source_location": "L492"
+      "source_location": "L470"
     },
     {
       "id": "web_js_modules_rules_sortruleslist",
@@ -2267,18 +2231,6 @@
       "norm_label": "formatlatencybadge()",
       "source_file": "web/js/modules/utils.js",
       "source_location": "L52"
-    },
-    {
-      "id": "web_js_modules_utils_formatprotobadge",
-      "label": "formatProtoBadge()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 25,
-      "community_name": "rules.js",
-      "file_type": "code",
-      "norm_label": "formatprotobadge()",
-      "source_file": "web/js/modules/utils.js",
-      "source_location": "L126"
     },
     {
       "id": "core_traffic_get_traffic_db_path",
@@ -3130,7 +3082,7 @@
       "file_type": "code",
       "norm_label": "deleterule()",
       "source_file": "web/js/modules/rules.js",
-      "source_location": "L658"
+      "source_location": "L636"
     },
     {
       "id": "web_js_modules_rules_renderrulelistrow",
@@ -3142,7 +3094,7 @@
       "file_type": "code",
       "norm_label": "renderrulelistrow()",
       "source_file": "web/js/modules/rules.js",
-      "source_location": "L386"
+      "source_location": "L366"
     },
     {
       "id": "web_js_modules_stats_rendernetworktopology",
@@ -3354,11 +3306,47 @@
       "_callable": true,
       "_origin": "ast",
       "community": 36,
-      "community_name": "notify_engine_wakeup",
+      "community_name": ".do_POST",
       "file_type": "code",
       "norm_label": "notify_engine_wakeup()",
       "source_file": "core/web_server.py",
       "source_location": "L125"
+    },
+    {
+      "id": "core_web_server_sync_rules_and_notify",
+      "label": "sync_rules_and_notify()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 36,
+      "community_name": ".do_POST",
+      "file_type": "code",
+      "norm_label": "sync_rules_and_notify()",
+      "source_file": "core/web_server.py",
+      "source_location": "L139"
+    },
+    {
+      "id": "core_web_server_xforwarderwebhandler_do_post",
+      "label": ".do_POST()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 36,
+      "community_name": ".do_POST",
+      "file_type": "code",
+      "norm_label": ".do_post()",
+      "source_file": "core/web_server.py",
+      "source_location": "L566"
+    },
+    {
+      "id": "core_web_server_xforwarderwebhandler_get_client_ip",
+      "label": ".get_client_ip()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 36,
+      "community_name": ".do_POST",
+      "file_type": "code",
+      "norm_label": ".get_client_ip()",
+      "source_file": "core/web_server.py",
+      "source_location": "L279"
     },
     {
       "id": "tests_test_performance_and_optimizations_testperformanceandoptimizations_test_notify_engine_wakeup_graceful_handling",
@@ -3366,7 +3354,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 36,
-      "community_name": "notify_engine_wakeup",
+      "community_name": ".do_POST",
       "file_type": "code",
       "norm_label": ".test_notify_engine_wakeup_graceful_handling()",
       "source_file": "tests/test_performance_and_optimizations.py",
@@ -4398,7 +4386,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 45,
-      "community_name": "XForwarderEngine",
+      "community_name": ".evaluate_rule",
       "file_type": "code",
       "norm_label": ".check_destination()",
       "source_file": "core/engine.py",
@@ -4410,7 +4398,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 45,
-      "community_name": "XForwarderEngine",
+      "community_name": ".evaluate_rule",
       "file_type": "code",
       "norm_label": "._detect_wan_interface()",
       "source_file": "core/engine.py",
@@ -4422,7 +4410,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 45,
-      "community_name": "XForwarderEngine",
+      "community_name": ".evaluate_rule",
       "file_type": "code",
       "norm_label": ".evaluate_rule()",
       "source_file": "core/engine.py",
@@ -4434,23 +4422,11 @@
       "_callable": true,
       "_origin": "ast",
       "community": 45,
-      "community_name": "XForwarderEngine",
+      "community_name": ".evaluate_rule",
       "file_type": "code",
       "norm_label": "._fast_confirm_burst()",
       "source_file": "core/engine.py",
       "source_location": "L221"
-    },
-    {
-      "id": "core_engine_xforwarderengine_get_rules_fingerprint",
-      "label": "._get_rules_fingerprint()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 45,
-      "community_name": "XForwarderEngine",
-      "file_type": "code",
-      "norm_label": "._get_rules_fingerprint()",
-      "source_file": "core/engine.py",
-      "source_location": "L612"
     },
     {
       "id": "core_engine_xforwarderengine_hot_toggle_rule_priority",
@@ -4458,23 +4434,11 @@
       "_callable": true,
       "_origin": "ast",
       "community": 45,
-      "community_name": "XForwarderEngine",
+      "community_name": ".evaluate_rule",
       "file_type": "code",
       "norm_label": "._hot_toggle_rule_priority()",
       "source_file": "core/engine.py",
       "source_location": "L230"
-    },
-    {
-      "id": "core_engine_xforwarderengine_persist_active_priorities",
-      "label": "._persist_active_priorities()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 45,
-      "community_name": "XForwarderEngine",
-      "file_type": "code",
-      "norm_label": "._persist_active_priorities()",
-      "source_file": "core/engine.py",
-      "source_location": "L303"
     },
     {
       "id": "core_engine_xforwarderengine_probe_all_destinations",
@@ -4482,95 +4446,11 @@
       "_callable": true,
       "_origin": "ast",
       "community": 45,
-      "community_name": "XForwarderEngine",
+      "community_name": ".evaluate_rule",
       "file_type": "code",
       "norm_label": "._probe_all_destinations()",
       "source_file": "core/engine.py",
       "source_location": "L242"
-    },
-    {
-      "id": "core_engine_xforwarderengine_probe_destination_icmp",
-      "label": ".probe_destination_icmp()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 45,
-      "community_name": "XForwarderEngine",
-      "file_type": "code",
-      "norm_label": ".probe_destination_icmp()",
-      "source_file": "core/engine.py",
-      "source_location": "L176"
-    },
-    {
-      "id": "core_engine_xforwarderengine_remove_pid_file",
-      "label": "._remove_pid_file()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 45,
-      "community_name": "XForwarderEngine",
-      "file_type": "code",
-      "norm_label": "._remove_pid_file()",
-      "source_file": "core/engine.py",
-      "source_location": "L814"
-    },
-    {
-      "id": "core_engine_xforwarderengine_run_loop",
-      "label": ".run_loop()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 45,
-      "community_name": "XForwarderEngine",
-      "file_type": "code",
-      "norm_label": ".run_loop()",
-      "source_file": "core/engine.py",
-      "source_location": "L823"
-    },
-    {
-      "id": "core_engine_xforwarderengine_save_config",
-      "label": ".save_config()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 45,
-      "community_name": "XForwarderEngine",
-      "file_type": "code",
-      "norm_label": ".save_config()",
-      "source_file": "core/engine.py",
-      "source_location": "L137"
-    },
-    {
-      "id": "core_engine_xforwarderengine_save_config_unlocked",
-      "label": "._save_config_unlocked()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 45,
-      "community_name": "XForwarderEngine",
-      "file_type": "code",
-      "norm_label": "._save_config_unlocked()",
-      "source_file": "core/engine.py",
-      "source_location": "L127"
-    },
-    {
-      "id": "core_engine_xforwarderengine_send_haproxy_runtime_cmd",
-      "label": "._send_haproxy_runtime_cmd()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 45,
-      "community_name": "XForwarderEngine",
-      "file_type": "code",
-      "norm_label": "._send_haproxy_runtime_cmd()",
-      "source_file": "core/engine.py",
-      "source_location": "L202"
-    },
-    {
-      "id": "core_engine_xforwarderengine_stop",
-      "label": ".stop()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 45,
-      "community_name": "XForwarderEngine",
-      "file_type": "code",
-      "norm_label": ".stop()",
-      "source_file": "core/engine.py",
-      "source_location": "L906"
     },
     {
       "id": "core_engine_xforwarderengine_validate_probe_route",
@@ -4578,23 +4458,11 @@
       "_callable": true,
       "_origin": "ast",
       "community": 45,
-      "community_name": "XForwarderEngine",
+      "community_name": ".evaluate_rule",
       "file_type": "code",
       "norm_label": "._validate_probe_route()",
       "source_file": "core/engine.py",
       "source_location": "L167"
-    },
-    {
-      "id": "core_engine_xforwarderengine_write_pid_file",
-      "label": "._write_pid_file()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 45,
-      "community_name": "XForwarderEngine",
-      "file_type": "code",
-      "norm_label": "._write_pid_file()",
-      "source_file": "core/engine.py",
-      "source_location": "L803"
     },
     {
       "id": "web_app_fetchstatus",
@@ -4897,12 +4765,60 @@
       "source_location": "L74"
     },
     {
+      "id": "core_engine_xforwarderengine_apply_haproxy",
+      "label": "._apply_haproxy()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 48,
+      "community_name": "XForwarderEngine",
+      "file_type": "code",
+      "norm_label": "._apply_haproxy()",
+      "source_file": "core/engine.py",
+      "source_location": "L750"
+    },
+    {
+      "id": "core_engine_xforwarderengine_apply_nftables",
+      "label": "._apply_nftables()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 48,
+      "community_name": "XForwarderEngine",
+      "file_type": "code",
+      "norm_label": "._apply_nftables()",
+      "source_file": "core/engine.py",
+      "source_location": "L735"
+    },
+    {
+      "id": "core_engine_xforwarderengine_apply_nginx",
+      "label": "._apply_nginx()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 48,
+      "community_name": "XForwarderEngine",
+      "file_type": "code",
+      "norm_label": "._apply_nginx()",
+      "source_file": "core/engine.py",
+      "source_location": "L756"
+    },
+    {
+      "id": "core_engine_xforwarderengine_get_rules_fingerprint",
+      "label": "._get_rules_fingerprint()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 48,
+      "community_name": "XForwarderEngine",
+      "file_type": "code",
+      "norm_label": "._get_rules_fingerprint()",
+      "source_file": "core/engine.py",
+      "source_location": "L612"
+    },
+    {
       "id": "core_engine_xforwarderengine_init",
       "label": ".__init__()",
       "_callable": true,
       "_origin": "ast",
       "community": 48,
-      "community_name": ".load_config",
+      "community_name": "XForwarderEngine",
       "file_type": "code",
       "norm_label": ".__init__()",
       "source_file": "core/engine.py",
@@ -4914,7 +4830,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 48,
-      "community_name": ".load_config",
+      "community_name": "XForwarderEngine",
       "file_type": "code",
       "norm_label": ".load_config()",
       "source_file": "core/engine.py",
@@ -4926,11 +4842,35 @@
       "_callable": true,
       "_origin": "ast",
       "community": 48,
-      "community_name": ".load_config",
+      "community_name": "XForwarderEngine",
       "file_type": "code",
       "norm_label": "._load_initial_runtime_state()",
       "source_file": "core/engine.py",
       "source_location": "L104"
+    },
+    {
+      "id": "core_engine_xforwarderengine_probe_destination_icmp",
+      "label": ".probe_destination_icmp()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 48,
+      "community_name": "XForwarderEngine",
+      "file_type": "code",
+      "norm_label": ".probe_destination_icmp()",
+      "source_file": "core/engine.py",
+      "source_location": "L176"
+    },
+    {
+      "id": "core_engine_xforwarderengine_remove_pid_file",
+      "label": "._remove_pid_file()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 48,
+      "community_name": "XForwarderEngine",
+      "file_type": "code",
+      "norm_label": "._remove_pid_file()",
+      "source_file": "core/engine.py",
+      "source_location": "L814"
     },
     {
       "id": "core_engine_xforwarderengine_resolve_config_path",
@@ -4938,11 +4878,23 @@
       "_callable": true,
       "_origin": "ast",
       "community": 48,
-      "community_name": ".load_config",
+      "community_name": "XForwarderEngine",
       "file_type": "code",
       "norm_label": "._resolve_config_path()",
       "source_file": "core/engine.py",
       "source_location": "L124"
+    },
+    {
+      "id": "core_engine_xforwarderengine_run_loop",
+      "label": ".run_loop()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 48,
+      "community_name": "XForwarderEngine",
+      "file_type": "code",
+      "norm_label": ".run_loop()",
+      "source_file": "core/engine.py",
+      "source_location": "L823"
     },
     {
       "id": "core_engine_xforwarderengine_save_state_file",
@@ -4950,11 +4902,59 @@
       "_callable": true,
       "_origin": "ast",
       "community": 48,
-      "community_name": ".load_config",
+      "community_name": "XForwarderEngine",
       "file_type": "code",
       "norm_label": "._save_state_file()",
       "source_file": "core/engine.py",
       "source_location": "L762"
+    },
+    {
+      "id": "core_engine_xforwarderengine_send_haproxy_runtime_cmd",
+      "label": "._send_haproxy_runtime_cmd()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 48,
+      "community_name": "XForwarderEngine",
+      "file_type": "code",
+      "norm_label": "._send_haproxy_runtime_cmd()",
+      "source_file": "core/engine.py",
+      "source_location": "L202"
+    },
+    {
+      "id": "core_engine_xforwarderengine_stop",
+      "label": ".stop()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 48,
+      "community_name": "XForwarderEngine",
+      "file_type": "code",
+      "norm_label": ".stop()",
+      "source_file": "core/engine.py",
+      "source_location": "L906"
+    },
+    {
+      "id": "core_engine_xforwarderengine_sync_firewall_and_proxies",
+      "label": ".sync_firewall_and_proxies()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 48,
+      "community_name": "XForwarderEngine",
+      "file_type": "code",
+      "norm_label": ".sync_firewall_and_proxies()",
+      "source_file": "core/engine.py",
+      "source_location": "L625"
+    },
+    {
+      "id": "core_engine_xforwarderengine_write_pid_file",
+      "label": "._write_pid_file()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 48,
+      "community_name": "XForwarderEngine",
+      "file_type": "code",
+      "norm_label": "._write_pid_file()",
+      "source_file": "core/engine.py",
+      "source_location": "L803"
     },
     {
       "id": "web_app_trackfailoverevents",
@@ -5941,6 +5941,18 @@
       "source_location": "L26"
     },
     {
+      "id": "web_js_modules_utils_formatprotobadge",
+      "label": "formatProtoBadge()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 62,
+      "community_name": "showToast",
+      "file_type": "code",
+      "norm_label": "formatprotobadge()",
+      "source_file": "web/js/modules/utils.js",
+      "source_location": "L126"
+    },
+    {
       "id": "web_js_modules_utils_safeinlinearg",
       "label": "safeInlineArg()",
       "_callable": true,
@@ -6085,24 +6097,12 @@
       "source_location": "L1626"
     },
     {
-      "id": "core_web_server_sync_rules_and_notify",
-      "label": "sync_rules_and_notify()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 72,
-      "community_name": ".do_POST",
-      "file_type": "code",
-      "norm_label": "sync_rules_and_notify()",
-      "source_file": "core/web_server.py",
-      "source_location": "L139"
-    },
-    {
       "id": "core_web_server_xforwarderwebhandler_apply_security_headers",
       "label": ".apply_security_headers()",
       "_callable": true,
       "_origin": "ast",
       "community": 72,
-      "community_name": ".do_POST",
+      "community_name": "XForwarderWebHandler",
       "file_type": "code",
       "norm_label": ".apply_security_headers()",
       "source_file": "core/web_server.py",
@@ -6114,7 +6114,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 72,
-      "community_name": ".do_POST",
+      "community_name": "XForwarderWebHandler",
       "file_type": "code",
       "norm_label": ".check_origin()",
       "source_file": "core/web_server.py",
@@ -6126,7 +6126,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 72,
-      "community_name": ".do_POST",
+      "community_name": "XForwarderWebHandler",
       "file_type": "code",
       "norm_label": ".do_delete()",
       "source_file": "core/web_server.py",
@@ -6138,35 +6138,11 @@
       "_callable": true,
       "_origin": "ast",
       "community": 72,
-      "community_name": ".do_POST",
+      "community_name": "XForwarderWebHandler",
       "file_type": "code",
       "norm_label": ".do_get()",
       "source_file": "core/web_server.py",
       "source_location": "L365"
-    },
-    {
-      "id": "core_web_server_xforwarderwebhandler_do_post",
-      "label": ".do_POST()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 72,
-      "community_name": ".do_POST",
-      "file_type": "code",
-      "norm_label": ".do_post()",
-      "source_file": "core/web_server.py",
-      "source_location": "L566"
-    },
-    {
-      "id": "core_web_server_xforwarderwebhandler_get_client_ip",
-      "label": ".get_client_ip()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 72,
-      "community_name": ".do_POST",
-      "file_type": "code",
-      "norm_label": ".get_client_ip()",
-      "source_file": "core/web_server.py",
-      "source_location": "L279"
     },
     {
       "id": "core_web_server_xforwarderwebhandler_get_session_token",
@@ -6174,7 +6150,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 72,
-      "community_name": ".do_POST",
+      "community_name": "XForwarderWebHandler",
       "file_type": "code",
       "norm_label": ".get_session_token()",
       "source_file": "core/web_server.py",
@@ -6186,7 +6162,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 72,
-      "community_name": ".do_POST",
+      "community_name": "XForwarderWebHandler",
       "file_type": "code",
       "norm_label": ".is_authenticated()",
       "source_file": "core/web_server.py",
@@ -6198,7 +6174,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 72,
-      "community_name": ".do_POST",
+      "community_name": "XForwarderWebHandler",
       "file_type": "code",
       "norm_label": ".resolve_path()",
       "source_file": "core/web_server.py",
@@ -6210,7 +6186,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 72,
-      "community_name": ".do_POST",
+      "community_name": "XForwarderWebHandler",
       "file_type": "code",
       "norm_label": ".send_file()",
       "source_file": "core/web_server.py",
@@ -6222,7 +6198,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 72,
-      "community_name": ".do_POST",
+      "community_name": "XForwarderWebHandler",
       "file_type": "code",
       "norm_label": ".send_json()",
       "source_file": "core/web_server.py",
@@ -6275,6 +6251,42 @@
       "norm_label": ".test_proc_net_dev_corrupt_and_empty_edge_cases()",
       "source_file": "tests/test_traffic.py",
       "source_location": "L319"
+    },
+    {
+      "id": "core_engine_xforwarderengine_persist_active_priorities",
+      "label": "._persist_active_priorities()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 74,
+      "community_name": "._persist_active_priorities",
+      "file_type": "code",
+      "norm_label": "._persist_active_priorities()",
+      "source_file": "core/engine.py",
+      "source_location": "L303"
+    },
+    {
+      "id": "core_engine_xforwarderengine_save_config",
+      "label": ".save_config()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 74,
+      "community_name": "._persist_active_priorities",
+      "file_type": "code",
+      "norm_label": ".save_config()",
+      "source_file": "core/engine.py",
+      "source_location": "L137"
+    },
+    {
+      "id": "core_engine_xforwarderengine_save_config_unlocked",
+      "label": "._save_config_unlocked()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 74,
+      "community_name": "._persist_active_priorities",
+      "file_type": "code",
+      "norm_label": "._save_config_unlocked()",
+      "source_file": "core/engine.py",
+      "source_location": "L127"
     },
     {
       "id": "tests_test_traffic_testtrafficsubsystem_test_delta_handling_on_reboot_and_reload",
@@ -6335,6 +6347,42 @@
       "norm_label": ".test_get_update_status_parsing_and_ansi_cleaning()",
       "source_file": "tests/test_ui_and_api_edge_cases.py",
       "source_location": "L1105"
+    },
+    {
+      "id": "core_config_manager_export_config_data",
+      "label": "export_config_data()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 78,
+      "community_name": "export_config_data",
+      "file_type": "code",
+      "norm_label": "export_config_data()",
+      "source_file": "core/config_manager.py",
+      "source_location": "L688"
+    },
+    {
+      "id": "tests_test_export_import_testexportimport_test_export_sanitization",
+      "label": ".test_export_sanitization()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 78,
+      "community_name": "export_config_data",
+      "file_type": "code",
+      "norm_label": ".test_export_sanitization()",
+      "source_file": "tests/test_export_import.py",
+      "source_location": "L72"
+    },
+    {
+      "id": "tests_test_modular_subsystems_testmodularsubsystems_test_export_and_import_config_data",
+      "label": ".test_export_and_import_config_data()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 78,
+      "community_name": "export_config_data",
+      "file_type": "code",
+      "norm_label": ".test_export_and_import_config_data()",
+      "source_file": "tests/test_modular_subsystems.py",
+      "source_location": "L187"
     },
     {
       "id": "tests_test_ui_and_api_edge_cases_testuiandapiedgecases_test_system_update_dom_and_ui_wiring",
@@ -6527,54 +6575,6 @@
       "norm_label": ".test_version_detection_with_commit_file_and_fallback()",
       "source_file": "tests/test_ui_and_api_edge_cases.py",
       "source_location": "L1365"
-    },
-    {
-      "id": "core_engine_xforwarderengine_apply_haproxy",
-      "label": "._apply_haproxy()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 88,
-      "community_name": ".sync_firewall_and_proxies",
-      "file_type": "code",
-      "norm_label": "._apply_haproxy()",
-      "source_file": "core/engine.py",
-      "source_location": "L750"
-    },
-    {
-      "id": "core_engine_xforwarderengine_apply_nftables",
-      "label": "._apply_nftables()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 88,
-      "community_name": ".sync_firewall_and_proxies",
-      "file_type": "code",
-      "norm_label": "._apply_nftables()",
-      "source_file": "core/engine.py",
-      "source_location": "L735"
-    },
-    {
-      "id": "core_engine_xforwarderengine_apply_nginx",
-      "label": "._apply_nginx()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 88,
-      "community_name": ".sync_firewall_and_proxies",
-      "file_type": "code",
-      "norm_label": "._apply_nginx()",
-      "source_file": "core/engine.py",
-      "source_location": "L756"
-    },
-    {
-      "id": "core_engine_xforwarderengine_sync_firewall_and_proxies",
-      "label": ".sync_firewall_and_proxies()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 88,
-      "community_name": ".sync_firewall_and_proxies",
-      "file_type": "code",
-      "norm_label": ".sync_firewall_and_proxies()",
-      "source_file": "core/engine.py",
-      "source_location": "L625"
     },
     {
       "id": "core_metrics_get_metrics_db_path",
@@ -7794,28 +7794,6 @@
       "norm_label": "atomically writes configuration to disk using a temporary file and os.replace.",
       "source_file": "core/config_manager.py",
       "source_location": "L468"
-    },
-    {
-      "id": "core_config_manager_rationale_689",
-      "label": "Returns a sanitized export representation of the configuration, omitting\u2026",
-      "_origin": "ast",
-      "community": 113,
-      "community_name": "load_config",
-      "file_type": "rationale",
-      "norm_label": "returns a sanitized export representation of the configuration, omitting...",
-      "source_file": "core/config_manager.py",
-      "source_location": "L689"
-    },
-    {
-      "id": "tests_test_modular_subsystems_rationale_188",
-      "label": "Tests that configuration export sanitizes sensitive data and import validates\u2026",
-      "_origin": "ast",
-      "community": 113,
-      "community_name": "load_config",
-      "file_type": "rationale",
-      "norm_label": "tests that configuration export sanitizes sensitive data and import validates...",
-      "source_file": "tests/test_modular_subsystems.py",
-      "source_location": "L188"
     },
     {
       "id": "tests_test_ui_and_api_edge_cases_rationale_1411",
@@ -10299,7 +10277,7 @@
       "label": "008-full-stack-performance-and-fast-ipc.md",
       "_origin": "ast",
       "community": 30,
-      "community_name": "experiences/README.md",
+      "community_name": "Experience 008: Full-Stack Performance Optimization & Fast IPC",
       "file_type": "document",
       "node_kind": "page",
       "norm_label": "008-full-stack-performance-and-fast-ipc.md",
@@ -10311,7 +10289,7 @@
       "label": "Context & Motivation",
       "_origin": "ast",
       "community": 30,
-      "community_name": "experiences/README.md",
+      "community_name": "Experience 008: Full-Stack Performance Optimization & Fast IPC",
       "file_type": "document",
       "node_kind": "heading",
       "norm_label": "context & motivation",
@@ -10323,7 +10301,7 @@
       "label": "Experience 008: Full-Stack Performance Optimization & Fast IPC",
       "_origin": "ast",
       "community": 30,
-      "community_name": "experiences/README.md",
+      "community_name": "Experience 008: Full-Stack Performance Optimization & Fast IPC",
       "file_type": "document",
       "node_kind": "heading",
       "norm_label": "experience 008: full-stack performance optimization & fast ipc",
@@ -10335,36 +10313,12 @@
       "label": "Key Invariants & Lessons",
       "_origin": "ast",
       "community": 30,
-      "community_name": "experiences/README.md",
+      "community_name": "Experience 008: Full-Stack Performance Optimization & Fast IPC",
       "file_type": "document",
       "node_kind": "heading",
       "norm_label": "key invariants & lessons",
       "source_file": ".agents/experiences/008-full-stack-performance-and-fast-ipc.md",
       "source_location": "L34"
-    },
-    {
-      "id": "agents_experiences_readme",
-      "label": "experiences/README.md",
-      "_origin": "ast",
-      "community": 30,
-      "community_name": "experiences/README.md",
-      "file_type": "document",
-      "node_kind": "page",
-      "norm_label": "experiences/readme.md",
-      "source_file": ".agents/experiences/README.md",
-      "source_location": "L1"
-    },
-    {
-      "id": "agents_experiences_readme_xforwarder_architectural_experiences_catalog",
-      "label": "XForwarder Architectural Experiences Catalog",
-      "_origin": "ast",
-      "community": 30,
-      "community_name": "experiences/README.md",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "xforwarder architectural experiences catalog",
-      "source_file": ".agents/experiences/README.md",
-      "source_location": "L1"
     },
     {
       "id": "core_metrics_rationale_599",
@@ -10850,7 +10804,7 @@
       "label": "3. Fast IPC Engine Wake-Up",
       "_origin": "ast",
       "community": 36,
-      "community_name": "notify_engine_wakeup",
+      "community_name": ".do_POST",
       "file_type": "document",
       "node_kind": "heading",
       "norm_label": "3. fast ipc engine wake-up",
@@ -10862,7 +10816,7 @@
       "label": "Architectural Solutions Implemented",
       "_origin": "ast",
       "community": 36,
-      "community_name": "notify_engine_wakeup",
+      "community_name": ".do_POST",
       "file_type": "document",
       "node_kind": "heading",
       "norm_label": "architectural solutions implemented",
@@ -10874,18 +10828,29 @@
       "label": "Signals core engine to immediately evaluate routing changes without waiting for\u2026",
       "_origin": "ast",
       "community": 36,
-      "community_name": "notify_engine_wakeup",
+      "community_name": ".do_POST",
       "file_type": "rationale",
       "norm_label": "signals core engine to immediately evaluate routing changes without waiting for...",
       "source_file": "core/web_server.py",
       "source_location": "L126"
     },
     {
+      "id": "core_web_server_rationale_280",
+      "label": "Extracts remote client IP with reverse-proxy support.",
+      "_origin": "ast",
+      "community": 36,
+      "community_name": ".do_POST",
+      "file_type": "rationale",
+      "norm_label": "extracts remote client ip with reverse-proxy support.",
+      "source_file": "core/web_server.py",
+      "source_location": "L280"
+    },
+    {
       "id": "tests_test_performance_and_optimizations_rationale_261",
       "label": "Verifies notify_engine_wakeup handles missing PID files or OS signals\u2026",
       "_origin": "ast",
       "community": 36,
-      "community_name": "notify_engine_wakeup",
+      "community_name": ".do_POST",
       "file_type": "rationale",
       "norm_label": "verifies notify_engine_wakeup handles missing pid files or os signals...",
       "source_file": "tests/test_performance_and_optimizations.py",
@@ -11426,6 +11391,18 @@
       "source_location": "L71"
     },
     {
+      "id": "agents_experiences_007_fix_haproxy_silent_drop_and_state_wipeout_3_architecture_solution_implemented",
+      "label": "3. Architecture & Solution Implemented",
+      "_origin": "ast",
+      "community": 42,
+      "community_name": "is_port_in_use_by_external_service",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "3. architecture & solution implemented",
+      "source_file": ".agents/experiences/007-fix-haproxy-silent-drop-and-state-wipeout.md",
+      "source_location": "L19"
+    },
+    {
       "id": "core_config_manager_rationale_650",
       "label": "Returns True if the process currently listening on port is HAProxy (which\u2026",
       "_origin": "ast",
@@ -11547,30 +11524,18 @@
       "label": "Any",
       "_origin": "ast",
       "community": 45,
-      "community_name": "XForwarderEngine",
+      "community_name": ".evaluate_rule",
       "file_type": "code",
       "norm_label": "any",
       "source_file": "",
       "source_location": ""
     },
     {
-      "id": "agents_experiences_013_two_tier_intelligent_route_switching_and_jitter_monitoring_key_decisions_architectural_changes",
-      "label": "Key Decisions & Architectural Changes",
-      "_origin": "ast",
-      "community": 45,
-      "community_name": "XForwarderEngine",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "key decisions & architectural changes",
-      "source_file": ".agents/experiences/013-two-tier-intelligent-route-switching-and-jitter-monitoring.md",
-      "source_location": "L6"
-    },
-    {
       "id": "agents_rules_01_architecture_and_failover_3_two_tier_intelligent_failover_route_quality_architecture",
       "label": "3. Two-Tier Intelligent Failover & Route Quality Architecture",
       "_origin": "ast",
       "community": 45,
-      "community_name": "XForwarderEngine",
+      "community_name": ".evaluate_rule",
       "file_type": "document",
       "node_kind": "heading",
       "norm_label": "3. two-tier intelligent failover & route quality architecture",
@@ -11578,22 +11543,11 @@
       "source_location": "L28"
     },
     {
-      "id": "core_engine_rationale_128",
-      "label": "Atomically writes current configuration to disk.",
-      "_origin": "ast",
-      "community": 45,
-      "community_name": "XForwarderEngine",
-      "file_type": "rationale",
-      "norm_label": "atomically writes current configuration to disk.",
-      "source_file": "core/engine.py",
-      "source_location": "L128"
-    },
-    {
       "id": "core_engine_rationale_231",
       "label": "Performs runtime priority transition. In planned switches: preserves active\u2026",
       "_origin": "ast",
       "community": 45,
-      "community_name": "XForwarderEngine",
+      "community_name": ".evaluate_rule",
       "file_type": "rationale",
       "norm_label": "performs runtime priority transition. in planned switches: preserves active...",
       "source_file": "core/engine.py",
@@ -11604,7 +11558,7 @@
       "label": "Deduplicates unique (target, iface) endpoints across all rules, validates\u2026",
       "_origin": "ast",
       "community": 45,
-      "community_name": "XForwarderEngine",
+      "community_name": ".evaluate_rule",
       "file_type": "rationale",
       "norm_label": "deduplicates unique (target, iface) endpoints across all rules, validates...",
       "source_file": "core/engine.py",
@@ -11688,83 +11642,35 @@
       "source_location": "L75"
     },
     {
-      "id": "agents_experiences_007_fix_haproxy_silent_drop_and_state_wipeout",
-      "label": "007-fix-haproxy-silent-drop-and-state-wipeout.md",
+      "id": "agents_experiences_008_full_stack_performance_and_fast_ipc_2_selective_service_reloading",
+      "label": "2. Selective Service Reloading",
       "_origin": "ast",
       "community": 48,
-      "community_name": ".load_config",
-      "file_type": "document",
-      "node_kind": "page",
-      "norm_label": "007-fix-haproxy-silent-drop-and-state-wipeout.md",
-      "source_file": ".agents/experiences/007-fix-haproxy-silent-drop-and-state-wipeout.md",
-      "source_location": "L1"
-    },
-    {
-      "id": "agents_experiences_007_fix_haproxy_silent_drop_and_state_wipeout_1_context_motivation",
-      "label": "1. Context & Motivation",
-      "_origin": "ast",
-      "community": 48,
-      "community_name": ".load_config",
+      "community_name": "XForwarderEngine",
       "file_type": "document",
       "node_kind": "heading",
-      "norm_label": "1. context & motivation",
-      "source_file": ".agents/experiences/007-fix-haproxy-silent-drop-and-state-wipeout.md",
-      "source_location": "L9"
+      "norm_label": "2. selective service reloading",
+      "source_file": ".agents/experiences/008-full-stack-performance-and-fast-ipc.md",
+      "source_location": "L18"
     },
     {
-      "id": "agents_experiences_007_fix_haproxy_silent_drop_and_state_wipeout_2_root_cause_core_dynamics",
-      "label": "2. Root Cause / Core Dynamics",
+      "id": "agents_rules_blast_radius_analysis_1_high_risk_core_components",
+      "label": "1. High-Risk Core Components",
       "_origin": "ast",
       "community": 48,
-      "community_name": ".load_config",
+      "community_name": "XForwarderEngine",
       "file_type": "document",
       "node_kind": "heading",
-      "norm_label": "2. root cause / core dynamics",
-      "source_file": ".agents/experiences/007-fix-haproxy-silent-drop-and-state-wipeout.md",
-      "source_location": "L12"
-    },
-    {
-      "id": "agents_experiences_007_fix_haproxy_silent_drop_and_state_wipeout_3_architecture_solution_implemented",
-      "label": "3. Architecture & Solution Implemented",
-      "_origin": "ast",
-      "community": 48,
-      "community_name": ".load_config",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "3. architecture & solution implemented",
-      "source_file": ".agents/experiences/007-fix-haproxy-silent-drop-and-state-wipeout.md",
-      "source_location": "L19"
-    },
-    {
-      "id": "agents_experiences_007_fix_haproxy_silent_drop_and_state_wipeout_5_verification_testing",
-      "label": "5. Verification & Testing",
-      "_origin": "ast",
-      "community": 48,
-      "community_name": ".load_config",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "5. verification & testing",
-      "source_file": ".agents/experiences/007-fix-haproxy-silent-drop-and-state-wipeout.md",
-      "source_location": "L44"
-    },
-    {
-      "id": "agents_experiences_007_fix_haproxy_silent_drop_and_state_wipeout_experience_007_fix_haproxy_silent_drop_and_state_wipeout",
-      "label": "Experience 007: Fix HAProxy Silent Drop and State Wipeout",
-      "_origin": "ast",
-      "community": 48,
-      "community_name": ".load_config",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "experience 007: fix haproxy silent drop and state wipeout",
-      "source_file": ".agents/experiences/007-fix-haproxy-silent-drop-and-state-wipeout.md",
-      "source_location": "L1"
+      "norm_label": "1. high-risk core components",
+      "source_file": ".agents/rules/blast-radius-analysis.md",
+      "source_location": "L16"
     },
     {
       "id": "core_engine_rationale_105",
       "label": "Loads pre-existing runtime state from disk if available to prevent state\u2026",
       "_origin": "ast",
       "community": 48,
-      "community_name": ".load_config",
+      "community_name": "XForwarderEngine",
       "file_type": "rationale",
       "norm_label": "loads pre-existing runtime state from disk if available to prevent state...",
       "source_file": "core/engine.py",
@@ -11775,7 +11681,7 @@
       "label": "Loads and normalizes configuration from disk using self-healing schema\u2026",
       "_origin": "ast",
       "community": 48,
-      "community_name": ".load_config",
+      "community_name": "XForwarderEngine",
       "file_type": "rationale",
       "norm_label": "loads and normalizes configuration from disk using self-healing schema...",
       "source_file": "core/engine.py",
@@ -12288,18 +12194,6 @@
       "norm_label": "session state & task handoff rule (xforwarder)",
       "source_file": ".agents/rules/session-handoff.md",
       "source_location": "L8"
-    },
-    {
-      "id": "agents_experiences_007_fix_haproxy_silent_drop_and_state_wipeout_4_invariants_rules_for_ai_agents",
-      "label": "4. Invariants & Rules for AI Agents",
-      "_origin": "ast",
-      "community": 54,
-      "community_name": "is_valid_target",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "4. invariants & rules for ai agents",
-      "source_file": ".agents/experiences/007-fix-haproxy-silent-drop-and-state-wipeout.md",
-      "source_location": "L38"
     },
     {
       "id": "core_config_manager_rationale_525",
@@ -13209,11 +13103,29 @@
       "source_location": "L493"
     },
     {
+      "id": "agents_rules_experience_logging",
+      "label": "experience-logging.md",
+      "_origin": "ast",
+      "community": 60,
+      "community_name": "experiences/README.md",
+      "file_type": "document",
+      "frontmatter": {
+        "name": "experience-logging",
+        "description": "Guidelines and format requirements for logging architectural decisions and lessons learned in .agents/experiences/.",
+        "always_on": false,
+        "trigger": "model_decision"
+      },
+      "node_kind": "page",
+      "norm_label": "experience-logging.md",
+      "source_file": ".agents/rules/experience-logging.md",
+      "source_location": "L1"
+    },
+    {
       "id": "agents_experiences_013_two_tier_intelligent_route_switching_and_jitter_monitoring",
       "label": "013-two-tier-intelligent-route-switching-and-jitter-monitoring.md",
       "_origin": "ast",
       "community": 60,
-      "community_name": "Experience 013: Two-Tier Intelligent Route Switching & Jitter Monitoring",
+      "community_name": "experiences/README.md",
       "file_type": "document",
       "node_kind": "page",
       "norm_label": "013-two-tier-intelligent-route-switching-and-jitter-monitoring.md",
@@ -13225,7 +13137,7 @@
       "label": "Context & Motivation",
       "_origin": "ast",
       "community": 60,
-      "community_name": "Experience 013: Two-Tier Intelligent Route Switching & Jitter Monitoring",
+      "community_name": "experiences/README.md",
       "file_type": "document",
       "node_kind": "heading",
       "norm_label": "context & motivation",
@@ -13237,7 +13149,7 @@
       "label": "Experience 013: Two-Tier Intelligent Route Switching & Jitter Monitoring",
       "_origin": "ast",
       "community": 60,
-      "community_name": "Experience 013: Two-Tier Intelligent Route Switching & Jitter Monitoring",
+      "community_name": "experiences/README.md",
       "file_type": "document",
       "node_kind": "heading",
       "norm_label": "experience 013: two-tier intelligent route switching & jitter monitoring",
@@ -13249,12 +13161,72 @@
       "label": "Verification & Impact",
       "_origin": "ast",
       "community": 60,
-      "community_name": "Experience 013: Two-Tier Intelligent Route Switching & Jitter Monitoring",
+      "community_name": "experiences/README.md",
       "file_type": "document",
       "node_kind": "heading",
       "norm_label": "verification & impact",
       "source_file": ".agents/experiences/013-two-tier-intelligent-route-switching-and-jitter-monitoring.md",
       "source_location": "L33"
+    },
+    {
+      "id": "agents_experiences_readme",
+      "label": "experiences/README.md",
+      "_origin": "ast",
+      "community": 60,
+      "community_name": "experiences/README.md",
+      "file_type": "document",
+      "node_kind": "page",
+      "norm_label": "experiences/readme.md",
+      "source_file": ".agents/experiences/README.md",
+      "source_location": "L1"
+    },
+    {
+      "id": "agents_experiences_readme_xforwarder_architectural_experiences_catalog",
+      "label": "XForwarder Architectural Experiences Catalog",
+      "_origin": "ast",
+      "community": 60,
+      "community_name": "experiences/README.md",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "xforwarder architectural experiences catalog",
+      "source_file": ".agents/experiences/README.md",
+      "source_location": "L1"
+    },
+    {
+      "id": "agents_rules_experience_logging_1_when_to_log_an_experience",
+      "label": "1. When to Log an Experience",
+      "_origin": "ast",
+      "community": 60,
+      "community_name": "experiences/README.md",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "1. when to log an experience",
+      "source_file": ".agents/rules/experience-logging.md",
+      "source_location": "L14"
+    },
+    {
+      "id": "agents_rules_experience_logging_2_standard_logging_protocol",
+      "label": "2. Standard Logging Protocol",
+      "_origin": "ast",
+      "community": 60,
+      "community_name": "experiences/README.md",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "2. standard logging protocol",
+      "source_file": ".agents/rules/experience-logging.md",
+      "source_location": "L23"
+    },
+    {
+      "id": "agents_rules_experience_logging_architectural_experience_logging_rule_xforwarder",
+      "label": "Architectural Experience Logging Rule (XForwarder)",
+      "_origin": "ast",
+      "community": 60,
+      "community_name": "experiences/README.md",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "architectural experience logging rule (xforwarder)",
+      "source_file": ".agents/rules/experience-logging.md",
+      "source_location": "L8"
     },
     {
       "id": "tests_test_ui_and_api_edge_cases_rationale_735",
@@ -13429,6 +13401,18 @@
       "norm_label": "experience 006: host subsystem inspection and drag-drop priority reordering",
       "source_file": ".agents/experiences/006-host-subsystem-inspection-and-drag-drop-priorities.md",
       "source_location": "L1"
+    },
+    {
+      "id": "agents_experiences_007_fix_haproxy_silent_drop_and_state_wipeout_2_root_cause_core_dynamics",
+      "label": "2. Root Cause / Core Dynamics",
+      "_origin": "ast",
+      "community": 63,
+      "community_name": "sync_system_rules",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "2. root cause / core dynamics",
+      "source_file": ".agents/experiences/007-fix-haproxy-silent-drop-and-state-wipeout.md",
+      "source_location": "L12"
     },
     {
       "id": "core_engine_rationale_922",
@@ -13706,58 +13690,64 @@
       "source_location": "L1"
     },
     {
-      "id": "agents_rules_experience_logging",
-      "label": "experience-logging.md",
+      "id": "agents_experiences_007_fix_haproxy_silent_drop_and_state_wipeout",
+      "label": "007-fix-haproxy-silent-drop-and-state-wipeout.md",
       "_origin": "ast",
       "community": 68,
-      "community_name": "experience-logging.md",
+      "community_name": "Experience 007: Fix HAProxy Silent Drop and State Wipeout",
       "file_type": "document",
-      "frontmatter": {
-        "name": "experience-logging",
-        "description": "Guidelines and format requirements for logging architectural decisions and lessons learned in .agents/experiences/.",
-        "always_on": false,
-        "trigger": "model_decision"
-      },
       "node_kind": "page",
-      "norm_label": "experience-logging.md",
-      "source_file": ".agents/rules/experience-logging.md",
+      "norm_label": "007-fix-haproxy-silent-drop-and-state-wipeout.md",
+      "source_file": ".agents/experiences/007-fix-haproxy-silent-drop-and-state-wipeout.md",
       "source_location": "L1"
     },
     {
-      "id": "agents_rules_experience_logging_1_when_to_log_an_experience",
-      "label": "1. When to Log an Experience",
+      "id": "agents_experiences_007_fix_haproxy_silent_drop_and_state_wipeout_1_context_motivation",
+      "label": "1. Context & Motivation",
       "_origin": "ast",
       "community": 68,
-      "community_name": "experience-logging.md",
+      "community_name": "Experience 007: Fix HAProxy Silent Drop and State Wipeout",
       "file_type": "document",
       "node_kind": "heading",
-      "norm_label": "1. when to log an experience",
-      "source_file": ".agents/rules/experience-logging.md",
-      "source_location": "L14"
+      "norm_label": "1. context & motivation",
+      "source_file": ".agents/experiences/007-fix-haproxy-silent-drop-and-state-wipeout.md",
+      "source_location": "L9"
     },
     {
-      "id": "agents_rules_experience_logging_2_standard_logging_protocol",
-      "label": "2. Standard Logging Protocol",
+      "id": "agents_experiences_007_fix_haproxy_silent_drop_and_state_wipeout_4_invariants_rules_for_ai_agents",
+      "label": "4. Invariants & Rules for AI Agents",
       "_origin": "ast",
       "community": 68,
-      "community_name": "experience-logging.md",
+      "community_name": "Experience 007: Fix HAProxy Silent Drop and State Wipeout",
       "file_type": "document",
       "node_kind": "heading",
-      "norm_label": "2. standard logging protocol",
-      "source_file": ".agents/rules/experience-logging.md",
-      "source_location": "L23"
+      "norm_label": "4. invariants & rules for ai agents",
+      "source_file": ".agents/experiences/007-fix-haproxy-silent-drop-and-state-wipeout.md",
+      "source_location": "L38"
     },
     {
-      "id": "agents_rules_experience_logging_architectural_experience_logging_rule_xforwarder",
-      "label": "Architectural Experience Logging Rule (XForwarder)",
+      "id": "agents_experiences_007_fix_haproxy_silent_drop_and_state_wipeout_5_verification_testing",
+      "label": "5. Verification & Testing",
       "_origin": "ast",
       "community": 68,
-      "community_name": "experience-logging.md",
+      "community_name": "Experience 007: Fix HAProxy Silent Drop and State Wipeout",
       "file_type": "document",
       "node_kind": "heading",
-      "norm_label": "architectural experience logging rule (xforwarder)",
-      "source_file": ".agents/rules/experience-logging.md",
-      "source_location": "L8"
+      "norm_label": "5. verification & testing",
+      "source_file": ".agents/experiences/007-fix-haproxy-silent-drop-and-state-wipeout.md",
+      "source_location": "L44"
+    },
+    {
+      "id": "agents_experiences_007_fix_haproxy_silent_drop_and_state_wipeout_experience_007_fix_haproxy_silent_drop_and_state_wipeout",
+      "label": "Experience 007: Fix HAProxy Silent Drop and State Wipeout",
+      "_origin": "ast",
+      "community": 68,
+      "community_name": "Experience 007: Fix HAProxy Silent Drop and State Wipeout",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "experience 007: fix haproxy silent drop and state wipeout",
+      "source_file": ".agents/experiences/007-fix-haproxy-silent-drop-and-state-wipeout.md",
+      "source_location": "L1"
     },
     {
       "id": "tests_test_ui_and_api_edge_cases_rationale_219",
@@ -13885,7 +13875,7 @@
       "label": "BaseHTTPRequestHandler",
       "_origin": "ast",
       "community": 72,
-      "community_name": ".do_POST",
+      "community_name": "XForwarderWebHandler",
       "file_type": "code",
       "norm_label": "basehttprequesthandler",
       "source_file": "",
@@ -13896,7 +13886,7 @@
       "label": "1. Server-Side HTTP Performance",
       "_origin": "ast",
       "community": 72,
-      "community_name": ".do_POST",
+      "community_name": "XForwarderWebHandler",
       "file_type": "document",
       "node_kind": "heading",
       "norm_label": "1. server-side http performance",
@@ -13908,7 +13898,7 @@
       "label": "4. Invariants & Rules for AI Agents",
       "_origin": "ast",
       "community": 72,
-      "community_name": ".do_POST",
+      "community_name": "XForwarderWebHandler",
       "file_type": "document",
       "node_kind": "heading",
       "norm_label": "4. invariants & rules for ai agents",
@@ -13920,29 +13910,18 @@
       "label": "Applies comprehensive OWASP recommended security headers.",
       "_origin": "ast",
       "community": 72,
-      "community_name": ".do_POST",
+      "community_name": "XForwarderWebHandler",
       "file_type": "rationale",
       "norm_label": "applies comprehensive owasp recommended security headers.",
       "source_file": "core/web_server.py",
       "source_location": "L170"
     },
     {
-      "id": "core_web_server_rationale_280",
-      "label": "Extracts remote client IP with reverse-proxy support.",
-      "_origin": "ast",
-      "community": 72,
-      "community_name": ".do_POST",
-      "file_type": "rationale",
-      "norm_label": "extracts remote client ip with reverse-proxy support.",
-      "source_file": "core/web_server.py",
-      "source_location": "L280"
-    },
-    {
       "id": "core_web_server_rationale_290",
       "label": "Validates Origin/Referer headers against Host to prevent CSRF.",
       "_origin": "ast",
       "community": 72,
-      "community_name": ".do_POST",
+      "community_name": "XForwarderWebHandler",
       "file_type": "rationale",
       "norm_label": "validates origin/referer headers against host to prevent csrf.",
       "source_file": "core/web_server.py",
@@ -13991,6 +13970,29 @@
       "norm_label": "validates parsing of /proc/net/dev lines into interface rx/tx bytes.",
       "source_file": "tests/test_traffic.py",
       "source_location": "L71"
+    },
+    {
+      "id": "agents_experiences_013_two_tier_intelligent_route_switching_and_jitter_monitoring_key_decisions_architectural_changes",
+      "label": "Key Decisions & Architectural Changes",
+      "_origin": "ast",
+      "community": 74,
+      "community_name": "._persist_active_priorities",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "key decisions & architectural changes",
+      "source_file": ".agents/experiences/013-two-tier-intelligent-route-switching-and-jitter-monitoring.md",
+      "source_location": "L6"
+    },
+    {
+      "id": "core_engine_rationale_128",
+      "label": "Atomically writes current configuration to disk.",
+      "_origin": "ast",
+      "community": 74,
+      "community_name": "._persist_active_priorities",
+      "file_type": "rationale",
+      "norm_label": "atomically writes current configuration to disk.",
+      "source_file": "core/engine.py",
+      "source_location": "L128"
     },
     {
       "id": "core_traffic_rationale_335",
@@ -14057,6 +14059,28 @@
       "norm_label": "verifies get_update_status parses completed state and strips ansi codes.",
       "source_file": "tests/test_ui_and_api_edge_cases.py",
       "source_location": "L1106"
+    },
+    {
+      "id": "core_config_manager_rationale_689",
+      "label": "Returns a sanitized export representation of the configuration, omitting\u2026",
+      "_origin": "ast",
+      "community": 78,
+      "community_name": "export_config_data",
+      "file_type": "rationale",
+      "norm_label": "returns a sanitized export representation of the configuration, omitting...",
+      "source_file": "core/config_manager.py",
+      "source_location": "L689"
+    },
+    {
+      "id": "tests_test_modular_subsystems_rationale_188",
+      "label": "Tests that configuration export sanitizes sensitive data and import validates\u2026",
+      "_origin": "ast",
+      "community": 78,
+      "community_name": "export_config_data",
+      "file_type": "rationale",
+      "norm_label": "tests that configuration export sanitizes sensitive data and import validates...",
+      "source_file": "tests/test_modular_subsystems.py",
+      "source_location": "L188"
     },
     {
       "id": "tests_test_ui_and_api_edge_cases_rationale_1056",
@@ -14401,30 +14425,6 @@
       "norm_label": "verifies local version info parses .commit files and detects updates when...",
       "source_file": "tests/test_ui_and_api_edge_cases.py",
       "source_location": "L1366"
-    },
-    {
-      "id": "agents_experiences_008_full_stack_performance_and_fast_ipc_2_selective_service_reloading",
-      "label": "2. Selective Service Reloading",
-      "_origin": "ast",
-      "community": 88,
-      "community_name": ".sync_firewall_and_proxies",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "2. selective service reloading",
-      "source_file": ".agents/experiences/008-full-stack-performance-and-fast-ipc.md",
-      "source_location": "L18"
-    },
-    {
-      "id": "agents_rules_blast_radius_analysis_1_high_risk_core_components",
-      "label": "1. High-Risk Core Components",
-      "_origin": "ast",
-      "community": 88,
-      "community_name": ".sync_firewall_and_proxies",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "1. high-risk core components",
-      "source_file": ".agents/rules/blast-radius-analysis.md",
-      "source_location": "L16"
     },
     {
       "id": "core_metrics",
@@ -22463,7 +22463,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/js/modules/rules.js",
-      "source_location": "L659",
+      "source_location": "L637",
       "weight": 1.0
     },
     {
@@ -22475,7 +22475,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/js/modules/rules.js",
-      "source_location": "L669",
+      "source_location": "L647",
       "weight": 1.0
     },
     {
@@ -22487,7 +22487,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/js/modules/rules.js",
-      "source_location": "L637",
+      "source_location": "L615",
       "weight": 1.0
     },
     {
@@ -22499,7 +22499,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/js/modules/rules.js",
-      "source_location": "L648",
+      "source_location": "L626",
       "weight": 1.0
     },
     {
@@ -22535,7 +22535,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/js/modules/rules.js",
-      "source_location": "L700",
+      "source_location": "L678",
       "weight": 1.0
     },
     {
@@ -22595,7 +22595,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/js/modules/rules.js",
-      "source_location": "L274",
+      "source_location": "L257",
       "weight": 1.0
     },
     {
@@ -22607,19 +22607,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/js/modules/rules.js",
-      "source_location": "L334",
-      "weight": 1.0
-    },
-    {
-      "source": "web_js_modules_rules_renderrulecard",
-      "target": "web_js_modules_utils_formatprotobadge",
-      "relation": "calls",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "context": "call",
-      "source_file": "web/js/modules/rules.js",
-      "source_location": "L346",
+      "source_location": "L316",
       "weight": 1.0
     },
     {
@@ -22631,7 +22619,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/js/modules/rules.js",
-      "source_location": "L388",
+      "source_location": "L368",
       "weight": 1.0
     },
     {
@@ -22643,7 +22631,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/js/modules/rules.js",
-      "source_location": "L420",
+      "source_location": "L400",
       "weight": 1.0
     },
     {
@@ -22655,19 +22643,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/js/modules/rules.js",
-      "source_location": "L445",
-      "weight": 1.0
-    },
-    {
-      "source": "web_js_modules_rules_renderrulelistrow",
-      "target": "web_js_modules_utils_formatprotobadge",
-      "relation": "calls",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "context": "call",
-      "source_file": "web/js/modules/rules.js",
-      "source_location": "L456",
+      "source_location": "L425",
       "weight": 1.0
     },
     {
@@ -22679,7 +22655,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/js/modules/rules.js",
-      "source_location": "L564",
+      "source_location": "L542",
       "weight": 1.0
     },
     {
@@ -22691,7 +22667,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/js/modules/rules.js",
-      "source_location": "L568",
+      "source_location": "L546",
       "weight": 1.0
     },
     {
@@ -22703,7 +22679,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/js/modules/rules.js",
-      "source_location": "L568",
+      "source_location": "L546",
       "weight": 1.0
     },
     {
@@ -22715,7 +22691,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/js/modules/rules.js",
-      "source_location": "L590",
+      "source_location": "L568",
       "weight": 1.0
     },
     {
@@ -22727,7 +22703,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/js/modules/rules.js",
-      "source_location": "L606",
+      "source_location": "L584",
       "weight": 1.0
     },
     {
@@ -38192,7 +38168,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "web/js/modules/rules.js",
-      "source_location": "L386",
+      "source_location": "L366",
       "weight": 1.0
     },
     {
@@ -38203,7 +38179,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "web/js/modules/rules.js",
-      "source_location": "L492",
+      "source_location": "L470",
       "weight": 1.0
     },
     {
@@ -38214,7 +38190,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "web/js/modules/rules.js",
-      "source_location": "L623",
+      "source_location": "L601",
       "weight": 1.0
     },
     {
@@ -38225,7 +38201,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "web/js/modules/rules.js",
-      "source_location": "L658",
+      "source_location": "L636",
       "weight": 1.0
     },
     {
@@ -38236,7 +38212,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "web/js/modules/rules.js",
-      "source_location": "L679",
+      "source_location": "L657",
       "weight": 1.0
     },
     {
@@ -47970,5 +47946,5 @@
     }
   ],
   "hyperedges": [],
-  "built_at_commit": "105585d81523bb11d16b92660f75d76d0d80fd0c"
+  "built_at_commit": "b066da3a7aa9ab75df75915a117faf9d991ffbc6"
 }
