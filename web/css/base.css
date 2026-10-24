@@ -1,0 +1,274 @@
+/* ==========================================================================
+   XForwarder Base & Reset Styles
+   Typography, Aurora Lighting, Pre-Auth Flicker Shield, and Login Screen
+   ========================================================================== */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    background-color: var(--bg-base);
+    color: var(--text-primary);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    min-height: 100vh;
+    overflow-x: hidden;
+    line-height: 1.5;
+    position: relative;
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+h1, h2, h3, .brand-title, .stat-number, .port-num, .login-brand-meta h2, .section-title, .font-display {
+    font-family: var(--font-display);
+}
+
+/* ── Nova Aurora Ambient Floating Lighting ── */
+.aurora {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    overflow: hidden;
+    pointer-events: none;
+}
+.aurora span {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(90px);
+    opacity: 0.45;
+    will-change: transform;
+}
+.aurora span:nth-child(1) {
+    width: 520px;
+    height: 520px;
+    background: var(--blob-1);
+    top: -160px;
+    left: -100px;
+    animation: float1 22s ease-in-out infinite;
+}
+.aurora span:nth-child(2) {
+    width: 460px;
+    height: 460px;
+    background: var(--blob-2);
+    top: 20%;
+    right: -160px;
+    animation: float2 26s ease-in-out infinite;
+}
+.aurora span:nth-child(3) {
+    width: 420px;
+    height: 420px;
+    background: var(--blob-3);
+    bottom: -160px;
+    left: 30%;
+    animation: float3 30s ease-in-out infinite;
+}
+@keyframes float1 {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    50% { transform: translate(60px, 80px) scale(1.15); }
+}
+@keyframes float2 {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    50% { transform: translate(-70px, 60px) scale(1.1); }
+}
+@keyframes float3 {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    50% { transform: translate(50px, -60px) scale(1.2); }
+}
+@media (prefers-reduced-motion: reduce) {
+    .aurora span { animation: none !important; }
+}
+
+/* ── Pre-Auth Screen Pre-Hydration (Eliminates Login Screen Reload Flicker) ── */
+html.pre-auth #loginScreen {
+    display: none !important;
+}
+html.pre-auth #dashboardScreen {
+    display: flex !important;
+}
+
+/* ── Login Screen ── */
+.login-wrapper {
+    display: flex;
+    min-height: 100vh;
+    align-items: center;
+    justify-content: center;
+    padding: 24px 20px;
+    position: relative;
+}
+
+.login-top-bar {
+    position: absolute;
+    top: 24px;
+    right: 24px;
+    z-index: 10;
+}
+
+.login-theme-toggle {
+    width: auto;
+    height: 38px;
+    padding: 0 14px;
+    border-radius: 10px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    box-shadow: var(--card-shadow);
+}
+
+.login-card {
+    background: var(--bg-card);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid var(--border-color);
+    border-radius: 20px;
+    padding: 36px 32px;
+    width: 100%;
+    max-width: 420px;
+    box-shadow: var(--card-shadow);
+    transition: background-color 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+[data-theme="light"] .login-card {
+    background: #FFFFFF;
+    border-color: var(--border-color);
+    box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.05), 0 1px 3px 0 rgba(15, 23, 42, 0.03);
+}
+
+.login-header {
+    text-align: center;
+    margin-bottom: 28px;
+}
+
+.login-logo {
+    width: 48px;
+    height: 48px;
+    border-radius: 14px;
+    margin: 0 auto 14px auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #7C3AED, #6366F1);
+    color: #FFFFFF;
+    box-shadow: 0 8px 24px rgba(124, 58, 237, 0.45);
+}
+
+.login-logo svg {
+    stroke: #FFFFFF;
+}
+
+[data-theme="light"] .login-logo {
+    background: linear-gradient(135deg, #7C3AED, #6366F1);
+    box-shadow: 0 8px 24px rgba(124, 58, 237, 0.28);
+    color: #FFFFFF;
+}
+
+[data-theme="light"] .login-logo svg {
+    stroke: #FFFFFF;
+}
+
+.login-brand-meta {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 4px;
+}
+
+.login-brand-meta h2 {
+    font-size: 1.45rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    letter-spacing: -0.02em;
+    margin: 0;
+}
+
+.login-subtitle {
+    font-size: 0.82rem;
+    color: var(--text-secondary);
+    margin-top: 2px;
+}
+
+.login-error {
+    background: rgba(251, 113, 133, 0.12);
+    border: 1px solid rgba(251, 113, 133, 0.3);
+    color: var(--accent-rose);
+    padding: 10px 14px;
+    border-radius: 10px;
+    font-size: 0.82rem;
+    margin-bottom: 16px;
+    text-align: center;
+}
+
+/* Login Form Controls & Inputs (Dark & Light Theme) */
+.login-card .form-group {
+    margin-bottom: 20px;
+    text-align: left;
+}
+
+.login-card .form-group label {
+    display: block;
+    font-size: 0.82rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    margin-bottom: 7px;
+}
+
+.login-card .form-control {
+    background: var(--bg-surface-2);
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
+    border-radius: 10px;
+    height: 44px;
+    font-size: 0.92rem;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+}
+
+.login-card .form-control:focus {
+    background: var(--bg-surface);
+    border-color: var(--accent-violet);
+    box-shadow: 0 0 0 3px rgba(167, 139, 250, 0.22);
+    color: var(--text-primary);
+}
+
+.login-card .form-control::placeholder {
+    color: var(--text-muted);
+    opacity: 0.7;
+}
+
+[data-theme="light"] .login-card .form-control {
+    background: #FFFFFF;
+    border-color: var(--border-color);
+    color: var(--text-primary);
+}
+
+[data-theme="light"] .login-card .form-control:focus {
+    background: #FFFFFF;
+    border-color: var(--accent-violet);
+    box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.18);
+}
+
+/* Universal Browser Autofill Styling - Prevents White Box in Dark Theme */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+    -webkit-box-shadow: 0 0 0 1000px #0F172A inset !important;
+    box-shadow: 0 0 0 1000px #0F172A inset !important;
+    -webkit-text-fill-color: #F3F4F6 !important;
+    caret-color: #F3F4F6 !important;
+    border-color: var(--border-color) !important;
+    transition: background-color 50000s ease-in-out 0s;
+}
+
+[data-theme="light"] input:-webkit-autofill,
+[data-theme="light"] input:-webkit-autofill:hover,
+[data-theme="light"] input:-webkit-autofill:focus,
+[data-theme="light"] input:-webkit-autofill:active {
+    -webkit-box-shadow: 0 0 0 1000px #F8FAFC inset !important;
+    box-shadow: 0 0 0 1000px #F8FAFC inset !important;
+    -webkit-text-fill-color: #0F172A !important;
+    caret-color: #0F172A !important;
+    border-color: var(--border-color) !important;
+}

@@ -1,20 +1,20 @@
 {
   "core/engine.py": {
-    "mtime": 1792783662.6115804,
-    "seen": 1792786629.4732053,
-    "ast_hash": "2e4825bc0cf418a3a84b0fec65535967",
+    "mtime": 1792805687.5486271,
+    "seen": 1792809162.2790682,
+    "ast_hash": "f034f9b58321fd115d8dbf678c65ab95",
     "semantic_hash": ""
   },
   "core/web_server.py": {
-    "mtime": 1792787591.8049455,
-    "seen": 1792788308.6604342,
-    "ast_hash": "1a88eeb811a326178fbfaa66e97461e9",
+    "mtime": 1792806342.815292,
+    "seen": 1792809162.2790833,
+    "ast_hash": "589d47dd6780320120e10a61f6884e9c",
     "semantic_hash": ""
   },
   "web/app.js": {
-    "mtime": 1792787720.981318,
-    "seen": 1792788308.6604466,
-    "ast_hash": "d0c1f926f07ba61c284ae6c5b8343ee5",
+    "mtime": 1792809012.5731685,
+    "seen": 1792809162.279103,
+    "ast_hash": "41d291e9265c57a9a737bc22fccc79a3",
     "semantic_hash": ""
   },
   ".agents/rules/01-architecture-and-failover.md": {
@@ -84,9 +84,9 @@
     "semantic_hash": ""
   },
   "web/index.html": {
-    "mtime": 1792785860.3805182,
-    "seen": 1792786629.4732566,
-    "ast_hash": "22fce3048486c67fcaae14234f8fdb06",
+    "mtime": 1792808617.9223704,
+    "seen": 1792809162.2791739,
+    "ast_hash": "ddc9a7e83242a7222aa55739172b3f08",
     "semantic_hash": ""
   },
   "xforwarder.sh": {
@@ -144,9 +144,9 @@
     "semantic_hash": ""
   },
   ".agents/session-state.json": {
-    "mtime": 1792788275.6711204,
-    "seen": 1792788308.6604257,
-    "ast_hash": "7a98f669c60b9359eaae6d03889e4d09",
+    "mtime": 1792803292.9845455,
+    "seen": 1792809162.2790625,
+    "ast_hash": "7ab332cb3a3e4284092b215ac4608683",
     "semantic_hash": ""
   },
   ".agents/AGENTS.md": {
@@ -414,21 +414,147 @@
     "semantic_hash": ""
   },
   "core/traffic.py": {
-    "mtime": 1792787911.4810007,
-    "seen": 1792788308.6604328,
-    "ast_hash": "b11fe6aa2acee0fba04fa69afd637447",
+    "mtime": 1792793280.7302725,
+    "seen": 1792793950.068327,
+    "ast_hash": "6a02b61956ef1dc262b11d9846a00353",
     "semantic_hash": ""
   },
   "tests/test_traffic.py": {
-    "mtime": 1792788062.5626543,
-    "seen": 1792788308.6604452,
-    "ast_hash": "432040db43244280277aa38b0f85ec5d",
+    "mtime": 1792793859.236118,
+    "seen": 1792793950.06834,
+    "ast_hash": "530be91fe0b24cb4b4661d78df8a9540",
     "semantic_hash": ""
   },
   ".agents/experiences/014-per-port-and-per-tunnel-traffic-accounting-and-delta-engine.md": {
     "mtime": 1792788224.7634706,
     "seen": 1792788308.6604602,
     "ast_hash": "8c0bf9d16cc0e5ec418a0a522fbfab22",
+    "semantic_hash": ""
+  },
+  "core/auth.py": {
+    "mtime": 1792805894.7030203,
+    "seen": 1792809162.2790651,
+    "ast_hash": "3e92392498873ad464074281e19454fd",
+    "semantic_hash": ""
+  },
+  "core/config_manager.py": {
+    "mtime": 1792803629.903893,
+    "seen": 1792809162.2790666,
+    "ast_hash": "75bb0ae02ab5b4d9d932156227a11975",
+    "semantic_hash": ""
+  },
+  "core/firewall.py": {
+    "mtime": 1792804176.1169677,
+    "seen": 1792809162.2790697,
+    "ast_hash": "bab299eb921d9f2218ffd4eea19ac744",
+    "semantic_hash": ""
+  },
+  "core/prober.py": {
+    "mtime": 1792805164.360906,
+    "seen": 1792809162.2790756,
+    "ast_hash": "656bae4c2d50a8118e73002381fa47c3",
+    "semantic_hash": ""
+  },
+  "core/proxy_gen.py": {
+    "mtime": 1792805116.8164418,
+    "seen": 1792809162.2790766,
+    "ast_hash": "19acd4995857cce2375451780a08f345",
+    "semantic_hash": ""
+  },
+  "core/service_manager.py": {
+    "mtime": 1792805992.0126655,
+    "seen": 1792809162.2790794,
+    "ast_hash": "644bbe7c3ee3e3f430e052ae8ecc95ef",
+    "semantic_hash": ""
+  },
+  "core/system_info.py": {
+    "mtime": 1792806303.1807218,
+    "seen": 1792809162.2790804,
+    "ast_hash": "8c61c1cc8e4c22a7556e1492cf84e5cd",
+    "semantic_hash": ""
+  },
+  "web/js/modules/api.js": {
+    "mtime": 1792807014.831776,
+    "seen": 1792809162.279104,
+    "ast_hash": "034a3056d5e5bcfdf0e4f247eef27e08",
+    "semantic_hash": ""
+  },
+  "web/js/modules/auth.js": {
+    "mtime": 1792807095.190517,
+    "seen": 1792809162.2791052,
+    "ast_hash": "9436ecd19c939ae0b52495a04a171921",
+    "semantic_hash": ""
+  },
+  "web/js/modules/import_export.js": {
+    "mtime": 1792807426.147999,
+    "seen": 1792809162.2791064,
+    "ast_hash": "bd6458cbb78d462d77978ce1f5129833",
+    "semantic_hash": ""
+  },
+  "web/js/modules/logs.js": {
+    "mtime": 1792807608.8196151,
+    "seen": 1792809162.2791073,
+    "ast_hash": "5c1ecbb6daf7d8d0475578e318b534eb",
+    "semantic_hash": ""
+  },
+  "web/js/modules/navigation.js": {
+    "mtime": 1792807073.4002433,
+    "seen": 1792809162.2791083,
+    "ast_hash": "85c6bc9f6af77b72593aa14f76ca035b",
+    "semantic_hash": ""
+  },
+  "web/js/modules/quality.js": {
+    "mtime": 1792808169.7578368,
+    "seen": 1792809162.2791095,
+    "ast_hash": "d66238d088a9c53ef04467b9500afbd7",
+    "semantic_hash": ""
+  },
+  "web/js/modules/rule_modal.js": {
+    "mtime": 1792808266.8229969,
+    "seen": 1792809162.2791102,
+    "ast_hash": "45c4212d11b8cbe4e7b58876e70910ea",
+    "semantic_hash": ""
+  },
+  "web/js/modules/rules.js": {
+    "mtime": 1792808453.2356198,
+    "seen": 1792809162.279113,
+    "ast_hash": "310c823b1c25f30bfb877855b515adf8",
+    "semantic_hash": ""
+  },
+  "web/js/modules/state.js": {
+    "mtime": 1792807032.3256142,
+    "seen": 1792809162.279114,
+    "ast_hash": "ddd73f1ef7ace4d57fcef6a46f734f38",
+    "semantic_hash": ""
+  },
+  "web/js/modules/stats.js": {
+    "mtime": 1792807843.5858345,
+    "seen": 1792809162.279115,
+    "ast_hash": "3b9458c0acb988819f89ff94055e6f7e",
+    "semantic_hash": ""
+  },
+  "web/js/modules/system.js": {
+    "mtime": 1792808105.2100153,
+    "seen": 1792809162.279116,
+    "ast_hash": "6d16b5130a31fcb3dfb5e1555925bf41",
+    "semantic_hash": ""
+  },
+  "web/js/modules/theme.js": {
+    "mtime": 1792807052.6379044,
+    "seen": 1792809162.279117,
+    "ast_hash": "d205d548b5a89dc32965562145b6c587",
+    "semantic_hash": ""
+  },
+  "web/js/modules/traffic.js": {
+    "mtime": 1792807733.619251,
+    "seen": 1792809162.2791178,
+    "ast_hash": "f9e4f2f7db68bc0f53694909928dd200",
+    "semantic_hash": ""
+  },
+  "web/js/modules/utils.js": {
+    "mtime": 1792806993.6635945,
+    "seen": 1792809162.2791188,
+    "ast_hash": "bd6c27b142d79ebf412b5f4261297d5d",
     "semantic_hash": ""
   }
 }

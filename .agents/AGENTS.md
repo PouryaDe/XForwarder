@@ -9,9 +9,10 @@ Authoritative architectural rules and standard operating procedures for AI agent
 - **Priority 1 (Primary Relay):** Direct user-space TCP/UDP IPv6 relay via HAProxy (`/etc/haproxy/haproxy.cfg`).
 - **Priority 2 (Backup Tunnel):** Kernel Layer-3 tunnel forwarding via NFTables DNAT (`table ip xfwd_orchestrator`) over GRE, IPIP, FakeTCP, or AmneziaWG.
 - **Core Engine Daemon:** `core/engine.py` (running 24/7 as `xforwarder.service`).
-- **Web UI Dashboard:** `core/web_server.py` + `web/` (running 24/7 as `xforwarder-web.service`).
+- **Modular Core Subsystems:** `core/config_manager.py`, `core/auth.py`, `core/firewall.py`, `core/proxy_gen.py`, `core/prober.py`, `core/system_info.py`, `core/service_manager.py`.
+- **Web UI Dashboard:** `core/web_server.py` + `web/` (modular CSS in `web/css/`, native ES modules in `web/js/modules/`, running 24/7 as `xforwarder-web.service`).
 - **CLI Controller:** `xforwarder.sh` (aliased to `xforwarder` and `xfwd`).
-- **Test Suite:** `tests/` (Native Python unittest covering migrations, security, PBKDF2 auth, HAProxy parser, UI, and edge cases).
+- **Test Suite:** `tests/` (Native Python unittest covering migrations, security, PBKDF2 auth, modular subsystems, HAProxy parser, UI, and edge cases).
 
 ---
 

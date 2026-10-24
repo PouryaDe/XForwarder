@@ -8,15 +8,26 @@ XForwarder is an ultra-lightweight, 24/7 intelligent multi-path priority failove
 ```text
 XForwarder/
 ├── core/
-│   ├── engine.py          # Core failover engine daemon (<15MB RAM, socket health prober, firewall/proxy syncer)
+│   ├── engine.py          # Core failover engine daemon (<15MB RAM, main loop & IPC router)
 │   ├── web_server.py      # Native Python 3 HTTP server (session auth, JSON REST API, static asset server)
+│   ├── config_manager.py  # Centralized schema migrations, atomic persistence, validation, import/export
+│   ├── auth.py            # Salted PBKDF2-HMAC-SHA256, persistent sessions, adaptive brute-force lockout
+│   ├── firewall.py        # Isolated table ip xfwd_orchestrator NFTables ruleset generator & conntrack flusher
+│   ├── proxy_gen.py       # Multi-core HAProxy (zero-copy splice-auto) & Nginx stream proxy config generators
+│   ├── prober.py          # 10-probe ICMP bursts, socket health checks, route/interface isolation
+│   ├── system_info.py     # System telemetry, service status cache, network topology discovery
+│   ├── service_manager.py # Controlled service restarts, async updates, version detection
 │   ├── metrics.py         # 50-probe packet loss engine, 15m SQLite scheduler, target deduplicator & 30d retention
+│   ├── route_quality.py   # Two-tier quality scoring, sliding window, hysteresis, streak confirmation
+│   ├── traffic.py         # Kernel & proxy byte accounting, hourly rollups, SQLite persistence
 │   ├── haproxy_parser.py  # HAProxy configuration parser, backup locator, and rule importer
 │   └── nftables_parser.py # Active kernel NFTables & iptables DNAT parser, backup creator & handle-based deconfliction
 ├── web/
 │   ├── index.html         # Modern panel dashboard with sidebar navigation, modular sections, and light/dark theme
 │   ├── style.css          # Glassmorphism aesthetic, light & dark theme design system, and responsive layout
-│   └── app.js             # Vanilla JS state manager, auto-polling, section switcher, and real-time UI renderer
+│   ├── app.js             # Vanilla JS state manager & orchestrator (Native ES module entry point)
+│   ├── css/               # Modular CSS stylesheets (tokens, base, layout, components, modals, style)
+│   └── js/modules/        # Clean Vanilla ES modules (api, state, theme, navigation, auth, stats, rules, etc.)
 ├── config/
 │   └── config.json.example# Reference configuration schema
 ├── systemd/
@@ -27,6 +38,7 @@ XForwarder/
 ├── tests/
 │   ├── test_migration.py  # Native Python unittest suite (schema migrations & edge cases)
 │   ├── test_security.py   # Native Python unittest suite (PBKDF2 auth, rate limiting & input sanitization)
+│   ├── test_modular_subsystems.py # Native Python unittest suite (modular core subsystems & edge cases)
 │   ├── test_haproxy_parser.py # Native Python unittest suite (HAProxy config parser & importer)
 │   ├── test_nftables_parser.py# Native Python unittest suite (NFTables/iptables parser, backup & deconfliction)
 │   ├── test_export_import.py  # Native Python unittest suite (sanitized config export & merge/replace restore)

@@ -3,6 +3,7 @@
 XForwarder - Core Engine Daemon
 Monitors uplink destinations (IPv6 HAProxy vs IPv4 NFTables tunnels),
 manages automatic failover, and dynamically synchronizes kernel NAT and user-space daemons.
+Refactored into clean modular architecture delegating to specialized core subsystems.
 """
 
 import os
@@ -20,30 +21,41 @@ import tempfile
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Dict, List, Any, Optional, Tuple
 
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+CORE_DIR = os.path.dirname(os.path.abspath(__file__))
+if BASE_DIR not in sys.path:
+    sys.path.insert(0, BASE_DIR)
+if CORE_DIR not in sys.path:
+    sys.path.insert(0, CORE_DIR)
+
+from core.config_manager import (
+    get_config_path, get_state_file_path, migrate_and_normalize_config,
+    load_config as cm_load_config, save_config as cm_save_config,
+    CONFIG_PATH as DEFAULT_CONFIG_PATH, LEGACY_CONFIG_PATH, LOCAL_CONFIG_PATH,
+    STATE_FILE_PATH, LEGACY_STATE_FILE_PATH
+)
+from core.prober import (
+    is_private_or_tunnel_target, validate_probe_route,
+    probe_destination_icmp as prober_probe_destination_icmp,
+    check_destination as prober_check_destination,
+    fast_confirm_burst as prober_fast_confirm_burst,
+    is_interface_up, get_route_interface
+)
+from core.firewall import is_ipv6_supported, apply_nftables, flush_conntrack
+from core.proxy_gen import apply_haproxy, apply_nginx, HAPROXY_CONF_PATH, UDP_CONF_PATH, NGINX_CONF_PATH
+from core.route_quality import (
+    summarize_cycle, aggregate_window, compute_score, classify_status, decide_route, pick_best_now
+)
+
 try:
-    from core.route_quality import (
-        summarize_cycle, aggregate_window, compute_score, classify_status, decide_route, pick_best_now
-    )
-    from core.metrics import parse_ping_output, sanitize_target_host
+    from core.metrics import parse_ping_output, sanitize_target_host, LossMonitorScheduler
     from core.traffic import TrafficCollector
 except ImportError:
-    from route_quality import (
-        summarize_cycle, aggregate_window, compute_score, classify_status, decide_route, pick_best_now
-    )
-    from metrics import parse_ping_output, sanitize_target_host
+    from metrics import parse_ping_output, sanitize_target_host, LossMonitorScheduler
     try:
         from traffic import TrafficCollector
     except ImportError:
         TrafficCollector = None
-
-DEFAULT_CONFIG_PATH = "/etc/xforwarder/config.json"
-LEGACY_CONFIG_PATH = "/etc/forward-manager/config.json"
-LOCAL_CONFIG_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "config", "config.json")
-STATE_FILE_PATH = "/run/xforwarder/state.json"
-LEGACY_STATE_FILE_PATH = "/run/forward-manager/state.json"
-HAPROXY_CONF_PATH = "/etc/haproxy/haproxy.cfg"
-UDP_CONF_PATH = "/etc/haproxy/forwarder-udp.conf"
-NGINX_CONF_PATH = "/etc/nginx/nginx.conf"
 
 PID_FILE_CANDIDATES = [
     "/run/xforwarder/engine.pid",
@@ -52,18 +64,10 @@ PID_FILE_CANDIDATES = [
 ]
 
 
-def is_private_or_tunnel_target(target: str) -> bool:
-    """Returns True if the target IP is in RFC 1918 private, loopback, link-local, or IPv6 ULA address space."""
-    if not target:
-        return False
-    try:
-        ip = ipaddress.ip_address(target.strip())
-        return ip.is_private or ip.is_loopback or ip.is_link_local
-    except ValueError:
-        return False
-
-
 class XForwarderEngine:
+    migrate_and_normalize_config = staticmethod(migrate_and_normalize_config)
+    _is_ipv6_supported = staticmethod(is_ipv6_supported)
+
     def __init__(self, config_path: Optional[str] = None, state_file_path: Optional[str] = None):
         self.config_path = self._resolve_config_path(config_path)
         self.state_file_path = state_file_path or STATE_FILE_PATH
@@ -108,579 +112,66 @@ class XForwarderEngine:
                     with open(s_path, "r", encoding="utf-8") as rf:
                         data = json.load(rf)
                         if isinstance(data, dict):
-                            rt = data.get("runtime") if isinstance(data.get("runtime"), dict) else data
-                            if "rules_state" in rt and isinstance(rt["rules_state"], dict):
+                            rt = data.get("runtime", {}) if isinstance(data.get("runtime"), dict) else data
+                            if isinstance(rt, dict) and "rules_state" in rt:
                                 self.runtime_state["rules_state"] = rt["rules_state"]
-                            if "uptime_started" in rt:
+                            if isinstance(rt, dict) and "uptime_started" in rt:
                                 self.runtime_state["uptime_started"] = rt["uptime_started"]
-                            if "last_check_timestamp" in rt:
-                                self.runtime_state["last_check_timestamp"] = rt["last_check_timestamp"]
-                            if "active_services" in rt and isinstance(rt["active_services"], dict):
-                                self.runtime_state["active_services"].update(rt["active_services"])
                             break
                 except Exception:
                     pass
 
-    @staticmethod
-    def _is_ipv6_supported() -> bool:
-        """Returns True if the host kernel has an active IPv6 networking stack."""
-        if os.path.exists("/proc/net/if_inet6"):
-            return True
-        try:
-            with socket.socket(socket.AF_INET6, socket.SOCK_STREAM) as s:
-                return True
-        except Exception:
-            return False
-
     def _resolve_config_path(self, override_path: Optional[str]) -> str:
-        if override_path:
-            return override_path
-        if os.path.exists(DEFAULT_CONFIG_PATH):
-            return DEFAULT_CONFIG_PATH
-        if os.path.exists(LEGACY_CONFIG_PATH):
-            return LEGACY_CONFIG_PATH
-        if os.path.exists(LOCAL_CONFIG_PATH):
-            return LOCAL_CONFIG_PATH
-        example_path = LOCAL_CONFIG_PATH + ".example"
-        if os.path.exists(example_path):
-            return example_path
-        return DEFAULT_CONFIG_PATH
-
-    @staticmethod
-    def migrate_and_normalize_config(cfg: Dict[str, Any]) -> Tuple[Dict[str, Any], bool]:
-        """Automatically migrates and normalizes legacy configuration schemas for seamless backward compatibility."""
-        if not isinstance(cfg, dict):
-            cfg = {}
-
-        modified = False
-
-        current_version = int(cfg.get("schema_version", 1))
-        if current_version < 3:
-            # Upgrade defaults from v2 to v3 if untouched by user
-            if cfg.get("hysteresis_percent") == 10:
-                cfg["hysteresis_percent"] = 20
-            if cfg.get("loss_penalty_weight") == 10:
-                cfg["loss_penalty_weight"] = 20
-            cfg["schema_version"] = 3
-            modified = True
-        elif cfg.get("schema_version") != 3:
-            cfg["schema_version"] = 3
-            modified = True
-
-        defaults = {
-            "wan_interface": "auto",
-            "check_interval_seconds": 8,
-            "probe_count": 10,
-            "probe_interval_ms": 200,
-            "quality_window_seconds": 300,
-            "failure_threshold": 3,
-            "recovery_threshold": 3,
-            "fast_failover_enabled": True,
-            "max_acceptable_loss": 25,
-            "critical_loss_percent": 30,
-            "cooldown_seconds": 60,
-            "min_hold_seconds": 600,
-            "switch_confirm_seconds": 120,
-            "hysteresis_percent": 20,
-            "loss_penalty_weight": 20,
-            "jitter_penalty_weight": 2,
-            "priority_bias_ms": 0,
-            "fast_probe_burst": 5
-        }
-        for k, v in defaults.items():
-            if k not in cfg:
-                cfg[k] = v
-                modified = True
-
-        # Normalize failover & anti-flap parameters
-        try:
-            val = max(2, min(int(cfg.get("check_interval_seconds", 8)), 120))
-            if cfg.get("check_interval_seconds") != val:
-                cfg["check_interval_seconds"] = val
-                modified = True
-        except (ValueError, TypeError):
-            cfg["check_interval_seconds"] = 8
-            modified = True
-
-        try:
-            val = max(5, min(int(cfg.get("probe_count", 10)), 20))
-            if cfg.get("probe_count") != val:
-                cfg["probe_count"] = val
-                modified = True
-        except (ValueError, TypeError):
-            cfg["probe_count"] = 10
-            modified = True
-
-        try:
-            val = max(200, min(int(cfg.get("probe_interval_ms", 200)), 1000))
-            if cfg.get("probe_interval_ms") != val:
-                cfg["probe_interval_ms"] = val
-                modified = True
-        except (ValueError, TypeError):
-            cfg["probe_interval_ms"] = 200
-            modified = True
-
-        try:
-            val = max(60, min(int(cfg.get("quality_window_seconds", 300)), 1800))
-            if cfg.get("quality_window_seconds") != val:
-                cfg["quality_window_seconds"] = val
-                modified = True
-        except (ValueError, TypeError):
-            cfg["quality_window_seconds"] = 300
-            modified = True
-
-        try:
-            val = max(1, min(int(cfg.get("failure_threshold", 3)), 10))
-            if cfg.get("failure_threshold") != val:
-                cfg["failure_threshold"] = val
-                modified = True
-        except (ValueError, TypeError):
-            cfg["failure_threshold"] = 3
-            modified = True
-
-        try:
-            val = max(1, min(int(cfg.get("recovery_threshold", 3)), 10))
-            if cfg.get("recovery_threshold") != val:
-                cfg["recovery_threshold"] = val
-                modified = True
-        except (ValueError, TypeError):
-            cfg["recovery_threshold"] = 3
-            modified = True
-
-        try:
-            val = max(5, min(int(cfg.get("max_acceptable_loss", 25)), 90))
-            if cfg.get("max_acceptable_loss") != val:
-                cfg["max_acceptable_loss"] = val
-                modified = True
-        except (ValueError, TypeError):
-            cfg["max_acceptable_loss"] = 25
-            modified = True
-
-        try:
-            val = max(10, min(int(cfg.get("critical_loss_percent", 30)), 90))
-            if cfg.get("critical_loss_percent") != val:
-                cfg["critical_loss_percent"] = val
-                modified = True
-        except (ValueError, TypeError):
-            cfg["critical_loss_percent"] = 30
-            modified = True
-
-        try:
-            val = max(10, min(int(cfg.get("cooldown_seconds", 60)), 600))
-            if cfg.get("cooldown_seconds") != val:
-                cfg["cooldown_seconds"] = val
-                modified = True
-        except (ValueError, TypeError):
-            cfg["cooldown_seconds"] = 60
-            modified = True
-
-        try:
-            val = max(60, min(int(cfg.get("min_hold_seconds", 600)), 3600))
-            if cfg.get("min_hold_seconds") != val:
-                cfg["min_hold_seconds"] = val
-                modified = True
-        except (ValueError, TypeError):
-            cfg["min_hold_seconds"] = 600
-            modified = True
-
-        try:
-            val = max(30, min(int(cfg.get("switch_confirm_seconds", 120)), 900))
-            if cfg.get("switch_confirm_seconds") != val:
-                cfg["switch_confirm_seconds"] = val
-                modified = True
-        except (ValueError, TypeError):
-            cfg["switch_confirm_seconds"] = 120
-            modified = True
-
-        try:
-            val = max(0, min(float(cfg.get("hysteresis_percent", 20)), 50))
-            if cfg.get("hysteresis_percent") != val:
-                cfg["hysteresis_percent"] = val
-                modified = True
-        except (ValueError, TypeError):
-            cfg["hysteresis_percent"] = 20
-            modified = True
-
-        try:
-            val = max(1, min(int(cfg.get("loss_penalty_weight", 20)), 50))
-            if cfg.get("loss_penalty_weight") != val:
-                cfg["loss_penalty_weight"] = val
-                modified = True
-        except (ValueError, TypeError):
-            cfg["loss_penalty_weight"] = 20
-            modified = True
-
-        try:
-            val = max(0, min(int(cfg.get("jitter_penalty_weight", 2)), 10))
-            if cfg.get("jitter_penalty_weight") != val:
-                cfg["jitter_penalty_weight"] = val
-                modified = True
-        except (ValueError, TypeError):
-            cfg["jitter_penalty_weight"] = 2
-            modified = True
-
-        try:
-            val = max(0, min(int(cfg.get("priority_bias_ms", 0)), 200))
-            if cfg.get("priority_bias_ms") != val:
-                cfg["priority_bias_ms"] = val
-                modified = True
-        except (ValueError, TypeError):
-            cfg["priority_bias_ms"] = 0
-            modified = True
-
-        try:
-            val = max(1, min(int(cfg.get("fast_probe_burst", 5)), 10))
-            if cfg.get("fast_probe_burst") != val:
-                cfg["fast_probe_burst"] = val
-                modified = True
-        except (ValueError, TypeError):
-            cfg["fast_probe_burst"] = 5
-            modified = True
-
-        if not isinstance(cfg.get("fast_failover_enabled"), bool):
-            cfg["fast_failover_enabled"] = bool(cfg.get("fast_failover_enabled", True))
-            modified = True
-
-        if "web" not in cfg or not isinstance(cfg["web"], dict):
-            cfg["web"] = {}
-            modified = True
-        web = cfg["web"]
-
-        web_defaults = {
-            "bind_host": "0.0.0.0",
-            "port": 8090,
-            "secret_path": "xfwd-admin",
-            "ssl_cert": "",
-            "ssl_key": ""
-        }
-        for k, v in web_defaults.items():
-            if k not in web:
-                web[k] = v
-                modified = True
-
-        # Normalize secret path (strip leading/trailing slashes and whitespace)
-        clean_secret = str(web.get("secret_path", "xfwd-admin") or "").strip().strip("/")
-        if web.get("secret_path") != clean_secret:
-            web["secret_path"] = clean_secret
-            modified = True
-
-        # Normalize web port
-        try:
-            web_port = int(web.get("port", 8090))
-            if web.get("port") != web_port:
-                web["port"] = web_port
-                modified = True
-        except (ValueError, TypeError):
-            web["port"] = 8090
-            modified = True
-
-        # Normalize SSL cert/key paths
-        clean_cert = str(web.get("ssl_cert", "") or "").strip()
-        if web.get("ssl_cert") != clean_cert:
-            web["ssl_cert"] = clean_cert
-            modified = True
-
-        clean_key = str(web.get("ssl_key", "") or "").strip()
-        if web.get("ssl_key") != clean_key:
-            web["ssl_key"] = clean_key
-            modified = True
-
-        if "auth" not in web or not isinstance(web["auth"], dict):
-            web["auth"] = {}
-            modified = True
-        auth = web["auth"]
-        if "username" not in auth:
-            auth["username"] = "admin"
-            modified = True
-        if "password_hash" not in auth:
-            auth["password_hash"] = ""
-            modified = True
-
-        if "rules" not in cfg or not isinstance(cfg["rules"], list):
-            cfg["rules"] = []
-            modified = True
-
-        for rule in cfg["rules"]:
-            if not isinstance(rule, dict):
-                continue
-            
-            # Normalize port
-            try:
-                port = int(rule.get("port", 0))
-                if rule.get("port") != port:
-                    rule["port"] = port
-                    modified = True
-            except (ValueError, TypeError):
-                port = 0
-
-            if not rule.get("id"):
-                rule["id"] = f"rule-{port}"
-                modified = True
-            
-            proto = str(rule.get("protocol", "both")).lower()
-            if proto not in ("tcp", "udp", "both"):
-                proto = "both"
-            if rule.get("protocol") != proto:
-                rule["protocol"] = proto
-                modified = True
-
-            try:
-                act_prio = int(rule.get("active_priority", 1))
-            except (ValueError, TypeError):
-                act_prio = 1
-            if rule.get("active_priority") != act_prio:
-                rule["active_priority"] = act_prio
-                modified = True
-
-            try:
-                force_ovr = int(rule.get("force_override", 0))
-            except (ValueError, TypeError):
-                force_ovr = 0
-            if rule.get("force_override") != force_ovr:
-                rule["force_override"] = force_ovr
-                modified = True
-
-            # Normalize category (default empty string, max 48 chars, sanitize control/dangerous chars)
-            raw_category = str(rule.get("category", "") or "").strip()[:48]
-            clean_category = "".join(c for c in raw_category if ord(c) >= 32 and c not in "<>\";`$\\")
-            if "category" not in rule:
-                rule["category"] = clean_category
-                modified = True
-            elif rule.get("category") != clean_category:
-                rule["category"] = clean_category
-                modified = True
-
-            # Normalize registration timestamp (created_at with NaN, Inf, and boundary protection)
-            try:
-                created_at = float(rule.get("created_at", 0))
-                if created_at != created_at or created_at < 0 or created_at > 4102444800 or abs(created_at) == float("inf"):
-                    created_at = 0.0
-            except (ValueError, TypeError):
-                created_at = 0.0
-            if "created_at" not in rule:
-                rule["created_at"] = created_at
-                modified = True
-            elif rule.get("created_at") != created_at:
-                rule["created_at"] = created_at
-                modified = True
-
-            dests = rule.get("destinations", [])
-            if not isinstance(dests, list):
-                dests = []
-                rule["destinations"] = dests
-                modified = True
-
-            for d in dests:
-                if not isinstance(d, dict):
-                    continue
-
-                try:
-                    prio = int(d.get("priority", 1))
-                except (ValueError, TypeError):
-                    prio = 1
-                if d.get("priority") != prio:
-                    d["priority"] = prio
-                    modified = True
-
-                try:
-                    d_port = int(d.get("port", port))
-                except (ValueError, TypeError):
-                    d_port = port
-                if d.get("port") != d_port:
-                    d["port"] = d_port
-                    modified = True
-
-                if "comment" not in d:
-                    d["comment"] = ""
-                    modified = True
-
-                dtype = str(d.get("type", "")).lower().strip()
-                if not dtype:
-                    target = str(d.get("target", "")).strip()
-                    if ":" in target:
-                        dtype = "haproxy"
-                    elif target.startswith("10.") or target.startswith("192.168.") or target.startswith("172."):
-                        dtype = "nftables"
-                    else:
-                        dtype = "nginx"
-                    d["type"] = dtype
-                    modified = True
-                elif d.get("type") != dtype:
-                    d["type"] = dtype
-                    modified = True
-
-                if "target" in d:
-                    clean_target = str(d["target"]).strip().strip("[]")
-                    if d["target"] != clean_target:
-                        d["target"] = clean_target
-                        modified = True
-
-                has_pp = bool(d.get("proxy_protocol", False) or d.get("send_proxy", False))
-                if d.get("proxy_protocol") != has_pp:
-                    d["proxy_protocol"] = has_pp
-                    modified = True
-
-        return cfg, modified
+        return get_config_path(override_path)
 
     def _save_config_unlocked(self) -> bool:
-        """Atomically writes current configuration to disk using a temporary file and os.replace."""
-        try:
-            dir_name = os.path.dirname(self.config_path)
-            if dir_name:
-                os.makedirs(dir_name, exist_ok=True)
-            tmp_path = f"{self.config_path}.tmp.{os.getpid()}"
-            with open(tmp_path, "w", encoding="utf-8") as f:
-                json.dump(self.config, f, indent=2, ensure_ascii=False)
-            os.replace(tmp_path, self.config_path)
-            return True
-        except Exception as e:
-            print(f"[ERROR] Failed to save config to {self.config_path}: {e}", file=sys.stderr)
-            return False
+        """Atomically writes current configuration to disk."""
+        return cm_save_config(self.config, self.config_path)
 
     def load_config(self) -> None:
-        """Loads and self-heals configuration, applying schema migrations when legacy keys are detected."""
+        """Loads and normalizes configuration from disk using self-healing schema migration."""
         with self.lock:
-            try:
-                if os.path.exists(self.config_path):
-                    with open(self.config_path, "r", encoding="utf-8") as f:
-                        self.config = json.load(f)
-                else:
-                    self.config = {
-                        "schema_version": 2,
-                        "wan_interface": "auto",
-                        "check_interval_seconds": 8,
-                        "failure_threshold": 3,
-                        "recovery_threshold": 3,
-                        "fast_failover_enabled": True,
-                        "max_acceptable_loss": 25,
-                        "cooldown_seconds": 60,
-                        "hysteresis_percent": 10,
-                        "loss_penalty_weight": 10,
-                        "fast_probe_burst": 3,
-                        "web": {
-                            "bind_host": "0.0.0.0",
-                            "port": 8090,
-                            "secret_path": "xfwd-admin",
-                            "auth": {
-                                "username": "admin",
-                                "password_hash": ""
-                            }
-                        },
-                        "rules": []
-                    }
-                self.config, modified = self.migrate_and_normalize_config(self.config)
-                self._detect_wan_interface()
-                if modified and os.path.exists(self.config_path):
-                    self._save_config_unlocked()
-            except Exception as e:
-                print(f"[ERROR] Failed to load config from {self.config_path}: {e}", file=sys.stderr)
+            self.config = cm_load_config(self.config_path)
+            self.runtime_state["wan_interface"] = self._detect_wan_interface()
 
     def save_config(self) -> bool:
-        """Thread-safe wrapper to persist the configuration atomically."""
         with self.lock:
             return self._save_config_unlocked()
 
     def _detect_wan_interface(self) -> str:
-        configured = self.config.get("wan_interface", "auto")
-        if configured and configured != "auto":
-            self.runtime_state["wan_interface"] = configured
-            return configured
-
-        try:
-            cmd = ["ip", "-o", "route", "show", "default"]
-            out = subprocess.check_output(cmd, text=True, stderr=subprocess.DEVNULL).strip()
-            parts = out.split()
-            if "dev" in parts:
-                idx = parts.index("dev")
-                if idx + 1 < len(parts):
-                    iface = parts[idx + 1]
-                    self.runtime_state["wan_interface"] = iface
-                    return iface
-        except Exception:
-            pass
-
-        self.runtime_state["wan_interface"] = "eth0"
+        cfg_iface = self.config.get("wan_interface", "auto")
+        if cfg_iface and cfg_iface != "auto":
+            return cfg_iface
+        if sys.platform != "win32":
+            try:
+                out = subprocess.check_output(
+                    ["ip", "-o", "route", "show", "default"],
+                    text=True,
+                    stderr=subprocess.DEVNULL
+                ).strip()
+                parts = out.split()
+                if "dev" in parts:
+                    idx = parts.index("dev")
+                    if idx + 1 < len(parts):
+                        return parts[idx + 1]
+            except Exception:
+                pass
         return "eth0"
 
     def _is_interface_up(self, iface: str) -> bool:
-        """Checks if a Linux network interface exists and is operstate UP."""
-        if not iface:
-            return False
-        if sys.platform == "win32":
-            return True
-        sys_path = f"/sys/class/net/{iface}"
-        if not os.path.exists(sys_path):
-            return False
-        try:
-            operstate_path = os.path.join(sys_path, "operstate")
-            if os.path.exists(operstate_path):
-                with open(operstate_path, "r", encoding="utf-8") as f:
-                    state = f.read().strip().lower()
-                    if state in ("up", "unknown"):
-                        return True
-                    if state == "down":
-                        return False
-            flags_path = os.path.join(sys_path, "flags")
-            if os.path.exists(flags_path):
-                with open(flags_path, "r", encoding="utf-8") as f:
-                    flags = int(f.read().strip(), 16)
-                    return bool(flags & 0x1)
-        except Exception:
-            pass
-        return True
+        return is_interface_up(iface)
 
     def _get_route_interface(self, target: str) -> Optional[str]:
-        """Queries the kernel routing table to find the outbound network interface for target."""
-        if sys.platform == "win32":
-            return None
-        try:
-            out = subprocess.check_output(
-                ["ip", "-o", "route", "get", target],
-                text=True,
-                stderr=subprocess.DEVNULL
-            ).strip()
-            parts = out.split()
-            if "dev" in parts:
-                idx = parts.index("dev")
-                if idx + 1 < len(parts):
-                    return parts[idx + 1]
-        except Exception:
-            return ""
-        return ""
+        return get_route_interface(target)
 
     def _validate_probe_route(self, dest: Dict[str, Any]) -> Tuple[bool, Optional[str], str]:
-        """
-        Validates network interface and kernel route isolation for destination.
-        Returns (is_valid: bool, tunnel_iface: Optional[str], reason: str).
-        """
-        target = str(dest.get("target", "")).strip().strip("[]")
-        dest_type = dest.get("type", "haproxy")
-        tunnel_iface = str(dest.get("tunnel_iface", "")).strip()
-
-        if not target:
-            return False, None, "Invalid target"
-
         wan_iface = self._detect_wan_interface()
-        target_is_private = is_private_or_tunnel_target(target)
-
-        if dest_type in ("nftables", "nginx") or tunnel_iface:
-            if tunnel_iface:
-                if not self._is_interface_up(tunnel_iface):
-                    return False, tunnel_iface, f"Tunnel interface '{tunnel_iface}' is missing or down"
-            elif target_is_private:
-                route_iface = self._get_route_interface(target)
-                if route_iface == "":
-                    return False, None, f"No route to destination {target}"
-                elif route_iface:
-                    if route_iface == wan_iface:
-                        return False, route_iface, f"WAN leak via {wan_iface}"
-                    if route_iface in ("lo", "gre0", "gretap0", "erspan0", "tunl0", "sit0", "ip6tnl0", "ip6gre0", "dummy0"):
-                        return False, route_iface, f"Destination {target} routes to kernel fallback device {route_iface}"
-                    if not self._is_interface_up(route_iface):
-                        return False, route_iface, f"Interface {route_iface} for {target} is down"
-                    tunnel_iface = route_iface
-
-        return True, (tunnel_iface if tunnel_iface else None), ""
+        return validate_probe_route(
+            dest,
+            wan_iface=wan_iface,
+            is_interface_up_fn=self._is_interface_up,
+            get_route_interface_fn=self._get_route_interface
+        )
 
     def probe_destination_icmp(
         self,
@@ -689,269 +180,52 @@ class XForwarderEngine:
         count: int = 10,
         interval_ms: int = 200
     ) -> Dict[str, Any]:
-        """
-        Executes precise multi-probe ICMP test (default 10 packets, 200ms interval).
-        Safe argument injection shielding, explicit locale C, IPv4/IPv6 handling.
-        """
-        clean_target = sanitize_target_host(target)
-        if not clean_target:
-            return {
-                "healthy": False,
-                "packets_sent": count,
-                "packets_received": 0,
-                "packet_loss": 100.0,
-                "latency_ms": None,
-                "jitter_ms": 0.0,
-                "reason": "Invalid target host"
-            }
+        return prober_probe_destination_icmp(target, iface=iface, count=count, interval_ms=interval_ms)
 
-        is_ipv6 = ":" in clean_target
-        safe_count = max(1, min(count, 30))
-        interval_sec = max(0.1, min(interval_ms / 1000.0, 2.0))
-        timeout_sec = max(2, int(safe_count * interval_sec + 3))
-
-        safe_env = dict(os.environ)
-        safe_env["LC_ALL"] = "C"
-        safe_env["LANG"] = "C"
-
-        clean_iface = None
-        if iface:
-            raw_iface = str(iface).strip()
-            if raw_iface and not raw_iface.startswith("-") and re.match(r'^[a-zA-Z0-9_.-]+$', raw_iface):
-                clean_iface = raw_iface
-
-        if sys.platform == "win32":
-            cmd = ["ping", "-n", str(safe_count), "-w", "500", clean_target]
-        else:
-            cmd = ["ping", "-c", str(safe_count), "-i", f"{interval_sec:.1f}", "-W", "1"]
-            if is_ipv6:
-                cmd.insert(1, "-6")
-            else:
-                cmd.insert(1, "-4")
-            if clean_iface:
-                cmd.extend(["-I", clean_iface])
-            cmd.append(clean_target)
-
-        # Backward-compatibility for unit tests patching subprocess.call
-        if getattr(subprocess.call, "_mock_return_value", None) is not None or "Mock" in str(type(subprocess.call)):
-            try:
-                ret = subprocess.call(cmd)
-                return {
-                    "healthy": (ret == 0),
-                    "packets_sent": safe_count,
-                    "packets_received": safe_count if ret == 0 else 0,
-                    "packet_loss": 0.0 if ret == 0 else 100.0,
-                    "latency_ms": 10.0 if ret == 0 else None,
-                    "jitter_ms": 0.0
-                }
-            except Exception:
-                pass
-
-        try:
-            proc = subprocess.run(
-                cmd,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                text=True,
-                timeout=timeout_sec,
-                env=safe_env
-            )
-            if proc.returncode != 0 and is_ipv6 and sys.platform != "win32" and "unknown" in proc.stderr.lower():
-                cmd_alt = ["ping6", "-c", str(safe_count), "-i", f"{interval_sec:.1f}", "-W", "1"]
-                if clean_iface:
-                    cmd_alt.extend(["-I", clean_iface])
-                cmd_alt.append(clean_target)
-                proc = subprocess.run(
-                    cmd_alt,
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.PIPE,
-                    text=True,
-                    timeout=timeout_sec,
-                    env=safe_env
-                )
-            parsed = parse_ping_output(proc.stdout, proc.returncode, sent_default=safe_count)
-            return parsed
-        except subprocess.TimeoutExpired:
-            return {
-                "healthy": False,
-                "packets_sent": safe_count,
-                "packets_received": 0,
-                "packet_loss": 100.0,
-                "latency_ms": None,
-                "jitter_ms": 0.0,
-                "reason": f"Probe timed out after {timeout_sec}s"
-            }
-        except Exception as e:
-            return {
-                "healthy": False,
-                "packets_sent": safe_count,
-                "packets_received": 0,
-                "packet_loss": 100.0,
-                "latency_ms": None,
-                "jitter_ms": 0.0,
-                "reason": str(e)
-            }
-
-    def check_destination(self, dest: Dict[str, Any], rule_port: Optional[int] = None, protocol: Optional[str] = None, count: int = 1) -> Dict[str, Any]:
-        """Perform a low-overhead health check on a target destination with strict route and interface isolation."""
-        target = str(dest.get("target", "")).strip().strip("[]")
-        port = int(dest.get("port") or rule_port or 0)
-        proto = str(dest.get("protocol") or protocol or "both").lower()
-        start_time = time.perf_counter()
-        healthy = False
-        fail_reason = ""
-
-        if not target or port <= 0:
-            return {"healthy": False, "latency_ms": None, "packet_loss": 100, "reason": "Invalid target/port"}
-
-        is_valid, tunnel_iface, err_reason = self._validate_probe_route(dest)
-        if not is_valid:
-            return {
-                "healthy": False,
-                "latency_ms": None,
-                "packet_loss": 100,
-                "reason": err_reason
-            }
-
-        # Multi-sample packet loss test when count > 1
-        if count > 1:
-            sent = max(1, min(count, 10))
-            successes = 0
-            latencies = []
-
-            if proto != "udp":
-                for _ in range(sent):
-                    t_sample = time.perf_counter()
-                    try:
-                        family = socket.AF_INET6 if ":" in target else socket.AF_INET
-                        with socket.socket(family, socket.SOCK_STREAM) as s:
-                            s.settimeout(1.5)
-                            if tunnel_iface and sys.platform != "win32":
-                                try:
-                                    s.setsockopt(socket.SOL_SOCKET, 25, tunnel_iface.encode())
-                                except Exception:
-                                    pass
-                            if s.connect_ex((target, port)) == 0:
-                                successes += 1
-                                latencies.append(round((time.perf_counter() - t_sample) * 1000, 1))
-                    except Exception as e:
-                        if not fail_reason:
-                            fail_reason = str(e)
-
-            if successes == 0:
-                p_res = self.probe_destination_icmp(target, iface=tunnel_iface, count=sent, interval_ms=200)
-                return p_res
-
-            loss_pct = round(((sent - successes) / sent) * 100) if sent > 0 else 100
-            avg_lat = round(sum(latencies) / len(latencies), 1) if latencies else None
-            healthy = (successes > 0)
-            res_dict = {
-                "healthy": healthy,
-                "latency_ms": avg_lat,
-                "packet_loss": loss_pct,
-                "packets_sent": sent,
-                "packets_received": successes
-            }
-            if not healthy and fail_reason:
-                res_dict["reason"] = fail_reason
-            return res_dict
-
-        # Single-sample probe
-        if proto != "udp":
-            try:
-                family = socket.AF_INET6 if ":" in target else socket.AF_INET
-                with socket.socket(family, socket.SOCK_STREAM) as s:
-                    s.settimeout(2.0)
-                    if tunnel_iface and sys.platform != "win32":
-                        try:
-                            s.setsockopt(socket.SOL_SOCKET, 25, tunnel_iface.encode())
-                        except Exception:
-                            pass
-                    res = s.connect_ex((target, port))
-                    healthy = (res == 0)
-            except Exception as e:
-                healthy = False
-                fail_reason = str(e)
-
-        if not healthy:
-            p_res = self.probe_destination_icmp(target, iface=tunnel_iface, count=1, interval_ms=200)
-            healthy = p_res.get("healthy", False)
-            if not healthy and not fail_reason:
-                fail_reason = p_res.get("reason", "Ping probe unreachable")
-            elif healthy:
-                fail_reason = ""
-
-        latency_ms = round((time.perf_counter() - start_time) * 1000, 1)
-        res_dict = {
-            "healthy": healthy,
-            "latency_ms": latency_ms if healthy else None,
-            "packet_loss": 0 if healthy else 100
-        }
-        if not healthy and fail_reason:
-            res_dict["reason"] = fail_reason
-        return res_dict
+    def check_destination(
+        self,
+        dest: Dict[str, Any],
+        rule_port: Optional[int] = None,
+        protocol: Optional[str] = None,
+        count: int = 1
+    ) -> Dict[str, Any]:
+        wan_iface = self._detect_wan_interface()
+        return prober_check_destination(
+            dest,
+            rule_port=rule_port,
+            protocol=protocol,
+            count=count,
+            wan_iface=wan_iface,
+            validate_route_fn=self._validate_probe_route
+        )
 
     def _send_haproxy_runtime_cmd(self, cmd: str) -> Tuple[bool, str]:
-        """Communicates with HAProxy Runtime API via UNIX domain socket."""
         sock_path = "/run/haproxy/admin.sock"
-        if not os.path.exists(sock_path):
-            return False, "admin.sock not found"
+        if not os.path.exists(sock_path) or sys.platform == "win32":
+            return False, "HAProxy stats socket not available"
         try:
-            with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as s:
-                s.settimeout(0.5)
-                s.connect(sock_path)
-                s.sendall(f"{cmd.strip()}\n".encode("utf-8"))
-                response = s.recv(4096).decode("utf-8", errors="replace")
-                return True, response
+            with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as client:
+                client.settimeout(0.5)
+                client.connect(sock_path)
+                client.sendall((cmd.strip() + "\n").encode())
+                response = b""
+                while True:
+                    data = client.recv(1024)
+                    if not data:
+                        break
+                    response += data
+                return True, response.decode().strip()
         except Exception as e:
             return False, str(e)
 
-    def _fast_confirm_burst(self, dest: Dict[str, Any], rule_port: Optional[int] = None, protocol: Optional[str] = "both", count: int = 5) -> Dict[str, Any]:
-        """
-        Executes a rapid micro-probe burst (< 1s) to confirm destination outage
-        without waiting for multiple full check intervals.
-        """
-        target = str(dest.get("target", "")).strip().strip("[]")
-        port = int(dest.get("port") or rule_port or 0)
-        proto = str(dest.get("protocol") or protocol or "both").lower()
-        if not target or port <= 0:
-            return {"all_failed": True, "successes": 0, "packet_loss": 100, "avg_latency_ms": None}
-
-        burst_count = max(1, min(count, 5))
-        successes = 0
-        latencies = []
-
-        if proto != "udp":
-            for _ in range(burst_count):
-                t0 = time.perf_counter()
-                try:
-                    family = socket.AF_INET6 if ":" in target else socket.AF_INET
-                    with socket.socket(family, socket.SOCK_STREAM) as s:
-                        s.settimeout(0.25)
-                        if s.connect_ex((target, port)) == 0:
-                            successes += 1
-                            latencies.append((time.perf_counter() - t0) * 1000)
-                except Exception:
-                    pass
-
-        if successes == 0:
-            iface = dest.get("tunnel_iface")
-            p_res = self.probe_destination_icmp(target, iface=iface, count=burst_count, interval_ms=100)
-            recv = p_res.get("packets_received", 0)
-            if recv > 0:
-                successes = recv
-                if p_res.get("latency_ms") is not None:
-                    latencies.append(p_res["latency_ms"])
-
-        all_failed = (successes == 0)
-        loss = round(((burst_count - successes) / burst_count) * 100) if burst_count > 0 else 100
-        avg_lat = round(sum(latencies) / len(latencies), 1) if latencies else None
-        return {
-            "all_failed": all_failed,
-            "successes": successes,
-            "packet_loss": loss,
-            "avg_latency_ms": avg_lat
-        }
+    def _fast_confirm_burst(
+        self,
+        dest: Dict[str, Any],
+        rule_port: Optional[int] = None,
+        protocol: Optional[str] = "both",
+        count: int = 5
+    ) -> Dict[str, Any]:
+        return prober_fast_confirm_burst(dest, rule_port=rule_port, protocol=protocol, count=count)
 
     def _hot_toggle_rule_priority(self, rule: Dict[str, Any], old_prio: int, new_prio: int, is_critical: bool = False) -> None:
         """
@@ -962,14 +236,8 @@ class XForwarderEngine:
         port = rule.get("port")
         if not port:
             return
-
-        if is_critical and shutil.which("conntrack"):
-            for proto in ("tcp", "udp"):
-                try:
-                    subprocess.run(["conntrack", "-D", "-p", proto, "--dport", str(port)],
-                                   stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False)
-                except Exception:
-                    pass
+        if is_critical:
+            flush_conntrack(port)
 
     def _probe_all_destinations(self, rules: List[Dict[str, Any]]) -> Dict[Tuple[str, Optional[str]], Dict[str, Any]]:
         """
@@ -1033,10 +301,6 @@ class XForwarderEngine:
         return results
 
     def _persist_active_priorities(self, changed_rule_ids: Dict[str, int]) -> bool:
-        """
-        Safely merges active_priority updates into the latest config on disk
-        without overwriting newly added, edited, or deleted rules by the web dashboard.
-        """
         if not changed_rule_ids:
             return True
         with self.lock:
@@ -1358,7 +622,7 @@ class XForwarderEngine:
             } for r in rules
         ], sort_keys=True)
 
-    def sync_firewall_and_proxies(self) -> None:
+    def sync_firewall_and_proxies(self) -> Tuple[bool, List[str]]:
         wan_iface = self._detect_wan_interface()
         haproxy_entries = []
         udp_entries = []
@@ -1402,7 +666,6 @@ class XForwarderEngine:
                         f"    server srv_{port} {target_str}{proxy_flag}\n"
                     )
                 if proto in ("udp", "both"):
-                    # Use Nginx stream for UDP forwarding of HAProxy rules
                     pp_ngx = " proxy_protocol on;" if send_proxy else ""
                     udp_listens = [f"listen {port} udp reuseport;"]
                     if self._is_ipv6_supported():
@@ -1413,7 +676,6 @@ class XForwarderEngine:
                         f"    server {{ {udp_listens_str} proxy_pass {target_str};{pp_ngx} proxy_timeout 60s; }}"
                     )
             elif dest_type == "nginx":
-                # Nginx Stream TCP/UDP Forwarding (XManager Standard)
                 send_proxy = bool(dest.get("proxy_protocol", False) or dest.get("send_proxy", False))
                 pp_ngx = " proxy_protocol on;" if send_proxy else ""
 
@@ -1471,20 +733,6 @@ class XForwarderEngine:
         return len(errors) == 0, errors
 
     def _apply_nftables(self, dnat_rules: List[str]) -> Tuple[bool, Optional[str]]:
-        ipv4_rules = []
-        ipv6_rules = []
-
-        for r in dnat_rules:
-            if "dnat to [" in r or "]:" in r:
-                ipv6_rules.append(r)
-            else:
-                ipv4_rules.append(r)
-
-        ipv4_block = "\n".join(ipv4_rules) if ipv4_rules else "        # No active NFTables IPv4 DNAT rules"
-
-        # Collect unique rule ports for traffic accounting named counters
-        counter_defs = []
-        forward_counters = []
         rule_ports = set()
         for r in self.config.get("rules", []):
             try:
@@ -1493,387 +741,26 @@ class XForwarderEngine:
                     rule_ports.add(p)
             except (ValueError, TypeError):
                 pass
-        for r in dnat_rules:
-            m = re.search(r"dport\s+(\d+)", r)
-            if m:
-                try:
-                    rule_ports.add(int(m.group(1)))
-                except ValueError:
-                    pass
-
-        for p in sorted(list(rule_ports)):
-            counter_defs.append(f"    counter cnt_in_{p} {{ }}")
-            counter_defs.append(f"    counter cnt_out_{p} {{ }}")
-            forward_counters.append(f"        tcp dport {p} counter name cnt_in_{p}")
-            forward_counters.append(f"        tcp sport {p} counter name cnt_out_{p}")
-            forward_counters.append(f"        udp dport {p} counter name cnt_in_{p}")
-            forward_counters.append(f"        udp sport {p} counter name cnt_out_{p}")
-
-        counter_defs_str = "\n".join(counter_defs) + "\n\n" if counter_defs else ""
-        forward_counters_str = "\n".join(forward_counters) + "\n" if forward_counters else ""
-
-        tables_content = [
-            f"""table ip xfwd_orchestrator
-delete table ip xfwd_orchestrator
-
-table ip xfwd_orchestrator {{
-{counter_defs_str}    chain prerouting {{
-        type nat hook prerouting priority dstnat; policy accept;
-{ipv4_block}
-    }}
-
-    chain postrouting {{
-        type nat hook postrouting priority srcnat; policy accept;
-        oifname "gre*" masquerade
-        oifname "ipip*" masquerade
-        oifname "ftcp*" masquerade
-        oifname "awg*" masquerade
-        oifname "gnv*" masquerade
-        oifname "vxlan*" masquerade
-        oifname "wg*" masquerade
-        oifname "tun*" masquerade
-    }}
-
-    chain forward {{
-        type filter hook forward priority filter; policy accept;
-{forward_counters_str}        ct status dnat accept
-        ct state {{ established, related }} accept
-    }}
-}}"""
-        ]
-
-        if self._is_ipv6_supported():
-            ipv6_block = "\n".join(ipv6_rules) if ipv6_rules else "        # No active NFTables IPv6 DNAT rules"
-            tables_content.append(
-                f"""table ip6 xfwd_orchestrator
-delete table ip6 xfwd_orchestrator
-
-table ip6 xfwd_orchestrator {{
-{counter_defs_str}    chain prerouting {{
-        type nat hook prerouting priority dstnat; policy accept;
-{ipv6_block}
-    }}
-
-    chain postrouting {{
-        type nat hook postrouting priority srcnat; policy accept;
-        oifname "gre*" masquerade
-        oifname "ipip*" masquerade
-        oifname "ftcp*" masquerade
-        oifname "awg*" masquerade
-        oifname "gnv*" masquerade
-        oifname "vxlan*" masquerade
-        oifname "wg*" masquerade
-        oifname "tun*" masquerade
-    }}
-
-    chain forward {{
-        type filter hook forward priority filter; policy accept;
-{forward_counters_str}        ct status dnat accept
-        ct state {{ established, related }} accept
-    }}
-}}"""
-            )
-
-        nft_content = "#!/usr/sbin/nft -f\n# Generated by XForwarder Core Engine\n" + "\n\n".join(tables_content) + "\n"
-
-        if not shutil.which("nft"):
-            return True, None
-
-        if hasattr(self, "_last_nft_content") and self._last_nft_content == nft_content:
+        ok, err, new_content = apply_nftables(dnat_rules, rule_ports=rule_ports, last_content=self._last_nft_content)
+        if ok:
+            self._last_nft_content = new_content
             self.runtime_state["active_services"]["nftables"] = bool(dnat_rules)
-            return True, None
-
-        try:
-            # Clean up legacy tables if exist
-            subprocess.run(["nft", "delete", "table", "ip", "fwdman_orchestrator"],
-                           stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False)
-            subprocess.run(["nft", "delete", "table", "ip6", "fwdman_orchestrator"],
-                           stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False)
-            proc = subprocess.Popen(["nft", "-c", "-f", "-"], stdin=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-            out, err = proc.communicate(input=nft_content)
-            if proc.returncode == 0:
-                apply_proc = subprocess.Popen(["nft", "-f", "-"], stdin=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-                _, apply_err = apply_proc.communicate(input=nft_content)
-                if apply_proc.returncode != 0:
-                    err_msg = apply_err.strip() if apply_err else "Failed applying nftables ruleset"
-                    print(f"[WARN] NFTables apply failed: {err_msg}", file=sys.stderr)
-                    return False, f"NFTables apply: {err_msg}"
-                self.runtime_state["active_services"]["nftables"] = bool(dnat_rules)
-                self._last_nft_content = nft_content
-                return True, None
-            else:
-                err_msg = err.strip() if err else "NFTables validation check failed"
-                print(f"[WARN] NFTables check failed: {err_msg}", file=sys.stderr)
-                return False, f"NFTables syntax: {err_msg}"
-        except Exception as ex:
-            return False, f"NFTables error: {str(ex)}"
+        return ok, err
 
     def _apply_haproxy(self, haproxy_entries: List[str], udp_entries: Optional[List[str]] = None) -> Tuple[bool, Optional[str]]:
-        haproxy_dir = os.path.dirname(HAPROXY_CONF_PATH)
-        if not os.path.exists(haproxy_dir) and not shutil.which("haproxy"):
-            return True, None
-
-        # Guarantee /run/haproxy exists for admin.sock
-        try:
-            os.makedirs("/run/haproxy", exist_ok=True)
-        except Exception:
-            pass
-
-        # Standby dummy section prevents HAProxy error "no frontend, backend or listen section found" when 0 rules active
-        active_entries = list(haproxy_entries)
-        if not active_entries:
-            active_entries = [
-                "frontend xfwd_standby\n"
-                "    mode tcp\n"
-                "    bind 127.0.0.1:65534\n"
-                "    disabled\n"
-            ]
-
-        # Bounded between 1 and 64 to comply with Linux thread bitmasks across HAProxy releases
-        cpu_cores = min(64, max(1, os.cpu_count() or 1))
-        nbthread_entry = f"    nbthread {cpu_cores}\n" if cpu_cores > 1 else ""
-        cpu_map_entry = f"    cpu-map auto:1/1-{cpu_cores} 0-{cpu_cores - 1}\n" if cpu_cores > 1 else ""
-
-        base_haproxy = f"""# Generated by XForwarder
-global
-    log /dev/log local0 notice
-    stats socket /run/haproxy/admin.sock mode 660 level admin expose-fd listeners
-    stats timeout 30s
-    user haproxy
-    group haproxy
-    daemon
-    maxconn 100000
-    tune.bufsize 65536
-    tune.pipesize 262144
-{nbthread_entry}{cpu_map_entry}defaults
-    log     global
-    mode    tcp
-    option  dontlognull
-    option  clitcpka
-    option  srvtcpka
-    option  splice-auto
-    retries 3
-    timeout connect    5s
-    timeout client     1h
-    timeout server     1h
-    timeout client-fin 30s
-    timeout server-fin 30s
-
-""" + "\n".join(active_entries)
-
-        if os.path.exists(HAPROXY_CONF_PATH):
-            try:
-                with open(HAPROXY_CONF_PATH, "r", encoding="utf-8") as f_curr:
-                    if f_curr.read() == base_haproxy:
-                        self.runtime_state["active_services"]["haproxy"] = bool(haproxy_entries)
-                        return True, None
-            except Exception:
-                pass
-
-        try:
-            if not os.path.exists(haproxy_dir):
-                os.makedirs(haproxy_dir, exist_ok=True)
-            tmp_haproxy = f"{HAPROXY_CONF_PATH}.tmp.{os.getpid()}"
-            with open(tmp_haproxy, "w", encoding="utf-8") as f:
-                f.write(base_haproxy)
-
-            # Pre-validate if haproxy binary is present
-            if shutil.which("haproxy"):
-                chk = subprocess.run(["haproxy", "-c", "-f", tmp_haproxy], stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, text=True)
-                if chk.returncode != 0:
-                    # Defensive fallback: if older HAProxy build rejects advanced tune/splice/cpu-map/nbthread directives, remove them and retry
-                    fallback_haproxy = (
-                        base_haproxy.replace("    option  splice-auto\n", "")
-                        .replace("    tune.bufsize 65536\n", "")
-                        .replace("    tune.pipesize 262144\n", "")
-                    )
-                    if cpu_map_entry:
-                        fallback_haproxy = fallback_haproxy.replace(cpu_map_entry, "")
-                    if nbthread_entry:
-                        fallback_haproxy = fallback_haproxy.replace(nbthread_entry, "")
-                    if fallback_haproxy != base_haproxy:
-                        with open(tmp_haproxy, "w", encoding="utf-8") as f:
-                            f.write(fallback_haproxy)
-                        chk_fb = subprocess.run(["haproxy", "-c", "-f", tmp_haproxy], stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, text=True)
-                        if chk_fb.returncode == 0:
-                            base_haproxy = fallback_haproxy
-                            chk = chk_fb
-                    if chk.returncode != 0:
-                        if os.path.exists(tmp_haproxy):
-                            os.remove(tmp_haproxy)
-                        err_msg = chk.stderr.strip() if chk.stderr else "HAProxy config validation failed"
-                        return False, f"HAProxy syntax: {err_msg}"
-
-            os.replace(tmp_haproxy, HAPROXY_CONF_PATH)
-
-            if shutil.which("systemctl"):
-                res = subprocess.run(["systemctl", "reload", "haproxy"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-                if res.returncode != 0:
-                    res = subprocess.run(["systemctl", "restart", "haproxy"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-                    if res.returncode != 0:
-                        return False, "HAProxy service reload/restart failed"
-
+        ok, err = apply_haproxy(haproxy_entries, conf_path=HAPROXY_CONF_PATH)
+        if ok:
             self.runtime_state["active_services"]["haproxy"] = bool(haproxy_entries)
-            return True, None
-        except Exception as ex:
-            return False, f"HAProxy error: {str(ex)}"
+        return ok, err
 
     def _apply_nginx(self, nginx_entries: List[str]) -> Tuple[bool, Optional[str]]:
-        nginx_dir = os.path.dirname(NGINX_CONF_PATH)
-        if not os.path.exists(nginx_dir) and not shutil.which("nginx"):
-            return True, None
-
-        stream_body = "\n".join(nginx_entries) if nginx_entries else "    # No active Nginx stream servers"
-
-        # Determine user safely to avoid getpwnam failures on non-Debian distributions
-        user_line = ""
-        for u in ("www-data", "nginx"):
-            try:
-                with open("/etc/passwd", "r", encoding="utf-8") as pf:
-                    if any(line.startswith(f"{u}:") for line in pf):
-                        user_line = f"user {u};"
-                        break
-            except Exception:
-                pass
-
-        # Determine module loading safely
-        modules_line = ""
-        if os.path.isdir("/etc/nginx/modules-enabled"):
-            modules_line = "include /etc/nginx/modules-enabled/*.conf;"
-        elif os.path.exists("/usr/lib/nginx/modules/ngx_stream_module.so"):
-            modules_line = "load_module /usr/lib/nginx/modules/ngx_stream_module.so;"
-        elif os.path.exists("/usr/lib64/nginx/modules/ngx_stream_module.so"):
-            modules_line = "load_module /usr/lib64/nginx/modules/ngx_stream_module.so;"
-
-        # Determine safe log directory
-        log_dir = "/var/log/nginx"
-        error_log_line = "error_log /var/log/nginx/error.log warn;"
-        if not os.path.exists(log_dir):
-            try:
-                os.makedirs(log_dir, exist_ok=True)
-            except Exception:
-                error_log_line = "error_log /dev/null crit;"
-
-        # Determine safe http includes (only existing directories/files)
-        http_includes = []
-        if os.path.exists("/etc/nginx/mime.types"):
-            http_includes.append("    include /etc/nginx/mime.types;")
-        if os.path.isdir("/etc/nginx/conf.d"):
-            http_includes.append("    include /etc/nginx/conf.d/*.conf;")
-        if os.path.isdir("/etc/nginx/sites-enabled"):
-            http_includes.append("    include /etc/nginx/sites-enabled/*;")
-        http_includes_block = ("\n" + "\n".join(http_includes)) if http_includes else ""
-
-        nginx_content = f"""# Generated by XForwarder Engine (XManager Standard)
-{user_line}
-worker_processes auto;
-pid /run/nginx.pid;
-{modules_line}
-
-worker_rlimit_nofile 300000;
-
-events {{
-    worker_connections 65535;
-    use epoll;
-    multi_accept on;
-    accept_mutex off;
-}}
-
-stream {{
-    access_log off;
-    {error_log_line}
-
-    proxy_connect_timeout 5s;
-    proxy_timeout 1h;
-    proxy_buffer_size 64k;
-    proxy_socket_keepalive on;
-    tcp_nodelay on;
-
-{stream_body}
-}}
-
-http {{
-    sendfile on;
-    tcp_nopush on;
-    types_hash_max_size 2048;{http_includes_block}
-    default_type application/octet-stream;
-    ssl_protocols TLSv1.2 TLSv1.3;
-    ssl_prefer_server_ciphers on;
-    access_log off;
-    error_log off;
-    gzip on;
-}}
-"""
-        if not nginx_entries:
-            if shutil.which("nginx") and shutil.which("systemctl"):
-                try:
-                    chk = subprocess.run(["systemctl", "is-active", "--quiet", "nginx"])
-                    if chk.returncode == 0:
-                        subprocess.run(["systemctl", "stop", "nginx"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-                except Exception:
-                    pass
-            self.runtime_state["active_services"]["nginx"] = False
-            return True, None
-
-        if os.path.exists(NGINX_CONF_PATH):
-            try:
-                with open(NGINX_CONF_PATH, "r", encoding="utf-8") as f_curr:
-                    if f_curr.read() == nginx_content:
-                        self.runtime_state["active_services"]["nginx"] = bool(nginx_entries)
-                        return True, None
-            except Exception:
-                pass
-
-        try:
-            if not os.path.exists(nginx_dir):
-                os.makedirs(nginx_dir, exist_ok=True)
-            if not os.path.exists("/etc/nginx/modules-enabled"):
-                try:
-                    os.makedirs("/etc/nginx/modules-enabled", exist_ok=True)
-                except Exception:
-                    pass
-            tmp_nginx = f"{NGINX_CONF_PATH}.tmp.{os.getpid()}"
-            with open(tmp_nginx, "w", encoding="utf-8") as f:
-                f.write(nginx_content)
-
-            # Validate Nginx syntax before applying if nginx installed
-            if shutil.which("nginx"):
-                test_res = subprocess.run(
-                    ["nginx", "-t", "-c", tmp_nginx],
-                    stdout=subprocess.DEVNULL,
-                    stderr=subprocess.PIPE,
-                    text=True
-                )
-                if test_res.returncode == 0:
-                    os.replace(tmp_nginx, NGINX_CONF_PATH)
-                    if shutil.which("systemctl"):
-                        chk_active = subprocess.run(["systemctl", "is-active", "--quiet", "nginx"])
-                        if chk_active.returncode == 0:
-                            res = subprocess.run(["systemctl", "reload", "nginx"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-                        else:
-                            res = subprocess.run(["systemctl", "start", "nginx"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-                        if res.returncode != 0:
-                            res = subprocess.run(["systemctl", "restart", "nginx"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-                            if res.returncode != 0:
-                                return False, "Nginx service reload/restart failed"
-                    self.runtime_state["active_services"]["nginx"] = bool(nginx_entries)
-                    return True, None
-                else:
-                    if os.path.exists(tmp_nginx):
-                        os.remove(tmp_nginx)
-                    err_msg = test_res.stderr.strip() if test_res.stderr else "Nginx syntax test failed"
-                    return False, f"Nginx syntax: {err_msg}"
-            else:
-                os.replace(tmp_nginx, NGINX_CONF_PATH)
-                self.runtime_state["active_services"]["nginx"] = bool(nginx_entries)
-                return True, None
-        except Exception as ex:
-            return False, f"Nginx error: {str(ex)}"
+        ok, err = apply_nginx(nginx_entries, conf_path=NGINX_CONF_PATH)
+        if ok:
+            self.runtime_state["active_services"]["nginx"] = bool(nginx_entries)
+        return ok, err
 
     def _save_state_file(self) -> None:
         try:
-            # If self.runtime_state has empty rules_state (e.g. called from one-off sync),
-            # attempt to preserve live rules_state from existing state file on disk
             rt_to_save = dict(self.runtime_state)
             paths = [self.state_file_path]
             if self.state_file_path == STATE_FILE_PATH:
@@ -1914,7 +801,6 @@ http {{
             pass
 
     def _write_pid_file(self) -> None:
-        """Persists current engine PID to candidate paths to enable instant IPC wakeups."""
         for candidate in PID_FILE_CANDIDATES:
             try:
                 os.makedirs(os.path.dirname(candidate), exist_ok=True)
@@ -1926,7 +812,6 @@ http {{
                 continue
 
     def _remove_pid_file(self) -> None:
-        """Removes persisted engine PID file on process termination."""
         if self._pid_path:
             try:
                 if os.path.exists(self._pid_path):
@@ -1948,15 +833,6 @@ http {{
 
         self.sync_firewall_and_proxies()
 
-        # Start 15-minute packet loss monitor scheduler across unique destinations
-        try:
-            from core.metrics import LossMonitorScheduler
-        except ImportError:
-            try:
-                from metrics import LossMonitorScheduler
-            except ImportError:
-                LossMonitorScheduler = None
-
         if LossMonitorScheduler and not self._loss_scheduler:
             self._loss_scheduler = LossMonitorScheduler(config_loader_fn=self.load_config)
             self._loss_scheduler.start()
@@ -1973,13 +849,11 @@ http {{
                     self.load_config()
                     rules = self.config.get("rules", [])
 
-                    # Clean up deleted rules from runtime state
                     current_rule_ids = {r.get("id") for r in rules if r.get("id")}
                     stale_ids = [rid for rid in list(self.runtime_state["rules_state"].keys()) if rid not in current_rule_ids]
                     for rid in stale_ids:
                         del self.runtime_state["rules_state"][rid]
 
-                    # Parallel 10-ping ICMP probes across all unique destinations
                     probe_cache = self._probe_all_destinations(rules)
 
                     changed_priorities: Dict[str, int] = {}
@@ -1990,7 +864,6 @@ http {{
 
                     self.runtime_state["last_check_timestamp"] = time.time()
 
-                    # Periodic traffic accounting sample (every ~30s)
                     now_ts = time.time()
                     if self._traffic_collector and (now_ts - self._last_traffic_cycle >= 30.0):
                         try:
@@ -2064,7 +937,6 @@ def sync_system_rules(max_retries: int = 2, delay_between_retries: float = 0.5, 
     return False, last_errors
 
 
-# Backward compatibility alias
 ForwardManagerEngine = XForwarderEngine
 
 if __name__ == "__main__":

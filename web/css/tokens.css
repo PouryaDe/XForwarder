@@ -1,0 +1,89 @@
+/* ==========================================================================
+   XForwarder Design Tokens & Theme Palettes
+   Dual Theme System: Nova Dark Base (#0B0E14) & Crisp Light (#EEF1F7)
+   ========================================================================== */
+
+:root, [data-theme="dark"] {
+    color-scheme: dark;
+    --bg-base: #0B0E14;
+    --bg-surface: #12151f;
+    --bg-surface-2: #171b28;
+    --bg-card: rgba(255, 255, 255, 0.045);
+    --bg-card-hover: rgba(255, 255, 255, 0.065);
+    --border-color: rgba(255, 255, 255, 0.08);
+    --border-strong: rgba(255, 255, 255, 0.16);
+    --border-active: rgba(167, 139, 250, 0.45);
+    
+    --text-primary: #F5F7FB;
+    --text-secondary: #8B93A7;
+    --text-muted: #565F73;
+
+    /* Nova signature color palette */
+    --mint: #6EE7B7;
+    --violet: #A78BFA;
+    --amber: #FBBF6B;
+    --red: #FB7185;
+
+    --accent-primary: #A78BFA;
+    --accent-primary-hover: #9065F8;
+    --accent-cyan: #38BDF8;
+    --accent-emerald: #6EE7B7;
+    --accent-mint: #6EE7B7;
+    --accent-violet: #A78BFA;
+    --accent-amber: #FBBF6B;
+    --accent-rose: #FB7185;
+
+    /* Nova aurora ambient blobs */
+    --blob-1: #22315c;
+    --blob-2: #3d2255;
+    --blob-3: #1c3b3a;
+
+    --card-shadow: 0 20px 50px -12px rgba(0, 0, 0, 0.5);
+    --panel-shadow: 0 20px 50px -12px rgba(0, 0, 0, 0.5);
+
+    --radius-lg: 20px;
+    --radius-md: 14px;
+    --radius-sm: 10px;
+
+    --font-display: 'Space Grotesk', -apple-system, BlinkMacSystemFont, sans-serif;
+    --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+}
+
+[data-theme="light"] {
+    color-scheme: light;
+    --bg-base: #EEF1F7;
+    --bg-surface: #FFFFFF;
+    --bg-surface-2: #F3F5FA;
+    --bg-card: rgba(255, 255, 255, 0.65);
+    --bg-card-hover: rgba(255, 255, 255, 0.80);
+    --border-color: rgba(20, 25, 45, 0.08);
+    --border-strong: rgba(20, 25, 45, 0.16);
+    --border-active: rgba(139, 92, 246, 0.5);
+
+    --text-primary: #12141C;
+    --text-secondary: #5B6272;
+    --text-muted: #64748B;
+
+    --mint: #059669;
+    --violet: #8B5CF6;
+    --amber: #D97706;
+    --red: #E11D48;
+
+    --accent-primary: #8B5CF6;
+    --accent-primary-hover: #7C3AED;
+    --accent-cyan: #0284C7;
+    --accent-emerald: #059669;
+    --accent-mint: #059669;
+    --accent-violet: #8B5CF6;
+    --accent-amber: #D97706;
+    --accent-rose: #E11D48;
+
+    /* Nova aurora ambient blobs (light) */
+    --blob-1: #c9dcfb;
+    --blob-2: #f0d9fb;
+    --blob-3: #c9f3ea;
+
+    --card-shadow: 0 20px 50px -15px rgba(30, 40, 80, 0.14);
+    --panel-shadow: 0 20px 50px -15px rgba(30, 40, 80, 0.14);
+}
