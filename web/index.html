@@ -35,7 +35,7 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap"
         rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=3.2.7">
+    <link rel="stylesheet" href="style.css?v=3.2.8">
 </head>
 
 <body>
@@ -477,17 +477,6 @@
                                 title="Clear search">&times;</button>
                         </div>
 
-                        <div class="filter-group">
-                            <button type="button" class="filter-tab active" data-filter="all">All <span
-                                    class="tab-badge" id="filterCountAll">0</span></button>
-                            <button type="button" class="filter-tab" data-filter="p1">Primary P1 <span class="tab-badge"
-                                    id="filterCountP1">0</span></button>
-                            <button type="button" class="filter-tab" data-filter="p2">Failover P2+ <span
-                                    class="tab-badge" id="filterCountP2">0</span></button>
-                            <button type="button" class="filter-tab" data-filter="down">Down / Standby <span
-                                    class="tab-badge" id="filterCountDown">0</span></button>
-                        </div>
-
                         <!-- Sort Order Selector -->
                         <div class="sort-actions">
                             <select id="selectSortRules" class="form-control sort-select" title="Sort Rules Order">
@@ -522,15 +511,6 @@
                                 </svg>
                                 <span>List</span>
                             </button>
-                        </div>
-
-                        <div class="batch-actions">
-                            <select id="batchOverrideSelect" class="form-control batch-select">
-                                <option value="" disabled selected>⚡ Emergency Batch Actions</option>
-                                <option value="0">Restore All to Auto Failover</option>
-                                <option value="1">Force All to Priority 1 (Primary)</option>
-                                <option value="2">Force All to Priority 2 (Backup Tunnel)</option>
-                            </select>
                         </div>
                     </div>
 
@@ -2145,7 +2125,7 @@
     <!-- Notification Toast Container -->
     <div class="toast-container" id="toastContainer"></div>
 
-    <script type="module" src="app.js?v=3.2.7"></script>
+    <script type="module" src="app.js?v=3.2.8"></script>
 </body>
 
 </html>
