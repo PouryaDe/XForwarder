@@ -173,7 +173,6 @@ class XForwarderWebHandler(BaseHTTPRequestHandler):
         self.send_header("X-XSS-Protection", "1; mode=block")
         self.send_header("Referrer-Policy", "strict-origin-when-cross-origin")
         self.send_header("Permissions-Policy", "geolocation=(), camera=(), microphone=(), payment=()")
-        self.send_header("Cross-Origin-Opener-Policy", "same-origin")
         self.send_header("Cross-Origin-Resource-Policy", "same-origin")
         self.send_header(
             "Content-Security-Policy",
@@ -189,6 +188,11 @@ class XForwarderWebHandler(BaseHTTPRequestHandler):
         is_https = self.headers.get("X-Forwarded-Proto") == "https" or (
             hasattr(self, "server_instance") and getattr(self.server_instance, "is_ssl", False)
         )
+        host = self.headers.get("Host", "").split(":")[0].lower()
+        is_trustworthy = is_https or host in ("localhost", "127.0.0.1", "::1")
+        if is_trustworthy:
+            self.send_header("Cross-Origin-Opener-Policy", "same-origin")
+
         secure_flag = "; Secure" if is_https else ""
 
         if is_https:

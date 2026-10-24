@@ -122,3 +122,78 @@ export async function copyJsonToClipboard(text, successMsg = "Copied to clipboar
         return false;
     }
 }
+
+export function formatProtoBadge(proto) {
+    const p = String(proto || "both").toLowerCase().trim();
+    if (p === "both" || p === "tcp+udp" || p === "tcp/udp") return "TCP + UDP";
+    if (p === "tcp") return "TCP";
+    if (p === "udp") return "UDP";
+    return p.toUpperCase();
+}
+
+export function copyText(text) {
+    if (!text) return;
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(() => {
+            showToast(`Copied to clipboard: ${text}`);
+        }).catch(() => fallbackCopy(text));
+    } else {
+        fallbackCopy(text);
+    }
+}
+
+function fallbackCopy(text) {
+    const el = document.createElement("textarea");
+    el.value = text;
+    document.body.appendChild(el);
+    el.select();
+    try {
+        document.execCommand("copy");
+        showToast(`Copied to clipboard: ${text}`);
+    } catch (_) {}
+    document.body.removeChild(el);
+}
+
+let confirmResolve = null;
+
+export function askConfirm(title, message) {
+    const titleEl = document.getElementById("confirmTitle");
+    const msgEl = document.getElementById("confirmMessage");
+    const modalEl = document.getElementById("confirmModal");
+    if (titleEl) titleEl.innerText = title;
+    if (msgEl) msgEl.innerText = message;
+    if (modalEl) modalEl.classList.add("show");
+
+    return new Promise((resolve) => {
+        confirmResolve = resolve;
+    });
+}
+
+if (typeof document !== "undefined") {
+    document.addEventListener("DOMContentLoaded", () => {
+        const btnCancel = document.getElementById("btnCancelConfirm");
+        const btnConfirm = document.getElementById("btnConfirmAction");
+        const modalEl = document.getElementById("confirmModal");
+
+        if (btnCancel) {
+            btnCancel.onclick = () => {
+                if (modalEl) modalEl.classList.remove("show");
+                if (confirmResolve) {
+                    confirmResolve(false);
+                    confirmResolve = null;
+                }
+            };
+        }
+
+        if (btnConfirm) {
+            btnConfirm.onclick = () => {
+                if (modalEl) modalEl.classList.remove("show");
+                if (confirmResolve) {
+                    confirmResolve(true);
+                    confirmResolve = null;
+                }
+            };
+        }
+    });
+}
+
