@@ -4002,7 +4002,31 @@ select option {
     to { transform: translateX(0); opacity: 1; }
 }
 
-/* ── System Metrics in Topbar ── */
+/* ── Overview Live System Telemetry Bar ── */
+.overview-telemetry-bar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 12px 18px;
+    background: var(--bg-card);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    margin-bottom: 24px;
+    box-shadow: var(--card-shadow);
+}
+
+.overview-telemetry-bar .sys-metrics {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    width: 100%;
+}
+
+/* ── System Metrics ── */
 .sys-metrics {
     display: flex;
     align-items: center;
@@ -4397,53 +4421,27 @@ select option {
     }
 }
 
-/* Laptop & Compact Desktop (<= 1440px): Dedicated Two-Row Topbar */
+/* Laptop & Compact Desktop (<= 1440px): Standard Flex Topbar */
 @media (max-width: 1440px) {
     .topbar {
-        display: grid;
-        grid-template-columns: 1fr auto;
-        grid-template-areas:
-            "left actions"
-            "metrics metrics";
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
         gap: 12px;
         padding: 12px 18px;
     }
 
     .topbar-left {
-        grid-area: left;
         min-width: 0;
         flex-shrink: 0;
     }
 
     .topbar-actions {
-        grid-area: actions;
         flex-shrink: 0;
     }
 
     .session-controls {
         display: contents;
-    }
-
-    .sys-metrics {
-        grid-area: metrics;
-        width: 100%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 8px;
-        flex-wrap: nowrap;
-        padding-top: 10px;
-        border-top: 1px solid var(--border-color);
-        overflow-x: auto;
-        scrollbar-width: none;
-    }
-
-    .sys-metrics::-webkit-scrollbar {
-        display: none;
-    }
-
-    .sys-pill {
-        flex: 0 0 auto;
     }
 }
 
@@ -4536,18 +4534,14 @@ select option {
 /* Mobile & Small Tablet (<= 768px): Stacked Controls & Full-Width Elements */
 @media (max-width: 768px) {
     .topbar {
-        display: grid;
-        grid-template-columns: 1fr auto;
-        grid-template-areas:
-            "left actions"
-            "metrics metrics";
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
         gap: 12px;
         padding: 12px 14px;
-        align-items: center;
     }
 
     .topbar-left {
-        grid-area: left;
         display: flex;
         align-items: center;
         gap: 10px;
@@ -4555,7 +4549,6 @@ select option {
     }
 
     .topbar-actions {
-        grid-area: actions;
         display: flex;
         align-items: center;
         gap: 8px;
@@ -4565,15 +4558,24 @@ select option {
         display: contents;
     }
 
+    .overview-telemetry-bar {
+        padding: 10px 12px;
+        margin-bottom: 16px;
+    }
+
+    .overview-telemetry-bar .sys-metrics,
     .sys-metrics {
-        grid-area: metrics;
         display: grid;
         grid-template-columns: 1fr 1fr;
+        grid-template-areas:
+            "cpu ram"
+            "load conns"
+            "traffic traffic";
         gap: 8px;
         width: 100%;
-        margin-top: 2px;
-        padding-top: 10px;
-        border-top: 1px solid var(--border-color);
+        margin-top: 0;
+        padding-top: 0;
+        border-top: none;
     }
 
     .sys-pill {
