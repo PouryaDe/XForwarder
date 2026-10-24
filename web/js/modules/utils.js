@@ -170,7 +170,7 @@ export function askConfirm(title, message) {
 }
 
 if (typeof document !== "undefined") {
-    document.addEventListener("DOMContentLoaded", () => {
+    const bindConfirmModalEvents = () => {
         const btnCancel = document.getElementById("btnCancelConfirm");
         const btnConfirm = document.getElementById("btnConfirmAction");
         const modalEl = document.getElementById("confirmModal");
@@ -194,6 +194,12 @@ if (typeof document !== "undefined") {
                 }
             };
         }
-    });
+    };
+
+    if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", bindConfirmModalEvents);
+    } else {
+        bindConfirmModalEvents();
+    }
 }
 

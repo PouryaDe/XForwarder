@@ -1850,6 +1850,43 @@ class TestUIAndAPIEdgeCases(unittest.TestCase):
             server.shutdown()
             server.server_close()
 
+    def test_signin_button_direct_click_and_deferred_execution_safety(self):
+        """Verifies that Sign In button has direct click and Enter key bindings and handles deferred ES module execution without readyState deadlock."""
+        html_path = os.path.join(REPO_ROOT, "web", "index.html")
+        auth_js_path = os.path.join(REPO_ROOT, "web", "js", "modules", "auth.js")
+        app_js_path = os.path.join(REPO_ROOT, "web", "app.js")
+        utils_js_path = os.path.join(REPO_ROOT, "web", "js", "modules", "utils.js")
+
+        with open(html_path, "r", encoding="utf-8") as f:
+            html = f.read()
+        with open(auth_js_path, "r", encoding="utf-8") as f:
+            auth_js = f.read()
+        with open(app_js_path, "r", encoding="utf-8") as f:
+            app_js = f.read()
+        with open(utils_js_path, "r", encoding="utf-8") as f:
+            utils_js = f.read()
+
+        # 1. HTML index.html contains btnLogin button with v=3.2.4 cache busters
+        self.assertIn('id="btnLogin"', html)
+        self.assertIn('style.css?v=3.2.4', html)
+        self.assertIn('app.js?v=3.2.4', html)
+
+        # 2. auth.js attaches direct click event listener to btnLogin
+        self.assertIn('btnLogin.addEventListener("click", doLogin)', auth_js)
+        # and Enter key listener on inputs
+        self.assertIn('loginUsernameInput.addEventListener("keydown"', auth_js)
+        self.assertIn('loginPasswordInput.addEventListener("keydown"', auth_js)
+        self.assertIn('window.handleLoginSubmit = doLogin', auth_js)
+        self.assertIn('window.doLogin = doLogin', auth_js)
+
+        # 3. app.js exposes handleLoginSubmit and doLogin at top level
+        self.assertIn('window.handleLoginSubmit =', app_js)
+        self.assertIn('window.doLogin =', app_js)
+
+        # 4. ReadyState checks prevent deadlock when ES modules are deferred
+        self.assertIn('document.readyState === "loading"', app_js)
+        self.assertIn('document.readyState === "loading"', utils_js)
+
 
 if __name__ == "__main__":
     unittest.main()

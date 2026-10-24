@@ -150,6 +150,10 @@ export async function handleLogin(e, onLoginSuccess) {
     const btnLogin = document.getElementById("btnLogin");
     const lockoutAlert = document.getElementById("lockoutAlert");
 
+    if (btnLogin && (btnLogin.disabled || btnLogin.classList.contains("is-loading"))) {
+        return false;
+    }
+
     const username = usernameInput ? usernameInput.value.trim() : "";
     const password = passwordInput ? passwordInput.value : "";
 
@@ -507,9 +511,11 @@ export function initInlineSecurityForm() {
 export function initAuth(onLoginSuccess, onLogout) {
     const btnToggleLoginPwd = document.getElementById("btnToggleLoginPwd");
     const loginPasswordInput = document.getElementById("loginPassword");
+    const loginUsernameInput = document.getElementById("loginUsername");
     const eyeIconLogin = document.getElementById("eyeIconLogin");
     const capsLockWarning = document.getElementById("capsLockWarning");
     const loginForm = document.getElementById("loginForm");
+    const btnLogin = document.getElementById("btnLogin");
     const btnLogout = document.getElementById("btnLogout");
 
     if (btnToggleLoginPwd && loginPasswordInput && eyeIconLogin) {
@@ -520,8 +526,36 @@ export function initAuth(onLoginSuccess, onLogout) {
         setupCapsLockDetection(loginPasswordInput, capsLockWarning);
     }
 
+    const doLogin = (e) => {
+        if (e) {
+            if (typeof e.preventDefault === "function") e.preventDefault();
+            if (typeof e.stopPropagation === "function") e.stopPropagation();
+        }
+        return handleLogin(e, onLoginSuccess);
+    };
+
+    // Expose globally on window so inline onclick or other triggers work unconditionally
+    window.handleLoginSubmit = doLogin;
+    window.doLogin = doLogin;
+
     if (loginForm) {
-        loginForm.addEventListener("submit", (e) => handleLogin(e, onLoginSuccess));
+        loginForm.addEventListener("submit", doLogin);
+    }
+
+    if (btnLogin) {
+        btnLogin.addEventListener("click", doLogin);
+    }
+
+    if (loginUsernameInput) {
+        loginUsernameInput.addEventListener("keydown", (e) => {
+            if (e.key === "Enter") doLogin(e);
+        });
+    }
+
+    if (loginPasswordInput) {
+        loginPasswordInput.addEventListener("keydown", (e) => {
+            if (e.key === "Enter") doLogin(e);
+        });
     }
 
     if (btnLogout) {

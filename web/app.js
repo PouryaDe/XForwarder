@@ -150,6 +150,10 @@ window.handleTrafficEntityChange = handleTrafficEntityChange;
 window.handleTrafficPeriodChange = handleTrafficPeriodChange;
 window.toggleTheme = toggleTheme;
 window.handleLogout = handleLogout;
+window.handleLoginSubmit = (e) => handleLogin(e, async (username) => {
+    await startAuthenticatedSession(username);
+});
+window.doLogin = window.handleLoginSubmit;
 window.openMobileSidebar = openMobileSidebar;
 window.closeMobileSidebar = closeMobileSidebar;
 
@@ -322,7 +326,7 @@ function stopAuthenticatedSession() {
 }
 
 // Master Initialization
-document.addEventListener("DOMContentLoaded", async () => {
+async function initApp() {
     initTheme();
     initNavigation();
     initRulesViewControls(fetchStatus);
@@ -343,10 +347,20 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
     );
 
-    const isAuthed = await checkSession();
-    if (isAuthed) {
-        await startAuthenticatedSession();
-    } else {
+    try {
+        const isAuthed = await checkSession();
+        if (isAuthed) {
+            await startAuthenticatedSession();
+        } else {
+            showLogin();
+        }
+    } catch (e) {
         showLogin();
     }
-});
+}
+
+if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", initApp);
+} else {
+    initApp();
+}
