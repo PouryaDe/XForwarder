@@ -35,7 +35,7 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap"
         rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=3.2.10">
+    <link rel="stylesheet" href="style.css?v=3.2.11">
 </head>
 
 <body>
@@ -521,6 +521,7 @@
                         <div class="sys-pill" id="trafficPill" title="Network Bandwidth (Download / Upload per second in MB/s)">
                             <span class="pill-dot dot-mint"></span>
                             <span id="trafficText">↓ 0.00 MB/s · ↑ 0.00 MB/s</span>
+                            <span id="ovTrafficText" style="display:none;">↓ 0.00 MB/s · ↑ 0.00 MB/s</span>
                         </div>
                     </div>
                 </div>
@@ -746,193 +747,7 @@
                     </div>
                 </div>
 
-                <div class="overview-grid">
-                    <!-- Host Resources Card -->
-                    <div class="overview-card">
-                        <div class="overview-card-header">
-                            <div class="overview-card-title">
-                                <div class="stat-icon icon-cyan" style="width:34px;height:34px;">
-                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                        stroke-width="2">
-                                        <rect x="2" y="2" width="20" height="8" rx="2" ry="2" />
-                                        <rect x="2" y="14" width="20" height="8" rx="2" ry="2" />
-                                        <line x1="6" y1="6" x2="6.01" y2="6" />
-                                        <line x1="6" y1="18" x2="6.01" y2="18" />
-                                    </svg>
-                                </div>
-                                <div>
-                                    <h3>Server Host Health</h3>
-                                    <span class="overview-card-sub">Real-time Linux memory and processor metrics</span>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="overview-card-body">
-                            <!-- RAM Bar -->
-                            <div class="metric-progress-group">
-                                <div class="metric-progress-header">
-                                    <span class="metric-label">Memory (RAM) Usage</span>
-                                    <span class="metric-val" id="ovRamText">-- / -- MB (--%)</span>
-                                </div>
-                                <div class="progress-track">
-                                    <div class="progress-fill fill-emerald" id="ovRamBar" style="width: 0%;"></div>
-                                </div>
-                            </div>
-                            <!-- CPU Bar -->
-                            <div class="metric-progress-group" style="margin-top: 18px;">
-                                <div class="metric-progress-header">
-                                    <span class="metric-label">Processor (CPU) Load</span>
-                                    <span class="metric-val" id="ovCpuText">--%</span>
-                                </div>
-                                <div class="progress-track">
-                                    <div class="progress-fill fill-cyan" id="ovCpuBar" style="width: 0%;"></div>
-                                </div>
-                            </div>
-                            <div class="overview-info-list" style="margin-top: 20px;">
-                                <div class="info-item">
-                                    <span class="info-label">Live Bandwidth</span>
-                                    <span class="info-value font-mono text-mint" id="ovTrafficText">↓ 0.00 MB/s · ↑ 0.00 MB/s</span>
-                                </div>
-                                <div class="info-item">
-                                    <span class="info-label">Active Sockets</span>
-                                    <span class="info-value font-mono text-violet" id="ovConnsText">-- TCP · -- UDP</span>
-                                </div>
-                                <div class="info-item">
-                                    <span class="info-label">System Load Average</span>
-                                    <span class="info-value font-mono text-amber" id="ovLoadText">--</span>
-                                </div>
-                                <div class="info-item">
-                                    <span class="info-label">Idle Engine Overhead</span>
-                                    <span class="info-value text-emerald">&lt; 15 MB RAM (Zero pip deps)</span>
-                                </div>
-                                <div class="info-item">
-                                    <span class="info-label">Kernel IP Forwarding</span>
-                                    <span class="info-value text-emerald">net.ipv4.ip_forward = 1</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Failover Engine State Card -->
-                    <div class="overview-card">
-                        <div class="overview-card-header">
-                            <div class="overview-card-title">
-                                <div class="stat-icon icon-indigo" style="width:34px;height:34px;">
-                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                        stroke-width="2">
-                                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-                                    </svg>
-                                </div>
-                                <div>
-                                    <h3>Failover Engine Parameters</h3>
-                                    <span class="overview-card-sub">Automatic packet loss detector daemon (24/7)</span>
-                                </div>
-                            </div>
-                            <span class="stat-badge badge-active">RUNNING</span>
-                        </div>
-                        <div class="overview-card-body">
-                            <div class="overview-info-list">
-                                <div class="info-item">
-                                    <span class="info-label">Sampling &amp; Precision</span>
-                                    <span class="info-value">10 Probes (200ms) &middot; Jitter (mdev)</span>
-                                </div>
-                                <div class="info-item">
-                                    <span class="info-label">Evaluation Window</span>
-                                    <span class="info-value text-emerald">5-Min Sliding Window (Score)</span>
-                                </div>
-                                <div class="info-item">
-                                    <span class="info-label">Planned Stability Guard</span>
-                                    <span class="info-value">10m Hold &middot; 2m Streak &middot; 20% Margin</span>
-                                </div>
-                                <div class="info-item">
-                                    <span class="info-label">Critical Emergency Trigger</span>
-                                    <span class="info-value text-rose">&ge; 30% Loss or Outage (&lt;1s Burst)</span>
-                                </div>
-                                <div class="info-item">
-                                    <span class="info-label">Failover Architecture</span>
-                                    <span class="info-value text-indigo">Zero-Collision Arbiter (Mutual Exclusive)</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Quick Relay Status Card -->
-                    <div class="overview-card">
-                        <div class="overview-card-header">
-                            <div class="overview-card-title">
-                                <div class="stat-icon icon-emerald" style="width:34px;height:34px;">
-                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                        stroke-width="2">
-                                        <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
-                                    </svg>
-                                </div>
-                                <div>
-                                    <h3>Traffic Distribution</h3>
-                                    <span class="overview-card-sub">Inbound relay port state breakdown</span>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="overview-card-body">
-                            <div class="overview-info-list">
-                                <div class="info-item">
-                                    <span class="info-label">Primary Route (HAProxy IPv6)</span>
-                                    <span class="info-value text-emerald" id="ovHaproxyCount">0 rules</span>
-                                </div>
-                                <div class="info-item">
-                                    <span class="info-label">Backup Route (NFTables Tunnel)</span>
-                                    <span class="info-value text-amber" id="ovNftablesCount">0 rules</span>
-                                </div>
-                                <div class="info-item">
-                                    <span class="info-label">Configuration Storage</span>
-                                    <span class="info-value font-mono">/etc/xforwarder/config.json</span>
-                                </div>
-                                <div class="info-item">
-                                    <span class="info-label">Runtime Ephemeral State</span>
-                                    <span class="info-value font-mono">/run/xforwarder/state.json</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Server Relay Engines Status Card -->
-                    <div class="overview-card">
-                        <div class="overview-card-header">
-                            <div class="overview-card-title">
-                                <div class="stat-icon icon-cyan" style="width:34px;height:34px;">
-                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                        stroke-width="2">
-                                        <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
-                                    </svg>
-                                </div>
-                                <div>
-                                    <h3>Server Relay Engines</h3>
-                                    <span class="overview-card-sub">NFTables kernel, HAProxy, and Nginx
-                                        availability</span>
-                                </div>
-                            </div>
-                            <span class="stat-badge badge-active" id="ovEnginesSummaryBadge">READY</span>
-                        </div>
-                        <div class="overview-card-body">
-                            <div class="overview-info-list">
-                                <div class="info-item">
-                                    <span class="info-label">NFTables (Kernel L3 NAT)</span>
-                                    <span class="info-value font-mono" id="ovNftStatus">Detecting...</span>
-                                </div>
-                                <div class="info-item">
-                                    <span class="info-label">HAProxy (Layer-4 TCP/UDP)</span>
-                                    <span class="info-value font-mono" id="ovHaproxyStatus">Detecting...</span>
-                                </div>
-                                <div class="info-item">
-                                    <span class="info-label">Nginx (Stream TCP/UDP)</span>
-                                    <span class="info-value font-mono" id="ovNginxStatus">Detecting...</span>
-                                </div>
-                                <div class="info-item">
-                                    <span class="info-label">Automatic Installation</span>
-                                    <span class="info-value text-emerald">Enabled via xfwd</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
+                <div class="overview-grid" style="grid-template-columns: 1fr; margin-top: 18px;">
                     <!-- Network Quality & Packet Loss Timeline Card (Full Width) -->
                     <div class="overview-card full-width-card" id="cardNetworkQualityMonitor" style="grid-column: 1 / -1;">
                         <div class="overview-card-header" style="flex-wrap: wrap; gap: 12px;">
@@ -2127,7 +1942,7 @@
     <!-- Notification Toast Container -->
     <div class="toast-container" id="toastContainer"></div>
 
-    <script type="module" src="app.js?v=3.2.10"></script>
+    <script type="module" src="app.js?v=3.2.11"></script>
 </body>
 
 </html>

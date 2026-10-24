@@ -2,7 +2,7 @@
 // XForwarder Web UI - Host Telemetry & Topology Renderer (Native ES Module)
 // ============================================================================
 
-import { formatBytes, formatTrafficMB, escapeHtml, showToast } from "./utils.js";
+import { formatBytes, formatTrafficMB, formatEngineVersion, escapeHtml, showToast } from "./utils.js";
 import { lastTrafficData } from "./state.js";
 
 export let _trafficModeRate = true;
@@ -130,21 +130,162 @@ export function renderSystemStats(sys) {
 export function renderServicesStatus(services) {
     if (!services) return;
 
-    const dotNft = document.getElementById("svcDotNft");
-    const dotHaproxy = document.getElementById("svcDotHaproxy");
-    const dotNginx = document.getElementById("svcDotNginx");
+    const nft = services.nftables || {};
+    const ha = services.haproxy || {};
+    const ngx = services.nginx || {};
 
-    if (dotNft) {
-        const active = services.nftables && services.nftables.active;
-        dotNft.className = `status-dot ${active ? 'dot-active' : 'dot-inactive'}`;
+    // 1. Relay Engines status pills
+    const dotNft = document.getElementById("svcDotNft");
+    const valNft = document.getElementById("svcValNft");
+    if (dotNft && valNft) {
+        if (!nft.installed) {
+            dotNft.className = "svc-pill-dot dot-rose";
+            valNft.innerText = "Not Installed";
+            valNft.className = "svc-pill-val text-rose";
+            valNft.title = "";
+        } else if (nft.active) {
+            dotNft.className = "svc-pill-dot dot-emerald";
+            const nftVerShort = formatEngineVersion(nft.version);
+            const verStr = nftVerShort ? ` (${nftVerShort})` : "";
+            valNft.innerText = nft.table_active ? `Active & Synced${verStr}` : `Active${verStr}`;
+            valNft.className = "svc-pill-val";
+            valNft.title = nft.version || "";
+        } else {
+            dotNft.className = "svc-pill-dot dot-amber";
+            valNft.innerText = "Inactive";
+            valNft.className = "svc-pill-val text-muted";
+            valNft.title = "";
+        }
     }
-    if (dotHaproxy) {
-        const active = services.haproxy && services.haproxy.active;
-        dotHaproxy.className = `status-dot ${active ? 'dot-active' : 'dot-inactive'}`;
+
+    const dotHa = document.getElementById("svcDotHaproxy");
+    const valHa = document.getElementById("svcValHaproxy");
+    if (dotHa && valHa) {
+        const haVerShort = formatEngineVersion(ha.version);
+        if (!ha.installed) {
+            dotHa.className = "svc-pill-dot dot-rose";
+            valHa.innerText = "Not Installed";
+            valHa.className = "svc-pill-val text-rose";
+            valHa.title = "";
+        } else if (ha.active) {
+            dotHa.className = "svc-pill-dot dot-emerald";
+            valHa.innerText = haVerShort ? `Running (${haVerShort})` : "Running";
+            valHa.className = "svc-pill-val";
+            valHa.title = ha.version || "";
+        } else {
+            dotHa.className = "svc-pill-dot dot-amber";
+            valHa.innerText = haVerShort ? `Standby (${haVerShort})` : "Standby";
+            valHa.className = "svc-pill-val text-muted";
+            valHa.title = ha.version || "";
+        }
     }
-    if (dotNginx) {
-        const active = services.nginx && services.nginx.active;
-        dotNginx.className = `status-dot ${active ? 'dot-active' : 'dot-inactive'}`;
+
+    const dotNgx = document.getElementById("svcDotNginx");
+    const valNgx = document.getElementById("svcValNginx");
+    if (dotNgx && valNgx) {
+        const ngxVerShort = formatEngineVersion(ngx.version);
+        if (!ngx.installed) {
+            dotNgx.className = "svc-pill-dot dot-rose";
+            valNgx.innerText = "Not Installed";
+            valNgx.className = "svc-pill-val text-rose";
+            valNgx.title = "";
+        } else if (ngx.active) {
+            dotNgx.className = "svc-pill-dot dot-emerald";
+            valNgx.innerText = ngxVerShort ? `Running (${ngxVerShort})` : "Running";
+            valNgx.className = "svc-pill-val";
+            valNgx.title = ngx.version || "";
+        } else {
+            dotNgx.className = "svc-pill-dot dot-amber";
+            valNgx.innerText = ngxVerShort ? `Standby (${ngxVerShort})` : "Standby";
+            valNgx.className = "svc-pill-val text-muted";
+            valNgx.title = ngx.version || "";
+        }
+    }
+
+    // 2. Missing Services Warning Banner
+    const warningBanner = document.getElementById("servicesWarningBanner");
+    const warningText = document.getElementById("servicesWarningText");
+    const missing = [];
+    if (!nft.installed) missing.push("NFTables");
+    if (!ha.installed) missing.push("HAProxy");
+    if (!ngx.installed) missing.push("Nginx");
+
+    if (warningBanner && warningText) {
+        if (missing.length > 0 && !sessionStorage.getItem("xfwd_dismiss_services_warning")) {
+            warningText.innerText = `The following core packages are missing on this server: ${missing.join(", ")}. Run 'xfwd' in your server terminal or reinstall to auto-configure them.`;
+            warningBanner.style.display = "flex";
+        } else {
+            warningBanner.style.display = "none";
+        }
+    }
+
+    // 3. Top Relay Active Badge in 2-column header
+    const topRelayBadge = document.getElementById("topRelayActiveBadge");
+    if (topRelayBadge) {
+        if (missing.length > 0) {
+            topRelayBadge.className = "stat-badge badge-warn";
+            topRelayBadge.innerText = `${3 - missing.length}/3 ACTIVE`;
+        } else {
+            topRelayBadge.className = "stat-badge badge-active";
+            topRelayBadge.innerText = "ALL ACTIVE";
+        }
+    }
+
+    // 4. Fallback items (if present in DOM)
+    const ovNftStatus = document.getElementById("ovNftStatus");
+    if (ovNftStatus) {
+        const nftVerShort = formatEngineVersion(nft.version);
+        if (!nft.installed) {
+            ovNftStatus.innerHTML = `<span class="text-rose">Not Installed</span>`;
+            ovNftStatus.title = "";
+        } else if (nft.active) {
+            ovNftStatus.innerHTML = `<span class="text-emerald">Active (${nftVerShort || "Installed"})</span>`;
+            ovNftStatus.title = nft.version || "";
+        } else {
+            ovNftStatus.innerHTML = `<span class="text-amber">Inactive</span>`;
+            ovNftStatus.title = "";
+        }
+    }
+
+    const ovHaproxyStatus = document.getElementById("ovHaproxyStatus");
+    if (ovHaproxyStatus) {
+        const haVerShort = formatEngineVersion(ha.version);
+        if (!ha.installed) {
+            ovHaproxyStatus.innerHTML = `<span class="text-rose">Not Installed</span>`;
+            ovHaproxyStatus.title = "";
+        } else if (ha.active) {
+            ovHaproxyStatus.innerHTML = `<span class="text-emerald">Running (${haVerShort || "v?"})</span>`;
+            ovHaproxyStatus.title = ha.version || "";
+        } else {
+            ovHaproxyStatus.innerHTML = `<span class="text-amber">Standby (${haVerShort || "v?"})</span>`;
+            ovHaproxyStatus.title = ha.version || "";
+        }
+    }
+
+    const ovNginxStatus = document.getElementById("ovNginxStatus");
+    if (ovNginxStatus) {
+        const ngxVerShort = formatEngineVersion(ngx.version);
+        if (!ngx.installed) {
+            ovNginxStatus.innerHTML = `<span class="text-rose">Not Installed</span>`;
+            ovNginxStatus.title = "";
+        } else if (ngx.active) {
+            ovNginxStatus.innerHTML = `<span class="text-emerald">Running (${ngxVerShort || "v?"})</span>`;
+            ovNginxStatus.title = ngx.version || "";
+        } else {
+            ovNginxStatus.innerHTML = `<span class="text-amber">Standby (${ngxVerShort || "v?"})</span>`;
+            ovNginxStatus.title = ngx.version || "";
+        }
+    }
+
+    const ovEnginesSummaryBadge = document.getElementById("ovEnginesSummaryBadge");
+    if (ovEnginesSummaryBadge) {
+        if (missing.length === 0) {
+            ovEnginesSummaryBadge.className = "stat-badge badge-active";
+            ovEnginesSummaryBadge.innerText = "READY";
+        } else {
+            ovEnginesSummaryBadge.className = "stat-badge badge-warn";
+            ovEnginesSummaryBadge.innerText = `${3 - missing.length}/3 READY`;
+        }
     }
 }
 

@@ -23,9 +23,11 @@ export function formatTrafficMB(bytes) {
     return mb.toFixed(1) + " MB";
 }
 
-export function formatEngineVersion(ver) {
-    if (!ver) return "";
-    return `v${ver}`;
+export function formatEngineVersion(rawVer) {
+    if (!rawVer) return "";
+    const str = String(rawVer).trim();
+    const base = str.split("-")[0].trim().replace(/^v/i, "");
+    return base ? `v${base}` : str;
 }
 
 export function escapeHtml(str) {

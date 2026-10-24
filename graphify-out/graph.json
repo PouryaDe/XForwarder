@@ -2086,7 +2086,7 @@
       "file_type": "code",
       "norm_label": "copytext()",
       "source_file": "web/js/modules/utils.js",
-      "source_location": "L134"
+      "source_location": "L136"
     },
     {
       "id": "web_js_modules_utils_fallbackcopy",
@@ -2098,7 +2098,7 @@
       "file_type": "code",
       "norm_label": "fallbackcopy()",
       "source_file": "web/js/modules/utils.js",
-      "source_location": "L145"
+      "source_location": "L147"
     },
     {
       "id": "web_js_modules_utils_formatconcisereason",
@@ -2110,19 +2110,7 @@
       "file_type": "code",
       "norm_label": "formatconcisereason()",
       "source_file": "web/js/modules/utils.js",
-      "source_location": "L67"
-    },
-    {
-      "id": "web_js_modules_utils_formatengineversion",
-      "label": "formatEngineVersion()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 25,
-      "community_name": "rules.js",
-      "file_type": "code",
-      "norm_label": "formatengineversion()",
-      "source_file": "web/js/modules/utils.js",
-      "source_location": "L26"
+      "source_location": "L69"
     },
     {
       "id": "web_js_modules_utils_formatlatencybadge",
@@ -2134,7 +2122,7 @@
       "file_type": "code",
       "norm_label": "formatlatencybadge()",
       "source_file": "web/js/modules/utils.js",
-      "source_location": "L52"
+      "source_location": "L54"
     },
     {
       "id": "web_js_modules_utils_formatprotobadge",
@@ -2146,7 +2134,7 @@
       "file_type": "code",
       "norm_label": "formatprotobadge()",
       "source_file": "web/js/modules/utils.js",
-      "source_location": "L126"
+      "source_location": "L128"
     },
     {
       "id": "web_js_modules_utils_safeinlinearg",
@@ -2158,7 +2146,7 @@
       "file_type": "code",
       "norm_label": "safeinlinearg()",
       "source_file": "web/js/modules/utils.js",
-      "source_location": "L41"
+      "source_location": "L43"
     },
     {
       "id": "core_traffic_get_traffic_db_path",
@@ -3214,7 +3202,7 @@
       "file_type": "code",
       "norm_label": "askconfirm()",
       "source_file": "web/js/modules/utils.js",
-      "source_location": "L159"
+      "source_location": "L161"
     },
     {
       "id": "web_js_modules_utils_formatbytes",
@@ -3306,7 +3294,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 37,
-      "community_name": "fetchStatus",
+      "community_name": "stats.js",
       "file_type": "code",
       "norm_label": "fetchstatus()",
       "source_file": "web/app.js",
@@ -3318,7 +3306,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 37,
-      "community_name": "fetchStatus",
+      "community_name": "stats.js",
       "file_type": "code",
       "norm_label": "updatecategorydatalist()",
       "source_file": "web/js/modules/rules.js",
@@ -3330,7 +3318,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 37,
-      "community_name": "fetchStatus",
+      "community_name": "stats.js",
       "file_type": "code",
       "norm_label": "setcurrentrules()",
       "source_file": "web/js/modules/state.js",
@@ -3342,7 +3330,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 37,
-      "community_name": "fetchStatus",
+      "community_name": "stats.js",
       "file_type": "code",
       "norm_label": "setlastruntime()",
       "source_file": "web/js/modules/state.js",
@@ -3354,7 +3342,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 37,
-      "community_name": "fetchStatus",
+      "community_name": "stats.js",
       "file_type": "code",
       "norm_label": "setlasttrafficdata()",
       "source_file": "web/js/modules/state.js",
@@ -3366,11 +3354,11 @@
       "_callable": true,
       "_origin": "ast",
       "community": 37,
-      "community_name": "fetchStatus",
+      "community_name": "stats.js",
       "file_type": "code",
       "norm_label": "copyiptoclipboard()",
       "source_file": "web/js/modules/stats.js",
-      "source_location": "L368"
+      "source_location": "L509"
     },
     {
       "id": "web_js_modules_stats_rendernetworktopology",
@@ -3378,11 +3366,11 @@
       "_callable": true,
       "_origin": "ast",
       "community": 37,
-      "community_name": "fetchStatus",
+      "community_name": "stats.js",
       "file_type": "code",
       "norm_label": "rendernetworktopology()",
       "source_file": "web/js/modules/stats.js",
-      "source_location": "L237"
+      "source_location": "L378"
     },
     {
       "id": "web_js_modules_stats_renderservicesstatus",
@@ -3390,7 +3378,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 37,
-      "community_name": "fetchStatus",
+      "community_name": "stats.js",
       "file_type": "code",
       "norm_label": "renderservicesstatus()",
       "source_file": "web/js/modules/stats.js",
@@ -3402,11 +3390,11 @@
       "_callable": true,
       "_origin": "ast",
       "community": 37,
-      "community_name": "fetchStatus",
+      "community_name": "stats.js",
       "file_type": "code",
       "norm_label": "renderstats()",
       "source_file": "web/js/modules/stats.js",
-      "source_location": "L151"
+      "source_location": "L292"
     },
     {
       "id": "web_js_modules_stats_rendersystemstats",
@@ -3414,7 +3402,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 37,
-      "community_name": "fetchStatus",
+      "community_name": "stats.js",
       "file_type": "code",
       "norm_label": "rendersystemstats()",
       "source_file": "web/js/modules/stats.js",
@@ -3426,11 +3414,23 @@
       "_callable": true,
       "_origin": "ast",
       "community": 37,
-      "community_name": "fetchStatus",
+      "community_name": "stats.js",
       "file_type": "code",
       "norm_label": "formattrafficmb()",
       "source_file": "web/js/modules/stats.js",
       "source_location": "L72"
+    },
+    {
+      "id": "web_js_modules_utils_formatengineversion",
+      "label": "formatEngineVersion()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 37,
+      "community_name": "stats.js",
+      "file_type": "code",
+      "norm_label": "formatengineversion()",
+      "source_file": "web/js/modules/utils.js",
+      "source_location": "L26"
     },
     {
       "id": "web_js_modules_utils_formattrafficmb",
@@ -3438,7 +3438,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 37,
-      "community_name": "fetchStatus",
+      "community_name": "stats.js",
       "file_type": "code",
       "norm_label": "formattrafficmb()",
       "source_file": "web/js/modules/utils.js",
@@ -4666,7 +4666,7 @@
       "file_type": "code",
       "norm_label": "showtoast()",
       "source_file": "web/js/modules/utils.js",
-      "source_location": "L77"
+      "source_location": "L79"
     },
     {
       "id": "tests_test_ui_and_api_edge_cases_testuiandapiedgecases_test_api_test_target_http_endpoint",
@@ -5014,7 +5014,7 @@
       "file_type": "code",
       "norm_label": "escapehtml()",
       "source_file": "web/js/modules/utils.js",
-      "source_location": "L31"
+      "source_location": "L33"
     },
     {
       "id": "core_auth_check_rate_limit",
@@ -5806,7 +5806,7 @@
       "file_type": "code",
       "norm_label": "copyjsontoclipboard()",
       "source_file": "web/js/modules/utils.js",
-      "source_location": "L104"
+      "source_location": "L106"
     },
     {
       "id": "core_engine_sync_system_rules",
@@ -10776,7 +10776,7 @@
       "label": "state.js",
       "_origin": "ast",
       "community": 37,
-      "community_name": "fetchStatus",
+      "community_name": "stats.js",
       "file_type": "code",
       "norm_label": "state.js",
       "source_file": "web/js/modules/state.js",
@@ -10787,7 +10787,7 @@
       "label": "currentRules",
       "_origin": "ast",
       "community": 37,
-      "community_name": "fetchStatus",
+      "community_name": "stats.js",
       "file_type": "code",
       "norm_label": "currentrules",
       "source_file": "web/js/modules/state.js",
@@ -10798,7 +10798,7 @@
       "label": "lastRuntime",
       "_origin": "ast",
       "community": 37,
-      "community_name": "fetchStatus",
+      "community_name": "stats.js",
       "file_type": "code",
       "norm_label": "lastruntime",
       "source_file": "web/js/modules/state.js",
@@ -10809,7 +10809,7 @@
       "label": "lastTrafficData",
       "_origin": "ast",
       "community": 37,
-      "community_name": "fetchStatus",
+      "community_name": "stats.js",
       "file_type": "code",
       "norm_label": "lasttrafficdata",
       "source_file": "web/js/modules/state.js",
@@ -10820,7 +10820,7 @@
       "label": "state",
       "_origin": "ast",
       "community": 37,
-      "community_name": "fetchStatus",
+      "community_name": "stats.js",
       "file_type": "code",
       "norm_label": "state",
       "source_file": "web/js/modules/state.js",
@@ -10831,7 +10831,7 @@
       "label": "stats.js",
       "_origin": "ast",
       "community": 37,
-      "community_name": "fetchStatus",
+      "community_name": "stats.js",
       "file_type": "code",
       "norm_label": "stats.js",
       "source_file": "web/js/modules/stats.js",
@@ -10842,7 +10842,7 @@
       "label": "lastSystemStats",
       "_origin": "ast",
       "community": 37,
-      "community_name": "fetchStatus",
+      "community_name": "stats.js",
       "file_type": "code",
       "norm_label": "lastsystemstats",
       "source_file": "web/js/modules/stats.js",
@@ -10853,7 +10853,7 @@
       "label": "_trafficModeRate",
       "_origin": "ast",
       "community": 37,
-      "community_name": "fetchStatus",
+      "community_name": "stats.js",
       "file_type": "code",
       "norm_label": "_trafficmoderate",
       "source_file": "web/js/modules/stats.js",
@@ -22761,7 +22761,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/js/modules/stats.js",
-      "source_location": "L371",
+      "source_location": "L512",
       "weight": 1.0
     },
     {
@@ -22773,7 +22773,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/js/modules/stats.js",
-      "source_location": "L254",
+      "source_location": "L395",
       "weight": 1.0
     },
     {
@@ -22785,7 +22785,19 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/js/modules/stats.js",
-      "source_location": "L315",
+      "source_location": "L456",
+      "weight": 1.0
+    },
+    {
+      "source": "web_js_modules_stats_renderservicesstatus",
+      "target": "web_js_modules_utils_formatengineversion",
+      "relation": "calls",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "call",
+      "source_file": "web/js/modules/stats.js",
+      "source_location": "L148",
       "weight": 1.0
     },
     {
@@ -23385,7 +23397,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/js/modules/utils.js",
-      "source_location": "L118",
+      "source_location": "L120",
       "weight": 1.0
     },
     {
@@ -23397,7 +23409,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/js/modules/utils.js",
-      "source_location": "L138",
+      "source_location": "L140",
       "weight": 1.0
     },
     {
@@ -23409,7 +23421,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/js/modules/utils.js",
-      "source_location": "L139",
+      "source_location": "L141",
       "weight": 1.0
     },
     {
@@ -23421,7 +23433,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/js/modules/utils.js",
-      "source_location": "L152",
+      "source_location": "L154",
       "weight": 1.0
     },
     {
@@ -23433,7 +23445,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/js/modules/utils.js",
-      "source_location": "L93",
+      "source_location": "L95",
       "weight": 1.0
     },
     {
@@ -31670,6 +31682,18 @@
     },
     {
       "source": "web_js_modules_stats",
+      "target": "web_js_modules_utils_formatengineversion",
+      "relation": "imports",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "import",
+      "source_file": "web/js/modules/stats.js",
+      "source_location": "L5",
+      "weight": 1.0
+    },
+    {
+      "source": "web_js_modules_stats",
       "target": "web_js_modules_utils_formattrafficmb",
       "relation": "imports",
       "_origin": "ast",
@@ -38401,7 +38425,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "web/js/modules/stats.js",
-      "source_location": "L151",
+      "source_location": "L292",
       "weight": 1.0
     },
     {
@@ -38412,7 +38436,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "web/js/modules/stats.js",
-      "source_location": "L237",
+      "source_location": "L378",
       "weight": 1.0
     },
     {
@@ -38423,7 +38447,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "web/js/modules/stats.js",
-      "source_location": "L368",
+      "source_location": "L509",
       "weight": 1.0
     },
     {
@@ -38720,7 +38744,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "web/js/modules/utils.js",
-      "source_location": "L104",
+      "source_location": "L106",
       "weight": 1.0
     },
     {
@@ -38731,7 +38755,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "web/js/modules/utils.js",
-      "source_location": "L126",
+      "source_location": "L128",
       "weight": 1.0
     },
     {
@@ -38742,7 +38766,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "web/js/modules/utils.js",
-      "source_location": "L134",
+      "source_location": "L136",
       "weight": 1.0
     },
     {
@@ -38753,7 +38777,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "web/js/modules/utils.js",
-      "source_location": "L145",
+      "source_location": "L147",
       "weight": 1.0
     },
     {
@@ -38764,7 +38788,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "web/js/modules/utils.js",
-      "source_location": "L159",
+      "source_location": "L161",
       "weight": 1.0
     },
     {
@@ -38797,7 +38821,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "web/js/modules/utils.js",
-      "source_location": "L31",
+      "source_location": "L33",
       "weight": 1.0
     },
     {
@@ -38808,7 +38832,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "web/js/modules/utils.js",
-      "source_location": "L41",
+      "source_location": "L43",
       "weight": 1.0
     },
     {
@@ -38830,7 +38854,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "web/js/modules/utils.js",
-      "source_location": "L52",
+      "source_location": "L54",
       "weight": 1.0
     },
     {
@@ -38841,7 +38865,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "web/js/modules/utils.js",
-      "source_location": "L67",
+      "source_location": "L69",
       "weight": 1.0
     },
     {
@@ -38852,7 +38876,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "web/js/modules/utils.js",
-      "source_location": "L77",
+      "source_location": "L79",
       "weight": 1.0
     },
     {
@@ -48014,5 +48038,5 @@
     }
   ],
   "hyperedges": [],
-  "built_at_commit": "57ce6bc1dcbd79c2cca1f19eec9df0c158f941e9"
+  "built_at_commit": "ac29c81f088aa33cecd89f0e7103f6531f035fd4"
 }

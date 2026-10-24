@@ -1,17 +1,17 @@
 # Graph Report - Forward-Manager  (2026-10-25)
 
 ## Corpus Check
-- 94 files · ~101,791 words
+- 94 files · ~101,807 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 13 file(s) not represented in the graph (top: .css 6, .service 4, (none) 2)
 
 ## Summary
-- 1275 nodes · 2837 edges · 116 communities (58 shown, 58 thin omitted)
+- 1275 nodes · 2839 edges · 116 communities (58 shown, 58 thin omitted)
 - Extraction: 94% EXTRACTED · 6% INFERRED · 0% AMBIGUOUS · INFERRED: 175 edges (avg confidence: 0.9)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `57ce6bc1`
+- Built from commit: `ac29c81f`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -53,7 +53,7 @@
 - time
 - traffic.js
 - .do_POST
-- fetchStatus
+- stats.js
 - TestNginxStreamEngine
 - DummyHandler
 - XForwarder Master Architecture Constitution
@@ -208,8 +208,8 @@ Cohesion: 0.07
 Nodes (24): 1. Context & Motivation, 2. Root Cause / Core Dynamics, 3. Architecture & Solution Implemented, 4. Invariants & Rules for AI Agents, 5. Verification & Testing, Experience 004: Backward Compatibility and Automated Schema Migrations, 4. Client-Side Smoothness, 1. Rapid Failure Detection & Confirmation Burst (<1s) (+16 more)
 
 ### Community 25 - "rules.js"
-Cohesion: 0.16
-Nodes (20): deleteRule(), getPrioTagClass(), handleOverrideChange(), handlePathDragEnd(), handlePathDragLeave(), handlePathDragOver(), handlePathDragStart(), handlePathDrop() (+12 more)
+Cohesion: 0.17
+Nodes (19): deleteRule(), getPrioTagClass(), handleOverrideChange(), handlePathDragEnd(), handlePathDragLeave(), handlePathDragOver(), handlePathDragStart(), handlePathDrop() (+11 more)
 
 ### Community 26 - "XForwarder Operations Runbook"
 Cohesion: 0.40
@@ -251,9 +251,9 @@ Nodes (15): closeTrafficModal(), handleTrafficEntityChange(), handleTrafficPerio
 Cohesion: 0.23
 Nodes (7): 3. Fast IPC Engine Wake-Up, Architectural Solutions Implemented, get_config_path(), load_config(), save_config(), notify_engine_wakeup(), sync_rules_and_notify()
 
-### Community 37 - "fetchStatus"
+### Community 37 - "stats.js"
 Cohesion: 0.14
-Nodes (17): fetchStatus(), updateCategoryDatalist(), currentRules, lastRuntime, lastTrafficData, setCurrentRules(), setLastRuntime(), setLastTrafficData() (+9 more)
+Nodes (18): fetchStatus(), updateCategoryDatalist(), currentRules, lastRuntime, lastTrafficData, setCurrentRules(), setLastRuntime(), setLastTrafficData() (+10 more)
 
 ### Community 40 - "XForwarder Master Architecture Constitution"
 Cohesion: 0.33
