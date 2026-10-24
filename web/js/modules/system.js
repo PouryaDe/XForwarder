@@ -73,8 +73,6 @@ export function initSystemUpdateManager() {
             startSystemUpdateProcedure();
         });
     }
-
-    fetchSystemVersionInfo(false);
 }
 
 export async function fetchSystemVersionInfo(force = false) {

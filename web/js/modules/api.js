@@ -71,7 +71,8 @@ export async function fetchApi(endpoint, options = {}) {
 
         if (res.status === 401) {
             // Unauthorized / session expired
-            if (!url.includes("/login") && !url.includes("/me")) {
+            const isCurrentlyAuthed = localStorage.getItem("xfwd_authenticated") === "1" || !!localStorage.getItem("xfwd_token");
+            if (isCurrentlyAuthed && !url.includes("/login") && !url.includes("/me")) {
                 try {
                     localStorage.removeItem("xfwd_authenticated");
                     localStorage.removeItem("xfwd_token");

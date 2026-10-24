@@ -308,6 +308,7 @@ async function startAuthenticatedSession(username) {
     showDashboard(username);
     await fetchStatus();
     checkImportableRules();
+    fetchSystemVersionInfo(false);
     if (!statusPollInterval) {
         statusPollInterval = setInterval(fetchStatus, 3500);
     }

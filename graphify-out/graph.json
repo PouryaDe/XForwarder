@@ -865,12 +865,24 @@
       "source_location": "L96"
     },
     {
+      "id": "web_js_modules_api_fetchapi",
+      "label": "fetchApi()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 110,
+      "community_name": "showToast",
+      "file_type": "code",
+      "norm_label": "fetchapi()",
+      "source_file": "web/js/modules/api.js",
+      "source_location": "L46"
+    },
+    {
       "id": "web_js_modules_import_export_closeimportmodal",
       "label": "closeImportModal()",
       "_callable": true,
       "_origin": "ast",
       "community": 110,
-      "community_name": "import_export.js",
+      "community_name": "showToast",
       "file_type": "code",
       "norm_label": "closeimportmodal()",
       "source_file": "web/js/modules/import_export.js",
@@ -882,7 +894,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 110,
-      "community_name": "import_export.js",
+      "community_name": "showToast",
       "file_type": "code",
       "norm_label": "copycategoryjson()",
       "source_file": "web/js/modules/import_export.js",
@@ -894,7 +906,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 110,
-      "community_name": "import_export.js",
+      "community_name": "showToast",
       "file_type": "code",
       "norm_label": "copyrulejson()",
       "source_file": "web/js/modules/import_export.js",
@@ -906,7 +918,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 110,
-      "community_name": "import_export.js",
+      "community_name": "showToast",
       "file_type": "code",
       "norm_label": "getsanitizedruleforexport()",
       "source_file": "web/js/modules/import_export.js",
@@ -918,7 +930,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 110,
-      "community_name": "import_export.js",
+      "community_name": "showToast",
       "file_type": "code",
       "norm_label": "handleexportconfig()",
       "source_file": "web/js/modules/import_export.js",
@@ -930,7 +942,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 110,
-      "community_name": "import_export.js",
+      "community_name": "showToast",
       "file_type": "code",
       "norm_label": "initimportexport()",
       "source_file": "web/js/modules/import_export.js",
@@ -942,7 +954,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 110,
-      "community_name": "import_export.js",
+      "community_name": "showToast",
       "file_type": "code",
       "norm_label": "openimportmodal()",
       "source_file": "web/js/modules/import_export.js",
@@ -954,11 +966,119 @@
       "_callable": true,
       "_origin": "ast",
       "community": 110,
-      "community_name": "import_export.js",
+      "community_name": "showToast",
       "file_type": "code",
       "norm_label": "parseandvalidateimportjson()",
       "source_file": "web/js/modules/import_export.js",
       "source_location": "L172"
+    },
+    {
+      "id": "web_js_modules_rules_deleterule",
+      "label": "deleteRule()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 110,
+      "community_name": "showToast",
+      "file_type": "code",
+      "norm_label": "deleterule()",
+      "source_file": "web/js/modules/rules.js",
+      "source_location": "L642"
+    },
+    {
+      "id": "web_js_modules_system_closesystemupdatemodal",
+      "label": "closeSystemUpdateModal()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 110,
+      "community_name": "showToast",
+      "file_type": "code",
+      "norm_label": "closesystemupdatemodal()",
+      "source_file": "web/js/modules/system.js",
+      "source_location": "L218"
+    },
+    {
+      "id": "web_js_modules_system_handleservicerestart",
+      "label": "handleServiceRestart()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 110,
+      "community_name": "showToast",
+      "file_type": "code",
+      "norm_label": "handleservicerestart()",
+      "source_file": "web/js/modules/system.js",
+      "source_location": "L435"
+    },
+    {
+      "id": "web_js_modules_system_initservicerestartcontrols",
+      "label": "initServiceRestartControls()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 110,
+      "community_name": "showToast",
+      "file_type": "code",
+      "norm_label": "initservicerestartcontrols()",
+      "source_file": "web/js/modules/system.js",
+      "source_location": "L411"
+    },
+    {
+      "id": "web_js_modules_system_initsystemupdatemanager",
+      "label": "initSystemUpdateManager()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 110,
+      "community_name": "showToast",
+      "file_type": "code",
+      "norm_label": "initsystemupdatemanager()",
+      "source_file": "web/js/modules/system.js",
+      "source_location": "L12"
+    },
+    {
+      "id": "web_js_modules_system_opensystemupdatemodal",
+      "label": "openSystemUpdateModal()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 110,
+      "community_name": "showToast",
+      "file_type": "code",
+      "norm_label": "opensystemupdatemodal()",
+      "source_file": "web/js/modules/system.js",
+      "source_location": "L193"
+    },
+    {
+      "id": "web_js_modules_system_polldashboardreconnection",
+      "label": "pollDashboardReconnection()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 110,
+      "community_name": "showToast",
+      "file_type": "code",
+      "norm_label": "polldashboardreconnection()",
+      "source_file": "web/js/modules/system.js",
+      "source_location": "L481"
+    },
+    {
+      "id": "web_js_modules_system_pollupdateprogress",
+      "label": "pollUpdateProgress()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 110,
+      "community_name": "showToast",
+      "file_type": "code",
+      "norm_label": "pollupdateprogress()",
+      "source_file": "web/js/modules/system.js",
+      "source_location": "L285"
+    },
+    {
+      "id": "web_js_modules_system_startsystemupdateprocedure",
+      "label": "startSystemUpdateProcedure()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 110,
+      "community_name": "showToast",
+      "file_type": "code",
+      "norm_label": "startsystemupdateprocedure()",
+      "source_file": "web/js/modules/system.js",
+      "source_location": "L224"
     },
     {
       "id": "web_js_modules_utils_copyjsontoclipboard",
@@ -966,11 +1086,23 @@
       "_callable": true,
       "_origin": "ast",
       "community": 110,
-      "community_name": "import_export.js",
+      "community_name": "showToast",
       "file_type": "code",
       "norm_label": "copyjsontoclipboard()",
       "source_file": "web/js/modules/utils.js",
       "source_location": "L104"
+    },
+    {
+      "id": "web_js_modules_utils_showtoast",
+      "label": "showToast()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 110,
+      "community_name": "showToast",
+      "file_type": "code",
+      "norm_label": "showtoast()",
+      "source_file": "web/js/modules/utils.js",
+      "source_location": "L77"
     },
     {
       "id": "tests_test_ui_and_api_edge_cases_testuiandapiedgecases_test_dark_theme_tokens_and_restrained_highlights",
@@ -1849,18 +1981,6 @@
       "source_location": "L80"
     },
     {
-      "id": "web_js_modules_rules_deleterule",
-      "label": "deleteRule()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 25,
-      "community_name": "rules.js",
-      "file_type": "code",
-      "norm_label": "deleterule()",
-      "source_file": "web/js/modules/rules.js",
-      "source_location": "L642"
-    },
-    {
       "id": "web_js_modules_rules_getpriotagclass",
       "label": "getPrioTagClass()",
       "_callable": true,
@@ -2473,40 +2593,16 @@
       "source_location": "L293"
     },
     {
-      "id": "web_app_architecturalcompliance",
-      "label": "_architecturalCompliance()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 3,
-      "community_name": "app.js",
-      "file_type": "code",
-      "norm_label": "_architecturalcompliance()",
-      "source_file": "web/app.js",
-      "source_location": "L212"
-    },
-    {
       "id": "web_app_fetchstatus",
       "label": "fetchStatus()",
       "_callable": true,
       "_origin": "ast",
       "community": 3,
-      "community_name": "app.js",
+      "community_name": "fetchStatus",
       "file_type": "code",
       "norm_label": "fetchstatus()",
       "source_file": "web/app.js",
       "source_location": "L183"
-    },
-    {
-      "id": "web_app_startauthenticatedsession",
-      "label": "startAuthenticatedSession()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 3,
-      "community_name": "app.js",
-      "file_type": "code",
-      "norm_label": "startauthenticatedsession()",
-      "source_file": "web/app.js",
-      "source_location": "L307"
     },
     {
       "id": "web_app_stopauthenticatedsession",
@@ -2514,11 +2610,11 @@
       "_callable": true,
       "_origin": "ast",
       "community": 3,
-      "community_name": "app.js",
+      "community_name": "fetchStatus",
       "file_type": "code",
       "norm_label": "stopauthenticatedsession()",
       "source_file": "web/app.js",
-      "source_location": "L316"
+      "source_location": "L317"
     },
     {
       "id": "web_app_trackfailoverevents",
@@ -2526,71 +2622,11 @@
       "_callable": true,
       "_origin": "ast",
       "community": 3,
-      "community_name": "app.js",
+      "community_name": "fetchStatus",
       "file_type": "code",
       "norm_label": "trackfailoverevents()",
       "source_file": "web/app.js",
       "source_location": "L160"
-    },
-    {
-      "id": "web_js_modules_import_export_checkimportablerules",
-      "label": "checkImportableRules()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 3,
-      "community_name": "app.js",
-      "file_type": "code",
-      "norm_label": "checkimportablerules()",
-      "source_file": "web/js/modules/import_export.js",
-      "source_location": "L86"
-    },
-    {
-      "id": "web_js_modules_navigation_closemobilesidebar",
-      "label": "closeMobileSidebar()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 3,
-      "community_name": "app.js",
-      "file_type": "code",
-      "norm_label": "closemobilesidebar()",
-      "source_file": "web/js/modules/navigation.js",
-      "source_location": "L66"
-    },
-    {
-      "id": "web_js_modules_navigation_initnavigation",
-      "label": "initNavigation()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 3,
-      "community_name": "app.js",
-      "file_type": "code",
-      "norm_label": "initnavigation()",
-      "source_file": "web/js/modules/navigation.js",
-      "source_location": "L5"
-    },
-    {
-      "id": "web_js_modules_navigation_openmobilesidebar",
-      "label": "openMobileSidebar()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 3,
-      "community_name": "app.js",
-      "file_type": "code",
-      "norm_label": "openmobilesidebar()",
-      "source_file": "web/js/modules/navigation.js",
-      "source_location": "L59"
-    },
-    {
-      "id": "web_js_modules_navigation_switchsection",
-      "label": "switchSection()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 3,
-      "community_name": "app.js",
-      "file_type": "code",
-      "norm_label": "switchsection()",
-      "source_file": "web/js/modules/navigation.js",
-      "source_location": "L31"
     },
     {
       "id": "web_js_modules_rules_updatecategorydatalist",
@@ -2598,7 +2634,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 3,
-      "community_name": "app.js",
+      "community_name": "fetchStatus",
       "file_type": "code",
       "norm_label": "updatecategorydatalist()",
       "source_file": "web/js/modules/rules.js",
@@ -2610,7 +2646,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 3,
-      "community_name": "app.js",
+      "community_name": "fetchStatus",
       "file_type": "code",
       "norm_label": "setcurrentrules()",
       "source_file": "web/js/modules/state.js",
@@ -2622,7 +2658,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 3,
-      "community_name": "app.js",
+      "community_name": "fetchStatus",
       "file_type": "code",
       "norm_label": "setlastruntime()",
       "source_file": "web/js/modules/state.js",
@@ -2634,7 +2670,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 3,
-      "community_name": "app.js",
+      "community_name": "fetchStatus",
       "file_type": "code",
       "norm_label": "setlasttrafficdata()",
       "source_file": "web/js/modules/state.js",
@@ -2646,7 +2682,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 3,
-      "community_name": "app.js",
+      "community_name": "fetchStatus",
       "file_type": "code",
       "norm_label": "copyiptoclipboard()",
       "source_file": "web/js/modules/stats.js",
@@ -2658,7 +2694,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 3,
-      "community_name": "app.js",
+      "community_name": "fetchStatus",
       "file_type": "code",
       "norm_label": "renderservicesstatus()",
       "source_file": "web/js/modules/stats.js",
@@ -2670,7 +2706,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 3,
-      "community_name": "app.js",
+      "community_name": "fetchStatus",
       "file_type": "code",
       "norm_label": "renderstats()",
       "source_file": "web/js/modules/stats.js",
@@ -2682,47 +2718,11 @@
       "_callable": true,
       "_origin": "ast",
       "community": 3,
-      "community_name": "app.js",
+      "community_name": "fetchStatus",
       "file_type": "code",
       "norm_label": "rendersystemstats()",
       "source_file": "web/js/modules/stats.js",
       "source_location": "L8"
-    },
-    {
-      "id": "web_js_modules_theme_inittheme",
-      "label": "initTheme()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 3,
-      "community_name": "app.js",
-      "file_type": "code",
-      "norm_label": "inittheme()",
-      "source_file": "web/js/modules/theme.js",
-      "source_location": "L5"
-    },
-    {
-      "id": "web_js_modules_theme_toggletheme",
-      "label": "toggleTheme()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 3,
-      "community_name": "app.js",
-      "file_type": "code",
-      "norm_label": "toggletheme()",
-      "source_file": "web/js/modules/theme.js",
-      "source_location": "L15"
-    },
-    {
-      "id": "web_js_modules_theme_updatethemetoggleui",
-      "label": "updateThemeToggleUI()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 3,
-      "community_name": "app.js",
-      "file_type": "code",
-      "norm_label": "updatethemetoggleui()",
-      "source_file": "web/js/modules/theme.js",
-      "source_location": "L25"
     },
     {
       "id": "web_js_modules_utils_formattrafficmb",
@@ -2730,7 +2730,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 3,
-      "community_name": "app.js",
+      "community_name": "fetchStatus",
       "file_type": "code",
       "norm_label": "formattrafficmb()",
       "source_file": "web/js/modules/utils.js",
@@ -4573,24 +4573,12 @@
       "source_location": "L167"
     },
     {
-      "id": "web_js_modules_api_fetchapi",
-      "label": "fetchApi()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 46,
-      "community_name": "showToast",
-      "file_type": "code",
-      "norm_label": "fetchapi()",
-      "source_file": "web/js/modules/api.js",
-      "source_location": "L46"
-    },
-    {
       "id": "web_js_modules_auth_checksession",
       "label": "checkSession()",
       "_callable": true,
       "_origin": "ast",
       "community": 46,
-      "community_name": "showToast",
+      "community_name": "auth.js",
       "file_type": "code",
       "norm_label": "checksession()",
       "source_file": "web/js/modules/auth.js",
@@ -4602,7 +4590,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 46,
-      "community_name": "showToast",
+      "community_name": "auth.js",
       "file_type": "code",
       "norm_label": "closesecuritymodal()",
       "source_file": "web/js/modules/auth.js",
@@ -4614,7 +4602,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 46,
-      "community_name": "showToast",
+      "community_name": "auth.js",
       "file_type": "code",
       "norm_label": "evaluatepasswordstrength()",
       "source_file": "web/js/modules/auth.js",
@@ -4626,7 +4614,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 46,
-      "community_name": "showToast",
+      "community_name": "auth.js",
       "file_type": "code",
       "norm_label": "handlelogin()",
       "source_file": "web/js/modules/auth.js",
@@ -4638,7 +4626,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 46,
-      "community_name": "showToast",
+      "community_name": "auth.js",
       "file_type": "code",
       "norm_label": "handlelogout()",
       "source_file": "web/js/modules/auth.js",
@@ -4650,7 +4638,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 46,
-      "community_name": "showToast",
+      "community_name": "auth.js",
       "file_type": "code",
       "norm_label": "initauth()",
       "source_file": "web/js/modules/auth.js",
@@ -4662,7 +4650,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 46,
-      "community_name": "showToast",
+      "community_name": "auth.js",
       "file_type": "code",
       "norm_label": "initinlinesecurityform()",
       "source_file": "web/js/modules/auth.js",
@@ -4674,7 +4662,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 46,
-      "community_name": "showToast",
+      "community_name": "auth.js",
       "file_type": "code",
       "norm_label": "initsecuritymodal()",
       "source_file": "web/js/modules/auth.js",
@@ -4686,7 +4674,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 46,
-      "community_name": "showToast",
+      "community_name": "auth.js",
       "file_type": "code",
       "norm_label": "setupcapslockdetection()",
       "source_file": "web/js/modules/auth.js",
@@ -4698,7 +4686,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 46,
-      "community_name": "showToast",
+      "community_name": "auth.js",
       "file_type": "code",
       "norm_label": "setuppasswordtoggle()",
       "source_file": "web/js/modules/auth.js",
@@ -4710,7 +4698,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 46,
-      "community_name": "showToast",
+      "community_name": "auth.js",
       "file_type": "code",
       "norm_label": "showdashboard()",
       "source_file": "web/js/modules/auth.js",
@@ -4722,7 +4710,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 46,
-      "community_name": "showToast",
+      "community_name": "auth.js",
       "file_type": "code",
       "norm_label": "showlogin()",
       "source_file": "web/js/modules/auth.js",
@@ -4734,23 +4722,11 @@
       "_callable": true,
       "_origin": "ast",
       "community": 46,
-      "community_name": "showToast",
+      "community_name": "auth.js",
       "file_type": "code",
       "norm_label": "startlockouttimer()",
       "source_file": "web/js/modules/auth.js",
       "source_location": "L38"
-    },
-    {
-      "id": "web_js_modules_utils_showtoast",
-      "label": "showToast()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 46,
-      "community_name": "showToast",
-      "file_type": "code",
-      "norm_label": "showtoast()",
-      "source_file": "web/js/modules/utils.js",
-      "source_location": "L77"
     },
     {
       "id": "tests_test_ui_and_api_edge_cases_testuiandapiedgecases_test_api_test_target_http_endpoint",
@@ -4861,12 +4837,48 @@
       "source_location": "L762"
     },
     {
+      "id": "web_app_architecturalcompliance",
+      "label": "_architecturalCompliance()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 49,
+      "community_name": "app.js",
+      "file_type": "code",
+      "norm_label": "_architecturalcompliance()",
+      "source_file": "web/app.js",
+      "source_location": "L212"
+    },
+    {
+      "id": "web_app_startauthenticatedsession",
+      "label": "startAuthenticatedSession()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 49,
+      "community_name": "app.js",
+      "file_type": "code",
+      "norm_label": "startauthenticatedsession()",
+      "source_file": "web/app.js",
+      "source_location": "L307"
+    },
+    {
+      "id": "web_js_modules_import_export_checkimportablerules",
+      "label": "checkImportableRules()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 49,
+      "community_name": "app.js",
+      "file_type": "code",
+      "norm_label": "checkimportablerules()",
+      "source_file": "web/js/modules/import_export.js",
+      "source_location": "L86"
+    },
+    {
       "id": "web_js_modules_logs_addlogentry",
       "label": "addLogEntry()",
       "_callable": true,
       "_origin": "ast",
       "community": 49,
-      "community_name": "quality.js",
+      "community_name": "app.js",
       "file_type": "code",
       "norm_label": "addlogentry()",
       "source_file": "web/js/modules/logs.js",
@@ -4878,7 +4890,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 49,
-      "community_name": "quality.js",
+      "community_name": "app.js",
       "file_type": "code",
       "norm_label": "appendlogentry()",
       "source_file": "web/js/modules/logs.js",
@@ -4890,11 +4902,59 @@
       "_callable": true,
       "_origin": "ast",
       "community": 49,
-      "community_name": "quality.js",
+      "community_name": "app.js",
       "file_type": "code",
       "norm_label": "initlogs()",
       "source_file": "web/js/modules/logs.js",
       "source_location": "L40"
+    },
+    {
+      "id": "web_js_modules_navigation_closemobilesidebar",
+      "label": "closeMobileSidebar()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 49,
+      "community_name": "app.js",
+      "file_type": "code",
+      "norm_label": "closemobilesidebar()",
+      "source_file": "web/js/modules/navigation.js",
+      "source_location": "L66"
+    },
+    {
+      "id": "web_js_modules_navigation_initnavigation",
+      "label": "initNavigation()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 49,
+      "community_name": "app.js",
+      "file_type": "code",
+      "norm_label": "initnavigation()",
+      "source_file": "web/js/modules/navigation.js",
+      "source_location": "L5"
+    },
+    {
+      "id": "web_js_modules_navigation_openmobilesidebar",
+      "label": "openMobileSidebar()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 49,
+      "community_name": "app.js",
+      "file_type": "code",
+      "norm_label": "openmobilesidebar()",
+      "source_file": "web/js/modules/navigation.js",
+      "source_location": "L59"
+    },
+    {
+      "id": "web_js_modules_navigation_switchsection",
+      "label": "switchSection()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 49,
+      "community_name": "app.js",
+      "file_type": "code",
+      "norm_label": "switchsection()",
+      "source_file": "web/js/modules/navigation.js",
+      "source_location": "L31"
     },
     {
       "id": "web_js_modules_quality_initdiagpacketlosstool",
@@ -4902,7 +4962,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 49,
-      "community_name": "quality.js",
+      "community_name": "app.js",
       "file_type": "code",
       "norm_label": "initdiagpacketlosstool()",
       "source_file": "web/js/modules/quality.js",
@@ -4914,11 +4974,59 @@
       "_callable": true,
       "_origin": "ast",
       "community": 49,
-      "community_name": "quality.js",
+      "community_name": "app.js",
       "file_type": "code",
       "norm_label": "runlivepacketlosstest()",
       "source_file": "web/js/modules/quality.js",
       "source_location": "L9"
+    },
+    {
+      "id": "web_js_modules_system_fetchsystemversioninfo",
+      "label": "fetchSystemVersionInfo()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 49,
+      "community_name": "app.js",
+      "file_type": "code",
+      "norm_label": "fetchsystemversioninfo()",
+      "source_file": "web/js/modules/system.js",
+      "source_location": "L78"
+    },
+    {
+      "id": "web_js_modules_theme_inittheme",
+      "label": "initTheme()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 49,
+      "community_name": "app.js",
+      "file_type": "code",
+      "norm_label": "inittheme()",
+      "source_file": "web/js/modules/theme.js",
+      "source_location": "L5"
+    },
+    {
+      "id": "web_js_modules_theme_toggletheme",
+      "label": "toggleTheme()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 49,
+      "community_name": "app.js",
+      "file_type": "code",
+      "norm_label": "toggletheme()",
+      "source_file": "web/js/modules/theme.js",
+      "source_location": "L15"
+    },
+    {
+      "id": "web_js_modules_theme_updatethemetoggleui",
+      "label": "updateThemeToggleUI()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 49,
+      "community_name": "app.js",
+      "file_type": "code",
+      "norm_label": "updatethemetoggleui()",
+      "source_file": "web/js/modules/theme.js",
+      "source_location": "L25"
     },
     {
       "id": "core_auth_check_rate_limit",
@@ -5027,114 +5135,6 @@
       "norm_label": "classify()",
       "source_file": "tests/test_ui_and_api_edge_cases.py",
       "source_location": "L808"
-    },
-    {
-      "id": "web_js_modules_system_closesystemupdatemodal",
-      "label": "closeSystemUpdateModal()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 54,
-      "community_name": "system.js",
-      "file_type": "code",
-      "norm_label": "closesystemupdatemodal()",
-      "source_file": "web/js/modules/system.js",
-      "source_location": "L220"
-    },
-    {
-      "id": "web_js_modules_system_fetchsystemversioninfo",
-      "label": "fetchSystemVersionInfo()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 54,
-      "community_name": "system.js",
-      "file_type": "code",
-      "norm_label": "fetchsystemversioninfo()",
-      "source_file": "web/js/modules/system.js",
-      "source_location": "L80"
-    },
-    {
-      "id": "web_js_modules_system_handleservicerestart",
-      "label": "handleServiceRestart()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 54,
-      "community_name": "system.js",
-      "file_type": "code",
-      "norm_label": "handleservicerestart()",
-      "source_file": "web/js/modules/system.js",
-      "source_location": "L437"
-    },
-    {
-      "id": "web_js_modules_system_initservicerestartcontrols",
-      "label": "initServiceRestartControls()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 54,
-      "community_name": "system.js",
-      "file_type": "code",
-      "norm_label": "initservicerestartcontrols()",
-      "source_file": "web/js/modules/system.js",
-      "source_location": "L413"
-    },
-    {
-      "id": "web_js_modules_system_initsystemupdatemanager",
-      "label": "initSystemUpdateManager()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 54,
-      "community_name": "system.js",
-      "file_type": "code",
-      "norm_label": "initsystemupdatemanager()",
-      "source_file": "web/js/modules/system.js",
-      "source_location": "L12"
-    },
-    {
-      "id": "web_js_modules_system_opensystemupdatemodal",
-      "label": "openSystemUpdateModal()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 54,
-      "community_name": "system.js",
-      "file_type": "code",
-      "norm_label": "opensystemupdatemodal()",
-      "source_file": "web/js/modules/system.js",
-      "source_location": "L195"
-    },
-    {
-      "id": "web_js_modules_system_polldashboardreconnection",
-      "label": "pollDashboardReconnection()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 54,
-      "community_name": "system.js",
-      "file_type": "code",
-      "norm_label": "polldashboardreconnection()",
-      "source_file": "web/js/modules/system.js",
-      "source_location": "L483"
-    },
-    {
-      "id": "web_js_modules_system_pollupdateprogress",
-      "label": "pollUpdateProgress()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 54,
-      "community_name": "system.js",
-      "file_type": "code",
-      "norm_label": "pollupdateprogress()",
-      "source_file": "web/js/modules/system.js",
-      "source_location": "L287"
-    },
-    {
-      "id": "web_js_modules_system_startsystemupdateprocedure",
-      "label": "startSystemUpdateProcedure()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 54,
-      "community_name": "system.js",
-      "file_type": "code",
-      "norm_label": "startsystemupdateprocedure()",
-      "source_file": "web/js/modules/system.js",
-      "source_location": "L226"
     },
     {
       "id": "core_config_manager_is_haproxy_listening",
@@ -7543,14 +7543,58 @@
       "source_location": "L6"
     },
     {
+      "id": "web_js_modules_api",
+      "label": "api.js",
+      "_origin": "ast",
+      "community": 110,
+      "community_name": "showToast",
+      "file_type": "code",
+      "norm_label": "api.js",
+      "source_file": "web/js/modules/api.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "web_js_modules_api_api_base",
+      "label": "API_BASE",
+      "_origin": "ast",
+      "community": 110,
+      "community_name": "showToast",
+      "file_type": "code",
+      "norm_label": "api_base",
+      "source_file": "web/js/modules/api.js",
+      "source_location": "L9"
+    },
+    {
+      "id": "web_js_modules_api_cleanpath",
+      "label": "cleanPath",
+      "_origin": "ast",
+      "community": 110,
+      "community_name": "showToast",
+      "file_type": "code",
+      "norm_label": "cleanpath",
+      "source_file": "web/js/modules/api.js",
+      "source_location": "L8"
+    },
+    {
       "id": "web_js_modules_import_export",
       "label": "import_export.js",
       "_origin": "ast",
       "community": 110,
-      "community_name": "import_export.js",
+      "community_name": "showToast",
       "file_type": "code",
       "norm_label": "import_export.js",
       "source_file": "web/js/modules/import_export.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "web_js_modules_system",
+      "label": "system.js",
+      "_origin": "ast",
+      "community": 110,
+      "community_name": "showToast",
+      "file_type": "code",
+      "norm_label": "system.js",
+      "source_file": "web/js/modules/system.js",
       "source_location": "L1"
     },
     {
@@ -10007,55 +10051,11 @@
       "source_location": "L1"
     },
     {
-      "id": "web_app",
-      "label": "app.js",
-      "_origin": "ast",
-      "community": 3,
-      "community_name": "app.js",
-      "file_type": "code",
-      "norm_label": "app.js",
-      "source_file": "web/app.js",
-      "source_location": "L1"
-    },
-    {
-      "id": "web_app_pendingoverrides",
-      "label": "pendingOverrides",
-      "_origin": "ast",
-      "community": 3,
-      "community_name": "app.js",
-      "file_type": "code",
-      "norm_label": "pendingoverrides",
-      "source_file": "web/app.js",
-      "source_location": "L158"
-    },
-    {
-      "id": "web_app_previousactivepriorities",
-      "label": "previousActivePriorities",
-      "_origin": "ast",
-      "community": 3,
-      "community_name": "app.js",
-      "file_type": "code",
-      "norm_label": "previousactivepriorities",
-      "source_file": "web/app.js",
-      "source_location": "L156"
-    },
-    {
-      "id": "web_js_modules_navigation",
-      "label": "navigation.js",
-      "_origin": "ast",
-      "community": 3,
-      "community_name": "app.js",
-      "file_type": "code",
-      "norm_label": "navigation.js",
-      "source_file": "web/js/modules/navigation.js",
-      "source_location": "L1"
-    },
-    {
       "id": "web_js_modules_state",
       "label": "state.js",
       "_origin": "ast",
       "community": 3,
-      "community_name": "app.js",
+      "community_name": "fetchStatus",
       "file_type": "code",
       "norm_label": "state.js",
       "source_file": "web/js/modules/state.js",
@@ -10066,7 +10066,7 @@
       "label": "currentRules",
       "_origin": "ast",
       "community": 3,
-      "community_name": "app.js",
+      "community_name": "fetchStatus",
       "file_type": "code",
       "norm_label": "currentrules",
       "source_file": "web/js/modules/state.js",
@@ -10077,7 +10077,7 @@
       "label": "lastRuntime",
       "_origin": "ast",
       "community": 3,
-      "community_name": "app.js",
+      "community_name": "fetchStatus",
       "file_type": "code",
       "norm_label": "lastruntime",
       "source_file": "web/js/modules/state.js",
@@ -10088,7 +10088,7 @@
       "label": "lastTrafficData",
       "_origin": "ast",
       "community": 3,
-      "community_name": "app.js",
+      "community_name": "fetchStatus",
       "file_type": "code",
       "norm_label": "lasttrafficdata",
       "source_file": "web/js/modules/state.js",
@@ -10099,7 +10099,7 @@
       "label": "state",
       "_origin": "ast",
       "community": 3,
-      "community_name": "app.js",
+      "community_name": "fetchStatus",
       "file_type": "code",
       "norm_label": "state",
       "source_file": "web/js/modules/state.js",
@@ -10110,21 +10110,10 @@
       "label": "stats.js",
       "_origin": "ast",
       "community": 3,
-      "community_name": "app.js",
+      "community_name": "fetchStatus",
       "file_type": "code",
       "norm_label": "stats.js",
       "source_file": "web/js/modules/stats.js",
-      "source_location": "L1"
-    },
-    {
-      "id": "web_js_modules_theme",
-      "label": "theme.js",
-      "_origin": "ast",
-      "community": 3,
-      "community_name": "app.js",
-      "file_type": "code",
-      "norm_label": "theme.js",
-      "source_file": "web/js/modules/theme.js",
       "source_location": "L1"
     },
     {
@@ -11494,44 +11483,11 @@
       "source_location": "L243"
     },
     {
-      "id": "web_js_modules_api",
-      "label": "api.js",
-      "_origin": "ast",
-      "community": 46,
-      "community_name": "showToast",
-      "file_type": "code",
-      "norm_label": "api.js",
-      "source_file": "web/js/modules/api.js",
-      "source_location": "L1"
-    },
-    {
-      "id": "web_js_modules_api_api_base",
-      "label": "API_BASE",
-      "_origin": "ast",
-      "community": 46,
-      "community_name": "showToast",
-      "file_type": "code",
-      "norm_label": "api_base",
-      "source_file": "web/js/modules/api.js",
-      "source_location": "L9"
-    },
-    {
-      "id": "web_js_modules_api_cleanpath",
-      "label": "cleanPath",
-      "_origin": "ast",
-      "community": 46,
-      "community_name": "showToast",
-      "file_type": "code",
-      "norm_label": "cleanpath",
-      "source_file": "web/js/modules/api.js",
-      "source_location": "L8"
-    },
-    {
       "id": "web_js_modules_auth",
       "label": "auth.js",
       "_origin": "ast",
       "community": 46,
-      "community_name": "showToast",
+      "community_name": "auth.js",
       "file_type": "code",
       "norm_label": "auth.js",
       "source_file": "web/js/modules/auth.js",
@@ -11711,14 +11667,58 @@
       "source_location": "L105"
     },
     {
+      "id": "web_app",
+      "label": "app.js",
+      "_origin": "ast",
+      "community": 49,
+      "community_name": "app.js",
+      "file_type": "code",
+      "norm_label": "app.js",
+      "source_file": "web/app.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "web_app_pendingoverrides",
+      "label": "pendingOverrides",
+      "_origin": "ast",
+      "community": 49,
+      "community_name": "app.js",
+      "file_type": "code",
+      "norm_label": "pendingoverrides",
+      "source_file": "web/app.js",
+      "source_location": "L158"
+    },
+    {
+      "id": "web_app_previousactivepriorities",
+      "label": "previousActivePriorities",
+      "_origin": "ast",
+      "community": 49,
+      "community_name": "app.js",
+      "file_type": "code",
+      "norm_label": "previousactivepriorities",
+      "source_file": "web/app.js",
+      "source_location": "L156"
+    },
+    {
       "id": "web_js_modules_logs",
       "label": "logs.js",
       "_origin": "ast",
       "community": 49,
-      "community_name": "quality.js",
+      "community_name": "app.js",
       "file_type": "code",
       "norm_label": "logs.js",
       "source_file": "web/js/modules/logs.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "web_js_modules_navigation",
+      "label": "navigation.js",
+      "_origin": "ast",
+      "community": 49,
+      "community_name": "app.js",
+      "file_type": "code",
+      "norm_label": "navigation.js",
+      "source_file": "web/js/modules/navigation.js",
       "source_location": "L1"
     },
     {
@@ -11726,10 +11726,21 @@
       "label": "quality.js",
       "_origin": "ast",
       "community": 49,
-      "community_name": "quality.js",
+      "community_name": "app.js",
       "file_type": "code",
       "norm_label": "quality.js",
       "source_file": "web/js/modules/quality.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "web_js_modules_theme",
+      "label": "theme.js",
+      "_origin": "ast",
+      "community": 49,
+      "community_name": "app.js",
+      "file_type": "code",
+      "norm_label": "theme.js",
+      "source_file": "web/js/modules/theme.js",
       "source_location": "L1"
     },
     {
@@ -12085,17 +12096,6 @@
       "norm_label": "interactive requirements clarification (reverse prompt engineering)",
       "source_file": ".agents/rules/reverse-prompting.md",
       "source_location": "L8"
-    },
-    {
-      "id": "web_js_modules_system",
-      "label": "system.js",
-      "_origin": "ast",
-      "community": 54,
-      "community_name": "system.js",
-      "file_type": "code",
-      "norm_label": "system.js",
-      "source_file": "web/js/modules/system.js",
-      "source_location": "L1"
     },
     {
       "id": "agents_experiences_011_nftables_active_rules_auto_discovery_and_deconfliction",
@@ -21341,6 +21341,18 @@
       "weight": 1.0
     },
     {
+      "source": "web_app_startauthenticatedsession",
+      "target": "web_js_modules_system_fetchsystemversioninfo",
+      "relation": "calls",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "call",
+      "source_file": "web/app.js",
+      "source_location": "L311",
+      "weight": 1.0
+    },
+    {
       "source": "web_app_trackfailoverevents",
       "target": "web_js_modules_logs_addlogentry",
       "relation": "calls",
@@ -21361,7 +21373,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/js/modules/api.js",
-      "source_location": "L85",
+      "source_location": "L86",
       "weight": 1.0
     },
     {
@@ -22429,7 +22441,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/js/modules/system.js",
-      "source_location": "L141",
+      "source_location": "L139",
       "weight": 1.0
     },
     {
@@ -22441,7 +22453,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/js/modules/system.js",
-      "source_location": "L451",
+      "source_location": "L449",
       "weight": 1.0
     },
     {
@@ -22453,7 +22465,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/js/modules/system.js",
-      "source_location": "L454",
+      "source_location": "L452",
       "weight": 1.0
     },
     {
@@ -22465,7 +22477,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/js/modules/system.js",
-      "source_location": "L473",
+      "source_location": "L471",
       "weight": 1.0
     },
     {
@@ -22477,7 +22489,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/js/modules/system.js",
-      "source_location": "L421",
+      "source_location": "L419",
       "weight": 1.0
     },
     {
@@ -22549,7 +22561,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/js/modules/system.js",
-      "source_location": "L209",
+      "source_location": "L207",
       "weight": 1.0
     },
     {
@@ -22561,7 +22573,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/js/modules/system.js",
-      "source_location": "L491",
+      "source_location": "L489",
       "weight": 1.0
     },
     {
@@ -22573,7 +22585,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/js/modules/system.js",
-      "source_location": "L330",
+      "source_location": "L328",
       "weight": 1.0
     },
     {
@@ -22585,7 +22597,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/js/modules/system.js",
-      "source_location": "L379",
+      "source_location": "L377",
       "weight": 1.0
     },
     {
@@ -22597,7 +22609,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/js/modules/system.js",
-      "source_location": "L272",
+      "source_location": "L270",
       "weight": 1.0
     },
     {
@@ -22609,7 +22621,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/js/modules/system.js",
-      "source_location": "L284",
+      "source_location": "L282",
       "weight": 1.0
     },
     {
@@ -24613,7 +24625,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/app.js",
-      "source_location": "L316",
+      "source_location": "L317",
       "weight": 1.0
     },
     {
@@ -37942,7 +37954,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "web/js/modules/system.js",
-      "source_location": "L195",
+      "source_location": "L193",
       "weight": 1.0
     },
     {
@@ -37953,7 +37965,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "web/js/modules/system.js",
-      "source_location": "L220",
+      "source_location": "L218",
       "weight": 1.0
     },
     {
@@ -37964,7 +37976,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "web/js/modules/system.js",
-      "source_location": "L226",
+      "source_location": "L224",
       "weight": 1.0
     },
     {
@@ -37975,7 +37987,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "web/js/modules/system.js",
-      "source_location": "L287",
+      "source_location": "L285",
       "weight": 1.0
     },
     {
@@ -37986,7 +37998,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "web/js/modules/system.js",
-      "source_location": "L413",
+      "source_location": "L411",
       "weight": 1.0
     },
     {
@@ -37997,7 +38009,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "web/js/modules/system.js",
-      "source_location": "L437",
+      "source_location": "L435",
       "weight": 1.0
     },
     {
@@ -38008,7 +38020,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "web/js/modules/system.js",
-      "source_location": "L483",
+      "source_location": "L481",
       "weight": 1.0
     },
     {
@@ -38019,7 +38031,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "web/js/modules/system.js",
-      "source_location": "L80",
+      "source_location": "L78",
       "weight": 1.0
     },
     {
@@ -45749,7 +45761,7 @@
       "confidence_score": 0.85,
       "context": "argument",
       "source_file": "web/app.js",
-      "source_location": "L327",
+      "source_location": "L328",
       "weight": 1.0
     },
     {
@@ -47466,5 +47478,5 @@
     }
   ],
   "hyperedges": [],
-  "built_at_commit": "9d85bd5d5a220b5285deeaa4ee0564da440ea247"
+  "built_at_commit": "035b78d1388522bd2b130d91159a0fe304846439"
 }

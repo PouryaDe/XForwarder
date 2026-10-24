@@ -1,17 +1,17 @@
 # Graph Report - Forward-Manager  (2026-10-24)
 
 ## Corpus Check
-- 94 files · ~99,533 words
+- 94 files · ~99,651 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 13 file(s) not represented in the graph (top: .css 6, .service 4, (none) 2)
 
 ## Summary
-- 1264 nodes · 2800 edges · 112 communities (60 shown, 52 thin omitted)
+- 1264 nodes · 2801 edges · 113 communities (61 shown, 52 thin omitted)
 - Extraction: 94% EXTRACTED · 6% INFERRED · 0% AMBIGUOUS · INFERRED: 174 edges (avg confidence: 0.9)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `6fa76999`
+- Built from commit: `9d85bd5d`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -61,10 +61,10 @@
 - Experience 002: Atomic File Persistence and Tmp Renaming
 - TestEngineProbes
 - .evaluate_rule
-- auth.js
+- showToast
 - TestUIAndAPIEdgeCases
 - 2. Non-Negotiable Architectural Constraints
-- showToast
+- quality.js
 - auth.py
 - Interactive Requirements Clarification (Reverse Prompt Engineering)
 - system.js
@@ -89,6 +89,7 @@
 - Experience 012: Kernel Zero-Copy Splicing, BBR Network Tuning, and Session Timeout Optimization
 - XForwarderEngine
 - TestModularSubsystems
+- import_export.js
 
 ## God Nodes (most connected - your core abstractions)
 1. `XForwarderEngine` - 66 edges
@@ -117,7 +118,7 @@
 ## Import Cycles
 - None detected.
 
-## Communities (112 total, 52 thin omitted)
+## Communities (113 total, 52 thin omitted)
 
 ### Community 0 - "TestRouteQualityEngine"
 Cohesion: 0.06
@@ -128,8 +129,8 @@ Cohesion: 0.09
 Nodes (18): get_full_version_status(), get_installed_version(), get_local_version_info(), get_remote_version_info(), get_script_path(), get_update_log_path(), get_update_state_file_path(), get_update_status() (+10 more)
 
 ### Community 3 - "app.js"
-Cohesion: 0.11
-Nodes (32): _architecturalCompliance(), fetchStatus(), pendingOverrides, previousActivePriorities, startAuthenticatedSession(), stopAuthenticatedSession(), trackFailoverEvents(), checkImportableRules() (+24 more)
+Cohesion: 0.13
+Nodes (28): _architecturalCompliance(), fetchStatus(), pendingOverrides, previousActivePriorities, startAuthenticatedSession(), stopAuthenticatedSession(), trackFailoverEvents(), checkImportableRules() (+20 more)
 
 ### Community 5 - "🌐 XForwarder"
 Cohesion: 0.14
@@ -208,8 +209,8 @@ Cohesion: 0.17
 Nodes (7): _build_xforwarder_rule(), discover_importable_rules(), find_candidate_haproxy_files(), import_haproxy_rules_into_config(), parse_haproxy_content(), parse_haproxy_file(), TestHAProxyParser
 
 ### Community 25 - "rules.js"
-Cohesion: 0.20
-Nodes (17): getPrioTagClass(), handleOverrideChange(), handlePathDragEnd(), handlePathDragLeave(), handlePathDragOver(), handlePathDragStart(), handlePathDrop(), initRulesViewControls() (+9 more)
+Cohesion: 0.16
+Nodes (21): deleteRule(), getPrioTagClass(), handleOverrideChange(), handlePathDragEnd(), handlePathDragLeave(), handlePathDragOver(), handlePathDragStart(), handlePathDrop() (+13 more)
 
 ### Community 26 - "XForwarder Operations Runbook"
 Cohesion: 0.40
@@ -267,17 +268,17 @@ Nodes (6): get_sessions_file_path(), load_sessions_from_disk(), save_sessions_to
 Cohesion: 0.29
 Nodes (6): 1. Context & Motivation, 2. Root Cause / Core Dynamics, 3. Architecture & Solution Implemented, 4. Invariants & Rules for AI Agents, 5. Verification & Testing, Experience 002: Atomic File Persistence and Tmp Renaming
 
-### Community 46 - "auth.js"
-Cohesion: 0.31
-Nodes (13): checkSession(), closeSecurityModal(), evaluatePasswordStrength(), handleLogin(), handleLogout(), initAuth(), initInlineSecurityForm(), initSecurityModal() (+5 more)
+### Community 46 - "showToast"
+Cohesion: 0.24
+Nodes (17): API_BASE, cleanPath, fetchApi(), checkSession(), closeSecurityModal(), evaluatePasswordStrength(), handleLogin(), handleLogout() (+9 more)
 
 ### Community 48 - "2. Non-Negotiable Architectural Constraints"
 Cohesion: 0.20
 Nodes (7): 2. Non-Negotiable Architectural Constraints, 1. Context & Motivation, 2. Root Cause / Core Dynamics, 3. Architecture & Solution Implemented, 4. Invariants & Rules for AI Agents, 5. Verification & Testing, Experience 007: Fix HAProxy Silent Drop and State Wipeout
 
-### Community 49 - "showToast"
-Cohesion: 0.19
-Nodes (18): API_BASE, cleanPath, fetchApi(), copyCategoryJson(), copyRuleJson(), getSanitizedRuleForExport(), handleExportConfig(), addLogEntry() (+10 more)
+### Community 49 - "quality.js"
+Cohesion: 0.43
+Nodes (5): addLogEntry(), appendLogEntry(), initLogs(), initDiagPacketLossTool(), runLivePacketLossTest()
 
 ### Community 50 - "auth.py"
 Cohesion: 0.15
@@ -359,6 +360,10 @@ Nodes (6): 1. Context & Motivation, 2. Root Cause / Core Dynamics, 3. Architectu
 Cohesion: 0.29
 Nodes (6): 1. Context & Motivation, 2. Root Cause / Core Dynamics, 3. Architecture & Solution Implemented, 4. Invariants & Rules for AI Agents, 5. Verification & Testing, Experience 012: Kernel Zero-Copy Splicing, BBR Network Tuning, and Session Timeout Optimization
 
+### Community 110 - "import_export.js"
+Cohesion: 0.38
+Nodes (9): closeImportModal(), copyCategoryJson(), copyRuleJson(), getSanitizedRuleForExport(), handleExportConfig(), initImportExport(), openImportModal(), parseAndValidateImportJson() (+1 more)
+
 ## Knowledge Gaps
 - **154 isolated node(s):** `previousActivePriorities`, `pendingOverrides`, `cleanPath`, `currentModalDestinations`, `pendingOverrides` (+149 more)
   These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 517 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
@@ -368,14 +373,14 @@ Nodes (6): 1. Context & Motivation, 2. Root Cause / Core Dynamics, 3. Architectu
 _Questions this graph is uniquely positioned to answer:_
 
 - **Why does `XForwarderEngine` connect `XForwarderEngine` to `web_server.py`, `engine.py`, `TestPerformanceAndOptimizations`, `TestFastFailoverAndAntiFlap`, `sys`, `TestNginxStreamEngine`, `TestXForwarderMigration`, `TestEngineProbes`, `.evaluate_rule`, `json`, `TestUIAndAPIEdgeCases`, `2. Non-Negotiable Architectural Constraints`, `migrate_and_normalize_config`, `traffic.py`, `LossMonitorScheduler`, `.test_nftables_dual_stack_rules_generation`, `.sync_firewall_and_proxies`?**
-  _High betweenness centrality (0.271) - this node is a cross-community bridge._
+  _High betweenness centrality (0.272) - this node is a cross-community bridge._
 - **Are the 9 inferred relationships involving `XForwarderEngine` (e.g. with `2. Root Cause / Core Dynamics` and `LossMonitorScheduler`) actually correct?**
   _`XForwarderEngine` has 9 INFERRED edges - model-reasoned connections that need verification._
 - **What connects `previousActivePriorities`, `pendingOverrides`, `cleanPath` to the rest of the system?**
   _154 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `TestRouteQualityEngine` be split into smaller, more focused modules?**
   _Cohesion score 0.06475485661424607 - nodes in this community are weakly interconnected._
-- **Why does `2. Non-Negotiable Architectural Constraints` connect `2. Non-Negotiable Architectural Constraints` to `.do_POST`, `time`, `XForwarder Master Architecture Constitution`, `nftables_parser.py`, `.evaluate_rule`, `showToast`, `migrate_and_normalize_config`, `rules.js`?**
+- **Why does `2. Non-Negotiable Architectural Constraints` connect `2. Non-Negotiable Architectural Constraints` to `.do_POST`, `time`, `XForwarder Master Architecture Constitution`, `nftables_parser.py`, `.evaluate_rule`, `import_export.js`, `migrate_and_normalize_config`, `rules.js`?**
   _High betweenness centrality (0.217) - this node is a cross-community bridge._
 - **Are the 3 inferred relationships involving `TestUIAndAPIEdgeCases` (e.g. with `XForwarderEngine` and `XForwarderWebHandler`) actually correct?**
   _`TestUIAndAPIEdgeCases` has 3 INFERRED edges - model-reasoned connections that need verification._
