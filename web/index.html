@@ -35,7 +35,7 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap"
         rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=3.2.14">
+    <link rel="stylesheet" href="style.css?v=3.2.15">
 </head>
 
 <body>
@@ -47,7 +47,7 @@
         <!-- Top Theme Toggle for Login Screen -->
         <div class="login-top-bar">
             <button type="button" class="theme-toggle-btn login-theme-toggle" id="btnLoginThemeToggle"
-                title="Toggle Light / Dark Theme">
+                onclick="toggleTheme()" title="Toggle Light / Dark Theme">
                 <span class="theme-toggle-icon">
                     <svg class="sun-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                         stroke-width="2">
@@ -241,7 +241,7 @@
             <!-- Sidebar Footer: Theme Toggle & Session Info -->
             <div class="sidebar-footer">
                 <!-- Theme Toggle Button -->
-                <button class="theme-toggle-btn" id="btnThemeToggle" title="Toggle Light / Dark Theme">
+                <button type="button" class="theme-toggle-btn" id="btnThemeToggle" onclick="toggleTheme()" title="Toggle Light / Dark Theme">
                     <div class="theme-toggle-icon">
                         <svg class="sun-icon" width="16" height="16" viewBox="0 0 24 24" fill="none"
                             stroke="currentColor" stroke-width="2">
@@ -276,7 +276,7 @@
                         <span class="user-name" id="sidebarUsername">admin</span>
                         <span class="user-role">Administrator</span>
                     </div>
-                    <button class="btn-sidebar-logout" id="btnSidebarLogout" title="Sign out">
+                    <button type="button" class="btn-sidebar-logout" id="btnSidebarLogout" onclick="handleLogout()" title="Sign out">
                         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                             stroke-width="2">
                             <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
@@ -318,7 +318,7 @@
                         </svg>
                     </button>
 
-                    <button class="btn btn-secondary btn-sm" id="btnLogout" title="Sign out">
+                    <button type="button" class="btn btn-secondary btn-sm" id="btnLogout" onclick="handleLogout()" title="Sign out">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                             stroke-width="2">
                             <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
@@ -353,7 +353,7 @@
                     <span class="terminal-cmd-hint"
                         title="Command to install dependencies in Linux terminal">xfwd</span>
                     <button type="button" class="btn btn-secondary btn-sm"
-                        id="btnDismissServicesWarning">Dismiss</button>
+                        id="btnDismissServicesWarning" onclick="sessionStorage.setItem('xfwd_dismiss_services_warning', '1'); const b=document.getElementById('servicesWarningBanner'); if(b) b.style.display='none';">Dismiss</button>
                 </div>
             </div>
 
@@ -434,7 +434,7 @@
                                 </svg>
                                 <span>Import All Rules</span>
                             </button>
-                            <button class="btn btn-secondary btn-sm" id="btnDismissImportBanner">Dismiss</button>
+                            <button type="button" class="btn btn-secondary btn-sm" id="btnDismissImportBanner" onclick="const b=document.getElementById('importBanner'); if(b) b.style.display='none';">Dismiss</button>
                         </div>
                     </div>
 
@@ -1537,7 +1537,7 @@
                 style="text-align:left; max-height:180px; overflow-y:auto; background:var(--bg-card); border:1px solid var(--border-color); border-radius:8px; padding:10px 12px; font-size:0.78rem; color:var(--accent-rose); line-height:1.45; margin-bottom:16px;">
             </div>
             <div class="modal-footer confirm-footer">
-                <button type="button" class="btn btn-secondary" id="btnDismissSyncError">Dismiss</button>
+                <button type="button" class="btn btn-secondary" id="btnDismissSyncError" onclick="closeSyncErrorModal()">Dismiss</button>
                 <button type="button" class="btn btn-primary" id="btnRetrySyncModal">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <polyline points="23 4 23 10 17 10" />
@@ -1890,7 +1890,7 @@
     <!-- Notification Toast Container -->
     <div class="toast-container" id="toastContainer"></div>
 
-    <script type="module" src="app.js?v=3.2.14"></script>
+    <script type="module" src="app.js?v=3.2.15"></script>
 </body>
 
 </html>

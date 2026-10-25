@@ -424,6 +424,14 @@ export function initImportExport(fetchStatusCallback) {
         });
     }
 
+    const btnDismissImportBanner = document.getElementById("btnDismissImportBanner");
+    if (btnDismissImportBanner) {
+        btnDismissImportBanner.addEventListener("click", () => {
+            const banner = document.getElementById("importBanner");
+            if (banner) banner.style.display = "none";
+        });
+    }
+
     const btnImportHaproxy = document.getElementById("btnImportHaproxy");
     if (btnImportHaproxy) {
         btnImportHaproxy.addEventListener("click", async () => {
@@ -448,6 +456,55 @@ export function initImportExport(fetchStatusCallback) {
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
                     <span>Import All Rules</span>
                 `;
+            }
+        });
+    }
+
+    const btnScanHaproxy = document.getElementById("btnScanHaproxy");
+    if (btnScanHaproxy) {
+        btnScanHaproxy.addEventListener("click", async () => {
+            btnScanHaproxy.disabled = true;
+            btnScanHaproxy.innerHTML = '<span class="btn-spinner"></span> <span>Scanning...</span>';
+            const resultEl = document.getElementById("serviceDiscoveryResult");
+            try {
+                const res = await fetch(`${API_BASE}/import/discover`);
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.available && data.count > 0) {
+                        const portsStr = data.ports.map(p => `:${p}`).join(", ");
+                        const srcCounts = [];
+                        if (data.sources) {
+                            if (data.sources.haproxy > 0) srcCounts.push(`${data.sources.haproxy} HAProxy`);
+                            if (data.sources.nftables > 0) srcCounts.push(`${data.sources.nftables} NFTables`);
+                        }
+                        const srcLabel = srcCounts.length > 0 ? ` [${srcCounts.join(" + ")}]` : "";
+                        if (resultEl) {
+                            resultEl.innerHTML = `
+                                <div style="color:var(--accent-emerald); font-weight:600; margin-bottom:8px;">
+                                    Discovered ${data.count} existing relay rule(s) (${portsStr})${srcLabel}
+                                </div>
+                                <button class="btn btn-primary btn-sm" id="btnServiceImport">Import All Discovered Rules</button>
+                            `;
+                            const sImport = document.getElementById("btnServiceImport");
+                            if (sImport) {
+                                sImport.addEventListener("click", () => {
+                                    if (btnImportHaproxy) btnImportHaproxy.click();
+                                });
+                            }
+                        }
+                    } else {
+                        if (resultEl) {
+                            resultEl.innerHTML = `<span style="color:var(--accent-emerald);">All existing HAProxy and NFTables forwarding rules on this server are already managed by XForwarder.</span>`;
+                        }
+                    }
+                } else {
+                    if (resultEl) resultEl.innerText = "Failed to scan server.";
+                }
+            } catch (e) {
+                if (resultEl) resultEl.innerText = "Error scanning server.";
+            } finally {
+                btnScanHaproxy.disabled = false;
+                btnScanHaproxy.innerHTML = "Scan Server";
             }
         });
     }

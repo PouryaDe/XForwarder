@@ -379,12 +379,14 @@ export function renderDisruptionsTable(disruptions) {
             ? `<span class="latency-pill latency-bad">DISRUPTED</span>`
             : `<span class="latency-pill latency-warn">DEGRADED</span>`;
 
+        const encodedTarget = encodeURIComponent(d.target || "").replace(/'/g, "%27");
+
         rowsHtml += `
             <tr>
                 <td class="font-mono text-muted" style="white-space:nowrap;">${escapeHtml(d.time_str || '')}</td>
                 <td>
                     <span class="font-mono font-bold">[${escapeHtml(d.target)}]</span>
-                    <button class="btn-copy" onclick="copyText('${escapeHtml(d.target)}')" title="Copy IP" style="margin-left:4px;">
+                    <button class="btn-copy" onclick="copyText(decodeURIComponent('${encodedTarget}'))" title="Copy IP" style="margin-left:4px;">
                         <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
                     </button>
                 </td>

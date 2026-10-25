@@ -10,6 +10,18 @@ export function initTheme() {
         document.documentElement.setAttribute("data-theme", "dark");
     }
     updateThemeToggleUI();
+
+    const btnThemeToggle = document.getElementById("btnThemeToggle");
+    if (btnThemeToggle && !btnThemeToggle._xfwdThemeBound) {
+        btnThemeToggle._xfwdThemeBound = true;
+        btnThemeToggle.addEventListener("click", toggleTheme);
+    }
+
+    const btnLoginThemeToggle = document.getElementById("btnLoginThemeToggle");
+    if (btnLoginThemeToggle && !btnLoginThemeToggle._xfwdThemeBound) {
+        btnLoginThemeToggle._xfwdThemeBound = true;
+        btnLoginThemeToggle.addEventListener("click", toggleTheme);
+    }
 }
 
 export function toggleTheme() {
@@ -24,8 +36,23 @@ export function toggleTheme() {
 
 export function updateThemeToggleUI() {
     const current = document.documentElement.getAttribute("data-theme") || "dark";
+    const isDark = current === "dark";
+    const labelText = isDark ? "Light Mode" : "Dark Mode";
+    const titleText = isDark ? "Switch to Light Mode" : "Switch to Dark Mode";
+
     const labels = document.querySelectorAll(".theme-toggle-label");
     labels.forEach(el => {
-        el.innerText = current === "dark" ? "Light Mode" : "Dark Mode";
+        el.innerText = labelText;
     });
+
+    const btnThemeToggle = document.getElementById("btnThemeToggle");
+    if (btnThemeToggle) btnThemeToggle.title = titleText;
+
+    const btnLoginThemeToggle = document.getElementById("btnLoginThemeToggle");
+    if (btnLoginThemeToggle) btnLoginThemeToggle.title = titleText;
 }
+
+if (typeof window !== "undefined") {
+    window.toggleTheme = toggleTheme;
+}
+

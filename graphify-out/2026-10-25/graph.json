@@ -66,7 +66,7 @@
       "file_type": "code",
       "norm_label": "xforwarderwebserver",
       "source_file": "core/web_server.py",
-      "source_location": "L1178"
+      "source_location": "L1186"
     },
     {
       "id": "core_metrics_lossmonitorscheduler",
@@ -1882,7 +1882,7 @@
       "file_type": "code",
       "norm_label": ".__init__()",
       "source_file": "core/web_server.py",
-      "source_location": "L1179"
+      "source_location": "L1187"
     },
     {
       "id": "core_web_server_xforwarderwebserver_start",
@@ -1894,7 +1894,7 @@
       "file_type": "code",
       "norm_label": ".start()",
       "source_file": "core/web_server.py",
-      "source_location": "L1189"
+      "source_location": "L1197"
     },
     {
       "id": "core_web_server_xforwarderwebserver_stop",
@@ -1906,7 +1906,7 @@
       "file_type": "code",
       "norm_label": ".stop()",
       "source_file": "core/web_server.py",
-      "source_location": "L1216"
+      "source_location": "L1224"
     },
     {
       "id": "tests_test_security_testxforwardersecurity_test_web_server_ssl_initialization",
@@ -3010,7 +3010,7 @@
       "file_type": "code",
       "norm_label": "inittrafficanalytics()",
       "source_file": "web/js/modules/traffic.js",
-      "source_location": "L449"
+      "source_location": "L467"
     },
     {
       "id": "web_js_modules_traffic_loadtrafficmodaldata",
@@ -3058,7 +3058,7 @@
       "file_type": "code",
       "norm_label": "promptresettraffic()",
       "source_file": "web/js/modules/traffic.js",
-      "source_location": "L416"
+      "source_location": "L434"
     },
     {
       "id": "web_js_modules_traffic_rendertrafficbarschart",
@@ -3106,7 +3106,7 @@
       "file_type": "code",
       "norm_label": "triggertrafficresetfrommodal()",
       "source_file": "web/js/modules/traffic.js",
-      "source_location": "L344"
+      "source_location": "L362"
     },
     {
       "id": "web_js_modules_traffic_triggerwipehistoryfrommodal",
@@ -3118,7 +3118,7 @@
       "file_type": "code",
       "norm_label": "triggerwipehistoryfrommodal()",
       "source_file": "web/js/modules/traffic.js",
-      "source_location": "L380"
+      "source_location": "L398"
     },
     {
       "id": "web_js_modules_utils_askconfirm",
@@ -5998,7 +5998,7 @@
       "file_type": "code",
       "norm_label": ".do_delete()",
       "source_file": "core/web_server.py",
-      "source_location": "L1140"
+      "source_location": "L1148"
     },
     {
       "id": "core_web_server_xforwarderwebhandler_do_get",
@@ -19101,7 +19101,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "core/web_server.py",
-      "source_location": "L1141",
+      "source_location": "L1149",
       "weight": 1.0
     },
     {
@@ -19113,7 +19113,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "core/web_server.py",
-      "source_location": "L1146",
+      "source_location": "L1154",
       "weight": 1.0
     },
     {
@@ -19125,7 +19125,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "core/web_server.py",
-      "source_location": "L1153",
+      "source_location": "L1161",
       "weight": 1.0
     },
     {
@@ -19137,7 +19137,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "core/web_server.py",
-      "source_location": "L1156",
+      "source_location": "L1164",
       "weight": 1.0
     },
     {
@@ -19149,7 +19149,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "core/web_server.py",
-      "source_location": "L1162",
+      "source_location": "L1170",
       "weight": 1.0
     },
     {
@@ -19161,7 +19161,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "core/web_server.py",
-      "source_location": "L1164",
+      "source_location": "L1172",
       "weight": 1.0
     },
     {
@@ -19173,7 +19173,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "core/web_server.py",
-      "source_location": "L1165",
+      "source_location": "L1173",
       "weight": 1.0
     },
     {
@@ -19389,7 +19389,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "core/web_server.py",
-      "source_location": "L1021",
+      "source_location": "L1029",
       "weight": 1.0
     },
     {
@@ -19401,7 +19401,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "core/web_server.py",
-      "source_location": "L1087",
+      "source_location": "L1095",
       "weight": 1.0
     },
     {
@@ -19413,7 +19413,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "core/web_server.py",
-      "source_location": "L1096",
+      "source_location": "L1104",
       "weight": 1.0
     },
     {
@@ -19425,7 +19425,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "core/web_server.py",
-      "source_location": "L1128",
+      "source_location": "L1136",
       "weight": 1.0
     },
     {
@@ -19641,7 +19641,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "core/web_server.py",
-      "source_location": "L786",
+      "source_location": "L794",
       "weight": 1.0
     },
     {
@@ -19653,7 +19653,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "core/web_server.py",
-      "source_location": "L811",
+      "source_location": "L819",
       "weight": 1.0
     },
     {
@@ -19665,7 +19665,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "core/web_server.py",
-      "source_location": "L899",
+      "source_location": "L907",
       "weight": 1.0
     },
     {
@@ -19677,7 +19677,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "core/web_server.py",
-      "source_location": "L900",
+      "source_location": "L908",
       "weight": 1.0
     },
     {
@@ -19689,7 +19689,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "core/web_server.py",
-      "source_location": "L916",
+      "source_location": "L924",
       "weight": 1.0
     },
     {
@@ -19701,7 +19701,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "core/web_server.py",
-      "source_location": "L933",
+      "source_location": "L941",
       "weight": 1.0
     },
     {
@@ -19713,7 +19713,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "core/web_server.py",
-      "source_location": "L950",
+      "source_location": "L958",
       "weight": 1.0
     },
     {
@@ -19725,7 +19725,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "core/web_server.py",
-      "source_location": "L963",
+      "source_location": "L971",
       "weight": 1.0
     },
     {
@@ -19797,7 +19797,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "core/web_server.py",
-      "source_location": "L1180",
+      "source_location": "L1188",
       "weight": 1.0
     },
     {
@@ -23037,7 +23037,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/js/modules/traffic.js",
-      "source_location": "L452",
+      "source_location": "L470",
       "weight": 1.0
     },
     {
@@ -23049,7 +23049,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/js/modules/traffic.js",
-      "source_location": "L489",
+      "source_location": "L507",
       "weight": 1.0
     },
     {
@@ -23061,7 +23061,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/js/modules/traffic.js",
-      "source_location": "L495",
+      "source_location": "L513",
       "weight": 1.0
     },
     {
@@ -23073,7 +23073,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/js/modules/traffic.js",
-      "source_location": "L500",
+      "source_location": "L518",
       "weight": 1.0
     },
     {
@@ -23085,7 +23085,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/js/modules/traffic.js",
-      "source_location": "L311",
+      "source_location": "L326",
       "weight": 1.0
     },
     {
@@ -23097,7 +23097,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/js/modules/traffic.js",
-      "source_location": "L327",
+      "source_location": "L342",
       "weight": 1.0
     },
     {
@@ -23109,7 +23109,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/js/modules/traffic.js",
-      "source_location": "L328",
+      "source_location": "L343",
       "weight": 1.0
     },
     {
@@ -23121,7 +23121,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/js/modules/traffic.js",
-      "source_location": "L329",
+      "source_location": "L344",
       "weight": 1.0
     },
     {
@@ -23133,7 +23133,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/js/modules/traffic.js",
-      "source_location": "L335",
+      "source_location": "L350",
       "weight": 1.0
     },
     {
@@ -23145,7 +23145,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/js/modules/traffic.js",
-      "source_location": "L337",
+      "source_location": "L352",
       "weight": 1.0
     },
     {
@@ -23193,7 +23193,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/js/modules/traffic.js",
-      "source_location": "L418",
+      "source_location": "L436",
       "weight": 1.0
     },
     {
@@ -23205,7 +23205,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/js/modules/traffic.js",
-      "source_location": "L439",
+      "source_location": "L457",
       "weight": 1.0
     },
     {
@@ -23289,7 +23289,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/js/modules/traffic.js",
-      "source_location": "L348",
+      "source_location": "L366",
       "weight": 1.0
     },
     {
@@ -23301,7 +23301,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/js/modules/traffic.js",
-      "source_location": "L369",
+      "source_location": "L387",
       "weight": 1.0
     },
     {
@@ -23313,7 +23313,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/js/modules/traffic.js",
-      "source_location": "L370",
+      "source_location": "L388",
       "weight": 1.0
     },
     {
@@ -23325,7 +23325,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/js/modules/traffic.js",
-      "source_location": "L384",
+      "source_location": "L402",
       "weight": 1.0
     },
     {
@@ -23337,7 +23337,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/js/modules/traffic.js",
-      "source_location": "L405",
+      "source_location": "L423",
       "weight": 1.0
     },
     {
@@ -23349,7 +23349,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/js/modules/traffic.js",
-      "source_location": "L406",
+      "source_location": "L424",
       "weight": 1.0
     },
     {
@@ -27333,7 +27333,7 @@
       "confidence_score": 1.0,
       "context": "import",
       "source_file": "core/web_server.py",
-      "source_location": "L1020",
+      "source_location": "L1028",
       "weight": 1.0
     },
     {
@@ -27381,7 +27381,7 @@
       "confidence_score": 1.0,
       "context": "import",
       "source_file": "core/web_server.py",
-      "source_location": "L1067",
+      "source_location": "L1075",
       "weight": 1.0
     },
     {
@@ -27974,18 +27974,6 @@
     },
     {
       "source": "core_web_server",
-      "target": "core_haproxy_parser_import_haproxy_rules_into_config",
-      "relation": "imports",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "context": "import",
-      "source_file": "core/web_server.py",
-      "source_location": "L898",
-      "weight": 1.0
-    },
-    {
-      "source": "core_web_server",
       "target": "sys",
       "relation": "imports",
       "_origin": "ast",
@@ -27998,6 +27986,18 @@
     },
     {
       "source": "core_web_server",
+      "target": "core_haproxy_parser_import_haproxy_rules_into_config",
+      "relation": "imports",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "import",
+      "source_file": "core/web_server.py",
+      "source_location": "L906",
+      "weight": 1.0
+    },
+    {
+      "source": "core_web_server",
       "target": "core_nftables_parser_import_nftables_rules_into_config",
       "relation": "imports",
       "_origin": "ast",
@@ -28005,7 +28005,7 @@
       "confidence_score": 1.0,
       "context": "import",
       "source_file": "core/web_server.py",
-      "source_location": "L912",
+      "source_location": "L920",
       "weight": 1.0
     },
     {
@@ -28017,7 +28017,7 @@
       "confidence_score": 1.0,
       "context": "import",
       "source_file": "core/web_server.py",
-      "source_location": "L929",
+      "source_location": "L937",
       "weight": 1.0
     },
     {
@@ -28029,7 +28029,7 @@
       "confidence_score": 1.0,
       "context": "import",
       "source_file": "core/web_server.py",
-      "source_location": "L985",
+      "source_location": "L993",
       "weight": 1.0
     },
     {
@@ -36861,7 +36861,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "core/web_server.py",
-      "source_location": "L1178",
+      "source_location": "L1186",
       "weight": 1.0
     },
     {
@@ -38632,7 +38632,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "web/js/modules/traffic.js",
-      "source_location": "L344",
+      "source_location": "L362",
       "weight": 1.0
     },
     {
@@ -38643,7 +38643,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "web/js/modules/traffic.js",
-      "source_location": "L380",
+      "source_location": "L398",
       "weight": 1.0
     },
     {
@@ -38654,7 +38654,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "web/js/modules/traffic.js",
-      "source_location": "L416",
+      "source_location": "L434",
       "weight": 1.0
     },
     {
@@ -38665,7 +38665,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "web/js/modules/traffic.js",
-      "source_location": "L449",
+      "source_location": "L467",
       "weight": 1.0
     },
     {
@@ -39622,7 +39622,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "core/web_server.py",
-      "source_location": "L1140",
+      "source_location": "L1148",
       "weight": 1.0
     },
     {
@@ -39743,7 +39743,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "core/web_server.py",
-      "source_location": "L1179",
+      "source_location": "L1187",
       "weight": 1.0
     },
     {
@@ -39754,7 +39754,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "core/web_server.py",
-      "source_location": "L1189",
+      "source_location": "L1197",
       "weight": 1.0
     },
     {
@@ -39765,7 +39765,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "core/web_server.py",
-      "source_location": "L1216",
+      "source_location": "L1224",
       "weight": 1.0
     },
     {
@@ -46021,7 +46021,7 @@
       "confidence_score": 0.85,
       "context": "argument",
       "source_file": "core/web_server.py",
-      "source_location": "L1096",
+      "source_location": "L1104",
       "weight": 1.0
     },
     {
@@ -46033,7 +46033,7 @@
       "confidence_score": 0.85,
       "context": "argument",
       "source_file": "core/web_server.py",
-      "source_location": "L793",
+      "source_location": "L801",
       "weight": 1.0
     },
     {
@@ -46405,7 +46405,7 @@
       "confidence_score": 0.85,
       "context": "argument",
       "source_file": "web/js/modules/traffic.js",
-      "source_location": "L457",
+      "source_location": "L475",
       "weight": 1.0
     },
     {
@@ -46417,7 +46417,7 @@
       "confidence_score": 0.85,
       "context": "argument",
       "source_file": "web/js/modules/traffic.js",
-      "source_location": "L482",
+      "source_location": "L500",
       "weight": 1.0
     },
     {
@@ -48014,5 +48014,5 @@
     }
   ],
   "hyperedges": [],
-  "built_at_commit": "de1086173c688507751c6c05fe3d83e0c0c6e0c1"
+  "built_at_commit": "4faf0a86e89a340b43b28ff029b174a1941e9030"
 }

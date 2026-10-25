@@ -561,6 +561,10 @@ export function initAuth(onLoginSuccess, onLogout) {
     if (btnLogout) {
         btnLogout.addEventListener("click", () => handleLogout(onLogout));
     }
+    const btnSidebarLogout = document.getElementById("btnSidebarLogout");
+    if (btnSidebarLogout) {
+        btnSidebarLogout.addEventListener("click", () => handleLogout(onLogout));
+    }
 
     initSecurityModal();
     initInlineSecurityForm();

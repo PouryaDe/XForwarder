@@ -155,6 +155,10 @@ window.handleTrafficEntityChange = handleTrafficEntityChange;
 window.handleTrafficPeriodChange = handleTrafficPeriodChange;
 window.toggleTheme = toggleTheme;
 window.handleLogout = handleLogout;
+window.closeSyncErrorModal = () => {
+    const m = document.getElementById("syncErrorModal");
+    if (m) m.classList.remove("show");
+};
 window.handleLoginSubmit = (e) => handleLogin(e, async (username) => {
     await startAuthenticatedSession(username);
 });
@@ -352,6 +356,42 @@ async function initApp() {
             fetchStatus().finally(() => {
                 setTimeout(() => refreshIcon.classList.remove("spinning"), 600);
             });
+        });
+    }
+
+    const btnDismissSyncError = document.getElementById("btnDismissSyncError");
+    if (btnDismissSyncError) {
+        btnDismissSyncError.addEventListener("click", () => window.closeSyncErrorModal());
+    }
+
+    const btnRetrySyncModal = document.getElementById("btnRetrySyncModal");
+    if (btnRetrySyncModal) {
+        btnRetrySyncModal.addEventListener("click", async () => {
+            btnRetrySyncModal.disabled = true;
+            btnRetrySyncModal.innerHTML = '<span class="btn-spinner"></span> <span>Retrying Sync...</span>';
+            const syncErrorList = document.getElementById("syncErrorList");
+            try {
+                const res = await fetch(`${API_BASE}/sync`, { method: "POST" });
+                const data = await res.json().catch(() => ({}));
+                if (res.ok && data.ok) {
+                    showToast("Server rules synchronized successfully!", "success");
+                    window.closeSyncErrorModal();
+                    await fetchStatus();
+                } else {
+                    if (data.sync_errors && data.sync_errors.length > 0 && syncErrorList) {
+                        syncErrorList.innerHTML = data.sync_errors.map(err => `<div>• ${escapeHtml(err)}</div>`).join("");
+                    }
+                    showToast("Server sync retry failed. Check service status.", "error");
+                }
+            } catch (err) {
+                showToast("Connection error while retrying sync: " + err.message, "error");
+            } finally {
+                btnRetrySyncModal.disabled = false;
+                btnRetrySyncModal.innerHTML = `
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+                    <span>Retry Server Sync</span>
+                `;
+            }
         });
     }
 

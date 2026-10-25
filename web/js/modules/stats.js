@@ -217,6 +217,15 @@ export function renderServicesStatus(services) {
         } else {
             warningBanner.style.display = "none";
         }
+
+        const btnDismissServicesWarning = document.getElementById("btnDismissServicesWarning");
+        if (btnDismissServicesWarning && !btnDismissServicesWarning._xfwdBound) {
+            btnDismissServicesWarning._xfwdBound = true;
+            btnDismissServicesWarning.addEventListener("click", () => {
+                sessionStorage.setItem("xfwd_dismiss_services_warning", "1");
+                warningBanner.style.display = "none";
+            });
+        }
     }
 
     // 3. Top Relay Active Badge in 2-column header
@@ -448,6 +457,7 @@ export function renderNetworkTopology(network) {
                 }
 
                 const tName = String(t.name || "");
+                const encodedTName = encodeURIComponent(tName).replace(/'/g, "%27");
                 const tTraffic = (lastTrafficData && lastTrafficData.tunnels) ? lastTrafficData.tunnels[tName] : null;
                 const tTrafficHtml = tTraffic ? `
                     <div class="tunnel-traffic-bar">
@@ -457,11 +467,11 @@ export function renderNetworkTopology(network) {
                             <span class="tunnel-traffic-sub font-mono">↑ ${formatBytes(tTraffic.cycle_rx)} · ↓ ${formatBytes(tTraffic.cycle_tx)}</span>
                         </div>
                         <div class="tunnel-traffic-actions">
-                            <button type="button" class="btn-tunnel-traffic" onclick="openTrafficModal('tunnel', '${escapeHtml(tName)}')" title="View Tunnel Bandwidth Analytics">
+                            <button type="button" class="btn-tunnel-traffic" onclick="openTrafficModal('tunnel', decodeURIComponent('${encodedTName}'))" title="View Tunnel Bandwidth Analytics">
                                 <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
                                 <span>Stats</span>
                             </button>
-                            <button type="button" class="btn-tunnel-traffic btn-reset" onclick="promptResetTraffic('tunnel', '${escapeHtml(tName)}')" title="Reset Billing Cycle">
+                            <button type="button" class="btn-tunnel-traffic btn-reset" onclick="promptResetTraffic('tunnel', decodeURIComponent('${encodedTName}'))" title="Reset Billing Cycle">
                                 <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
                             </button>
                         </div>
