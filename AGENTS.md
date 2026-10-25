@@ -103,9 +103,9 @@ XForwarder/
    - Fast IPC: Core engine uses `SIGUSR1` signal wake-up via candidate PID files for instant evaluation when the web dashboard commits changes.
 
 10. **Two-Tier Intelligent Failover, Quality Scoring & Anti-Flapping (Mandatory)**:
-    - 10-Probe ICMP Precision & Jitter: Probes execute 10-ping bursts (`ping -c 10 -i 0.2 -W 1`) extracting latency, loss %, and within-cycle jitter (`mdev`). Parallel probing deduplicates endpoints across rules.
+    - 10-Probe ICMP Precision & Jitter: Probes execute 10-ping bursts (`ping -c 10 -i 0.2 -W 1`) with 2-packet tail padding (`ICMP_TAIL_PADDING = 2`) and sequence-aware evaluation (`parse_ping_replies`) to eliminate tail-truncation false drops on long RTTs. Extracts average latency, packet loss, and within-cycle jitter (`mdev`). Parallel probing deduplicates endpoints across rules with persistent worker pool.
     - Composite Quality Scoring: Evaluates routes over a 5-minute sliding window via `Score = Latency + 2*Jitter + 20*Loss% + Priority Bias`.
-    - Tier 1 Emergency Outage Failover: Total failure (100% loss), route invalidation, or critical degradation (>=30% loss) triggers sub-second micro-probe confirmation (<1s) and immediate failover bypassing hold times, with conntrack flushed.
+    - Tier 1 Emergency Outage Failover: Total failure (100% loss), route invalidation, or sustained critical degradation (>=30% loss across >=2 cycles in the short window) triggers micro-probe confirmation (`BURST_TCP_TIMEOUT = 0.5s`) and immediate failover bypassing hold times, with conntrack flushed. Transient single-cycle loss blips degrade quality without triggering disruptive emergency failovers.
     - Tier 2 Conservative Planned Switching: Prevents disruptive route flapping on live client sessions via 10-minute hold guard (`min_hold_seconds = 600s`), 60% window warm-up, packet loss protection (never switch to higher loss), 20% & 15-point score margin, and 120s sustained streak confirmation. Planned switches reload HAProxy seamlessly without flushing conntrack, preserving existing client connections. Nginx is stopped when 0 rules use Nginx.
 
 11. **Long-Term Packet Loss Monitoring & Deduplicated Probing (Mandatory)**:

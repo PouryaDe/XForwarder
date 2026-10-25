@@ -275,7 +275,10 @@ class XForwarderEngine:
             return results
 
         if not self._probe_executor:
-            self._probe_executor = ThreadPoolExecutor(max_workers=min(8, len(unique_targets)))
+            # Fixed upper bound: threads spawn lazily, so idle cost is zero. Sizing by the first
+            # cycle's target count froze the pool (e.g. at 2) and serialized probes for rules
+            # added later, stretching cycles and skewing sample timing.
+            self._probe_executor = ThreadPoolExecutor(max_workers=8)
 
         futures = {}
         for key, dest in unique_targets.items():
@@ -452,7 +455,8 @@ class XForwarderEngine:
             last_cycle_loss = float(check_res.get("packet_loss", 0.0))
 
             if is_active_dest and last_cycle_loss >= 100.0 and fast_failover and is_valid:
-                burst_res = self._fast_confirm_burst(dest, rule_port=rule.get("port"), count=int(self.config.get("fast_probe_burst", 5)))
+                burst_dest = dict(dest, tunnel_iface=iface) if iface and not dest.get("tunnel_iface") else dest
+                burst_res = self._fast_confirm_burst(burst_dest, rule_port=rule.get("port"), count=int(self.config.get("fast_probe_burst", 5)))
                 if burst_res.get("all_failed"):
                     burst_confirmed_dead = True
                     stat["consecutive_fails"] = max(stat.get("consecutive_fails", 0), fail_thresh)
@@ -476,6 +480,7 @@ class XForwarderEngine:
 
             # Classify status
             is_route_invalid = (not is_valid and not check_res.get("healthy", False))
+            lossy_cycles = sum(1 for s in short_samples if isinstance(s, (list, tuple)) and len(s) >= 3 and int(s[2]) < int(s[1]))
             status = classify_status(
                 short_loss=short_agg["packet_loss"],
                 long_loss=long_agg["packet_loss"],
@@ -483,7 +488,8 @@ class XForwarderEngine:
                 burst_confirmed_dead=burst_confirmed_dead,
                 route_invalid=is_route_invalid,
                 max_acceptable_loss=max_loss,
-                critical_loss=crit_loss
+                critical_loss=crit_loss,
+                lossy_cycles=lossy_cycles
             )
 
             # Compute short and long composite scores

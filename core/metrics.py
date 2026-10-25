@@ -213,6 +213,84 @@ def parse_ping_output(stdout_text: str, returncode: int, sent_default: int = 50)
     }
 
 
+def _c_locale_env() -> Dict[str, str]:
+    """Environment forcing the C locale so ping statistics are always English/parseable."""
+    env = dict(os.environ)
+    env["LC_ALL"] = "C"
+    env["LANG"] = "C"
+    return env
+
+
+def _ip_family_flag(target: str) -> Optional[str]:
+    """
+    Returns '-4' / '-6' for literal IP addresses and None for hostnames.
+    Forcing '-4' on a hostname breaks AAAA-only names (reported as 100% loss),
+    so hostnames are left to the resolver.
+    """
+    try:
+        return "-6" if ipaddress.ip_address(target).version == 6 else "-4"
+    except ValueError:
+        return None
+
+
+# iputils: "64 bytes from 10.0.0.2: icmp_seq=3 ttl=64 time=12.3 ms" (1-based)
+# BusyBox: "64 bytes from 10.0.0.2: seq=2 ttl=64 time=12.3 ms" (0-based)
+_PING_REPLY_RE = re.compile(r'\b(icmp_seq|seq)=(\d+)\b[^\n]*?\btime[=<]\s*([\d.]+)\s*ms', re.IGNORECASE)
+
+
+def parse_ping_replies(stdout_text: str, expected_count: int) -> Optional[Dict[str, Any]]:
+    """
+    Per-reply ping parser that evaluates ONLY the first `expected_count` sequence numbers.
+
+    iputils ping exits max(2*maxRTT, interval) after the last echo request, so a slightly
+    late final reply is reported as lost even though the path delivered it. By sending a
+    few trailing padding probes and counting distinct reply sequence numbers within the
+    measured range, loss reflects the real path instead of the tool's exit timer.
+    Returns None when no per-reply lines are recognized (caller keeps summary stats).
+    """
+    matches = _PING_REPLY_RE.findall(stdout_text or "")
+    if not matches or expected_count <= 0:
+        return None
+
+    first_seq = 0 if any(m[0].lower() == "seq" for m in matches) else 1
+    last_seq = first_seq + expected_count - 1
+    rtts: Dict[int, float] = {}
+    for _, seq_s, rtt_s in matches:
+        try:
+            seq = int(seq_s)
+            if first_seq <= seq <= last_seq and seq not in rtts:  # ignore padding & DUPs
+                rtts[seq] = float(rtt_s)
+        except ValueError:
+            continue
+
+    received = len(rtts)
+    loss_pct = round(((expected_count - received) / expected_count) * 100.0, 1)
+    if rtts:
+        values = list(rtts.values())
+        mean = sum(values) / len(values)
+        mdev = (sum((v - mean) ** 2 for v in values) / len(values)) ** 0.5
+        avg_lat: Optional[float] = round(mean, 1)
+        min_lat: Optional[float] = round(min(values), 1)
+        max_lat: Optional[float] = round(max(values), 1)
+        jitter_ms = round(mdev, 1)
+    else:
+        avg_lat = min_lat = max_lat = None
+        jitter_ms = 0.0
+
+    healthy = received > 0
+    return {
+        "healthy": healthy,
+        "packets_sent": expected_count,
+        "packets_received": received,
+        "packet_loss": loss_pct,
+        "latency_ms": avg_lat,
+        "min_lat": min_lat,
+        "max_lat": max_lat,
+        "jitter_ms": jitter_ms,
+        "is_disrupted": 1 if (loss_pct > 0.0 or not healthy) else 0
+    }
+
+
 def measure_packet_loss_50(
     target: str,
     iface: Optional[str] = None,
@@ -254,6 +332,9 @@ def measure_packet_loss_50(
     else:
         # Standard Linux iputils ping with -c 50 -i 0.2 -W 1
         cmd = ["ping", "-c", str(safe_count), "-i", str(safe_interval), "-W", "1"]
+        family_flag = _ip_family_flag(clean_target)
+        if family_flag:
+            cmd.insert(1, family_flag)
         if iface:
             clean_iface = str(iface).strip()
             if clean_iface and not clean_iface.startswith("-") and re.match(r'^[a-zA-Z0-9_.-]+$', clean_iface):
@@ -267,9 +348,10 @@ def measure_packet_loss_50(
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True,
-            timeout=timeout_sec
+            timeout=max(safe_timeout, int(safe_count * safe_interval) + 5),
+            env=_c_locale_env()
         )
-        parsed = parse_ping_output(proc.stdout, proc.returncode, sent_default=count)
+        parsed = parse_ping_output(proc.stdout, proc.returncode, sent_default=safe_count)
         error_msg = ""
         if proc.returncode != 0 and parsed["packets_received"] == 0:
             error_msg = proc.stderr.strip() or "Destination host unreachable"

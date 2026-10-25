@@ -120,7 +120,8 @@ def classify_status(
     burst_confirmed_dead: bool,
     route_invalid: bool,
     max_acceptable_loss: float = 25.0,
-    critical_loss: float = 30.0
+    critical_loss: float = 30.0,
+    lossy_cycles: Optional[int] = None
 ) -> str:
     """
     Determines route health classification:
@@ -128,10 +129,16 @@ def classify_status(
     - 'critical': Severe sustained packet loss (>= critical_loss over short window).
     - 'degraded': Noticeable packet loss (>= max_acceptable_loss / 2 or long-term loss >= 5%).
     - 'healthy': Clean operational health.
+
+    lossy_cycles: number of probe cycles inside the short window that lost at least one
+    packet. When provided, 'critical' requires loss in >= 2 cycles so that one transient
+    blip (a single fully-lost 10-ping cycle = 33% of a 3-cycle window) cannot trigger an
+    emergency switch on its own. Confirmed total outages are still caught as 'failed'.
     """
     if route_invalid or burst_confirmed_dead or (last_cycle_loss >= 100.0 and short_loss >= 100.0):
         return "failed"
-    if short_loss >= critical_loss:
+    sustained = (lossy_cycles is None or lossy_cycles >= 2)
+    if short_loss >= critical_loss and sustained:
         return "critical"
     if short_loss >= (max_acceptable_loss / 2.0) or long_loss >= 5.0:
         return "degraded"

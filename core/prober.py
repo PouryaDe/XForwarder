@@ -15,9 +15,18 @@ import re
 from typing import Dict, Any, Tuple, Optional, List
 
 try:
-    from core.metrics import parse_ping_output, sanitize_target_host
+    from core.metrics import parse_ping_output, parse_ping_replies, sanitize_target_host, _c_locale_env, _ip_family_flag
 except ImportError:
-    from metrics import parse_ping_output, sanitize_target_host
+    from metrics import parse_ping_output, parse_ping_replies, sanitize_target_host, _c_locale_env, _ip_family_flag
+
+# Extra echo requests appended after the measured burst. iputils exits ~2*maxRTT after the
+# last request, which falsely counts a slightly-late final reply as lost. Padding probes give
+# every measured sequence number a full grace window; only seq 1..count are scored.
+ICMP_TAIL_PADDING = 2
+
+# Per-attempt TCP handshake timeout for outage confirmation. 0.25s produced false "dead"
+# verdicts on Iran -> foreign paths where RTT + SYN processing routinely exceeds 250ms.
+BURST_TCP_TIMEOUT = 0.5
 
 
 def is_private_or_tunnel_target(target: str) -> bool:
@@ -137,14 +146,15 @@ def probe_destination_icmp(
             "reason": "Invalid target host"
         }
 
-    is_ipv6 = ":" in clean_target
+    family_flag = _ip_family_flag(clean_target)
+    is_ipv6 = (family_flag == "-6")
     safe_count = max(1, min(count, 30))
     interval_sec = max(0.1, min(interval_ms / 1000.0, 2.0))
-    timeout_sec = max(2, int(safe_count * interval_sec + 3))
+    padding = ICMP_TAIL_PADDING if sys.platform != "win32" else 0
+    send_count = safe_count + padding
+    timeout_sec = max(3, int(send_count * interval_sec + 5))
 
-    safe_env = dict(os.environ)
-    safe_env["LC_ALL"] = "C"
-    safe_env["LANG"] = "C"
+    safe_env = _c_locale_env()
 
     clean_iface = None
     if iface:
@@ -155,11 +165,9 @@ def probe_destination_icmp(
     if sys.platform == "win32":
         cmd = ["ping", "-n", str(safe_count), "-w", "500", clean_target]
     else:
-        cmd = ["ping", "-c", str(safe_count), "-i", f"{interval_sec:.1f}", "-W", "1"]
-        if is_ipv6:
-            cmd.insert(1, "-6")
-        else:
-            cmd.insert(1, "-4")
+        cmd = ["ping", "-c", str(send_count), "-i", f"{interval_sec:.1f}", "-W", "1"]
+        if family_flag:
+            cmd.insert(1, family_flag)
         if clean_iface:
             cmd.extend(["-I", clean_iface])
         cmd.append(clean_target)
@@ -189,7 +197,7 @@ def probe_destination_icmp(
             env=safe_env
         )
         if proc.returncode != 0 and is_ipv6 and sys.platform != "win32" and "unknown" in proc.stderr.lower():
-            cmd_alt = ["ping6", "-c", str(safe_count), "-i", f"{interval_sec:.1f}", "-W", "1"]
+            cmd_alt = ["ping6", "-c", str(send_count), "-i", f"{interval_sec:.1f}", "-W", "1"]
             if clean_iface:
                 cmd_alt.extend(["-I", clean_iface])
             cmd_alt.append(clean_target)
@@ -201,7 +209,20 @@ def probe_destination_icmp(
                 timeout=timeout_sec,
                 env=safe_env
             )
-        parsed = parse_ping_output(proc.stdout, proc.returncode, sent_default=safe_count)
+        parsed = parse_ping_output(proc.stdout, proc.returncode, sent_default=send_count)
+        if padding:
+            # Score only the measured window (seq 1..safe_count); padding replies are ignored.
+            per_reply = parse_ping_replies(proc.stdout, safe_count)
+            if per_reply is not None:
+                return per_reply
+            # Defensive fallback if per-reply lines were not recognized: normalize sent/recv to safe_count
+            if parsed.get("packets_sent", 0) == send_count:
+                parsed["packets_sent"] = safe_count
+                recv = parsed.get("packets_received", 0)
+                if recv > safe_count:
+                    parsed["packets_received"] = safe_count
+                if safe_count > 0:
+                    parsed["packet_loss"] = round(((safe_count - parsed["packets_received"]) / safe_count) * 100.0, 1)
         return parsed
     except subprocess.TimeoutExpired:
         return {
@@ -361,7 +382,7 @@ def fast_confirm_burst(
             try:
                 family = socket.AF_INET6 if ":" in target else socket.AF_INET
                 with socket.socket(family, socket.SOCK_STREAM) as s:
-                    s.settimeout(0.25)
+                    s.settimeout(BURST_TCP_TIMEOUT)
                     if s.connect_ex((target, port)) == 0:
                         successes += 1
                         latencies.append((time.perf_counter() - t0) * 1000)

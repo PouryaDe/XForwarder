@@ -27,15 +27,17 @@ A port must **NEVER** be bound by HAProxy and forwarded by NFTables DNAT at the 
 
 ## 3. Two-Tier Intelligent Failover & Route Quality Architecture
 - **ICMP Multi-Probe Precision (10-Ping Sampling)**:
-  - Probing uses native 10-probe ICMP ping bursts (`ping -c 10 -i 0.2 -W 1`) with `LC_ALL=C` and IPv4/IPv6 support.
+  - Probing uses native 10-probe ICMP ping bursts (`ping -c 10 -i 0.2 -W 1`) with 2-packet tail padding (`ICMP_TAIL_PADDING = 2`), `LC_ALL=C`, and IPv4/IPv6 support.
+  - Per-reply sequence parsing (`parse_ping_replies`) evaluates strictly sequence 1..10, eliminating false packet loss caused by iputils ping's early exit timer on long RTTs.
   - Extracts average latency, packet loss, and within-cycle jitter (`mdev` on Linux / `(max-min)/2` fallback).
   - Cross-rule deduplicated parallel probing (`_probe_all_destinations`) executes via a persistent worker pool, probing each unique (IP, interface) endpoint only once per cycle.
 - **Two-Tier Decision Engine (`core/route_quality.py`)**:
-  - **Tier 1 (Emergency Outage / Critical Loss Bypass)**:
-    - Triggers on total failure (100% loss), route invalidation (WAN leak), or critical degradation ($\ge \text{critical\_loss\_percent}$, default: 30%).
-    - Active outages trigger sub-second micro-probe bursts (`_fast_confirm_burst`, 5 packets, <1s confirmation).
+  - **Tier 1 (Emergency Outage / Sustained Critical Loss Bypass)**:
+    - Triggers on total failure (100% loss), route invalidation (WAN leak), or sustained critical degradation ($\ge \text{critical\_loss\_percent}$, default: 30% across $\ge 2$ cycles in the short window).
+    - Active outages trigger micro-probe bursts (`_fast_confirm_burst`, 5 packets, `BURST_TCP_TIMEOUT = 0.5s`).
     - Bypasses minimum hold-down and streak confirmation immediately.
     - Critical switches execute conntrack flushing (`conntrack -D`) to clear dead states.
+    - Transient single-cycle packet loss degrades quality score without triggering disruptive emergency failovers.
   - **Tier 2 (Conservative Planned Quality Switching)**:
     - Designed to prevent frequent, disruptive route flapping on live client sessions.
     - Evaluates performance over a 5-minute sliding window (`quality_window_seconds = 300s`) requiring $\ge 60\%$ window warm-up.
