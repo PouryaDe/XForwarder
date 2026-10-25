@@ -636,11 +636,52 @@ input:-webkit-autofill:active {
     flex-shrink: 0;
 }
 
-/* Sun/Moon visibility based on data-theme */
-[data-theme="dark"] .sun-icon { display: block; }
-[data-theme="dark"] .moon-icon { display: none; }
-[data-theme="light"] .sun-icon { display: none; }
-[data-theme="light"] .moon-icon { display: block; }
+/* Sun/Moon visibility & vibrant accent colors based on data-theme */
+.sun-icon {
+    display: none;
+    color: #FBBF24;
+    stroke: #FBBF24;
+    transition: color 0.2s ease, filter 0.2s ease, transform 0.2s ease;
+}
+
+.moon-icon {
+    display: none;
+    color: #818CF8;
+    stroke: #818CF8;
+    transition: color 0.2s ease, filter 0.2s ease, transform 0.2s ease;
+}
+
+[data-theme="dark"] .sun-icon {
+    display: block;
+    color: #FBBF24;
+    stroke: #FBBF24;
+}
+
+[data-theme="dark"] .moon-icon {
+    display: none;
+}
+
+[data-theme="light"] .sun-icon {
+    display: none;
+}
+
+[data-theme="light"] .moon-icon {
+    display: block;
+    color: #6366F1;
+    stroke: #6366F1;
+}
+
+.theme-toggle-btn:hover .sun-icon {
+    color: #F59E0B;
+    stroke: #F59E0B;
+    filter: drop-shadow(0 0 6px rgba(245, 158, 11, 0.5));
+}
+
+.theme-toggle-btn:hover .moon-icon {
+    color: #4F46E5;
+    stroke: #4F46E5;
+    filter: drop-shadow(0 0 6px rgba(99, 102, 241, 0.4));
+}
 
 .sidebar-user {
     display: flex;
