@@ -2494,7 +2494,7 @@
       "file_type": "code",
       "norm_label": "inittheme()",
       "source_file": "web/js/modules/theme.js",
-      "source_location": "L5"
+      "source_location": "L7"
     },
     {
       "id": "web_js_modules_theme_toggletheme",
@@ -2518,7 +2518,7 @@
       "file_type": "code",
       "norm_label": "updatethemetoggleui()",
       "source_file": "web/js/modules/theme.js",
-      "source_location": "L37"
+      "source_location": "L50"
     },
     {
       "id": "core_metrics_lossmonitorscheduler_init",
@@ -23046,7 +23046,19 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/js/modules/theme.js",
-      "source_location": "L12",
+      "source_location": "L14",
+      "weight": 1.0
+    },
+    {
+      "source": "web_js_modules_theme_inittheme",
+      "target": "web_js_modules_theme_toggletheme",
+      "relation": "calls",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "call",
+      "source_file": "web/js/modules/theme.js",
+      "source_location": "L18",
       "weight": 1.0
     },
     {
@@ -23058,7 +23070,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/js/modules/theme.js",
-      "source_location": "L34",
+      "source_location": "L47",
       "weight": 1.0
     },
     {
@@ -38708,7 +38720,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "web/js/modules/theme.js",
-      "source_location": "L37",
+      "source_location": "L50",
       "weight": 1.0
     },
     {
@@ -38719,7 +38731,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "web/js/modules/theme.js",
-      "source_location": "L5",
+      "source_location": "L7",
       "weight": 1.0
     },
     {
@@ -46550,18 +46562,6 @@
       "weight": 1.0
     },
     {
-      "source": "web_js_modules_theme_inittheme",
-      "target": "web_js_modules_theme_toggletheme",
-      "relation": "indirect_call",
-      "_origin": "ast",
-      "confidence": "INFERRED",
-      "confidence_score": 0.85,
-      "context": "argument",
-      "source_file": "web/js/modules/theme.js",
-      "source_location": "L17",
-      "weight": 1.0
-    },
-    {
       "source": "web_js_modules_traffic_inittrafficanalytics",
       "target": "web_js_modules_traffic_closetrafficmodal",
       "relation": "indirect_call",
@@ -48179,5 +48179,5 @@
     }
   ],
   "hyperedges": [],
-  "built_at_commit": "d0e2c2d7089cbfd62ccdc6a63a96a68cedf68cf3"
+  "built_at_commit": "d8d463d8f46c7d60c7329865b3f35d53f1340b5f"
 }

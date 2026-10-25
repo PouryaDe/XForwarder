@@ -28,6 +28,33 @@
                     document.documentElement.classList.add("pre-auth");
                 }
             } catch (e) { }
+
+            window._lastThemeToggle = 0;
+            window.toggleTheme = function (e) {
+                if (e && e.preventDefault) e.preventDefault();
+                var now = Date.now();
+                if (now - window._lastThemeToggle < 350) return;
+                window._lastThemeToggle = now;
+
+                var cur = document.documentElement.getAttribute("data-theme") || "dark";
+                var next = (cur === "dark") ? "light" : "dark";
+                document.documentElement.setAttribute("data-theme", next);
+                try {
+                    localStorage.setItem("xfwd_theme", next);
+                } catch (_) { }
+
+                var isDark = (next === "dark");
+                var labelText = isDark ? "Light Mode" : "Dark Mode";
+                var titleText = isDark ? "Switch to Light Mode" : "Switch to Dark Mode";
+                var labels = document.querySelectorAll(".theme-toggle-label");
+                for (var i = 0; i < labels.length; i++) {
+                    labels[i].innerText = labelText;
+                }
+                var btn = document.getElementById("btnThemeToggle");
+                if (btn) btn.title = titleText;
+                var btnL = document.getElementById("btnLoginThemeToggle");
+                if (btnL) btnL.title = titleText;
+            };
         })();
     </script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -35,7 +62,7 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap"
         rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=3.2.15">
+    <link rel="stylesheet" href="style.css?v=3.2.16">
 </head>
 
 <body>
@@ -1890,7 +1917,7 @@
     <!-- Notification Toast Container -->
     <div class="toast-container" id="toastContainer"></div>
 
-    <script type="module" src="app.js?v=3.2.15"></script>
+    <script type="module" src="app.js?v=3.2.16"></script>
 </body>
 
 </html>

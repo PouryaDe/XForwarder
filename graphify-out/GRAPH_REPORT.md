@@ -1,17 +1,17 @@
 # Graph Report - Forward-Manager  (2026-10-25)
 
 ## Corpus Check
-- 97 files · ~103,286 words
+- 97 files · ~103,453 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 13 file(s) not represented in the graph (top: .css 6, .service 4, (none) 2)
 
 ## Summary
 - 1278 nodes · 2848 edges · 92 communities (59 shown, 33 thin omitted)
-- Extraction: 94% EXTRACTED · 6% INFERRED · 0% AMBIGUOUS · INFERRED: 176 edges (avg confidence: 0.9)
+- Extraction: 94% EXTRACTED · 6% INFERRED · 0% AMBIGUOUS · INFERRED: 175 edges (avg confidence: 0.9)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `d0e2c2d7`
+- Built from commit: `d8d463d8`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -369,7 +369,7 @@ _Questions this graph is uniquely positioned to answer:_
 - **Should `TestRouteQualityEngine` be split into smaller, more focused modules?**
   _Cohesion score 0.0673758865248227 - nodes in this community are weakly interconnected._
 - **Why does `2. Non-Negotiable Architectural Constraints` connect `import_export.js` to `XForwarder Master Architecture Constitution`, `engine.py`, `3. Architecture & Solution Implemented`, `Any`, `nftables_parser.py`, `.do_POST`, `migrate_and_normalize_config`?**
-  _High betweenness centrality (0.201) - this node is a cross-community bridge._
+  _High betweenness centrality (0.200) - this node is a cross-community bridge._
 - **Are the 3 inferred relationships involving `TestUIAndAPIEdgeCases` (e.g. with `XForwarderEngine` and `XForwarderWebHandler`) actually correct?**
   _`TestUIAndAPIEdgeCases` has 3 INFERRED edges - model-reasoned connections that need verification._
 - **Should `web_server.py` be split into smaller, more focused modules?**

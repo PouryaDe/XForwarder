@@ -2,6 +2,8 @@
  * XForwarder - Dual Theme Subsystem (Nova Dark Base & Crisp Light)
  */
 
+let lastToggleTimestamp = 0;
+
 export function initTheme() {
     const saved = localStorage.getItem("xfwd_theme");
     if (saved === "light") {
@@ -12,25 +14,36 @@ export function initTheme() {
     updateThemeToggleUI();
 
     const btnThemeToggle = document.getElementById("btnThemeToggle");
-    if (btnThemeToggle && !btnThemeToggle._xfwdThemeBound) {
-        btnThemeToggle._xfwdThemeBound = true;
-        btnThemeToggle.addEventListener("click", toggleTheme);
+    if (btnThemeToggle) {
+        btnThemeToggle.onclick = (e) => toggleTheme(e);
     }
 
     const btnLoginThemeToggle = document.getElementById("btnLoginThemeToggle");
-    if (btnLoginThemeToggle && !btnLoginThemeToggle._xfwdThemeBound) {
-        btnLoginThemeToggle._xfwdThemeBound = true;
-        btnLoginThemeToggle.addEventListener("click", toggleTheme);
+    if (btnLoginThemeToggle) {
+        btnLoginThemeToggle.onclick = (e) => toggleTheme(e);
     }
 }
 
-export function toggleTheme() {
+export function toggleTheme(e) {
+    if (e && typeof e.preventDefault === "function") {
+        e.preventDefault();
+    }
+    const now = Date.now();
+    if (now - lastToggleTimestamp < 350) {
+        // Prevent rapid double-invocation from concurrent inline onclick + addEventListener
+        return;
+    }
+    lastToggleTimestamp = now;
+    if (typeof window !== "undefined") {
+        window._lastThemeToggle = now;
+    }
+
     const current = document.documentElement.getAttribute("data-theme") || "dark";
     const next = current === "dark" ? "light" : "dark";
     document.documentElement.setAttribute("data-theme", next);
     try {
         localStorage.setItem("xfwd_theme", next);
-    } catch (e) {}
+    } catch (err) {}
     updateThemeToggleUI();
 }
 
