@@ -17,7 +17,7 @@ import signal
 import tempfile
 import urllib.request
 from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
-from urllib.parse import urlparse, parse_qs
+from urllib.parse import urlparse, parse_qs, unquote
 from typing import Optional, Dict, Tuple, Any, List
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -763,8 +763,13 @@ class XForwarderWebHandler(BaseHTTPRequestHandler):
             else:
                 self.send_json({"ok": False, "error": "Save failed"}, 500)
 
-        elif subpath == "/api/override":
-            rule_id = str(body.get("rule_id", ""))
+        elif subpath == "/api/override" or (subpath.startswith("/api/rule/") and subpath.endswith("/override")):
+            if subpath.startswith("/api/rule/"):
+                parts = subpath.split("/")
+                url_rule_id = unquote(parts[3]) if len(parts) >= 4 else ""
+                rule_id = str(body.get("rule_id", url_rule_id) or url_rule_id)
+            else:
+                rule_id = str(body.get("rule_id", ""))
             try:
                 override_prio = int(body.get("force_override", 0))
             except (ValueError, TypeError):
@@ -777,14 +782,17 @@ class XForwarderWebHandler(BaseHTTPRequestHandler):
 
             cfg = load_config()
             found = False
+            matched_rule_id = rule_id
             for r in cfg.get("rules", []):
-                if r.get("id") == rule_id:
+                r_id = str(r.get("id") or f"rule-{r.get('port')}")
+                if r.get("id") == rule_id or r_id == rule_id or str(r.get("port")) == rule_id:
+                    matched_rule_id = r.get("id") or r_id
                     r["force_override"] = override_prio
                     if override_prio > 0:
                         r["active_priority"] = override_prio
                     else:
                         state = load_state()
-                        r_state = state.get("runtime", {}).get("rules_state", {}).get(rule_id, {})
+                        r_state = state.get("runtime", {}).get("rules_state", {}).get(matched_rule_id, {})
                         r_state["last_switch_time"] = 0
                         r_state["cooldown_remaining"] = 0
                         dest_stats = r_state.get("dest_stats", {})
@@ -809,7 +817,7 @@ class XForwarderWebHandler(BaseHTTPRequestHandler):
 
             if save_config(cfg):
                 update_state_rules({
-                    rule_id: {
+                    matched_rule_id: {
                         "active_priority": r["active_priority"],
                         "last_force_override": override_prio,
                         "last_switch_time": 0,

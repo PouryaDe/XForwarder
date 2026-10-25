@@ -616,10 +616,10 @@ export async function handleOverrideChange(ruleId, val, fetchStatusCallback) {
     }
 
     try {
-        const res = await fetch(`${API_BASE}/rule/${encodeURIComponent(ruleId)}/override`, {
+        const res = await fetch(`${API_BASE}/override`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ force_override: prioVal })
+            body: JSON.stringify({ rule_id: ruleId, force_override: prioVal })
         });
         const data = await res.json().catch(() => ({}));
         if (res.ok && data.ok) {

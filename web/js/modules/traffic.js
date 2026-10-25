@@ -266,6 +266,18 @@ export async function loadTrafficModalData() {
     const subEl = document.getElementById("trafficModalSubtitle");
     const tableBody = document.getElementById("trafficTableBody");
     const recordsCountEl = document.getElementById("trafficRecordsCount");
+    const barsContainer = document.getElementById("trafficBarsContainer");
+
+    // Immediate loading feedback for user
+    if (tableBody) {
+        tableBody.innerHTML = `<tr><td colspan="5" class="text-center py-4 text-muted"><span class="btn-spinner" style="width:14px;height:14px;display:inline-block;vertical-align:middle;margin-right:8px;"></span> Loading traffic records...</td></tr>`;
+    }
+    if (barsContainer) {
+        barsContainer.innerHTML = `<div style="display:flex;align-items:center;justify-content:center;height:100%;width:100%;color:var(--text-muted);font-size:0.85rem;"><span class="btn-spinner" style="width:14px;height:14px;display:inline-block;vertical-align:middle;margin-right:8px;"></span> Loading timeline chart...</div>`;
+    }
+    if (recordsCountEl) {
+        recordsCountEl.textContent = "Loading...";
+    }
 
     if (titleEl) {
         if (entityType === "all") {
@@ -289,13 +301,16 @@ export async function loadTrafficModalData() {
     }
 
     try {
-        const url = `${API_BASE}/traffic/summary?entity_type=${encodeURIComponent(entityType)}&entity_id=${encodeURIComponent(entityId)}&period=${encodeURIComponent(currentTrafficPeriod)}`;
-        const res = await fetch(url);
-        if (!res.ok) throw new Error("Failed to load traffic metrics");
-        const data = await res.json();
+        const [sumRes, tsRes] = await Promise.all([
+            fetch(`${API_BASE}/traffic/summary?entity_type=${encodeURIComponent(entityType)}&entity_id=${encodeURIComponent(entityId)}&period=${encodeURIComponent(currentTrafficPeriod)}`),
+            fetch(`${API_BASE}/traffic/timeseries?entity_type=${encodeURIComponent(entityType)}&entity_id=${encodeURIComponent(entityId)}&period=${encodeURIComponent(currentTrafficPeriod)}`)
+        ]);
 
-        const summary = data.summary || {};
-        const rows = data.rows || [];
+        const sumJson = sumRes.ok ? await sumRes.json().catch(() => ({})) : {};
+        const tsJson = tsRes.ok ? await tsRes.json().catch(() => ({})) : {};
+
+        const summary = (sumJson && sumJson.data) ? sumJson.data : (sumJson || {});
+        const rows = (tsJson && Array.isArray(tsJson.data)) ? tsJson.data : (Array.isArray(tsJson) ? tsJson : []);
 
         const rxEl = document.getElementById("kpiTotalRx") || document.getElementById("trafficStatRx");
         const txEl = document.getElementById("kpiTotalTx") || document.getElementById("trafficStatTx");
@@ -304,8 +319,8 @@ export async function loadTrafficModalData() {
         const cycleTotalEl = document.getElementById("kpiCycleTotal");
         const cycleMetaEl = document.getElementById("kpiCycleMeta");
 
-        const totalRx = summary.total_rx_bytes || 0;
-        const totalTx = summary.total_tx_bytes || 0;
+        const totalRx = summary.total_rx_bytes !== undefined ? summary.total_rx_bytes : (summary.total_rx !== undefined ? summary.total_rx : (summary.rx_bytes || 0));
+        const totalTx = summary.total_tx_bytes !== undefined ? summary.total_tx_bytes : (summary.total_tx !== undefined ? summary.total_tx : (summary.tx_bytes || 0));
         const totalBytes = summary.total_bytes || 0;
 
         if (rxEl) rxEl.textContent = formatBytes(totalRx);
@@ -335,6 +350,9 @@ export async function loadTrafficModalData() {
         showToast("Error loading traffic data: " + err.message, "error");
         if (tableBody) {
             tableBody.innerHTML = `<tr><td colspan="5" class="text-center py-4 text-rose">Failed to load analytics: ${escapeHtml(err.message)}</td></tr>`;
+        }
+        if (barsContainer) {
+            barsContainer.innerHTML = `<div style="display:flex;align-items:center;justify-content:center;height:100%;width:100%;color:var(--text-rose);font-size:0.82rem;">Failed to load timeline: ${escapeHtml(err.message)}</div>`;
         }
     } finally {
         trafficModalLoading = false;
