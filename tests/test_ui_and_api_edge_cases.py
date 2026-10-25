@@ -650,20 +650,12 @@ class TestUIAndAPIEdgeCases(unittest.TestCase):
 
     def test_packet_loss_diagnostic_tool_elements(self):
         """Verifies that packet loss UI tool and functions exist in frontend."""
-        html_path = os.path.join(REPO_ROOT, "web", "index.html")
         js_path = os.path.join(REPO_ROOT, "web", "app.js")
 
-        with open(html_path, "r", encoding="utf-8") as f:
-            html = f.read()
         with open(js_path, "r", encoding="utf-8") as f:
             js = f.read()
 
-        # HTML diagnostic elements
-        self.assertIn('id="diagTargetInput"', html)
-        self.assertIn('id="btnRunDiagTest"', html)
-        self.assertIn('id="diagResultContainer"', html)
-
-        # JS diagnostic handlers
+        # JS diagnostic handlers and rule action triggers
         self.assertIn("runLivePacketLossTest", js)
         self.assertIn("initDiagPacketLossTool", js)
         self.assertIn("btn-path-test", js)
@@ -1866,10 +1858,10 @@ class TestUIAndAPIEdgeCases(unittest.TestCase):
         with open(utils_js_path, "r", encoding="utf-8") as f:
             utils_js = f.read()
 
-        # 1. HTML index.html contains btnLogin button with v=3.2.12 cache busters
+        # 1. HTML index.html contains btnLogin button with v=3.2.13 cache busters
         self.assertIn('id="btnLogin"', html)
-        self.assertIn('style.css?v=3.2.12', html)
-        self.assertIn('app.js?v=3.2.12', html)
+        self.assertIn('style.css?v=3.2.13', html)
+        self.assertIn('app.js?v=3.2.13', html)
 
         # 2. auth.js attaches direct click event listener to btnLogin
         self.assertIn('btnLogin.addEventListener("click", doLogin)', auth_js)

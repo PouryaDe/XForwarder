@@ -51,19 +51,61 @@ export function safeInlineArg(str) {
     return `'${escaped}'`;
 }
 
-export function formatLatencyBadge(latencyMs, packetLoss = 0) {
-    const ms = Number(latencyMs);
-    const loss = Number(packetLoss) || 0;
-    if (ms <= 0 && loss >= 100) {
-        return `<span class="badge badge-down">Down (100% loss)</span>`;
+export function formatLatencyBadge(statOrMs, maybeLoss = 0) {
+    if (!statOrMs && statOrMs !== 0) return '';
+    let stat = statOrMs;
+    if (typeof statOrMs !== 'object' || statOrMs === null) {
+        const msNum = Number(statOrMs);
+        const lossNum = Number(maybeLoss) || 0;
+        stat = {
+            latency_ms: isNaN(msNum) ? null : msNum,
+            packet_loss: lossNum,
+            status: (msNum <= 0 && lossNum >= 100) ? 'down' : ((lossNum > 0 || msNum > 150) ? 'degraded' : 'healthy')
+        };
     }
-    if (loss > 0 || ms > 150) {
-        return `<span class="badge badge-amber">${ms > 0 ? ms + 'ms' : '0ms'} (${loss}% loss)</span>`;
+
+    const isHealthy = (stat.status === 'healthy');
+    const isDegraded = (stat.status === 'degraded');
+    const isCritical = (stat.status === 'critical');
+    const isFailed = (stat.status === 'failed' || stat.status === 'down');
+    const loss = (stat.packet_loss !== undefined && stat.packet_loss !== null)
+        ? parseInt(stat.packet_loss, 10)
+        : (isHealthy ? 0 : 100);
+    const ms = (stat.latency_ms !== undefined && stat.latency_ms !== null)
+        ? parseFloat(stat.latency_ms)
+        : NaN;
+    const jitter = (stat.jitter_ms !== undefined && stat.jitter_ms !== null)
+        ? parseFloat(stat.jitter_ms)
+        : null;
+    const score = (stat.composite_score !== undefined && stat.composite_score !== null)
+        ? stat.composite_score
+        : null;
+
+    let tooltipParts = [];
+    if (!isNaN(ms) && ms > 0) tooltipParts.push(`Avg: ${ms} ms`);
+    if (jitter !== null && !isNaN(jitter)) tooltipParts.push(`Jitter: ${jitter} ms`);
+    tooltipParts.push(`Loss: ${loss}% (5m)`);
+    if (score !== null) tooltipParts.push(`Score: ${score}`);
+    const tooltipText = tooltipParts.join(' · ');
+
+    if (isFailed || isCritical || (!isHealthy && !isDegraded)) {
+        const badgeLabel = isCritical ? `${loss}% critical` : `${loss}% loss`;
+        return `<span class="latency-pill latency-bad" title="${escapeHtml(tooltipText)}"><span class="latency-dot"></span>${badgeLabel}</span>`;
     }
-    if (ms > 250) {
-        return `<span class="badge badge-amber">${ms}ms</span>`;
+
+    if (isNaN(ms) || ms <= 0) {
+        return `<span class="latency-pill latency-good" title="${escapeHtml(tooltipText)}"><span class="latency-dot"></span>0% loss</span>`;
     }
-    return `<span class="badge badge-ok">${ms > 0 ? ms + 'ms' : '<1ms'}</span>`;
+
+    let cls = "latency-good";
+    if (isDegraded || loss > 20 || ms > 250) {
+        cls = "latency-bad";
+    } else if (loss > 0 || ms > 150 || (jitter !== null && jitter > 30)) {
+        cls = "latency-medium";
+    }
+
+    const label = isDegraded ? `${loss}% loss (Degraded)` : (loss > 0 ? `${ms} ms · ${loss}%` : `${ms} ms`);
+    return `<span class="latency-pill ${cls}" title="${escapeHtml(tooltipText)}"><span class="latency-dot"></span>${label}</span>`;
 }
 
 export function formatConciseReason(reason) {

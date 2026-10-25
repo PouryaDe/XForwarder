@@ -1,17 +1,17 @@
 # Graph Report - Forward-Manager  (2026-10-25)
 
 ## Corpus Check
-- 94 files · ~101,807 words
+- 94 files · ~101,789 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 13 file(s) not represented in the graph (top: .css 6, .service 4, (none) 2)
 
 ## Summary
-- 1275 nodes · 2839 edges · 116 communities (58 shown, 58 thin omitted)
+- 1275 nodes · 2837 edges · 117 communities (59 shown, 58 thin omitted)
 - Extraction: 94% EXTRACTED · 6% INFERRED · 0% AMBIGUOUS · INFERRED: 175 edges (avg confidence: 0.9)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `ac29c81f`
+- Built from commit: `de108617`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -53,7 +53,7 @@
 - time
 - traffic.js
 - .do_POST
-- stats.js
+- utils.js
 - TestNginxStreamEngine
 - DummyHandler
 - XForwarder Master Architecture Constitution
@@ -90,6 +90,7 @@
 - Experience 003: Native Python Zero-Dependency Web Server
 - Experience 012: Kernel Zero-Copy Splicing, BBR Network Tuning, and Session Timeout Optimization
 - experience-logging.md
+- system.js
 - parse_haproxy_stats_csv
 - parse_nftables_counters_json
 - XForwarder - Agent Development Guide
@@ -98,7 +99,7 @@
 1. `XForwarderEngine` - 66 edges
 2. `TestUIAndAPIEdgeCases` - 51 edges
 3. `showToast()` - 41 edges
-4. `escapeHtml()` - 32 edges
+4. `escapeHtml()` - 33 edges
 5. `import_config_data()` - 27 edges
 6. `TestPerformanceAndOptimizations` - 25 edges
 7. `XForwarderWebHandler` - 23 edges
@@ -121,7 +122,7 @@
 ## Import Cycles
 - None detected.
 
-## Communities (116 total, 58 thin omitted)
+## Communities (117 total, 58 thin omitted)
 
 ### Community 0 - "TestRouteQualityEngine"
 Cohesion: 0.06
@@ -132,8 +133,8 @@ Cohesion: 0.08
 Nodes (22): get_full_version_status(), get_installed_version(), get_local_version_info(), get_remote_version_info(), get_script_path(), get_update_log_path(), get_update_state_file_path(), get_update_status() (+14 more)
 
 ### Community 3 - "app.js"
-Cohesion: 0.13
-Nodes (30): _architecturalCompliance(), initApp(), pendingOverrides, previousActivePriorities, startAuthenticatedSession(), stopAuthenticatedSession(), trackFailoverEvents(), checkImportableRules() (+22 more)
+Cohesion: 0.14
+Nodes (27): _architecturalCompliance(), fetchStatus(), initApp(), pendingOverrides, previousActivePriorities, startAuthenticatedSession(), stopAuthenticatedSession(), trackFailoverEvents() (+19 more)
 
 ### Community 5 - "🌐 XForwarder"
 Cohesion: 0.14
@@ -208,7 +209,7 @@ Cohesion: 0.07
 Nodes (24): 1. Context & Motivation, 2. Root Cause / Core Dynamics, 3. Architecture & Solution Implemented, 4. Invariants & Rules for AI Agents, 5. Verification & Testing, Experience 004: Backward Compatibility and Automated Schema Migrations, 4. Client-Side Smoothness, 1. Rapid Failure Detection & Confirmation Burst (<1s) (+16 more)
 
 ### Community 25 - "rules.js"
-Cohesion: 0.17
+Cohesion: 0.14
 Nodes (19): deleteRule(), getPrioTagClass(), handleOverrideChange(), handlePathDragEnd(), handlePathDragLeave(), handlePathDragOver(), handlePathDragStart(), handlePathDrop() (+11 more)
 
 ### Community 26 - "XForwarder Operations Runbook"
@@ -251,9 +252,9 @@ Nodes (15): closeTrafficModal(), handleTrafficEntityChange(), handleTrafficPerio
 Cohesion: 0.23
 Nodes (7): 3. Fast IPC Engine Wake-Up, Architectural Solutions Implemented, get_config_path(), load_config(), save_config(), notify_engine_wakeup(), sync_rules_and_notify()
 
-### Community 37 - "stats.js"
-Cohesion: 0.14
-Nodes (18): fetchStatus(), updateCategoryDatalist(), currentRules, lastRuntime, lastTrafficData, setCurrentRules(), setLastRuntime(), setLastTrafficData() (+10 more)
+### Community 37 - "utils.js"
+Cohesion: 0.18
+Nodes (12): lastTrafficData, copyIpToClipboard(), lastSystemStats, renderNetworkTopology(), renderServicesStatus(), renderSystemStats(), _trafficModeRate, copyText() (+4 more)
 
 ### Community 40 - "XForwarder Master Architecture Constitution"
 Cohesion: 0.33
@@ -308,8 +309,8 @@ Cohesion: 0.50
 Nodes (3): Context & Motivation, Experience 013: Two-Tier Intelligent Route Switching & Jitter Monitoring, Verification & Impact
 
 ### Community 62 - "import_export.js"
-Cohesion: 0.32
-Nodes (11): 2. Non-Negotiable Architectural Constraints, ⚡ Core Rules & Constraints, closeImportModal(), copyCategoryJson(), copyRuleJson(), getSanitizedRuleForExport(), handleExportConfig(), initImportExport() (+3 more)
+Cohesion: 0.29
+Nodes (12): 2. Non-Negotiable Architectural Constraints, ⚡ Core Rules & Constraints, closeImportModal(), copyCategoryJson(), copyRuleJson(), getSanitizedRuleForExport(), handleExportConfig(), initImportExport() (+4 more)
 
 ### Community 63 - "sync_system_rules"
 Cohesion: 0.25
@@ -351,6 +352,10 @@ Nodes (6): 1. Context & Motivation, 2. Root Cause / Core Dynamics, 3. Architectu
 Cohesion: 0.50
 Nodes (3): 1. When to Log an Experience, 2. Standard Logging Protocol, Architectural Experience Logging Rule (XForwarder)
 
+### Community 89 - "system.js"
+Cohesion: 0.42
+Nodes (8): closeSystemUpdateModal(), handleServiceRestart(), initServiceRestartControls(), initSystemUpdateManager(), openSystemUpdateModal(), pollDashboardReconnection(), pollUpdateProgress(), startSystemUpdateProcedure()
+
 ### Community 106 - "XForwarder - Agent Development Guide"
 Cohesion: 0.40
 Nodes (4): 🔍 Codebase Knowledge Graph (graphify), 🧭 Project Architecture, 🛠 Workflows, Skills & Verification Pipeline, XForwarder - Agent Development Guide
@@ -371,7 +376,7 @@ _Questions this graph is uniquely positioned to answer:_
   _157 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `TestRouteQualityEngine` be split into smaller, more focused modules?**
   _Cohesion score 0.06475485661424607 - nodes in this community are weakly interconnected._
-- **Why does `2. Non-Negotiable Architectural Constraints` connect `import_export.js` to `XForwarder Master Architecture Constitution`, `test_metrics_subsystem.py`, `is_port_in_use_by_external_service`, `.evaluate_rule`, `nftables_parser.py`, `import_config_data`, `migrate_and_normalize_config`, `rules.js`?**
+- **Why does `2. Non-Negotiable Architectural Constraints` connect `import_export.js` to `XForwarder Master Architecture Constitution`, `test_metrics_subsystem.py`, `is_port_in_use_by_external_service`, `.evaluate_rule`, `nftables_parser.py`, `import_config_data`, `migrate_and_normalize_config`?**
   _High betweenness centrality (0.213) - this node is a cross-community bridge._
 - **Are the 3 inferred relationships involving `TestUIAndAPIEdgeCases` (e.g. with `XForwarderEngine` and `XForwarderWebHandler`) actually correct?**
   _`TestUIAndAPIEdgeCases` has 3 INFERRED edges - model-reasoned connections that need verification._

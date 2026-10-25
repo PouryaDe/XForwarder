@@ -802,7 +802,7 @@
       "file_type": "code",
       "norm_label": ".test_session_and_update_state_disk_persistence()",
       "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L1301"
+      "source_location": "L1293"
     },
     {
       "id": "tests_test_ui_and_api_edge_cases_testuiandapiedgecases_test_validate_rule_arbitrary_priorities",
@@ -958,7 +958,7 @@
       "file_type": "code",
       "norm_label": ".test_dark_theme_tokens_and_restrained_highlights()",
       "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L773"
+      "source_location": "L765"
     },
     {
       "id": "tests_test_ui_and_api_edge_cases_testuiandapiedgecases_test_nova_admin_design_system_and_login_cleanup",
@@ -970,7 +970,7 @@
       "file_type": "code",
       "norm_label": ".test_nova_admin_design_system_and_login_cleanup()",
       "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L845"
+      "source_location": "L837"
     },
     {
       "id": "tests_test_ui_and_api_edge_cases_testuiandapiedgecases_test_get_remote_version_info_rate_limit_fallback",
@@ -982,7 +982,7 @@
       "file_type": "code",
       "norm_label": ".test_get_remote_version_info_rate_limit_fallback()",
       "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L1410"
+      "source_location": "L1402"
     },
     {
       "id": "tests_test_ui_and_api_edge_cases_testuiandapiedgecases_test_signin_button_direct_click_and_deferred_execution_safety",
@@ -994,7 +994,7 @@
       "file_type": "code",
       "norm_label": ".test_signin_button_direct_click_and_deferred_execution_safety()",
       "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L1853"
+      "source_location": "L1845"
     },
     {
       "id": "tests_test_ui_and_api_edge_cases_testuiandapiedgecases_test_packet_loss_calculation_and_probes",
@@ -1042,7 +1042,7 @@
       "file_type": "code",
       "norm_label": ".test_validate_rule_haproxy_requires_ipv6()",
       "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L694"
+      "source_location": "L686"
     },
     {
       "id": "core_haproxy_parser_build_xforwarder_rule",
@@ -2077,28 +2077,16 @@
       "source_location": "L24"
     },
     {
-      "id": "web_js_modules_utils_copytext",
-      "label": "copyText()",
+      "id": "web_js_modules_state_setcurrentrules",
+      "label": "setCurrentRules()",
       "_callable": true,
       "_origin": "ast",
       "community": 25,
       "community_name": "rules.js",
       "file_type": "code",
-      "norm_label": "copytext()",
-      "source_file": "web/js/modules/utils.js",
-      "source_location": "L136"
-    },
-    {
-      "id": "web_js_modules_utils_fallbackcopy",
-      "label": "fallbackCopy()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 25,
-      "community_name": "rules.js",
-      "file_type": "code",
-      "norm_label": "fallbackcopy()",
-      "source_file": "web/js/modules/utils.js",
-      "source_location": "L147"
+      "norm_label": "setcurrentrules()",
+      "source_file": "web/js/modules/state.js",
+      "source_location": "L9"
     },
     {
       "id": "web_js_modules_utils_formatconcisereason",
@@ -2110,7 +2098,7 @@
       "file_type": "code",
       "norm_label": "formatconcisereason()",
       "source_file": "web/js/modules/utils.js",
-      "source_location": "L69"
+      "source_location": "L111"
     },
     {
       "id": "web_js_modules_utils_formatlatencybadge",
@@ -2123,30 +2111,6 @@
       "norm_label": "formatlatencybadge()",
       "source_file": "web/js/modules/utils.js",
       "source_location": "L54"
-    },
-    {
-      "id": "web_js_modules_utils_formatprotobadge",
-      "label": "formatProtoBadge()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 25,
-      "community_name": "rules.js",
-      "file_type": "code",
-      "norm_label": "formatprotobadge()",
-      "source_file": "web/js/modules/utils.js",
-      "source_location": "L128"
-    },
-    {
-      "id": "web_js_modules_utils_safeinlinearg",
-      "label": "safeInlineArg()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 25,
-      "community_name": "rules.js",
-      "file_type": "code",
-      "norm_label": "safeinlinearg()",
-      "source_file": "web/js/modules/utils.js",
-      "source_location": "L43"
     },
     {
       "id": "core_traffic_get_traffic_db_path",
@@ -2329,6 +2293,18 @@
       "source_location": "L221"
     },
     {
+      "id": "web_app_fetchstatus",
+      "label": "fetchStatus()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 3,
+      "community_name": "app.js",
+      "file_type": "code",
+      "norm_label": "fetchstatus()",
+      "source_file": "web/app.js",
+      "source_location": "L192"
+    },
+    {
       "id": "web_app_initapp",
       "label": "initApp()",
       "_callable": true,
@@ -2497,16 +2473,52 @@
       "source_location": "L657"
     },
     {
-      "id": "web_js_modules_system_closesystemupdatemodal",
-      "label": "closeSystemUpdateModal()",
+      "id": "web_js_modules_rules_updatecategorydatalist",
+      "label": "updateCategoryDatalist()",
       "_callable": true,
       "_origin": "ast",
       "community": 3,
       "community_name": "app.js",
       "file_type": "code",
-      "norm_label": "closesystemupdatemodal()",
-      "source_file": "web/js/modules/system.js",
-      "source_location": "L218"
+      "norm_label": "updatecategorydatalist()",
+      "source_file": "web/js/modules/rules.js",
+      "source_location": "L73"
+    },
+    {
+      "id": "web_js_modules_state_setlastruntime",
+      "label": "setLastRuntime()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 3,
+      "community_name": "app.js",
+      "file_type": "code",
+      "norm_label": "setlastruntime()",
+      "source_file": "web/js/modules/state.js",
+      "source_location": "L14"
+    },
+    {
+      "id": "web_js_modules_state_setlasttrafficdata",
+      "label": "setLastTrafficData()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 3,
+      "community_name": "app.js",
+      "file_type": "code",
+      "norm_label": "setlasttrafficdata()",
+      "source_file": "web/js/modules/state.js",
+      "source_location": "L19"
+    },
+    {
+      "id": "web_js_modules_stats_renderstats",
+      "label": "renderStats()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 3,
+      "community_name": "app.js",
+      "file_type": "code",
+      "norm_label": "renderstats()",
+      "source_file": "web/js/modules/stats.js",
+      "source_location": "L292"
     },
     {
       "id": "web_js_modules_system_fetchsystemversioninfo",
@@ -2519,90 +2531,6 @@
       "norm_label": "fetchsystemversioninfo()",
       "source_file": "web/js/modules/system.js",
       "source_location": "L78"
-    },
-    {
-      "id": "web_js_modules_system_handleservicerestart",
-      "label": "handleServiceRestart()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 3,
-      "community_name": "app.js",
-      "file_type": "code",
-      "norm_label": "handleservicerestart()",
-      "source_file": "web/js/modules/system.js",
-      "source_location": "L435"
-    },
-    {
-      "id": "web_js_modules_system_initservicerestartcontrols",
-      "label": "initServiceRestartControls()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 3,
-      "community_name": "app.js",
-      "file_type": "code",
-      "norm_label": "initservicerestartcontrols()",
-      "source_file": "web/js/modules/system.js",
-      "source_location": "L411"
-    },
-    {
-      "id": "web_js_modules_system_initsystemupdatemanager",
-      "label": "initSystemUpdateManager()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 3,
-      "community_name": "app.js",
-      "file_type": "code",
-      "norm_label": "initsystemupdatemanager()",
-      "source_file": "web/js/modules/system.js",
-      "source_location": "L12"
-    },
-    {
-      "id": "web_js_modules_system_opensystemupdatemodal",
-      "label": "openSystemUpdateModal()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 3,
-      "community_name": "app.js",
-      "file_type": "code",
-      "norm_label": "opensystemupdatemodal()",
-      "source_file": "web/js/modules/system.js",
-      "source_location": "L193"
-    },
-    {
-      "id": "web_js_modules_system_polldashboardreconnection",
-      "label": "pollDashboardReconnection()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 3,
-      "community_name": "app.js",
-      "file_type": "code",
-      "norm_label": "polldashboardreconnection()",
-      "source_file": "web/js/modules/system.js",
-      "source_location": "L481"
-    },
-    {
-      "id": "web_js_modules_system_pollupdateprogress",
-      "label": "pollUpdateProgress()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 3,
-      "community_name": "app.js",
-      "file_type": "code",
-      "norm_label": "pollupdateprogress()",
-      "source_file": "web/js/modules/system.js",
-      "source_location": "L285"
-    },
-    {
-      "id": "web_js_modules_system_startsystemupdateprocedure",
-      "label": "startSystemUpdateProcedure()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 3,
-      "community_name": "app.js",
-      "file_type": "code",
-      "norm_label": "startsystemupdateprocedure()",
-      "source_file": "web/js/modules/system.js",
-      "source_location": "L224"
     },
     {
       "id": "web_js_modules_theme_inittheme",
@@ -3202,7 +3130,7 @@
       "file_type": "code",
       "norm_label": "askconfirm()",
       "source_file": "web/js/modules/utils.js",
-      "source_location": "L161"
+      "source_location": "L203"
     },
     {
       "id": "web_js_modules_utils_formatbytes",
@@ -3289,72 +3217,12 @@
       "source_location": "L566"
     },
     {
-      "id": "web_app_fetchstatus",
-      "label": "fetchStatus()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 37,
-      "community_name": "stats.js",
-      "file_type": "code",
-      "norm_label": "fetchstatus()",
-      "source_file": "web/app.js",
-      "source_location": "L192"
-    },
-    {
-      "id": "web_js_modules_rules_updatecategorydatalist",
-      "label": "updateCategoryDatalist()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 37,
-      "community_name": "stats.js",
-      "file_type": "code",
-      "norm_label": "updatecategorydatalist()",
-      "source_file": "web/js/modules/rules.js",
-      "source_location": "L73"
-    },
-    {
-      "id": "web_js_modules_state_setcurrentrules",
-      "label": "setCurrentRules()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 37,
-      "community_name": "stats.js",
-      "file_type": "code",
-      "norm_label": "setcurrentrules()",
-      "source_file": "web/js/modules/state.js",
-      "source_location": "L9"
-    },
-    {
-      "id": "web_js_modules_state_setlastruntime",
-      "label": "setLastRuntime()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 37,
-      "community_name": "stats.js",
-      "file_type": "code",
-      "norm_label": "setlastruntime()",
-      "source_file": "web/js/modules/state.js",
-      "source_location": "L14"
-    },
-    {
-      "id": "web_js_modules_state_setlasttrafficdata",
-      "label": "setLastTrafficData()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 37,
-      "community_name": "stats.js",
-      "file_type": "code",
-      "norm_label": "setlasttrafficdata()",
-      "source_file": "web/js/modules/state.js",
-      "source_location": "L19"
-    },
-    {
       "id": "web_js_modules_stats_copyiptoclipboard",
       "label": "copyIpToClipboard()",
       "_callable": true,
       "_origin": "ast",
       "community": 37,
-      "community_name": "stats.js",
+      "community_name": "utils.js",
       "file_type": "code",
       "norm_label": "copyiptoclipboard()",
       "source_file": "web/js/modules/stats.js",
@@ -3366,7 +3234,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 37,
-      "community_name": "stats.js",
+      "community_name": "utils.js",
       "file_type": "code",
       "norm_label": "rendernetworktopology()",
       "source_file": "web/js/modules/stats.js",
@@ -3378,23 +3246,11 @@
       "_callable": true,
       "_origin": "ast",
       "community": 37,
-      "community_name": "stats.js",
+      "community_name": "utils.js",
       "file_type": "code",
       "norm_label": "renderservicesstatus()",
       "source_file": "web/js/modules/stats.js",
       "source_location": "L130"
-    },
-    {
-      "id": "web_js_modules_stats_renderstats",
-      "label": "renderStats()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 37,
-      "community_name": "stats.js",
-      "file_type": "code",
-      "norm_label": "renderstats()",
-      "source_file": "web/js/modules/stats.js",
-      "source_location": "L292"
     },
     {
       "id": "web_js_modules_stats_rendersystemstats",
@@ -3402,7 +3258,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 37,
-      "community_name": "stats.js",
+      "community_name": "utils.js",
       "file_type": "code",
       "norm_label": "rendersystemstats()",
       "source_file": "web/js/modules/stats.js",
@@ -3414,11 +3270,35 @@
       "_callable": true,
       "_origin": "ast",
       "community": 37,
-      "community_name": "stats.js",
+      "community_name": "utils.js",
       "file_type": "code",
       "norm_label": "formattrafficmb()",
       "source_file": "web/js/modules/stats.js",
       "source_location": "L72"
+    },
+    {
+      "id": "web_js_modules_utils_copytext",
+      "label": "copyText()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 37,
+      "community_name": "utils.js",
+      "file_type": "code",
+      "norm_label": "copytext()",
+      "source_file": "web/js/modules/utils.js",
+      "source_location": "L178"
+    },
+    {
+      "id": "web_js_modules_utils_fallbackcopy",
+      "label": "fallbackCopy()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 37,
+      "community_name": "utils.js",
+      "file_type": "code",
+      "norm_label": "fallbackcopy()",
+      "source_file": "web/js/modules/utils.js",
+      "source_location": "L189"
     },
     {
       "id": "web_js_modules_utils_formatengineversion",
@@ -3426,11 +3306,23 @@
       "_callable": true,
       "_origin": "ast",
       "community": 37,
-      "community_name": "stats.js",
+      "community_name": "utils.js",
       "file_type": "code",
       "norm_label": "formatengineversion()",
       "source_file": "web/js/modules/utils.js",
       "source_location": "L26"
+    },
+    {
+      "id": "web_js_modules_utils_formatprotobadge",
+      "label": "formatProtoBadge()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 37,
+      "community_name": "utils.js",
+      "file_type": "code",
+      "norm_label": "formatprotobadge()",
+      "source_file": "web/js/modules/utils.js",
+      "source_location": "L170"
     },
     {
       "id": "web_js_modules_utils_formattrafficmb",
@@ -3438,7 +3330,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 37,
-      "community_name": "stats.js",
+      "community_name": "utils.js",
       "file_type": "code",
       "norm_label": "formattrafficmb()",
       "source_file": "web/js/modules/utils.js",
@@ -4666,7 +4558,7 @@
       "file_type": "code",
       "norm_label": "showtoast()",
       "source_file": "web/js/modules/utils.js",
-      "source_location": "L79"
+      "source_location": "L121"
     },
     {
       "id": "tests_test_ui_and_api_edge_cases_testuiandapiedgecases_test_api_test_target_http_endpoint",
@@ -4702,7 +4594,7 @@
       "file_type": "code",
       "norm_label": ".test_restart_services_action_logic()",
       "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L1123"
+      "source_location": "L1115"
     },
     {
       "id": "tests_test_ui_and_api_edge_cases_testuiandapiedgecases_test_topology_and_engines_grid_layout",
@@ -4714,7 +4606,7 @@
       "file_type": "code",
       "norm_label": ".test_topology_and_engines_grid_layout()",
       "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L671"
+      "source_location": "L663"
     },
     {
       "id": "tests_test_ui_and_api_edge_cases_testuiandapiedgecases_test_validate_rule_empty_destinations_rejected",
@@ -5182,7 +5074,7 @@
       "file_type": "code",
       "norm_label": ".test_latency_badge_classification_edge_cases()",
       "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L806"
+      "source_location": "L798"
     },
     {
       "id": "tests_test_ui_and_api_edge_cases_testuiandapiedgecases_test_latency_badge_classification_edge_cases_classify",
@@ -5194,7 +5086,7 @@
       "file_type": "code",
       "norm_label": "classify()",
       "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L808"
+      "source_location": "L800"
     },
     {
       "id": "core_config_manager_get_state_file_path",
@@ -5698,7 +5590,7 @@
       "file_type": "code",
       "norm_label": ".test_nftables_dual_stack_rules_generation()",
       "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L734"
+      "source_location": "L726"
     },
     {
       "id": "web_js_modules_import_export_closeimportmodal",
@@ -5806,7 +5698,19 @@
       "file_type": "code",
       "norm_label": "copyjsontoclipboard()",
       "source_file": "web/js/modules/utils.js",
-      "source_location": "L106"
+      "source_location": "L148"
+    },
+    {
+      "id": "web_js_modules_utils_safeinlinearg",
+      "label": "safeInlineArg()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 62,
+      "community_name": "import_export.js",
+      "file_type": "code",
+      "norm_label": "safeinlinearg()",
+      "source_file": "web/js/modules/utils.js",
+      "source_location": "L43"
     },
     {
       "id": "core_engine_sync_system_rules",
@@ -6046,7 +5950,7 @@
       "file_type": "code",
       "norm_label": ".test_topbar_extended_system_metrics_and_api()",
       "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L1596"
+      "source_location": "L1588"
     },
     {
       "id": "tests_test_ui_and_api_edge_cases_testuiandapiedgecases_test_topbar_extended_system_metrics_and_api_mock_open_proc",
@@ -6058,7 +5962,7 @@
       "file_type": "code",
       "norm_label": "mock_open_proc()",
       "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L1626"
+      "source_location": "L1618"
     },
     {
       "id": "core_web_server_xforwarderwebhandler_apply_security_headers",
@@ -6334,7 +6238,7 @@
       "file_type": "code",
       "norm_label": ".test_rules_view_toggle_and_category_assets()",
       "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L1498"
+      "source_location": "L1490"
     },
     {
       "id": "tests_test_ui_and_api_edge_cases_testuiandapiedgecases_test_get_update_status_parsing_and_ansi_cleaning",
@@ -6346,7 +6250,7 @@
       "file_type": "code",
       "norm_label": ".test_get_update_status_parsing_and_ansi_cleaning()",
       "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L1105"
+      "source_location": "L1097"
     },
     {
       "id": "core_config_manager_export_config_data",
@@ -6394,7 +6298,7 @@
       "file_type": "code",
       "norm_label": ".test_system_update_dom_and_ui_wiring()",
       "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L1055"
+      "source_location": "L1047"
     },
     {
       "id": "tests_test_migration_testxforwardermigration_test_cli_migrate_flag",
@@ -6526,7 +6430,7 @@
       "file_type": "code",
       "norm_label": ".test_service_restart_dom_and_ui_wiring()",
       "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L1275"
+      "source_location": "L1267"
     },
     {
       "id": "tests_test_ui_and_api_edge_cases_testuiandapiedgecases_test_dark_and_light_theme_button_color_harmonization",
@@ -6538,7 +6442,7 @@
       "file_type": "code",
       "norm_label": ".test_dark_and_light_theme_button_color_harmonization()",
       "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L899"
+      "source_location": "L891"
     },
     {
       "id": "tests_test_ui_and_api_edge_cases_testuiandapiedgecases_test_login_form_event_prevention_and_auth_integrity",
@@ -6550,7 +6454,7 @@
       "file_type": "code",
       "norm_label": ".test_login_form_event_prevention_and_auth_integrity()",
       "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L1732"
+      "source_location": "L1724"
     },
     {
       "id": "tests_test_ui_and_api_edge_cases_testuiandapiedgecases_test_system_version_and_update_apis",
@@ -6562,7 +6466,7 @@
       "file_type": "code",
       "norm_label": ".test_system_version_and_update_apis()",
       "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L939"
+      "source_location": "L931"
     },
     {
       "id": "tests_test_ui_and_api_edge_cases_testuiandapiedgecases_test_version_detection_with_commit_file_and_fallback",
@@ -6574,7 +6478,103 @@
       "file_type": "code",
       "norm_label": ".test_version_detection_with_commit_file_and_fallback()",
       "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L1365"
+      "source_location": "L1357"
+    },
+    {
+      "id": "web_js_modules_system_closesystemupdatemodal",
+      "label": "closeSystemUpdateModal()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 89,
+      "community_name": "system.js",
+      "file_type": "code",
+      "norm_label": "closesystemupdatemodal()",
+      "source_file": "web/js/modules/system.js",
+      "source_location": "L218"
+    },
+    {
+      "id": "web_js_modules_system_handleservicerestart",
+      "label": "handleServiceRestart()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 89,
+      "community_name": "system.js",
+      "file_type": "code",
+      "norm_label": "handleservicerestart()",
+      "source_file": "web/js/modules/system.js",
+      "source_location": "L435"
+    },
+    {
+      "id": "web_js_modules_system_initservicerestartcontrols",
+      "label": "initServiceRestartControls()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 89,
+      "community_name": "system.js",
+      "file_type": "code",
+      "norm_label": "initservicerestartcontrols()",
+      "source_file": "web/js/modules/system.js",
+      "source_location": "L411"
+    },
+    {
+      "id": "web_js_modules_system_initsystemupdatemanager",
+      "label": "initSystemUpdateManager()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 89,
+      "community_name": "system.js",
+      "file_type": "code",
+      "norm_label": "initsystemupdatemanager()",
+      "source_file": "web/js/modules/system.js",
+      "source_location": "L12"
+    },
+    {
+      "id": "web_js_modules_system_opensystemupdatemodal",
+      "label": "openSystemUpdateModal()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 89,
+      "community_name": "system.js",
+      "file_type": "code",
+      "norm_label": "opensystemupdatemodal()",
+      "source_file": "web/js/modules/system.js",
+      "source_location": "L193"
+    },
+    {
+      "id": "web_js_modules_system_polldashboardreconnection",
+      "label": "pollDashboardReconnection()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 89,
+      "community_name": "system.js",
+      "file_type": "code",
+      "norm_label": "polldashboardreconnection()",
+      "source_file": "web/js/modules/system.js",
+      "source_location": "L481"
+    },
+    {
+      "id": "web_js_modules_system_pollupdateprogress",
+      "label": "pollUpdateProgress()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 89,
+      "community_name": "system.js",
+      "file_type": "code",
+      "norm_label": "pollupdateprogress()",
+      "source_file": "web/js/modules/system.js",
+      "source_location": "L285"
+    },
+    {
+      "id": "web_js_modules_system_startsystemupdateprocedure",
+      "label": "startSystemUpdateProcedure()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 89,
+      "community_name": "system.js",
+      "file_type": "code",
+      "norm_label": "startsystemupdateprocedure()",
+      "source_file": "web/js/modules/system.js",
+      "source_location": "L224"
     },
     {
       "id": "core_metrics_get_metrics_db_path",
@@ -6730,7 +6730,7 @@
       "file_type": "code",
       "norm_label": ".test_rule_category_and_created_at_validation()",
       "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L1438"
+      "source_location": "L1430"
     },
     {
       "id": "tests_test_ui_and_api_edge_cases_testuiandapiedgecases_test_rule_update_created_at_preservation",
@@ -6742,7 +6742,7 @@
       "file_type": "code",
       "norm_label": ".test_rule_update_created_at_preservation()",
       "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L1533"
+      "source_location": "L1525"
     },
     {
       "id": "tests_test_ui_and_api_edge_cases_testuiandapiedgecases_test_security_settings_responsive_layout_and_info_item_wrapping",
@@ -6754,7 +6754,7 @@
       "file_type": "code",
       "norm_label": ".test_security_settings_responsive_layout_and_info_item_wrapping()",
       "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L1560"
+      "source_location": "L1552"
     },
     {
       "id": "tests_test_ui_and_api_edge_cases_testuiandapiedgecases_test_copy_port_and_category_json_and_import_modal",
@@ -6766,7 +6766,7 @@
       "file_type": "code",
       "norm_label": ".test_copy_port_and_category_json_and_import_modal()",
       "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L1693"
+      "source_location": "L1685"
     },
     {
       "id": "tests_test_ui_and_api_edge_cases_testuiandapiedgecases_test_session_token_header_authentication_flow",
@@ -6778,7 +6778,7 @@
       "file_type": "code",
       "norm_label": ".test_session_token_header_authentication_flow()",
       "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L1806"
+      "source_location": "L1798"
     },
     {
       "id": "tests_test_ui_and_api_edge_cases_testuiandapiedgecases_test_frontend_css_no_hover_borders_and_subtle_transitions",
@@ -6814,7 +6814,7 @@
       "file_type": "code",
       "norm_label": ".test_service_restart_api_endpoints()",
       "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L1166"
+      "source_location": "L1158"
     },
     {
       "id": "tests_test_ui_and_api_edge_cases_testuiandapiedgecases_test_static_assets_integrity",
@@ -7314,7 +7314,7 @@
       "source_location": "L2"
     },
     {
-      "id": "tests_test_ui_and_api_edge_cases_rationale_1302",
+      "id": "tests_test_ui_and_api_edge_cases_rationale_1294",
       "label": "Verifies session and update state persistence across daemon reloads.",
       "_origin": "ast",
       "community": 1,
@@ -7322,7 +7322,7 @@
       "file_type": "rationale",
       "norm_label": "verifies session and update state persistence across daemon reloads.",
       "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L1302"
+      "source_location": "L1294"
     },
     {
       "id": "tests_test_ui_and_api_edge_cases_rationale_2",
@@ -7742,7 +7742,7 @@
       "source_location": "L6"
     },
     {
-      "id": "tests_test_ui_and_api_edge_cases_rationale_774",
+      "id": "tests_test_ui_and_api_edge_cases_rationale_766",
       "label": "Verifies that dark theme uses obsidian palette and restrains highlights\u2026",
       "_origin": "ast",
       "community": 111,
@@ -7750,10 +7750,10 @@
       "file_type": "rationale",
       "norm_label": "verifies that dark theme uses obsidian palette and restrains highlights...",
       "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L774"
+      "source_location": "L766"
     },
     {
-      "id": "tests_test_ui_and_api_edge_cases_rationale_846",
+      "id": "tests_test_ui_and_api_edge_cases_rationale_838",
       "label": "Verifies Nova Admin Template v3 design tokens, Aurora lighting layer, and clean\u2026",
       "_origin": "ast",
       "community": 112,
@@ -7761,10 +7761,10 @@
       "file_type": "rationale",
       "norm_label": "verifies nova admin template v3 design tokens, aurora lighting layer, and clean...",
       "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L846"
+      "source_location": "L838"
     },
     {
-      "id": "tests_test_ui_and_api_edge_cases_rationale_1411",
+      "id": "tests_test_ui_and_api_edge_cases_rationale_1403",
       "label": "Verifies get_remote_version_info gracefully falls back to git ls-remote when\u2026",
       "_origin": "ast",
       "community": 114,
@@ -7772,10 +7772,10 @@
       "file_type": "rationale",
       "norm_label": "verifies get_remote_version_info gracefully falls back to git ls-remote when...",
       "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L1411"
+      "source_location": "L1403"
     },
     {
-      "id": "tests_test_ui_and_api_edge_cases_rationale_1854",
+      "id": "tests_test_ui_and_api_edge_cases_rationale_1846",
       "label": "Verifies that Sign In button has direct click and Enter key bindings and\u2026",
       "_origin": "ast",
       "community": 115,
@@ -7783,7 +7783,7 @@
       "file_type": "rationale",
       "norm_label": "verifies that sign in button has direct click and enter key bindings and...",
       "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L1854"
+      "source_location": "L1846"
     },
     {
       "id": "tests_test_ui_and_api_edge_cases_rationale_536",
@@ -7819,7 +7819,7 @@
       "source_location": "L602"
     },
     {
-      "id": "tests_test_ui_and_api_edge_cases_rationale_695",
+      "id": "tests_test_ui_and_api_edge_cases_rationale_687",
       "label": "Verifies that validate_rule strictly enforces that HAProxy destinations must be\u2026",
       "_origin": "ast",
       "community": 119,
@@ -7827,7 +7827,7 @@
       "file_type": "rationale",
       "norm_label": "verifies that validate_rule strictly enforces that haproxy destinations must be...",
       "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L695"
+      "source_location": "L687"
     },
     {
       "id": "agents_workflows_diagnose_failover",
@@ -9570,15 +9570,48 @@
       "source_location": "L15"
     },
     {
-      "id": "web_js_modules_utils",
-      "label": "utils.js",
+      "id": "web_js_modules_state",
+      "label": "state.js",
       "_origin": "ast",
       "community": 25,
       "community_name": "rules.js",
       "file_type": "code",
-      "norm_label": "utils.js",
-      "source_file": "web/js/modules/utils.js",
+      "norm_label": "state.js",
+      "source_file": "web/js/modules/state.js",
       "source_location": "L1"
+    },
+    {
+      "id": "web_js_modules_state_currentrules",
+      "label": "currentRules",
+      "_origin": "ast",
+      "community": 25,
+      "community_name": "rules.js",
+      "file_type": "code",
+      "norm_label": "currentrules",
+      "source_file": "web/js/modules/state.js",
+      "source_location": "L5"
+    },
+    {
+      "id": "web_js_modules_state_lastruntime",
+      "label": "lastRuntime",
+      "_origin": "ast",
+      "community": 25,
+      "community_name": "rules.js",
+      "file_type": "code",
+      "norm_label": "lastruntime",
+      "source_file": "web/js/modules/state.js",
+      "source_location": "L6"
+    },
+    {
+      "id": "web_js_modules_state_state",
+      "label": "state",
+      "_origin": "ast",
+      "community": 25,
+      "community_name": "rules.js",
+      "file_type": "code",
+      "norm_label": "state",
+      "source_file": "web/js/modules/state.js",
+      "source_location": "L24"
     },
     {
       "id": "agents_skills_xfwd_ops_skill_configuration_schema_etc_xforwarder_config_json",
@@ -10140,17 +10173,6 @@
       "norm_label": "sections",
       "source_file": "web/js/modules/navigation.js",
       "source_location": "L5"
-    },
-    {
-      "id": "web_js_modules_system",
-      "label": "system.js",
-      "_origin": "ast",
-      "community": 3,
-      "community_name": "app.js",
-      "file_type": "code",
-      "norm_label": "system.js",
-      "source_file": "web/js/modules/system.js",
-      "source_location": "L1"
     },
     {
       "id": "web_js_modules_theme",
@@ -10772,66 +10794,22 @@
       "source_location": "L126"
     },
     {
-      "id": "web_js_modules_state",
-      "label": "state.js",
-      "_origin": "ast",
-      "community": 37,
-      "community_name": "stats.js",
-      "file_type": "code",
-      "norm_label": "state.js",
-      "source_file": "web/js/modules/state.js",
-      "source_location": "L1"
-    },
-    {
-      "id": "web_js_modules_state_currentrules",
-      "label": "currentRules",
-      "_origin": "ast",
-      "community": 37,
-      "community_name": "stats.js",
-      "file_type": "code",
-      "norm_label": "currentrules",
-      "source_file": "web/js/modules/state.js",
-      "source_location": "L5"
-    },
-    {
-      "id": "web_js_modules_state_lastruntime",
-      "label": "lastRuntime",
-      "_origin": "ast",
-      "community": 37,
-      "community_name": "stats.js",
-      "file_type": "code",
-      "norm_label": "lastruntime",
-      "source_file": "web/js/modules/state.js",
-      "source_location": "L6"
-    },
-    {
       "id": "web_js_modules_state_lasttrafficdata",
       "label": "lastTrafficData",
       "_origin": "ast",
       "community": 37,
-      "community_name": "stats.js",
+      "community_name": "utils.js",
       "file_type": "code",
       "norm_label": "lasttrafficdata",
       "source_file": "web/js/modules/state.js",
       "source_location": "L7"
     },
     {
-      "id": "web_js_modules_state_state",
-      "label": "state",
-      "_origin": "ast",
-      "community": 37,
-      "community_name": "stats.js",
-      "file_type": "code",
-      "norm_label": "state",
-      "source_file": "web/js/modules/state.js",
-      "source_location": "L24"
-    },
-    {
       "id": "web_js_modules_stats",
       "label": "stats.js",
       "_origin": "ast",
       "community": 37,
-      "community_name": "stats.js",
+      "community_name": "utils.js",
       "file_type": "code",
       "norm_label": "stats.js",
       "source_file": "web/js/modules/stats.js",
@@ -10842,7 +10820,7 @@
       "label": "lastSystemStats",
       "_origin": "ast",
       "community": 37,
-      "community_name": "stats.js",
+      "community_name": "utils.js",
       "file_type": "code",
       "norm_label": "lastsystemstats",
       "source_file": "web/js/modules/stats.js",
@@ -10853,11 +10831,22 @@
       "label": "_trafficModeRate",
       "_origin": "ast",
       "community": 37,
-      "community_name": "stats.js",
+      "community_name": "utils.js",
       "file_type": "code",
       "norm_label": "_trafficmoderate",
       "source_file": "web/js/modules/stats.js",
       "source_location": "L8"
+    },
+    {
+      "id": "web_js_modules_utils",
+      "label": "utils.js",
+      "_origin": "ast",
+      "community": 37,
+      "community_name": "utils.js",
+      "file_type": "code",
+      "norm_label": "utils.js",
+      "source_file": "web/js/modules/utils.js",
+      "source_location": "L1"
     },
     {
       "id": "tests_test_nginx_stream_rationale_113",
@@ -11640,7 +11629,7 @@
       "source_location": "L1"
     },
     {
-      "id": "tests_test_ui_and_api_edge_cases_rationale_1124",
+      "id": "tests_test_ui_and_api_edge_cases_rationale_1116",
       "label": "Verifies restart_services_action behavior across supported services and edge\u2026",
       "_origin": "ast",
       "community": 47,
@@ -11648,7 +11637,7 @@
       "file_type": "rationale",
       "norm_label": "verifies restart_services_action behavior across supported services and edge...",
       "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L1124"
+      "source_location": "L1116"
     },
     {
       "id": "tests_test_ui_and_api_edge_cases_rationale_286",
@@ -11673,7 +11662,7 @@
       "source_location": "L355"
     },
     {
-      "id": "tests_test_ui_and_api_edge_cases_rationale_672",
+      "id": "tests_test_ui_and_api_edge_cases_rationale_664",
       "label": "Verifies that Server Network & Tunnel Topology and Relay Engines are structured\u2026",
       "_origin": "ast",
       "community": 47,
@@ -11681,7 +11670,7 @@
       "file_type": "rationale",
       "norm_label": "verifies that server network & tunnel topology and relay engines are structured...",
       "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L672"
+      "source_location": "L664"
     },
     {
       "id": "tests_test_ui_and_api_edge_cases_rationale_68",
@@ -12141,7 +12130,7 @@
       "source_location": "L108"
     },
     {
-      "id": "tests_test_ui_and_api_edge_cases_rationale_807",
+      "id": "tests_test_ui_and_api_edge_cases_rationale_799",
       "label": "Tests that latency classification thresholds categorize clean pings and failure\u2026",
       "_origin": "ast",
       "community": 52,
@@ -12149,7 +12138,7 @@
       "file_type": "rationale",
       "norm_label": "tests that latency classification thresholds categorize clean pings and failure...",
       "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L807"
+      "source_location": "L799"
     },
     {
       "id": "agents_rules_session_handoff",
@@ -13205,7 +13194,7 @@
       "source_location": "L33"
     },
     {
-      "id": "tests_test_ui_and_api_edge_cases_rationale_735",
+      "id": "tests_test_ui_and_api_edge_cases_rationale_727",
       "label": "Verifies that _apply_nftables generates isolated table ip and table ip6 for\u2026",
       "_origin": "ast",
       "community": 61,
@@ -13213,7 +13202,7 @@
       "file_type": "rationale",
       "norm_label": "verifies that _apply_nftables generates isolated table ip and table ip6 for...",
       "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L735"
+      "source_location": "L727"
     },
     {
       "id": "web_js_modules_import_export",
@@ -13786,7 +13775,7 @@
       "source_location": "L491"
     },
     {
-      "id": "tests_test_ui_and_api_edge_cases_rationale_1597",
+      "id": "tests_test_ui_and_api_edge_cases_rationale_1589",
       "label": "Verifies get_system_stats returns load, sockets, and traffic metrics, and that\u2026",
       "_origin": "ast",
       "community": 71,
@@ -13794,7 +13783,7 @@
       "file_type": "rationale",
       "norm_label": "verifies get_system_stats returns load, sockets, and traffic metrics, and that...",
       "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L1597"
+      "source_location": "L1589"
     },
     {
       "id": "basehttprequesthandler",
@@ -14008,7 +13997,7 @@
       "source_location": "L163"
     },
     {
-      "id": "tests_test_ui_and_api_edge_cases_rationale_1499",
+      "id": "tests_test_ui_and_api_edge_cases_rationale_1491",
       "label": "Verifies presence and integrity of view toggle buttons, sort dropdown, and\u2026",
       "_origin": "ast",
       "community": 76,
@@ -14016,10 +14005,10 @@
       "file_type": "rationale",
       "norm_label": "verifies presence and integrity of view toggle buttons, sort dropdown, and...",
       "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L1499"
+      "source_location": "L1491"
     },
     {
-      "id": "tests_test_ui_and_api_edge_cases_rationale_1106",
+      "id": "tests_test_ui_and_api_edge_cases_rationale_1098",
       "label": "Verifies get_update_status parses completed state and strips ANSI codes.",
       "_origin": "ast",
       "community": 77,
@@ -14027,7 +14016,7 @@
       "file_type": "rationale",
       "norm_label": "verifies get_update_status parses completed state and strips ansi codes.",
       "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L1106"
+      "source_location": "L1098"
     },
     {
       "id": "core_config_manager_rationale_689",
@@ -14052,7 +14041,7 @@
       "source_location": "L188"
     },
     {
-      "id": "tests_test_ui_and_api_edge_cases_rationale_1056",
+      "id": "tests_test_ui_and_api_edge_cases_rationale_1048",
       "label": "Verifies that System Update UI elements exist across HTML, JavaScript, and CSS.",
       "_origin": "ast",
       "community": 79,
@@ -14060,7 +14049,7 @@
       "file_type": "rationale",
       "norm_label": "verifies that system update ui elements exist across html, javascript, and css.",
       "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L1056"
+      "source_location": "L1048"
     },
     {
       "id": "tests_test_migration_rationale_110",
@@ -14173,7 +14162,7 @@
       "source_location": "L383"
     },
     {
-      "id": "tests_test_ui_and_api_edge_cases_rationale_1276",
+      "id": "tests_test_ui_and_api_edge_cases_rationale_1268",
       "label": "Verifies that Service Restart buttons and JS controllers exist.",
       "_origin": "ast",
       "community": 81,
@@ -14181,7 +14170,7 @@
       "file_type": "rationale",
       "norm_label": "verifies that service restart buttons and js controllers exist.",
       "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L1276"
+      "source_location": "L1268"
     },
     {
       "id": "agents_experiences_003_native_python_zero_dependency_web_server",
@@ -14268,7 +14257,7 @@
       "source_location": "L1"
     },
     {
-      "id": "tests_test_ui_and_api_edge_cases_rationale_900",
+      "id": "tests_test_ui_and_api_edge_cases_rationale_892",
       "label": "Verifies that buttons across dark and light themes enforce high contrast,\u2026",
       "_origin": "ast",
       "community": 83,
@@ -14276,7 +14265,7 @@
       "file_type": "rationale",
       "norm_label": "verifies that buttons across dark and light themes enforce high contrast,...",
       "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L900"
+      "source_location": "L892"
     },
     {
       "id": "agents_experiences_012_kernel_zero_copy_splicing_bbr_network_tuning_and_session_timeout_optimization",
@@ -14363,7 +14352,7 @@
       "source_location": "L1"
     },
     {
-      "id": "tests_test_ui_and_api_edge_cases_rationale_1733",
+      "id": "tests_test_ui_and_api_edge_cases_rationale_1725",
       "label": "Verifies that login form properly prevents default reload and includes lockout\u2026",
       "_origin": "ast",
       "community": 85,
@@ -14371,10 +14360,10 @@
       "file_type": "rationale",
       "norm_label": "verifies that login form properly prevents default reload and includes lockout...",
       "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L1733"
+      "source_location": "L1725"
     },
     {
-      "id": "tests_test_ui_and_api_edge_cases_rationale_940",
+      "id": "tests_test_ui_and_api_edge_cases_rationale_932",
       "label": "Verifies GET /api/system/version, GET /api/system/update/status, and POST\u2026",
       "_origin": "ast",
       "community": 86,
@@ -14382,10 +14371,10 @@
       "file_type": "rationale",
       "norm_label": "verifies get /api/system/version, get /api/system/update/status, and post...",
       "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L940"
+      "source_location": "L932"
     },
     {
-      "id": "tests_test_ui_and_api_edge_cases_rationale_1366",
+      "id": "tests_test_ui_and_api_edge_cases_rationale_1358",
       "label": "Verifies local version info parses .commit files and detects updates when\u2026",
       "_origin": "ast",
       "community": 87,
@@ -14393,7 +14382,7 @@
       "file_type": "rationale",
       "norm_label": "verifies local version info parses .commit files and detects updates when...",
       "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L1366"
+      "source_location": "L1358"
     },
     {
       "id": "agents_rules_experience_logging",
@@ -14448,6 +14437,17 @@
       "norm_label": "architectural experience logging rule (xforwarder)",
       "source_file": ".agents/rules/experience-logging.md",
       "source_location": "L8"
+    },
+    {
+      "id": "web_js_modules_system",
+      "label": "system.js",
+      "_origin": "ast",
+      "community": 89,
+      "community_name": "system.js",
+      "file_type": "code",
+      "norm_label": "system.js",
+      "source_file": "web/js/modules/system.js",
+      "source_location": "L1"
     },
     {
       "id": "core_metrics",
@@ -14649,7 +14649,7 @@
       "source_location": "L2"
     },
     {
-      "id": "tests_test_ui_and_api_edge_cases_rationale_1439",
+      "id": "tests_test_ui_and_api_edge_cases_rationale_1431",
       "label": "Verifies validate_rule properly accepts, sanitizes, and rejects rule categories\u2026",
       "_origin": "ast",
       "community": 90,
@@ -14657,10 +14657,10 @@
       "file_type": "rationale",
       "norm_label": "verifies validate_rule properly accepts, sanitizes, and rejects rule categories...",
       "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L1439"
+      "source_location": "L1431"
     },
     {
-      "id": "tests_test_ui_and_api_edge_cases_rationale_1534",
+      "id": "tests_test_ui_and_api_edge_cases_rationale_1526",
       "label": "Verifies that editing a rule preserves its original creation timestamp if\u2026",
       "_origin": "ast",
       "community": 91,
@@ -14668,10 +14668,10 @@
       "file_type": "rationale",
       "norm_label": "verifies that editing a rule preserves its original creation timestamp if...",
       "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L1534"
+      "source_location": "L1526"
     },
     {
-      "id": "tests_test_ui_and_api_edge_cases_rationale_1561",
+      "id": "tests_test_ui_and_api_edge_cases_rationale_1553",
       "label": "Verifies that Section 4 (Security & Settings) enforces a 2-column responsive\u2026",
       "_origin": "ast",
       "community": 92,
@@ -14679,10 +14679,10 @@
       "file_type": "rationale",
       "norm_label": "verifies that section 4 (security & settings) enforces a 2-column responsive...",
       "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L1561"
+      "source_location": "L1553"
     },
     {
-      "id": "tests_test_ui_and_api_edge_cases_rationale_1694",
+      "id": "tests_test_ui_and_api_edge_cases_rationale_1686",
       "label": "Verifies individual port copy, category copy, and enlarged JSON paste area.",
       "_origin": "ast",
       "community": 93,
@@ -14690,10 +14690,10 @@
       "file_type": "rationale",
       "norm_label": "verifies individual port copy, category copy, and enlarged json paste area.",
       "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L1694"
+      "source_location": "L1686"
     },
     {
-      "id": "tests_test_ui_and_api_edge_cases_rationale_1807",
+      "id": "tests_test_ui_and_api_edge_cases_rationale_1799",
       "label": "Verifies that X-Session-Token header provides full authentication without\u2026",
       "_origin": "ast",
       "community": 94,
@@ -14701,7 +14701,7 @@
       "file_type": "rationale",
       "norm_label": "verifies that x-session-token header provides full authentication without...",
       "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L1807"
+      "source_location": "L1799"
     },
     {
       "id": "tests_test_ui_and_api_edge_cases_rationale_368",
@@ -14726,7 +14726,7 @@
       "source_location": "L396"
     },
     {
-      "id": "tests_test_ui_and_api_edge_cases_rationale_1167",
+      "id": "tests_test_ui_and_api_edge_cases_rationale_1159",
       "label": "Verifies POST /api/services/restart authentication, origin security, and\u2026",
       "_origin": "ast",
       "community": 97,
@@ -14734,7 +14734,7 @@
       "file_type": "rationale",
       "norm_label": "verifies post /api/services/restart authentication, origin security, and...",
       "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L1167"
+      "source_location": "L1159"
     },
     {
       "id": "tests_test_ui_and_api_edge_cases_rationale_132",
@@ -21153,7 +21153,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L1112",
+      "source_location": "L1104",
       "weight": 1.0
     },
     {
@@ -21165,7 +21165,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L737",
+      "source_location": "L729",
       "weight": 1.0
     },
     {
@@ -21189,7 +21189,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L1168",
+      "source_location": "L1160",
       "weight": 1.0
     },
     {
@@ -21201,7 +21201,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L1319",
+      "source_location": "L1311",
       "weight": 1.0
     },
     {
@@ -21213,7 +21213,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L1327",
+      "source_location": "L1319",
       "weight": 1.0
     },
     {
@@ -21225,7 +21225,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L1338",
+      "source_location": "L1330",
       "weight": 1.0
     },
     {
@@ -21237,7 +21237,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L1345",
+      "source_location": "L1337",
       "weight": 1.0
     },
     {
@@ -21261,7 +21261,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L941",
+      "source_location": "L933",
       "weight": 1.0
     },
     {
@@ -21273,7 +21273,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L1384",
+      "source_location": "L1376",
       "weight": 1.0
     },
     {
@@ -21573,7 +21573,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/app.js",
-      "source_location": "L347",
+      "source_location": "L358",
       "weight": 1.0
     },
     {
@@ -21585,7 +21585,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/app.js",
-      "source_location": "L349",
+      "source_location": "L360",
       "weight": 1.0
     },
     {
@@ -21597,7 +21597,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/app.js",
-      "source_location": "L352",
+      "source_location": "L363",
       "weight": 1.0
     },
     {
@@ -21609,7 +21609,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/app.js",
-      "source_location": "L357",
+      "source_location": "L368",
       "weight": 1.0
     },
     {
@@ -21621,7 +21621,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/app.js",
-      "source_location": "L361",
+      "source_location": "L372",
       "weight": 1.0
     },
     {
@@ -22574,18 +22574,6 @@
     },
     {
       "source": "web_js_modules_rules_renderrulecard",
-      "target": "web_js_modules_utils_safeinlinearg",
-      "relation": "calls",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "context": "call",
-      "source_file": "web/js/modules/rules.js",
-      "source_location": "L198",
-      "weight": 1.0
-    },
-    {
-      "source": "web_js_modules_rules_renderrulecard",
       "target": "web_js_modules_utils_escapehtml",
       "relation": "calls",
       "_origin": "ast",
@@ -22642,18 +22630,6 @@
       "context": "call",
       "source_file": "web/js/modules/rules.js",
       "source_location": "L316",
-      "weight": 1.0
-    },
-    {
-      "source": "web_js_modules_rules_renderrulelistrow",
-      "target": "web_js_modules_utils_safeinlinearg",
-      "relation": "calls",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "context": "call",
-      "source_file": "web/js/modules/rules.js",
-      "source_location": "L368",
       "weight": 1.0
     },
     {
@@ -22726,18 +22702,6 @@
       "context": "call",
       "source_file": "web/js/modules/rules.js",
       "source_location": "L568",
-      "weight": 1.0
-    },
-    {
-      "source": "web_js_modules_rules_renderrules",
-      "target": "web_js_modules_utils_safeinlinearg",
-      "relation": "calls",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "context": "call",
-      "source_file": "web/js/modules/rules.js",
-      "source_location": "L584",
       "weight": 1.0
     },
     {
@@ -23397,7 +23361,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/js/modules/utils.js",
-      "source_location": "L120",
+      "source_location": "L162",
       "weight": 1.0
     },
     {
@@ -23409,7 +23373,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/js/modules/utils.js",
-      "source_location": "L140",
+      "source_location": "L182",
       "weight": 1.0
     },
     {
@@ -23421,7 +23385,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/js/modules/utils.js",
-      "source_location": "L141",
+      "source_location": "L183",
       "weight": 1.0
     },
     {
@@ -23433,7 +23397,19 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/js/modules/utils.js",
-      "source_location": "L154",
+      "source_location": "L196",
+      "weight": 1.0
+    },
+    {
+      "source": "web_js_modules_utils_formatlatencybadge",
+      "target": "web_js_modules_utils_escapehtml",
+      "relation": "calls",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "call",
+      "source_file": "web/js/modules/utils.js",
+      "source_location": "L93",
       "weight": 1.0
     },
     {
@@ -23445,7 +23421,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/js/modules/utils.js",
-      "source_location": "L95",
+      "source_location": "L137",
       "weight": 1.0
     },
     {
@@ -24993,7 +24969,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L808",
+      "source_location": "L800",
       "weight": 1.0
     },
     {
@@ -38738,13 +38714,35 @@
     },
     {
       "source": "web_js_modules_utils",
+      "target": "web_js_modules_utils_formatconcisereason",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "web/js/modules/utils.js",
+      "source_location": "L111",
+      "weight": 1.0
+    },
+    {
+      "source": "web_js_modules_utils",
+      "target": "web_js_modules_utils_showtoast",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "web/js/modules/utils.js",
+      "source_location": "L121",
+      "weight": 1.0
+    },
+    {
+      "source": "web_js_modules_utils",
       "target": "web_js_modules_utils_copyjsontoclipboard",
       "relation": "contains",
       "_origin": "ast",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "web/js/modules/utils.js",
-      "source_location": "L106",
+      "source_location": "L148",
       "weight": 1.0
     },
     {
@@ -38755,7 +38753,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "web/js/modules/utils.js",
-      "source_location": "L128",
+      "source_location": "L170",
       "weight": 1.0
     },
     {
@@ -38766,29 +38764,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "web/js/modules/utils.js",
-      "source_location": "L136",
-      "weight": 1.0
-    },
-    {
-      "source": "web_js_modules_utils",
-      "target": "web_js_modules_utils_fallbackcopy",
-      "relation": "contains",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "web/js/modules/utils.js",
-      "source_location": "L147",
-      "weight": 1.0
-    },
-    {
-      "source": "web_js_modules_utils",
-      "target": "web_js_modules_utils_askconfirm",
-      "relation": "contains",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "web/js/modules/utils.js",
-      "source_location": "L161",
+      "source_location": "L178",
       "weight": 1.0
     },
     {
@@ -38800,6 +38776,28 @@
       "confidence_score": 1.0,
       "source_file": "web/js/modules/utils.js",
       "source_location": "L18",
+      "weight": 1.0
+    },
+    {
+      "source": "web_js_modules_utils",
+      "target": "web_js_modules_utils_fallbackcopy",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "web/js/modules/utils.js",
+      "source_location": "L189",
+      "weight": 1.0
+    },
+    {
+      "source": "web_js_modules_utils",
+      "target": "web_js_modules_utils_askconfirm",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "web/js/modules/utils.js",
+      "source_location": "L203",
       "weight": 1.0
     },
     {
@@ -38855,28 +38853,6 @@
       "confidence_score": 1.0,
       "source_file": "web/js/modules/utils.js",
       "source_location": "L54",
-      "weight": 1.0
-    },
-    {
-      "source": "web_js_modules_utils",
-      "target": "web_js_modules_utils_formatconcisereason",
-      "relation": "contains",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "web/js/modules/utils.js",
-      "source_location": "L69",
-      "weight": 1.0
-    },
-    {
-      "source": "web_js_modules_utils",
-      "target": "web_js_modules_utils_showtoast",
-      "relation": "contains",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "web/js/modules/utils.js",
-      "source_location": "L79",
       "weight": 1.0
     },
     {
@@ -41659,7 +41635,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L1055",
+      "source_location": "L1047",
       "weight": 1.0
     },
     {
@@ -41681,7 +41657,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L1105",
+      "source_location": "L1097",
       "weight": 1.0
     },
     {
@@ -41692,7 +41668,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L1123",
+      "source_location": "L1115",
       "weight": 1.0
     },
     {
@@ -41703,7 +41679,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L1166",
+      "source_location": "L1158",
       "weight": 1.0
     },
     {
@@ -41725,7 +41701,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L1275",
+      "source_location": "L1267",
       "weight": 1.0
     },
     {
@@ -41736,7 +41712,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L1301",
+      "source_location": "L1293",
       "weight": 1.0
     },
     {
@@ -41758,7 +41734,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L1365",
+      "source_location": "L1357",
       "weight": 1.0
     },
     {
@@ -41769,7 +41745,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L1410",
+      "source_location": "L1402",
       "weight": 1.0
     },
     {
@@ -41780,7 +41756,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L1438",
+      "source_location": "L1430",
       "weight": 1.0
     },
     {
@@ -41791,7 +41767,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L1498",
+      "source_location": "L1490",
       "weight": 1.0
     },
     {
@@ -41802,7 +41778,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L1533",
+      "source_location": "L1525",
       "weight": 1.0
     },
     {
@@ -41813,7 +41789,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L1560",
+      "source_location": "L1552",
       "weight": 1.0
     },
     {
@@ -41824,7 +41800,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L1596",
+      "source_location": "L1588",
       "weight": 1.0
     },
     {
@@ -41835,7 +41811,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L1693",
+      "source_location": "L1685",
       "weight": 1.0
     },
     {
@@ -41846,7 +41822,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L1732",
+      "source_location": "L1724",
       "weight": 1.0
     },
     {
@@ -41857,7 +41833,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L1806",
+      "source_location": "L1798",
       "weight": 1.0
     },
     {
@@ -41868,7 +41844,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L1853",
+      "source_location": "L1845",
       "weight": 1.0
     },
     {
@@ -42049,6 +42025,17 @@
     },
     {
       "source": "tests_test_ui_and_api_edge_cases_testuiandapiedgecases",
+      "target": "tests_test_ui_and_api_edge_cases_testuiandapiedgecases_test_topology_and_engines_grid_layout",
+      "relation": "method",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "tests/test_ui_and_api_edge_cases.py",
+      "source_location": "L663",
+      "weight": 1.0
+    },
+    {
+      "source": "tests_test_ui_and_api_edge_cases_testuiandapiedgecases",
       "target": "tests_test_ui_and_api_edge_cases_testuiandapiedgecases_test_validate_rule_empty_destinations_rejected",
       "relation": "method",
       "_origin": "ast",
@@ -42060,24 +42047,13 @@
     },
     {
       "source": "tests_test_ui_and_api_edge_cases_testuiandapiedgecases",
-      "target": "tests_test_ui_and_api_edge_cases_testuiandapiedgecases_test_topology_and_engines_grid_layout",
-      "relation": "method",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L671",
-      "weight": 1.0
-    },
-    {
-      "source": "tests_test_ui_and_api_edge_cases_testuiandapiedgecases",
       "target": "tests_test_ui_and_api_edge_cases_testuiandapiedgecases_test_validate_rule_haproxy_requires_ipv6",
       "relation": "method",
       "_origin": "ast",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L694",
+      "source_location": "L686",
       "weight": 1.0
     },
     {
@@ -42088,7 +42064,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L734",
+      "source_location": "L726",
       "weight": 1.0
     },
     {
@@ -42110,7 +42086,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L773",
+      "source_location": "L765",
       "weight": 1.0
     },
     {
@@ -42121,7 +42097,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L806",
+      "source_location": "L798",
       "weight": 1.0
     },
     {
@@ -42132,7 +42108,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L845",
+      "source_location": "L837",
       "weight": 1.0
     },
     {
@@ -42143,7 +42119,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L899",
+      "source_location": "L891",
       "weight": 1.0
     },
     {
@@ -42154,7 +42130,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L939",
+      "source_location": "L931",
       "weight": 1.0
     },
     {
@@ -44996,14 +44972,14 @@
       "weight": 1.0
     },
     {
-      "source": "tests_test_ui_and_api_edge_cases_rationale_1056",
+      "source": "tests_test_ui_and_api_edge_cases_rationale_1048",
       "target": "tests_test_ui_and_api_edge_cases_testuiandapiedgecases_test_system_update_dom_and_ui_wiring",
       "relation": "rationale_for",
       "_origin": "ast",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L1056",
+      "source_location": "L1048",
       "weight": 1.0
     },
     {
@@ -45018,36 +44994,36 @@
       "weight": 1.0
     },
     {
-      "source": "tests_test_ui_and_api_edge_cases_rationale_1106",
+      "source": "tests_test_ui_and_api_edge_cases_rationale_1098",
       "target": "tests_test_ui_and_api_edge_cases_testuiandapiedgecases_test_get_update_status_parsing_and_ansi_cleaning",
       "relation": "rationale_for",
       "_origin": "ast",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L1106",
+      "source_location": "L1098",
       "weight": 1.0
     },
     {
-      "source": "tests_test_ui_and_api_edge_cases_rationale_1124",
+      "source": "tests_test_ui_and_api_edge_cases_rationale_1116",
       "target": "tests_test_ui_and_api_edge_cases_testuiandapiedgecases_test_restart_services_action_logic",
       "relation": "rationale_for",
       "_origin": "ast",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L1124",
+      "source_location": "L1116",
       "weight": 1.0
     },
     {
-      "source": "tests_test_ui_and_api_edge_cases_rationale_1167",
+      "source": "tests_test_ui_and_api_edge_cases_rationale_1159",
       "target": "tests_test_ui_and_api_edge_cases_testuiandapiedgecases_test_service_restart_api_endpoints",
       "relation": "rationale_for",
       "_origin": "ast",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L1167",
+      "source_location": "L1159",
       "weight": 1.0
     },
     {
@@ -45062,25 +45038,25 @@
       "weight": 1.0
     },
     {
-      "source": "tests_test_ui_and_api_edge_cases_rationale_1276",
+      "source": "tests_test_ui_and_api_edge_cases_rationale_1268",
       "target": "tests_test_ui_and_api_edge_cases_testuiandapiedgecases_test_service_restart_dom_and_ui_wiring",
       "relation": "rationale_for",
       "_origin": "ast",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L1276",
+      "source_location": "L1268",
       "weight": 1.0
     },
     {
-      "source": "tests_test_ui_and_api_edge_cases_rationale_1302",
+      "source": "tests_test_ui_and_api_edge_cases_rationale_1294",
       "target": "tests_test_ui_and_api_edge_cases_testuiandapiedgecases_test_session_and_update_state_disk_persistence",
       "relation": "rationale_for",
       "_origin": "ast",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L1302",
+      "source_location": "L1294",
       "weight": 1.0
     },
     {
@@ -45095,124 +45071,124 @@
       "weight": 1.0
     },
     {
-      "source": "tests_test_ui_and_api_edge_cases_rationale_1366",
+      "source": "tests_test_ui_and_api_edge_cases_rationale_1358",
       "target": "tests_test_ui_and_api_edge_cases_testuiandapiedgecases_test_version_detection_with_commit_file_and_fallback",
       "relation": "rationale_for",
       "_origin": "ast",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L1366",
+      "source_location": "L1358",
       "weight": 1.0
     },
     {
-      "source": "tests_test_ui_and_api_edge_cases_rationale_1411",
+      "source": "tests_test_ui_and_api_edge_cases_rationale_1403",
       "target": "tests_test_ui_and_api_edge_cases_testuiandapiedgecases_test_get_remote_version_info_rate_limit_fallback",
       "relation": "rationale_for",
       "_origin": "ast",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L1411",
+      "source_location": "L1403",
       "weight": 1.0
     },
     {
-      "source": "tests_test_ui_and_api_edge_cases_rationale_1439",
+      "source": "tests_test_ui_and_api_edge_cases_rationale_1431",
       "target": "tests_test_ui_and_api_edge_cases_testuiandapiedgecases_test_rule_category_and_created_at_validation",
       "relation": "rationale_for",
       "_origin": "ast",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L1439",
+      "source_location": "L1431",
       "weight": 1.0
     },
     {
-      "source": "tests_test_ui_and_api_edge_cases_rationale_1499",
+      "source": "tests_test_ui_and_api_edge_cases_rationale_1491",
       "target": "tests_test_ui_and_api_edge_cases_testuiandapiedgecases_test_rules_view_toggle_and_category_assets",
       "relation": "rationale_for",
       "_origin": "ast",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L1499",
+      "source_location": "L1491",
       "weight": 1.0
     },
     {
-      "source": "tests_test_ui_and_api_edge_cases_rationale_1534",
+      "source": "tests_test_ui_and_api_edge_cases_rationale_1526",
       "target": "tests_test_ui_and_api_edge_cases_testuiandapiedgecases_test_rule_update_created_at_preservation",
       "relation": "rationale_for",
       "_origin": "ast",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L1534",
+      "source_location": "L1526",
       "weight": 1.0
     },
     {
-      "source": "tests_test_ui_and_api_edge_cases_rationale_1561",
+      "source": "tests_test_ui_and_api_edge_cases_rationale_1553",
       "target": "tests_test_ui_and_api_edge_cases_testuiandapiedgecases_test_security_settings_responsive_layout_and_info_item_wrapping",
       "relation": "rationale_for",
       "_origin": "ast",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L1561",
+      "source_location": "L1553",
       "weight": 1.0
     },
     {
-      "source": "tests_test_ui_and_api_edge_cases_rationale_1597",
+      "source": "tests_test_ui_and_api_edge_cases_rationale_1589",
       "target": "tests_test_ui_and_api_edge_cases_testuiandapiedgecases_test_topbar_extended_system_metrics_and_api",
       "relation": "rationale_for",
       "_origin": "ast",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L1597",
+      "source_location": "L1589",
       "weight": 1.0
     },
     {
-      "source": "tests_test_ui_and_api_edge_cases_rationale_1694",
+      "source": "tests_test_ui_and_api_edge_cases_rationale_1686",
       "target": "tests_test_ui_and_api_edge_cases_testuiandapiedgecases_test_copy_port_and_category_json_and_import_modal",
       "relation": "rationale_for",
       "_origin": "ast",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L1694",
+      "source_location": "L1686",
       "weight": 1.0
     },
     {
-      "source": "tests_test_ui_and_api_edge_cases_rationale_1733",
+      "source": "tests_test_ui_and_api_edge_cases_rationale_1725",
       "target": "tests_test_ui_and_api_edge_cases_testuiandapiedgecases_test_login_form_event_prevention_and_auth_integrity",
       "relation": "rationale_for",
       "_origin": "ast",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L1733",
+      "source_location": "L1725",
       "weight": 1.0
     },
     {
-      "source": "tests_test_ui_and_api_edge_cases_rationale_1807",
+      "source": "tests_test_ui_and_api_edge_cases_rationale_1799",
       "target": "tests_test_ui_and_api_edge_cases_testuiandapiedgecases_test_session_token_header_authentication_flow",
       "relation": "rationale_for",
       "_origin": "ast",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L1807",
+      "source_location": "L1799",
       "weight": 1.0
     },
     {
-      "source": "tests_test_ui_and_api_edge_cases_rationale_1854",
+      "source": "tests_test_ui_and_api_edge_cases_rationale_1846",
       "target": "tests_test_ui_and_api_edge_cases_testuiandapiedgecases_test_signin_button_direct_click_and_deferred_execution_safety",
       "relation": "rationale_for",
       "_origin": "ast",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L1854",
+      "source_location": "L1846",
       "weight": 1.0
     },
     {
@@ -45403,14 +45379,14 @@
       "weight": 1.0
     },
     {
-      "source": "tests_test_ui_and_api_edge_cases_rationale_672",
+      "source": "tests_test_ui_and_api_edge_cases_rationale_664",
       "target": "tests_test_ui_and_api_edge_cases_testuiandapiedgecases_test_topology_and_engines_grid_layout",
       "relation": "rationale_for",
       "_origin": "ast",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L672",
+      "source_location": "L664",
       "weight": 1.0
     },
     {
@@ -45425,25 +45401,25 @@
       "weight": 1.0
     },
     {
-      "source": "tests_test_ui_and_api_edge_cases_rationale_695",
+      "source": "tests_test_ui_and_api_edge_cases_rationale_687",
       "target": "tests_test_ui_and_api_edge_cases_testuiandapiedgecases_test_validate_rule_haproxy_requires_ipv6",
       "relation": "rationale_for",
       "_origin": "ast",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L695",
+      "source_location": "L687",
       "weight": 1.0
     },
     {
-      "source": "tests_test_ui_and_api_edge_cases_rationale_735",
+      "source": "tests_test_ui_and_api_edge_cases_rationale_727",
       "target": "tests_test_ui_and_api_edge_cases_testuiandapiedgecases_test_nftables_dual_stack_rules_generation",
       "relation": "rationale_for",
       "_origin": "ast",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L735",
+      "source_location": "L727",
       "weight": 1.0
     },
     {
@@ -45458,58 +45434,58 @@
       "weight": 1.0
     },
     {
-      "source": "tests_test_ui_and_api_edge_cases_rationale_774",
+      "source": "tests_test_ui_and_api_edge_cases_rationale_766",
       "target": "tests_test_ui_and_api_edge_cases_testuiandapiedgecases_test_dark_theme_tokens_and_restrained_highlights",
       "relation": "rationale_for",
       "_origin": "ast",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L774",
+      "source_location": "L766",
       "weight": 1.0
     },
     {
-      "source": "tests_test_ui_and_api_edge_cases_rationale_807",
+      "source": "tests_test_ui_and_api_edge_cases_rationale_799",
       "target": "tests_test_ui_and_api_edge_cases_testuiandapiedgecases_test_latency_badge_classification_edge_cases",
       "relation": "rationale_for",
       "_origin": "ast",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L807",
+      "source_location": "L799",
       "weight": 1.0
     },
     {
-      "source": "tests_test_ui_and_api_edge_cases_rationale_846",
+      "source": "tests_test_ui_and_api_edge_cases_rationale_838",
       "target": "tests_test_ui_and_api_edge_cases_testuiandapiedgecases_test_nova_admin_design_system_and_login_cleanup",
       "relation": "rationale_for",
       "_origin": "ast",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L846",
+      "source_location": "L838",
       "weight": 1.0
     },
     {
-      "source": "tests_test_ui_and_api_edge_cases_rationale_900",
+      "source": "tests_test_ui_and_api_edge_cases_rationale_892",
       "target": "tests_test_ui_and_api_edge_cases_testuiandapiedgecases_test_dark_and_light_theme_button_color_harmonization",
       "relation": "rationale_for",
       "_origin": "ast",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L900",
+      "source_location": "L892",
       "weight": 1.0
     },
     {
-      "source": "tests_test_ui_and_api_edge_cases_rationale_940",
+      "source": "tests_test_ui_and_api_edge_cases_rationale_932",
       "target": "tests_test_ui_and_api_edge_cases_testuiandapiedgecases_test_system_version_and_update_apis",
       "relation": "rationale_for",
       "_origin": "ast",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L940",
+      "source_location": "L932",
       "weight": 1.0
     },
     {
@@ -46297,7 +46273,7 @@
       "confidence_score": 0.85,
       "context": "argument",
       "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L1637",
+      "source_location": "L1629",
       "weight": 1.0
     },
     {
@@ -46309,7 +46285,7 @@
       "confidence_score": 0.85,
       "context": "argument",
       "source_file": "web/app.js",
-      "source_location": "L369",
+      "source_location": "L380",
       "weight": 1.0
     },
     {
@@ -46825,7 +46801,7 @@
       "confidence_score": 0.85,
       "context": "call",
       "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L1423",
+      "source_location": "L1415",
       "weight": 1.0
     },
     {
@@ -46837,7 +46813,7 @@
       "confidence_score": 0.85,
       "context": "call",
       "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L1126",
+      "source_location": "L1118",
       "weight": 1.0
     },
     {
@@ -46849,7 +46825,7 @@
       "confidence_score": 0.85,
       "context": "call",
       "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L1446",
+      "source_location": "L1438",
       "weight": 1.0
     },
     {
@@ -46873,7 +46849,7 @@
       "confidence_score": 0.85,
       "context": "call",
       "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L1602",
+      "source_location": "L1594",
       "weight": 1.0
     },
     {
@@ -46921,7 +46897,7 @@
       "confidence_score": 0.85,
       "context": "call",
       "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L702",
+      "source_location": "L694",
       "weight": 1.0
     },
     {
@@ -48038,5 +48014,5 @@
     }
   ],
   "hyperedges": [],
-  "built_at_commit": "ac29c81f088aa33cecd89f0e7103f6531f035fd4"
+  "built_at_commit": "de1086173c688507751c6c05fe3d83e0c0c6e0c1"
 }
