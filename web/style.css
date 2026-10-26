@@ -3247,11 +3247,16 @@ input:-webkit-autofill:active {
 .btn-category-copy {
     display: inline-flex;
     align-items: center;
+    justify-content: center;
     gap: 6px;
-    padding: 4px 10px;
-    border-radius: 8px;
+    height: 26px;
+    min-height: 26px;
+    padding: 0 12px;
+    border-radius: 9999px;
+    font-family: var(--font-sans);
     font-size: 0.74rem;
     font-weight: 600;
+    line-height: 1;
     background: rgba(167, 139, 250, 0.10);
     border: 1px solid rgba(167, 139, 250, 0.25);
     color: var(--accent-violet);
@@ -3259,7 +3264,18 @@ input:-webkit-autofill:active {
     transition: all 0.2s ease;
     flex-shrink: 0;
     user-select: none;
+    box-sizing: border-box;
+}
+
+.btn-category-copy svg {
+    display: block;
+    flex-shrink: 0;
+}
+
+.btn-category-copy span {
+    display: inline-block;
     line-height: 1;
+    margin-top: 1px;
 }
 
 .btn-category-copy:hover {
