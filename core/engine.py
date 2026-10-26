@@ -97,6 +97,7 @@ class XForwarderEngine:
         self._probe_executor: Optional[ThreadPoolExecutor] = None
         self._target_probe_cache: Dict[Any, Dict[str, Any]] = {}
         self._target_last_probe_time: Dict[str, float] = {}
+        self._target_last_fast_check: Dict[str, float] = {}
         self._target_history: Dict[str, Dict[str, Any]] = {}
         self._target_lock = threading.Lock()
         self.load_config()
@@ -252,6 +253,7 @@ class XForwarderEngine:
         """
         curr_time = now if now is not None else time.time()
         probe_interval = float(self.config.get("target_probe_interval_seconds", 60.0))
+        fast_interval = float(self.config.get("fast_liveness_interval_seconds", 15.0))
         count = int(self.config.get("probe_count", 10))
         interval_ms = int(self.config.get("probe_interval_ms", 200))
         window_sec = float(self.config.get("quality_window_seconds", 300))
@@ -282,6 +284,7 @@ class XForwarderEngine:
                     with self._target_lock:
                         self._target_probe_cache.pop(clean_target, None)
                         self._target_last_probe_time.pop(clean_target, None)
+                        self._target_last_fast_check.pop(clean_target, None)
                         self._target_history.pop(clean_target, None)
                 else:
                     if clean_target not in unique_targets or (iface and not unique_targets[clean_target].get("iface")):
@@ -298,24 +301,29 @@ class XForwarderEngine:
             for sk in stale_keys:
                 self._target_probe_cache.pop(sk, None)
                 self._target_last_probe_time.pop(sk, None)
+                self._target_last_fast_check.pop(sk, None)
                 self._target_history.pop(sk, None)
 
-        # Check in-memory 60s cache
-        targets_to_probe: Dict[str, Dict[str, Any]] = {}
+        # Separate targets into 60s full probe vs 15s fast liveness check
+        targets_to_full_probe: Dict[str, Dict[str, Any]] = {}
+        targets_to_fast_check: Dict[str, Dict[str, Any]] = {}
         with self._target_lock:
             for target, info in unique_targets.items():
                 last_t = self._target_last_probe_time.get(target, 0.0)
-                if (curr_time - last_t < probe_interval) and (target in self._target_probe_cache):
-                    continue
-                targets_to_probe[target] = info
+                last_fast = self._target_last_fast_check.get(target, last_t)
 
-        # Execute parallel 10-ping probes for targets whose 60s interval expired
-        if targets_to_probe:
+                if (target not in self._target_probe_cache) or (curr_time - last_t >= probe_interval):
+                    targets_to_full_probe[target] = info
+                elif (curr_time - last_fast >= fast_interval):
+                    targets_to_fast_check[target] = info
+
+        # Execute parallel probes (full 10-ping bursts or fast 2-ping liveness checks)
+        if targets_to_full_probe or targets_to_fast_check:
             if not self._probe_executor:
                 self._probe_executor = ThreadPoolExecutor(max_workers=8)
 
             futures = {}
-            for target, info in targets_to_probe.items():
+            for target, info in targets_to_full_probe.items():
                 f = self._probe_executor.submit(
                     self.probe_destination_icmp,
                     target,
@@ -323,37 +331,84 @@ class XForwarderEngine:
                     count=count,
                     interval_ms=interval_ms
                 )
-                futures[f] = target
+                futures[f] = (target, "full", info)
+
+            for target, info in targets_to_fast_check.items():
+                f = self._probe_executor.submit(
+                    self.probe_destination_icmp,
+                    target,
+                    iface=info.get("iface"),
+                    count=2,
+                    interval_ms=100
+                )
+                futures[f] = (target, "fast", info)
 
             for f in as_completed(futures):
-                tgt = futures[f]
+                tgt, probe_type, info = futures[f]
                 try:
                     res = f.result()
                 except Exception as e:
                     res = {
                         "healthy": False,
-                        "packets_sent": count,
+                        "packets_sent": count if probe_type == "full" else 2,
                         "packets_received": 0,
                         "packet_loss": 100.0,
                         "latency_ms": None,
                         "jitter_ms": 0.0,
                         "reason": str(e)
                     }
-                with self._target_lock:
-                    self._target_probe_cache[tgt] = res
-                    self._target_last_probe_time[tgt] = curr_time
 
-                    # Update target-level sample history
-                    if tgt not in self._target_history:
-                        self._target_history[tgt] = {
-                            "samples": [],
-                            "consecutive_fails": 0,
-                            "consecutive_success": 0
-                        }
-                    thist = self._target_history[tgt]
-                    sample = summarize_cycle(res, curr_time)
-                    thist["samples"].append(sample)
-                    thist["samples"] = [s for s in thist["samples"] if (curr_time - float(s[0])) <= window_sec]
+                with self._target_lock:
+                    if probe_type == "full":
+                        self._target_probe_cache[tgt] = res
+                        self._target_last_probe_time[tgt] = curr_time
+                        self._target_last_fast_check[tgt] = curr_time
+
+                        # Update target-level sample history
+                        if tgt not in self._target_history:
+                            self._target_history[tgt] = {
+                                "samples": [],
+                                "consecutive_fails": 0,
+                                "consecutive_success": 0
+                            }
+                        thist = self._target_history[tgt]
+                        sample = summarize_cycle(res, curr_time)
+                        thist["samples"].append(sample)
+                        thist["samples"] = [s for s in thist["samples"] if (curr_time - float(s[0])) <= window_sec]
+                    else:
+                        # Fast liveness check (2-ping test every 15s)
+                        self._target_last_fast_check[tgt] = curr_time
+                        if res.get("packets_received", 0) == 0:
+                            # Immediate Hard Outage: mark dead, invalidate cache, set 100% loss
+                            fail_res = {
+                                "healthy": False,
+                                "packets_sent": res.get("packets_sent", 2),
+                                "packets_received": 0,
+                                "packet_loss": 100.0,
+                                "latency_ms": None,
+                                "jitter_ms": 0.0,
+                                "reason": "Fast liveness check failed (unreachable)"
+                            }
+                            self._target_probe_cache[tgt] = fail_res
+                            self._target_last_probe_time[tgt] = 0.0
+                            if tgt not in self._target_history:
+                                self._target_history[tgt] = {
+                                    "samples": [],
+                                    "consecutive_fails": 0,
+                                    "consecutive_success": 0
+                                }
+                            thist = self._target_history[tgt]
+                            thist["consecutive_fails"] = int(thist.get("consecutive_fails", 0)) + 1
+                            thist["consecutive_success"] = 0
+                            sample = summarize_cycle(fail_res, curr_time)
+                            thist["samples"].append(sample)
+                            thist["samples"] = [s for s in thist["samples"] if (curr_time - float(s[0])) <= window_sec]
+                            thist["status"] = "failed"
+                        else:
+                            # Target is alive; if previously marked dead, reset probe timer for full re-test
+                            was_dead = not self._target_probe_cache.get(tgt, {}).get("healthy", True)
+                            if was_dead:
+                                self._target_last_probe_time[tgt] = 0.0
 
         # Compute rolling window aggregates for every valid target
         with self._target_lock:
@@ -366,11 +421,12 @@ class XForwarderEngine:
                     long_agg = aggregate_window(samples, window_seconds=window_sec, now=curr_time)
                     last_loss = float(self._target_probe_cache[target].get("packet_loss", 0.0))
                     lossy_cycles = sum(1 for s in short_samples if isinstance(s, (list, tuple)) and len(s) >= 3 and int(s[2]) < int(s[1]))
+                    burst_dead = (last_loss >= 100.0 and not self._target_probe_cache[target].get("healthy", True))
                     status = classify_status(
                         short_loss=short_agg["packet_loss"],
                         long_loss=long_agg["packet_loss"],
                         last_cycle_loss=last_loss,
-                        burst_confirmed_dead=False,
+                        burst_confirmed_dead=burst_dead,
                         route_invalid=False,
                         max_acceptable_loss=max_loss,
                         critical_loss=crit_loss,

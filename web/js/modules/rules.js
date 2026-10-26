@@ -3,8 +3,8 @@
 // ============================================================================
 
 import { API_BASE } from "./api.js";
-import { escapeHtml, safeInlineArg, formatLatencyBadge, formatConciseReason, formatProtoBadge, formatBytes, showToast, askConfirm } from "./utils.js";
-import { currentRules, lastRuntime, lastTrafficData } from "./state.js";
+import { escapeHtml, safeInlineArg, formatLatencyBadge, formatLoss50Badge, formatLoss50Inline, formatConciseReason, formatProtoBadge, formatBytes, showToast, askConfirm } from "./utils.js";
+import { currentRules, lastRuntime, lastTrafficData, lastLatestLoss } from "./state.js";
 
 let currentViewMode = localStorage.getItem("xfwd_rules_view") || "cards";
 let currentSort = localStorage.getItem("xfwd_rules_sort") || "port_asc";
@@ -249,6 +249,9 @@ export function renderRuleCard(rule, rulesState) {
         }
 
         const rawTarget = String(dest.target || '');
+        const cleanTarget = rawTarget.toLowerCase().replace(/^\[|\]$/g, "");
+        const lossInfo = (stat && stat.loss_50) || (lastLatestLoss && lastLatestLoss[cleanTarget]) || null;
+        const loss50Badge = formatLoss50Badge(lossInfo);
         const targetDisplay = rawTarget.includes(':') ? `[${escapeHtml(rawTarget)}]` : escapeHtml(rawTarget);
         const latencyBadge = formatLatencyBadge(stat);
         const tagClass = getPrioTagClass(prio);
@@ -291,12 +294,6 @@ export function renderRuleCard(rule, rulesState) {
                             ${statusLabel}
                         </span>
                     </div>
-                    <div class="path-header-right">
-                        <button type="button" class="btn-path-test" onclick="runLivePacketLossTest(decodeURIComponent('${encodedId}'), decodeURIComponent('${encodeURIComponent(rawTarget)}'), ${dest.port || rule.port}, '${dest.type || 'haproxy'}', this)" title="Test live ping, latency and packet loss to this destination">
-                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
-                            <span>Test Loss</span>
-                        </button>
-                    </div>
                 </div>
                 <div class="path-dest">
                     <span>${escapeHtml(String(dest.type || 'haproxy').toUpperCase())}: ${targetDisplay}:${escapeHtml(dest.port || rule.port)}</span>
@@ -304,7 +301,10 @@ export function renderRuleCard(rule, rulesState) {
                 </div>
                 <div class="path-meta">
                     <span>${metaText}</span>
-                    ${latencyBadge}
+                    <div class="path-meta-badges">
+                        ${latencyBadge}
+                        ${loss50Badge}
+                    </div>
                 </div>
             </div>
         `;
@@ -397,6 +397,9 @@ export function renderRuleListRow(rule, rulesState) {
         }
 
         const rawTarget = String(dest.target || '');
+        const cleanTarget = rawTarget.toLowerCase().replace(/^\[|\]$/g, "");
+        const lossInfo = (stat && stat.loss_50) || (lastLatestLoss && lastLatestLoss[cleanTarget]) || null;
+        const loss50Inline = formatLoss50Inline(lossInfo);
         const targetDisplay = rawTarget.includes(':') ? `[${escapeHtml(rawTarget)}]` : escapeHtml(rawTarget);
 
         let dotColor = '#6EE7B7';
@@ -409,15 +412,11 @@ export function renderRuleListRow(rule, rulesState) {
                 <span style="font-weight:700; color:var(--text-primary); font-family:var(--font-mono);">#${prio}</span>
                 <span class="font-mono" style="color:var(--text-secondary); font-size:0.75rem;">${targetDisplay}:${escapeHtml(dest.port || rule.port)}</span>
                 ${latText ? `<span class="font-mono" style="color:var(--accent-mint); font-size:0.72rem;">${latText}</span>` : ''}
+                ${loss50Inline}
                 ${isActive ? `<span style="font-size:0.68rem; font-weight:700; color:${isFailover ? 'var(--accent-amber)' : 'var(--accent-mint)'}; text-transform:uppercase;">${isFailover ? 'FAILOVER' : 'ACTIVE'}</span>` : ''}
             </div>
         `;
     }).join("");
-
-    const activeDest = sortedDests.find(d => (d.priority || 1) === activePriority) || sortedDests[0];
-    const testTarget = String(activeDest ? activeDest.target : '');
-    const testPort = activeDest ? (activeDest.port || rule.port) : rule.port;
-    const testType = activeDest ? (activeDest.type || 'haproxy') : 'haproxy';
 
     const portKey = String(rule.port || "");
     const pTraffic = (lastTrafficData && lastTrafficData.ports) ? lastTrafficData.ports[portKey] : null;
@@ -446,10 +445,6 @@ export function renderRuleListRow(rule, rulesState) {
             </div>
 
             <div class="rule-list-right">
-                <button type="button" class="btn-path-test" style="height:32px; padding:0 10px;" onclick="runLivePacketLossTest(decodeURIComponent('${encodedId}'), decodeURIComponent('${encodeURIComponent(testTarget)}'), ${testPort}, '${testType}', this)" title="Test live latency & packet loss">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
-                    <span>Test</span>
-                </button>
                 <button class="btn btn-secondary btn-sm" onclick="openTrafficModal('port', '${escapeHtml(portKey)}')" title="Traffic & Bandwidth Analytics">
                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
                 </button>

@@ -1676,6 +1676,74 @@
     border-color: rgba(220, 38, 38, 0.25);
 }
 
+/* ── Path Meta Badges & 15m Packet Loss Indicator ── */
+.path-meta-badges {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.loss50-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    font-weight: 600;
+    padding: 2px 7px;
+    border-radius: 6px;
+    white-space: nowrap;
+    cursor: default;
+    transition: all 0.2s ease;
+}
+
+.loss50-pill svg {
+    opacity: 0.85;
+}
+
+.loss50-pill.loss-good {
+    background: rgba(110, 231, 183, 0.08);
+    color: var(--accent-mint);
+    border: 1px solid rgba(110, 231, 183, 0.2);
+}
+
+.loss50-pill.loss-warn {
+    background: rgba(251, 191, 36, 0.1);
+    color: var(--accent-amber);
+    border: 1px solid rgba(251, 191, 36, 0.25);
+}
+
+.loss50-pill.loss-bad {
+    background: rgba(251, 113, 133, 0.12);
+    color: var(--accent-rose);
+    border: 1px solid rgba(251, 113, 133, 0.28);
+}
+
+[data-theme="light"] .loss50-pill.loss-good {
+    background: rgba(5, 150, 105, 0.08);
+    color: #047857;
+    border-color: rgba(5, 150, 105, 0.25);
+}
+
+[data-theme="light"] .loss50-pill.loss-warn {
+    background: rgba(217, 119, 6, 0.08);
+    color: #B45309;
+    border-color: rgba(217, 119, 6, 0.25);
+}
+
+[data-theme="light"] .loss50-pill.loss-bad {
+    background: rgba(225, 29, 72, 0.08);
+    color: #BE123C;
+    border-color: rgba(225, 29, 72, 0.25);
+}
+
+.loss50-pill-inline {
+    font-size: 0.72rem;
+    font-weight: 600;
+    cursor: default;
+}
+
 .active-ribbon {
     display: none !important;
 }

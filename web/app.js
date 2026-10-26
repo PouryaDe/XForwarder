@@ -22,7 +22,8 @@ import {
     setCurrentRules,
     lastRuntime,
     setLastRuntime,
-    setLastTrafficData
+    setLastTrafficData,
+    setLastLatestLoss
 } from "./js/modules/state.js";
 import { initTheme, toggleTheme } from "./js/modules/theme.js";
 import { initNavigation, switchSection, openMobileSidebar, closeMobileSidebar } from "./js/modules/navigation.js";
@@ -208,6 +209,7 @@ export async function fetchStatus() {
         setLastRuntime(data.runtime || {});
         setCurrentRules(cfg.rules || []);
         setLastTrafficData(data.traffic || null);
+        setLastLatestLoss(data.latest_loss || {});
         updateCategoryDatalist(currentRules);
 
         renderStats(currentRules, lastRuntime);

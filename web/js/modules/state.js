@@ -5,6 +5,7 @@
 export let currentRules = [];
 export let lastRuntime = {};
 export let lastTrafficData = null;
+export let lastLatestLoss = {};
 
 export function setCurrentRules(rules) {
     currentRules = Array.isArray(rules) ? rules : [];
@@ -21,6 +22,11 @@ export function setLastTrafficData(traffic) {
     state.lastTrafficData = traffic;
 }
 
+export function setLastLatestLoss(loss) {
+    lastLatestLoss = loss && typeof loss === "object" ? loss : {};
+    state.lastLatestLoss = lastLatestLoss;
+}
+
 export const state = {
     get currentRules() { return currentRules; },
     set currentRules(val) { currentRules = val; },
@@ -28,6 +34,8 @@ export const state = {
     set lastRuntime(val) { lastRuntime = val; },
     get lastTrafficData() { return lastTrafficData; },
     set lastTrafficData(val) { lastTrafficData = val; },
+    get lastLatestLoss() { return lastLatestLoss; },
+    set lastLatestLoss(val) { lastLatestLoss = val; },
     currentTrafficEntity: "all:all",
     currentTrafficPeriod: "24h",
     pollTimer: null,

@@ -31,7 +31,7 @@ A port must **NEVER** be bound by HAProxy and forwarded by NFTables DNAT at the 
   - Per-reply sequence parsing (`parse_ping_replies`) evaluates strictly sequence 1..10, eliminating false packet loss caused by iputils ping's early exit timer on long RTTs.
   - Extracts average latency, packet loss, and within-cycle jitter (`mdev` on Linux / `(max-min)/2` fallback).
   - Cross-rule deduplicated parallel probing (`_probe_all_destinations`) executes via a persistent worker pool, probing each unique destination IP only once per cycle regardless of port count.
-  - **60-Second In-Memory Target Cache**: Probes execute 10 consecutive pings and persist metrics in memory for 60 seconds (`target_probe_interval_seconds = 60s`). All rules sharing the same destination IP consume identical latency, loss, and composite quality scores, guaranteeing synchronized failovers and eliminating inter-port latency divergence. Route or interface invalidation immediately evicts the cached entry.
+  - **60-Second In-Memory Target Cache & 15-Second Fast Liveness**: Probes execute 10 consecutive pings and persist metrics in memory for 60 seconds (`target_probe_interval_seconds = 60s`). Every 15 seconds (`fast_liveness_interval_seconds = 15s`), a fast liveness check tests target reachability; if unresponsive, the cached metrics are invalidated immediately and Tier 1 emergency failover triggers without waiting for the 60s cycle. When responsive, the fine-grained 10-ping average latency and composite score remain stable. Target routes that become invalid or dropped are evicted immediately from cache.
 - **Two-Tier Decision Engine (`core/route_quality.py`)**:
   - **Tier 1 (Emergency Outage / Sustained Critical Loss Bypass)**:
     - Triggers on total failure (100% loss), route invalidation (WAN leak), or sustained critical degradation ($\ge \text{critical\_loss\_percent}$, default: 30% across $\ge 2$ cycles in the short window).
@@ -69,6 +69,7 @@ A port must **NEVER** be bound by HAProxy and forwarded by NFTables DNAT at the 
 - **Dedicated 50-Probe Engine:** Precise packet loss evaluation uses `ping [ip] -c 50 -i 0.2 -W 1` (<10s).
 - **Scheduled Rounds & Deduplication:** Background daemon (`LossMonitorScheduler`) triggers a round every 15 minutes (`LOSS_CHECK_INTERVAL_SECONDS = 900`). All targets across configured rules and ports are deduplicated (`get_unique_targets_from_config`), guaranteeing that an IP configured on 10 different ports is probed only ONCE per round.
 - **SQLite Persistence & 30-Day Retention:** Probe history is recorded in `/etc/xforwarder/metrics.db` (WAL mode). Records older than 30 days are automatically pruned (`prune_old_metrics`) to prevent disk bloat.
+- **In-Panel Display & Tooltip Age:** Web UI renders the latest 50-probe packet loss beside each path's ping readout (`.loss50-pill`) with hover tooltip indicating the test age (e.g. `Tested 4m ago`). Manual 'Test Loss' button is retired.
 - **Parameter Bounds & Injection Shielding:** Target hosts and interface flags must be strictly sanitized against command argument injection.
 
 

@@ -111,6 +111,15 @@ except ImportError:
         get_traffic_timeseries = None
         reset_traffic_counter = None
 
+try:
+    from core.metrics import get_latest_metrics_per_target, sanitize_target_host
+except ImportError:
+    try:
+        from metrics import get_latest_metrics_per_target, sanitize_target_host
+    except ImportError:
+        get_latest_metrics_per_target = None
+        sanitize_target_host = lambda t: str(t).strip().strip("[]")
+
 WEB_DIR = os.path.join(BASE_DIR, "web")
 _STATIC_CACHE: Dict[str, dict] = {}
 _STATIC_LOCK = threading.Lock()
@@ -429,6 +438,29 @@ class XForwarderWebHandler(BaseHTTPRequestHandler):
                 cfg = load_config()
                 state = load_state()
                 runtime = state.get("runtime", {})
+                latest_loss = {}
+                if get_latest_metrics_per_target:
+                    try:
+                        latest_loss = get_latest_metrics_per_target()
+                    except Exception:
+                        pass
+
+                # Build rule destination map to correlate target IPs with prio stats
+                rules_list = cfg.get("rules", []) if isinstance(cfg, dict) else []
+                rule_dest_targets: Dict[str, Dict[str, str]] = {}
+                for r in rules_list:
+                    rid = str(r.get("id", f"rule-{r.get('port')}"))
+                    r_port = str(r.get("port", ""))
+                    d_map = {}
+                    for d in r.get("destinations", []):
+                        p = d.get("priority", 1)
+                        raw_tgt = str(d.get("target", "")).strip().strip("[]")
+                        clean_tgt = (sanitize_target_host(raw_tgt) or raw_tgt).lower()
+                        d_map[f"prio_{p}"] = clean_tgt
+                    rule_dest_targets[rid] = d_map
+                    if r_port:
+                        rule_dest_targets[r_port] = d_map
+
                 if isinstance(runtime, dict) and "rules_state" in runtime and isinstance(runtime["rules_state"], dict):
                     cleaned_rules = {}
                     for p_key, r_st in runtime["rules_state"].items():
@@ -436,16 +468,22 @@ class XForwarderWebHandler(BaseHTTPRequestHandler):
                             cleaned_rules[p_key] = r_st
                             continue
                         r_copy = dict(r_st)
+                        target_map = rule_dest_targets.get(str(p_key), {})
                         if "dest_stats" in r_copy and isinstance(r_copy["dest_stats"], dict):
                             cleaned_dest_stats = {}
                             for d_key, d_val in r_copy["dest_stats"].items():
                                 if isinstance(d_val, dict):
-                                    cleaned_dest_stats[d_key] = {k: v for k, v in d_val.items() if k != "samples"}
+                                    ds = {k: v for k, v in d_val.items() if k != "samples"}
+                                    tgt_ip = target_map.get(d_key)
+                                    if tgt_ip and tgt_ip in latest_loss:
+                                        ds["loss_50"] = latest_loss[tgt_ip]
+                                    cleaned_dest_stats[d_key] = ds
                                 else:
                                     cleaned_dest_stats[d_key] = d_val
                             r_copy["dest_stats"] = cleaned_dest_stats
                         cleaned_rules[p_key] = r_copy
                     runtime = dict(runtime)
+                    runtime["rules_state"] = cleaned_rules
                 traffic_data = None
                 if get_traffic_summary:
                     try:
@@ -456,6 +494,7 @@ class XForwarderWebHandler(BaseHTTPRequestHandler):
                     "version": get_installed_version(),
                     "config": cfg,
                     "runtime": runtime,
+                    "latest_loss": latest_loss,
                     "system": get_system_stats(),
                     "services": get_services_status(),
                     "network": get_network_interfaces_info(),

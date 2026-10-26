@@ -131,23 +131,40 @@ class TestTargetMetricCache(unittest.TestCase):
             "reason": ""
         }
 
-        # First cycle at t = 1000.0 (probes 2 unique IPs)
+        # First cycle at t = 1000.0 (probes 2 unique IPs with full count=10)
         with patch("time.time", return_value=1000.0):
             self.engine._probe_all_destinations(self.rules)
         self.assertEqual(mock_probe_icmp.call_count, 2)
+        # All initial calls were full count=10 probes
+        for c in mock_probe_icmp.call_args_list:
+            self.assertEqual(c.kwargs.get("count"), 10)
 
-        # Second cycle at t = 1030.0 (30 seconds later, < 60s cache interval)
-        with patch("time.time", return_value=1030.0):
+        # Second cycle at t = 1010.0 (10 seconds later, < 15s fast interval & < 60s full interval)
+        with patch("time.time", return_value=1010.0):
             cached = self.engine._probe_all_destinations(self.rules)
-        # Call count must still be 2! No new ping executed!
+        # Call count must still be 2! No new probe executed!
         self.assertEqual(mock_probe_icmp.call_count, 2)
         self.assertEqual(cached["10.81.8.2"]["latency_ms"], 80.0)
 
-        # Third cycle at t = 1065.0 (> 60 seconds later, cache expired)
+        # Third cycle at t = 1030.0 (30 seconds later: fast liveness check fires with count=2)
+        with patch("time.time", return_value=1030.0):
+            cached_fast = self.engine._probe_all_destinations(self.rules)
+        # 2 fast checks executed (count=2), total calls = 4
+        self.assertEqual(mock_probe_icmp.call_count, 4)
+        fast_calls = mock_probe_icmp.call_args_list[2:]
+        for c in fast_calls:
+            self.assertEqual(c.kwargs.get("count"), 2)
+        # Full metrics (latency 80.0) preserved from 60s cache
+        self.assertEqual(cached_fast["10.81.8.2"]["latency_ms"], 80.0)
+
+        # Fourth cycle at t = 1065.0 (> 60 seconds later, full 60s cache expired: count=10)
         with patch("time.time", return_value=1065.0):
             self.engine._probe_all_destinations(self.rules)
-        # Call count should now be 4 (2 fresh probes)!
-        self.assertEqual(mock_probe_icmp.call_count, 4)
+        # Total calls = 6 (2 full + 2 fast + 2 fresh full)
+        self.assertEqual(mock_probe_icmp.call_count, 6)
+        full_calls = mock_probe_icmp.call_args_list[4:]
+        for c in full_calls:
+            self.assertEqual(c.kwargs.get("count"), 10)
 
     @patch("core.engine.prober_probe_destination_icmp")
     @patch("core.engine.XForwarderEngine._validate_probe_route")
@@ -289,6 +306,84 @@ class TestTargetMetricCache(unittest.TestCase):
             self.assertEqual(rule_stat["latency_ms"], 50.0)
             self.assertEqual(rule_stat["status"], "healthy")
 
+    @patch("core.engine.prober_probe_destination_icmp")
+    def test_fast_liveness_check_detects_outage_and_switches_immediately(self, mock_probe_icmp):
+        """
+        Verifies that at the 15-second fast liveness check, if active route drops 100% packets,
+        it is immediately marked dead and fails over to backup priority without waiting for 60s.
+        """
+        rule = {
+            "id": "rule-443",
+            "port": 443,
+            "active_priority": 1,
+            "destinations": [
+                {"priority": 1, "type": "haproxy", "target": "1.1.1.1", "port": 443},
+                {"priority": 2, "type": "nftables", "target": "10.81.8.2", "port": 443, "tunnel_iface": "tun0"}
+            ]
+        }
+
+        # Step 1: Initial full probe at t = 1000.0 (both alive)
+        def icmp_side_effect(target, iface=None, count=10, interval_ms=200):
+            if count == 10:
+                lat = 40.0 if target == "1.1.1.1" else 80.0
+                return {"healthy": True, "packets_sent": 10, "packets_received": 10, "packet_loss": 0.0, "latency_ms": lat, "jitter_ms": 1.0, "reason": ""}
+            # Fast check
+            return {"healthy": True, "packets_sent": 2, "packets_received": 2, "packet_loss": 0.0, "latency_ms": 40.0, "jitter_ms": 1.0, "reason": ""}
+
+        mock_probe_icmp.side_effect = icmp_side_effect
+        with patch.object(self.engine, "_validate_probe_route", return_value=(True, "tun0", None)):
+            c1 = self.engine._probe_all_destinations([rule], now=1000.0)
+            self.engine.evaluate_rule(rule, probe_cache=c1)
+            self.assertEqual(rule["active_priority"], 1)
+
+            # Step 2: At t = 1015.0 (15 seconds later), 1.1.1.1 goes dead!
+            def icmp_outage(target, iface=None, count=10, interval_ms=200):
+                if target == "1.1.1.1":
+                    return {"healthy": False, "packets_sent": count, "packets_received": 0, "packet_loss": 100.0, "latency_ms": None, "jitter_ms": 0.0, "reason": "No reply"}
+                return {"healthy": True, "packets_sent": count, "packets_received": count, "packet_loss": 0.0, "latency_ms": 80.0, "jitter_ms": 1.0, "reason": ""}
+
+            mock_probe_icmp.side_effect = icmp_outage
+            c2 = self.engine._probe_all_destinations([rule], now=1015.0)
+
+            # Fast check must have marked 1.1.1.1 dead in cache
+            self.assertFalse(c2["1.1.1.1"]["healthy"])
+            self.assertEqual(c2["1.1.1.1"]["packet_loss"], 100.0)
+
+            # Evaluate rule must trigger immediate failover to Priority 2
+            switched = self.engine.evaluate_rule(rule, probe_cache=c2)
+            self.assertTrue(switched)
+            self.assertEqual(rule["active_priority"], 2)
+
+    def test_get_latest_metrics_per_target(self):
+        """Verifies get_latest_metrics_per_target queries SQLite and returns formatted records."""
+        import tempfile
+        from core.metrics import record_ping_result, get_latest_metrics_per_target
+
+        with tempfile.NamedTemporaryFile(suffix=".db", delete=False) as tf:
+            test_db = tf.name
+
+        try:
+            record_ping_result("10.81.8.2", {
+                "packet_loss": 0.0,
+                "latency_ms": 85.2,
+                "packets_sent": 50,
+                "packets_received": 50,
+                "is_disrupted": 0
+            }, db_path=test_db)
+
+            res = get_latest_metrics_per_target(db_path=test_db)
+            self.assertIn("10.81.8.2", res)
+            rec = res["10.81.8.2"]
+            self.assertEqual(rec["target"], "10.81.8.2")
+            self.assertEqual(rec["packet_loss"], 0.0)
+            self.assertEqual(rec["packets_sent"], 50)
+            self.assertEqual(rec["packets_received"], 50)
+            self.assertEqual(rec["tested_ago_str"], "just now")
+        finally:
+            if os.path.exists(test_db):
+                os.remove(test_db)
+
 
 if __name__ == "__main__":
     unittest.main()
+

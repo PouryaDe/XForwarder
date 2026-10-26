@@ -108,6 +108,43 @@ export function formatLatencyBadge(statOrMs, maybeLoss = 0) {
     return `<span class="latency-pill ${cls}" title="${escapeHtml(tooltipText)}"><span class="latency-dot"></span>${label}</span>`;
 }
 
+export function formatLoss50Badge(lossInfo) {
+    if (!lossInfo || lossInfo.packet_loss === undefined || lossInfo.packet_loss === null) {
+        return "";
+    }
+    const loss = Math.round(Number(lossInfo.packet_loss));
+    const agoStr = lossInfo.tested_ago_str || "recently";
+    const sent = lossInfo.packets_sent || 50;
+    const recv = lossInfo.packets_received !== undefined ? lossInfo.packets_received : (sent - Math.round(sent * loss / 100));
+
+    let cls = "loss-good";
+    if (loss >= 30) {
+        cls = "loss-bad";
+    } else if (loss > 0) {
+        cls = "loss-warn";
+    }
+
+    const tooltip = `15m Test: ${loss}% loss (${recv}/${sent} pkts) · Tested ${escapeHtml(agoStr)}`;
+    return `<span class="loss50-pill ${cls}" title="${escapeHtml(tooltip)}"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg><span>${loss}% loss</span></span>`;
+}
+
+export function formatLoss50Inline(lossInfo) {
+    if (!lossInfo || lossInfo.packet_loss === undefined || lossInfo.packet_loss === null) {
+        return "";
+    }
+    const loss = Math.round(Number(lossInfo.packet_loss));
+    const agoStr = lossInfo.tested_ago_str || "recently";
+    const sent = lossInfo.packets_sent || 50;
+    const recv = lossInfo.packets_received !== undefined ? lossInfo.packets_received : (sent - Math.round(sent * loss / 100));
+
+    let color = "var(--accent-mint)";
+    if (loss >= 30) color = "var(--accent-rose)";
+    else if (loss > 0) color = "var(--accent-amber)";
+
+    const tooltip = `15m Test: ${loss}% loss (${recv}/${sent} pkts) · Tested ${escapeHtml(agoStr)}`;
+    return `<span class="loss50-pill-inline font-mono" style="color:${color};" title="${escapeHtml(tooltip)}">· ${loss}% loss</span>`;
+}
+
 export function formatConciseReason(reason) {
     if (!reason) return "";
     const r = String(reason).trim();

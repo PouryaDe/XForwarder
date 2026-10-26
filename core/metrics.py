@@ -428,10 +428,83 @@ def record_ping_result(target: str, res: Dict[str, Any], db_path: Optional[str] 
                 res.get("error", "")
             ))
             conn.commit()
+            global _LATEST_METRICS_LAST_QUERY
+            _LATEST_METRICS_LAST_QUERY = 0.0
         finally:
             conn.close()
     except Exception as e:
         print(f"[WARN] Failed to record ping metric for {target}: {e}", file=sys.stderr)
+
+
+_LATEST_METRICS_CACHE: Dict[str, Any] = {}
+_LATEST_METRICS_LAST_QUERY: float = 0.0
+_LATEST_METRICS_LOCK = threading.Lock()
+
+
+def get_latest_metrics_per_target(db_path: Optional[str] = None) -> Dict[str, Dict[str, Any]]:
+    """
+    Returns the most recent 50-probe packet loss result for every tracked target from SQLite.
+    In-memory caching for 10 seconds to avoid disk reads on every /api/status poll.
+    """
+    global _LATEST_METRICS_CACHE, _LATEST_METRICS_LAST_QUERY
+    now = time.time()
+    with _LATEST_METRICS_LOCK:
+        if _LATEST_METRICS_CACHE and (now - _LATEST_METRICS_LAST_QUERY < 10.0):
+            return dict(_LATEST_METRICS_CACHE)
+
+    path = db_path or get_metrics_db_path()
+    if not os.path.exists(path):
+        return {}
+
+    latest_map: Dict[str, Dict[str, Any]] = {}
+    try:
+        conn = sqlite3.connect(path, timeout=5.0)
+        conn.row_factory = sqlite3.Row
+        try:
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT p.target, p.timestamp, p.latency_ms, p.packet_loss, p.packets_sent, p.packets_received, p.is_disrupted
+                FROM ping_history p
+                INNER JOIN (
+                    SELECT target, MAX(timestamp) as max_ts
+                    FROM ping_history
+                    GROUP BY target
+                ) latest ON p.target = latest.target AND p.timestamp = latest.max_ts;
+            """)
+            for row in cursor.fetchall():
+                t = str(row["target"]).lower().strip().strip("[]")
+                ts = float(row["timestamp"])
+                ago_sec = max(0, int(now - ts))
+                if ago_sec < 60:
+                    ago_str = "just now"
+                elif ago_sec < 3600:
+                    m = ago_sec // 60
+                    ago_str = f"{m}m ago"
+                else:
+                    h = ago_sec // 3600
+                    ago_str = f"{h}h ago"
+
+                latest_map[t] = {
+                    "target": t,
+                    "timestamp": ts,
+                    "tested_ago_seconds": ago_sec,
+                    "tested_ago_str": ago_str,
+                    "packet_loss": float(row["packet_loss"]),
+                    "latency_ms": row["latency_ms"],
+                    "packets_sent": int(row["packets_sent"]),
+                    "packets_received": int(row["packets_received"]),
+                    "is_disrupted": int(row["is_disrupted"])
+                }
+        finally:
+            conn.close()
+    except Exception as e:
+        print(f"[WARN] Failed to query latest target metrics: {e}", file=sys.stderr)
+
+    with _LATEST_METRICS_LOCK:
+        _LATEST_METRICS_CACHE = dict(latest_map)
+        _LATEST_METRICS_LAST_QUERY = now
+
+    return latest_map
 
 
 def prune_old_metrics(retention_days: int = RETENTION_DAYS, db_path: Optional[str] = None) -> int:
