@@ -350,16 +350,6 @@ async function initApp() {
     initServiceRestartControls(fetchStatus);
     initLogs();
 
-    const btnManualRefresh = document.getElementById("btnManualRefresh");
-    const refreshIcon = document.getElementById("refreshIcon");
-    if (btnManualRefresh && refreshIcon) {
-        btnManualRefresh.addEventListener("click", () => {
-            refreshIcon.classList.add("spinning");
-            fetchStatus().finally(() => {
-                setTimeout(() => refreshIcon.classList.remove("spinning"), 600);
-            });
-        });
-    }
 
     const btnDismissSyncError = document.getElementById("btnDismissSyncError");
     if (btnDismissSyncError) {

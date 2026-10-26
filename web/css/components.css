@@ -2901,6 +2901,14 @@
         transform: translateX(-100%);
         z-index: 1050;
         box-shadow: 0 0 35px rgba(0, 0, 0, 0.6);
+        background: rgba(18, 21, 31, 0.88);
+        backdrop-filter: blur(24px);
+        -webkit-backdrop-filter: blur(24px);
+    }
+
+    [data-theme="light"] .sidebar {
+        background: rgba(255, 255, 255, 0.88);
+        box-shadow: 0 0 30px rgba(30, 40, 80, 0.12);
     }
 
     .sidebar.open {

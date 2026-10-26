@@ -1367,7 +1367,7 @@ class TestUIAndAPIEdgeCases(unittest.TestCase):
         with patch("core.web_server.get_local_version_info") as mock_loc:
             # 1. When local matches remote -> update_available is False
             mock_loc.return_value = {
-                "version": "1.3.1",
+                "version": "1.4.0",
                 "commit": "abc1234",
                 "commit_date": "2026-10-22",
                 "is_git": False
@@ -1384,7 +1384,7 @@ class TestUIAndAPIEdgeCases(unittest.TestCase):
 
             # 3. When local commit is unrecorded (None) -> update_available is True so user can sync
             mock_loc.return_value = {
-                "version": "1.3.1",
+                "version": "1.4.0",
                 "commit": None,
                 "commit_date": None,
                 "is_git": False
