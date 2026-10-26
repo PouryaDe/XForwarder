@@ -95,6 +95,9 @@ class XForwarderEngine:
         self._traffic_collector: Optional[Any] = None
         self._last_traffic_cycle: float = 0.0
         self._probe_executor: Optional[ThreadPoolExecutor] = None
+        self._target_probe_cache: Dict[Any, Dict[str, Any]] = {}
+        self._target_last_probe_time: Dict[str, float] = {}
+        self._target_history: Dict[str, Dict[str, Any]] = {}
         self.load_config()
 
     @property
@@ -239,26 +242,33 @@ class XForwarderEngine:
         if is_critical:
             flush_conntrack(port)
 
-    def _probe_all_destinations(self, rules: List[Dict[str, Any]]) -> Dict[Tuple[str, Optional[str]], Dict[str, Any]]:
+    def _probe_all_destinations(self, rules: List[Dict[str, Any]], now: Optional[float] = None) -> Dict[Any, Dict[str, Any]]:
         """
-        Deduplicates unique (target, iface) endpoints across all rules,
-        validates routes, and executes 10-ping probes in parallel using persistent thread pool.
+        Deduplicates unique destination IP endpoints across all rules, caches 10-ping probes in memory
+        for target_probe_interval_seconds (default: 60s), and executes parallel probes only when needed.
+        Guarantees that an IP shared across 5 or 50 ports is probed exactly once per minute,
+        and all rules sharing that IP receive identical latency (10-ping average), loss, and score metrics.
         """
-        unique_targets: Dict[Tuple[str, Optional[str]], Dict[str, Any]] = {}
-        invalid_results: Dict[Tuple[str, Optional[str]], Dict[str, Any]] = {}
-
+        curr_time = now if now is not None else time.time()
+        probe_interval = float(self.config.get("target_probe_interval_seconds", 60.0))
         count = int(self.config.get("probe_count", 10))
         interval_ms = int(self.config.get("probe_interval_ms", 200))
+        window_sec = float(self.config.get("quality_window_seconds", 300))
+        max_loss = float(self.config.get("max_acceptable_loss", 25))
+        crit_loss = float(self.config.get("critical_loss_percent", 30))
+
+        unique_targets: Dict[str, Dict[str, Any]] = {}
+        invalid_results: Dict[str, Dict[str, Any]] = {}
 
         for rule in rules:
             for dest in rule.get("destinations", []):
-                target = str(dest.get("target", "")).strip().strip("[]")
-                if not target:
+                raw_target = str(dest.get("target", "")).strip().strip("[]")
+                if not raw_target:
                     continue
+                clean_target = sanitize_target_host(raw_target) or raw_target
                 is_valid, iface, reason = self._validate_probe_route(dest)
-                key = (target, iface)
                 if not is_valid:
-                    invalid_results[key] = {
+                    invalid_results[clean_target] = {
                         "healthy": False,
                         "packets_sent": count,
                         "packets_received": 0,
@@ -267,39 +277,106 @@ class XForwarderEngine:
                         "jitter_ms": 0.0,
                         "reason": reason
                     }
-                elif key not in unique_targets:
-                    unique_targets[key] = dest
+                else:
+                    if clean_target not in unique_targets or (iface and not unique_targets[clean_target].get("iface")):
+                        unique_targets[clean_target] = {
+                            "target": clean_target,
+                            "iface": iface,
+                            "dest": dest
+                        }
 
-        results: Dict[Tuple[str, Optional[str]], Dict[str, Any]] = dict(invalid_results)
-        if not unique_targets:
-            return results
+        # Check in-memory 60s cache
+        targets_to_probe: Dict[str, Dict[str, Any]] = {}
+        for target, info in unique_targets.items():
+            last_t = self._target_last_probe_time.get(target, 0.0)
+            if (curr_time - last_t < probe_interval) and (target in self._target_probe_cache):
+                continue
+            targets_to_probe[target] = info
 
-        if not self._probe_executor:
-            # Fixed upper bound: threads spawn lazily, so idle cost is zero. Sizing by the first
-            # cycle's target count froze the pool (e.g. at 2) and serialized probes for rules
-            # added later, stretching cycles and skewing sample timing.
-            self._probe_executor = ThreadPoolExecutor(max_workers=8)
+        # Execute parallel 10-ping probes for targets whose 60s interval expired
+        if targets_to_probe:
+            if not self._probe_executor:
+                self._probe_executor = ThreadPoolExecutor(max_workers=8)
 
-        futures = {}
-        for key, dest in unique_targets.items():
-            target, iface = key
-            f = self._probe_executor.submit(self.probe_destination_icmp, target, iface=iface, count=count, interval_ms=interval_ms)
-            futures[f] = key
+            futures = {}
+            for target, info in targets_to_probe.items():
+                f = self._probe_executor.submit(
+                    self.probe_destination_icmp,
+                    target,
+                    iface=info.get("iface"),
+                    count=count,
+                    interval_ms=interval_ms
+                )
+                futures[f] = target
 
-        for f in as_completed(futures):
-            k = futures[f]
-            try:
-                results[k] = f.result()
-            except Exception as e:
-                results[k] = {
-                    "healthy": False,
-                    "packets_sent": count,
-                    "packets_received": 0,
-                    "packet_loss": 100.0,
-                    "latency_ms": None,
-                    "jitter_ms": 0.0,
-                    "reason": str(e)
-                }
+            for f in as_completed(futures):
+                tgt = futures[f]
+                try:
+                    res = f.result()
+                except Exception as e:
+                    res = {
+                        "healthy": False,
+                        "packets_sent": count,
+                        "packets_received": 0,
+                        "packet_loss": 100.0,
+                        "latency_ms": None,
+                        "jitter_ms": 0.0,
+                        "reason": str(e)
+                    }
+                self._target_probe_cache[tgt] = res
+                self._target_last_probe_time[tgt] = curr_time
+
+                # Update target-level sample history
+                if tgt not in self._target_history:
+                    self._target_history[tgt] = {
+                        "samples": [],
+                        "consecutive_fails": 0,
+                        "consecutive_success": 0
+                    }
+                thist = self._target_history[tgt]
+                sample = summarize_cycle(res, curr_time)
+                thist["samples"].append(sample)
+                thist["samples"] = [s for s in thist["samples"] if (curr_time - float(s[0])) <= window_sec]
+
+        # Compute rolling window aggregates for every valid target
+        for target in unique_targets:
+            if target in self._target_probe_cache and target in self._target_history:
+                thist = self._target_history[target]
+                samples = thist.get("samples", [])
+                short_samples = samples[-3:]
+                short_agg = aggregate_window(short_samples, window_seconds=40.0, now=curr_time)
+                long_agg = aggregate_window(samples, window_seconds=window_sec, now=curr_time)
+                last_loss = float(self._target_probe_cache[target].get("packet_loss", 0.0))
+                lossy_cycles = sum(1 for s in short_samples if isinstance(s, (list, tuple)) and len(s) >= 3 and int(s[2]) < int(s[1]))
+                status = classify_status(
+                    short_loss=short_agg["packet_loss"],
+                    long_loss=long_agg["packet_loss"],
+                    last_cycle_loss=last_loss,
+                    burst_confirmed_dead=False,
+                    route_invalid=False,
+                    max_acceptable_loss=max_loss,
+                    critical_loss=crit_loss,
+                    lossy_cycles=lossy_cycles
+                )
+                thist["short_agg"] = short_agg
+                thist["long_agg"] = long_agg
+                thist["status"] = status
+                thist["last_cycle_loss"] = last_loss
+                thist["lossy_cycles"] = lossy_cycles
+
+        # Build consolidated probe_cache indexed by target IP and (target, iface)
+        results: Dict[Any, Dict[str, Any]] = {}
+        for target, res in invalid_results.items():
+            results[target] = res
+            results[(target, None)] = res
+
+        for target in unique_targets:
+            if target in self._target_probe_cache:
+                c_res = self._target_probe_cache[target]
+                results[target] = c_res
+                iface = unique_targets[target].get("iface")
+                results[(target, iface)] = c_res
+                results[(target, None)] = c_res
 
         return results
 
@@ -433,6 +510,10 @@ class XForwarderEngine:
             probe_key = (target, iface)
             if probe_cache is not None and probe_key in probe_cache:
                 check_res = probe_cache[probe_key]
+            elif probe_cache is not None and target in probe_cache:
+                check_res = probe_cache[target]
+            elif probe_cache is not None and (target, None) in probe_cache:
+                check_res = probe_cache[(target, None)]
             else:
                 try:
                     check_res = self.check_destination(
@@ -465,32 +546,55 @@ class XForwarderEngine:
                 stat["reason"] = check_res["reason"]
 
             # Store compact sample [ts, sent, recv, avg, jit]
-            sample = summarize_cycle(check_res, now)
-            if "samples" not in stat or not isinstance(stat["samples"], list):
-                stat["samples"] = []
-            stat["samples"].append(sample)
+            # If target-level shared history exists, use target-level metrics
+            clean_tgt = target.lower()
+            if clean_tgt in self._target_history and "short_agg" in self._target_history[clean_tgt]:
+                thist = self._target_history[clean_tgt]
+                short_agg = thist["short_agg"]
+                long_agg = thist["long_agg"]
+                stat["samples"] = list(thist.get("samples", []))
+                lossy_cycles = thist.get("lossy_cycles", 0)
+            else:
+                sample = summarize_cycle(check_res, now)
+                if "samples" not in stat or not isinstance(stat["samples"], list):
+                    stat["samples"] = []
+                stat["samples"].append(sample)
 
-            # Prune samples older than quality_window_seconds
-            stat["samples"] = [s for s in stat["samples"] if (now - float(s[0])) <= window_sec]
+                # Prune samples older than quality_window_seconds
+                stat["samples"] = [s for s in stat["samples"] if (now - float(s[0])) <= window_sec]
 
-            # Aggregate short window (last 3 samples or ~30s) and long window (window_sec)
-            short_samples = stat["samples"][-3:]
-            short_agg = aggregate_window(short_samples, window_seconds=40.0, now=now)
-            long_agg = aggregate_window(stat["samples"], window_seconds=window_sec, now=now)
+                # Aggregate short window (last 3 samples or ~30s) and long window (window_sec)
+                short_samples = stat["samples"][-3:]
+                short_agg = aggregate_window(short_samples, window_seconds=40.0, now=now)
+                long_agg = aggregate_window(stat["samples"], window_seconds=window_sec, now=now)
+                lossy_cycles = sum(1 for s in short_samples if isinstance(s, (list, tuple)) and len(s) >= 3 and int(s[2]) < int(s[1]))
 
             # Classify status
             is_route_invalid = (not is_valid and not check_res.get("healthy", False))
-            lossy_cycles = sum(1 for s in short_samples if isinstance(s, (list, tuple)) and len(s) >= 3 and int(s[2]) < int(s[1]))
-            status = classify_status(
-                short_loss=short_agg["packet_loss"],
-                long_loss=long_agg["packet_loss"],
-                last_cycle_loss=last_cycle_loss,
-                burst_confirmed_dead=burst_confirmed_dead,
-                route_invalid=is_route_invalid,
-                max_acceptable_loss=max_loss,
-                critical_loss=crit_loss,
-                lossy_cycles=lossy_cycles
-            )
+            if burst_confirmed_dead or is_route_invalid:
+                status = classify_status(
+                    short_loss=short_agg["packet_loss"],
+                    long_loss=long_agg["packet_loss"],
+                    last_cycle_loss=last_cycle_loss,
+                    burst_confirmed_dead=burst_confirmed_dead,
+                    route_invalid=is_route_invalid,
+                    max_acceptable_loss=max_loss,
+                    critical_loss=crit_loss,
+                    lossy_cycles=lossy_cycles
+                )
+            elif clean_tgt in self._target_history and "status" in self._target_history[clean_tgt]:
+                status = self._target_history[clean_tgt]["status"]
+            else:
+                status = classify_status(
+                    short_loss=short_agg["packet_loss"],
+                    long_loss=long_agg["packet_loss"],
+                    last_cycle_loss=last_cycle_loss,
+                    burst_confirmed_dead=burst_confirmed_dead,
+                    route_invalid=is_route_invalid,
+                    max_acceptable_loss=max_loss,
+                    critical_loss=crit_loss,
+                    lossy_cycles=lossy_cycles
+                )
 
             # Compute short and long composite scores
             bias = priority_bias if prio == 1 else 0.0
@@ -514,7 +618,7 @@ class XForwarderEngine:
             stat["status"] = status
             stat["packet_loss"] = long_agg["packet_loss"]
             stat["short_loss"] = short_agg["packet_loss"]
-            stat["latency_ms"] = long_agg["avg_latency_ms"]
+            stat["latency_ms"] = long_agg["avg_latency_ms"] if long_agg["avg_latency_ms"] is not None else check_res.get("latency_ms")
             stat["jitter_ms"] = long_agg["jitter_ms"]
             stat["composite_score"] = long_score
             stat["fill_ratio"] = long_agg["fill_ratio"]

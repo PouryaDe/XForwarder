@@ -92,7 +92,8 @@ def migrate_and_normalize_config(cfg: Dict[str, Any]) -> Tuple[Dict[str, Any], b
         "loss_penalty_weight": 20,
         "jitter_penalty_weight": 2,
         "priority_bias_ms": 0,
-        "fast_probe_burst": 5
+        "fast_probe_burst": 5,
+        "target_probe_interval_seconds": 60
     }
     for k, v in defaults.items():
         if k not in cfg:
@@ -107,6 +108,15 @@ def migrate_and_normalize_config(cfg: Dict[str, Any]) -> Tuple[Dict[str, Any], b
             modified = True
     except (ValueError, TypeError):
         cfg["check_interval_seconds"] = 8
+        modified = True
+
+    try:
+        val = max(5, min(int(cfg.get("target_probe_interval_seconds", 60)), 3600))
+        if cfg.get("target_probe_interval_seconds") != val:
+            cfg["target_probe_interval_seconds"] = val
+            modified = True
+    except (ValueError, TypeError):
+        cfg["target_probe_interval_seconds"] = 60
         modified = True
 
     try:
@@ -711,6 +721,7 @@ def export_config_data(cfg: Optional[dict] = None) -> dict:
         "jitter_penalty_weight": cfg.get("jitter_penalty_weight", 2),
         "priority_bias_ms": cfg.get("priority_bias_ms", 0),
         "fast_probe_burst": cfg.get("fast_probe_burst", 5),
+        "target_probe_interval_seconds": cfg.get("target_probe_interval_seconds", 60),
         "rules": cfg.get("rules", [])
     }
 

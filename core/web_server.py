@@ -1022,7 +1022,7 @@ class XForwarderWebHandler(BaseHTTPRequestHandler):
                 packets = int(body.get("packets", 4))
             except (ValueError, TypeError):
                 packets = 4
-            packets = max(1, min(packets, 10))
+            packets = max(1, min(packets, 50))
 
             try:
                 from core.prober import check_destination

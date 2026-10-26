@@ -57,8 +57,11 @@
     "Upgraded web/index.html to native ES module loader (<script type='module' src='app.js?v=3.1.1'></script>) with window-mounted exports and verified zero regressions across all 184 tests",
     "Completed logical, structural, and security audit: hardened is_valid_target against None/non-string types, bound missing modal priority & traffic handlers to window in web/app.js, and created tests/test_modular_subsystems.py",
     "Verified 100% test pass rate across all 194 unit tests (10 new tests for modular subsystems, 0 failures, 0 errors)",
-    "Diagnosed and resolved web dashboard navigation blank screen and styling breakage post-modularization: mapped section IDs, overrode inline display none styles, restored dark theme default, restored dropped network quality monitor, and synchronized DOM element bindings across modules"
+    "Diagnosed and resolved web dashboard navigation blank screen and styling breakage post-modularization: mapped section IDs, overrode inline display none styles, restored dark theme default, restored dropped network quality monitor, and synchronized DOM element bindings across modules",
+    "Implemented 10-probe ping precision with tail-padding and sequence-aware reply parsing in core/metrics.py, preventing false tail loss",
+    "Implemented per-IP target probe deduplication, 10-ping burst averaging, and 60-second in-memory target metric cache in core/engine.py, eliminating inter-port latency divergence across identical tunnel endpoints",
+    "Added unit test suite tests/test_target_metric_cache.py with 100% pass rate across all 219 tests"
   ],
   "next_steps": [],
-  "notes": "Web dashboard navigation, dark theme styling, and module integrations fully verified. All 197 unit tests passing cleanly."
+  "notes": "Target-level 10-ping probe deduplication and 60s in-memory caching verified. All 219 unit tests passing cleanly."
 }

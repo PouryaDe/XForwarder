@@ -277,6 +277,11 @@ def check_destination(
             "reason": err_reason
         }
 
+    dest_type = str(dest.get("type", "haproxy")).lower()
+    if dest_type == "nftables" or proto == "icmp":
+        sent = max(1, min(count, 10))
+        return probe_destination_icmp(target, iface=tunnel_iface, count=sent, interval_ms=200)
+
     # Multi-sample packet loss test when count > 1
     if count > 1:
         sent = max(1, min(count, 10))

@@ -371,7 +371,7 @@ export async function testModalDestination(index) {
                 port: parseInt(port),
                 type: dest.type || "haproxy",
                 protocol: document.getElementById("formProto") ? document.getElementById("formProto").value : "both",
-                packets: 4
+                packets: 10
             })
         });
         const data = await res.json().catch(() => ({}));
