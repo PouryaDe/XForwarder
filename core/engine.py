@@ -98,6 +98,7 @@ class XForwarderEngine:
         self._target_probe_cache: Dict[Any, Dict[str, Any]] = {}
         self._target_last_probe_time: Dict[str, float] = {}
         self._target_history: Dict[str, Dict[str, Any]] = {}
+        self._target_lock = threading.Lock()
         self.load_config()
 
     @property
@@ -265,7 +266,7 @@ class XForwarderEngine:
                 raw_target = str(dest.get("target", "")).strip().strip("[]")
                 if not raw_target:
                     continue
-                clean_target = sanitize_target_host(raw_target) or raw_target
+                clean_target = (sanitize_target_host(raw_target) or raw_target).lower()
                 is_valid, iface, reason = self._validate_probe_route(dest)
                 if not is_valid:
                     invalid_results[clean_target] = {
@@ -277,6 +278,11 @@ class XForwarderEngine:
                         "jitter_ms": 0.0,
                         "reason": reason
                     }
+                    # Immediately invalidate previous cached entries if route became invalid
+                    with self._target_lock:
+                        self._target_probe_cache.pop(clean_target, None)
+                        self._target_last_probe_time.pop(clean_target, None)
+                        self._target_history.pop(clean_target, None)
                 else:
                     if clean_target not in unique_targets or (iface and not unique_targets[clean_target].get("iface")):
                         unique_targets[clean_target] = {
@@ -285,13 +291,23 @@ class XForwarderEngine:
                             "dest": dest
                         }
 
+        # Evict stale target entries for rules that have been removed
+        with self._target_lock:
+            active_targets = set(unique_targets.keys()) | set(invalid_results.keys())
+            stale_keys = [k for k in list(self._target_probe_cache.keys()) if k not in active_targets]
+            for sk in stale_keys:
+                self._target_probe_cache.pop(sk, None)
+                self._target_last_probe_time.pop(sk, None)
+                self._target_history.pop(sk, None)
+
         # Check in-memory 60s cache
         targets_to_probe: Dict[str, Dict[str, Any]] = {}
-        for target, info in unique_targets.items():
-            last_t = self._target_last_probe_time.get(target, 0.0)
-            if (curr_time - last_t < probe_interval) and (target in self._target_probe_cache):
-                continue
-            targets_to_probe[target] = info
+        with self._target_lock:
+            for target, info in unique_targets.items():
+                last_t = self._target_last_probe_time.get(target, 0.0)
+                if (curr_time - last_t < probe_interval) and (target in self._target_probe_cache):
+                    continue
+                targets_to_probe[target] = info
 
         # Execute parallel 10-ping probes for targets whose 60s interval expired
         if targets_to_probe:
@@ -323,46 +339,48 @@ class XForwarderEngine:
                         "jitter_ms": 0.0,
                         "reason": str(e)
                     }
-                self._target_probe_cache[tgt] = res
-                self._target_last_probe_time[tgt] = curr_time
+                with self._target_lock:
+                    self._target_probe_cache[tgt] = res
+                    self._target_last_probe_time[tgt] = curr_time
 
-                # Update target-level sample history
-                if tgt not in self._target_history:
-                    self._target_history[tgt] = {
-                        "samples": [],
-                        "consecutive_fails": 0,
-                        "consecutive_success": 0
-                    }
-                thist = self._target_history[tgt]
-                sample = summarize_cycle(res, curr_time)
-                thist["samples"].append(sample)
-                thist["samples"] = [s for s in thist["samples"] if (curr_time - float(s[0])) <= window_sec]
+                    # Update target-level sample history
+                    if tgt not in self._target_history:
+                        self._target_history[tgt] = {
+                            "samples": [],
+                            "consecutive_fails": 0,
+                            "consecutive_success": 0
+                        }
+                    thist = self._target_history[tgt]
+                    sample = summarize_cycle(res, curr_time)
+                    thist["samples"].append(sample)
+                    thist["samples"] = [s for s in thist["samples"] if (curr_time - float(s[0])) <= window_sec]
 
         # Compute rolling window aggregates for every valid target
-        for target in unique_targets:
-            if target in self._target_probe_cache and target in self._target_history:
-                thist = self._target_history[target]
-                samples = thist.get("samples", [])
-                short_samples = samples[-3:]
-                short_agg = aggregate_window(short_samples, window_seconds=40.0, now=curr_time)
-                long_agg = aggregate_window(samples, window_seconds=window_sec, now=curr_time)
-                last_loss = float(self._target_probe_cache[target].get("packet_loss", 0.0))
-                lossy_cycles = sum(1 for s in short_samples if isinstance(s, (list, tuple)) and len(s) >= 3 and int(s[2]) < int(s[1]))
-                status = classify_status(
-                    short_loss=short_agg["packet_loss"],
-                    long_loss=long_agg["packet_loss"],
-                    last_cycle_loss=last_loss,
-                    burst_confirmed_dead=False,
-                    route_invalid=False,
-                    max_acceptable_loss=max_loss,
-                    critical_loss=crit_loss,
-                    lossy_cycles=lossy_cycles
-                )
-                thist["short_agg"] = short_agg
-                thist["long_agg"] = long_agg
-                thist["status"] = status
-                thist["last_cycle_loss"] = last_loss
-                thist["lossy_cycles"] = lossy_cycles
+        with self._target_lock:
+            for target in unique_targets:
+                if target in self._target_probe_cache and target in self._target_history:
+                    thist = self._target_history[target]
+                    samples = thist.get("samples", [])
+                    short_samples = samples[-3:]
+                    short_agg = aggregate_window(short_samples, window_seconds=40.0, now=curr_time)
+                    long_agg = aggregate_window(samples, window_seconds=window_sec, now=curr_time)
+                    last_loss = float(self._target_probe_cache[target].get("packet_loss", 0.0))
+                    lossy_cycles = sum(1 for s in short_samples if isinstance(s, (list, tuple)) and len(s) >= 3 and int(s[2]) < int(s[1]))
+                    status = classify_status(
+                        short_loss=short_agg["packet_loss"],
+                        long_loss=long_agg["packet_loss"],
+                        last_cycle_loss=last_loss,
+                        burst_confirmed_dead=False,
+                        route_invalid=False,
+                        max_acceptable_loss=max_loss,
+                        critical_loss=crit_loss,
+                        lossy_cycles=lossy_cycles
+                    )
+                    thist["short_agg"] = short_agg
+                    thist["long_agg"] = long_agg
+                    thist["status"] = status
+                    thist["last_cycle_loss"] = last_loss
+                    thist["lossy_cycles"] = lossy_cycles
 
         # Build consolidated probe_cache indexed by target IP and (target, iface)
         results: Dict[Any, Dict[str, Any]] = {}
@@ -370,13 +388,14 @@ class XForwarderEngine:
             results[target] = res
             results[(target, None)] = res
 
-        for target in unique_targets:
-            if target in self._target_probe_cache:
-                c_res = self._target_probe_cache[target]
-                results[target] = c_res
-                iface = unique_targets[target].get("iface")
-                results[(target, iface)] = c_res
-                results[(target, None)] = c_res
+        with self._target_lock:
+            for target in unique_targets:
+                if target in self._target_probe_cache:
+                    c_res = dict(self._target_probe_cache[target])
+                    results[target] = c_res
+                    iface = unique_targets[target].get("iface")
+                    results[(target, iface)] = c_res
+                    results[(target, None)] = c_res
 
         return results
 
@@ -498,20 +517,27 @@ class XForwarderEngine:
 
             stat = rule_state["dest_stats"][dest_key]
             target = str(dest.get("target", "")).strip().strip("[]")
+            clean_tgt = (sanitize_target_host(target) or target).lower()
             is_valid, iface, route_err = self._validate_probe_route(dest)
 
             # Check destination fingerprint: if target/iface changed, reset samples
-            curr_fp = f"{dest.get('type')}:{target}:{dest.get('port')}:{iface}"
+            curr_fp = f"{dest.get('type')}:{clean_tgt}:{dest.get('port')}:{iface}"
             if stat.get("fingerprint") != curr_fp:
                 stat["fingerprint"] = curr_fp
                 stat["samples"] = []
 
             # Retrieve probe from cache or execute on demand
-            probe_key = (target, iface)
+            probe_key = (clean_tgt, iface)
             if probe_cache is not None and probe_key in probe_cache:
                 check_res = probe_cache[probe_key]
+            elif probe_cache is not None and (target, iface) in probe_cache:
+                check_res = probe_cache[(target, iface)]
+            elif probe_cache is not None and clean_tgt in probe_cache:
+                check_res = probe_cache[clean_tgt]
             elif probe_cache is not None and target in probe_cache:
                 check_res = probe_cache[target]
+            elif probe_cache is not None and (clean_tgt, None) in probe_cache:
+                check_res = probe_cache[(clean_tgt, None)]
             elif probe_cache is not None and (target, None) in probe_cache:
                 check_res = probe_cache[(target, None)]
             else:
@@ -547,14 +573,19 @@ class XForwarderEngine:
 
             # Store compact sample [ts, sent, recv, avg, jit]
             # If target-level shared history exists, use target-level metrics
-            clean_tgt = target.lower()
-            if clean_tgt in self._target_history and "short_agg" in self._target_history[clean_tgt]:
-                thist = self._target_history[clean_tgt]
-                short_agg = thist["short_agg"]
-                long_agg = thist["long_agg"]
-                stat["samples"] = list(thist.get("samples", []))
-                lossy_cycles = thist.get("lossy_cycles", 0)
-            else:
+            has_target_history = False
+            shared_status = None
+            with self._target_lock:
+                thist = self._target_history.get(clean_tgt)
+                if thist and "short_agg" in thist:
+                    has_target_history = True
+                    short_agg = dict(thist["short_agg"])
+                    long_agg = dict(thist["long_agg"])
+                    stat["samples"] = list(thist.get("samples", []))
+                    lossy_cycles = thist.get("lossy_cycles", 0)
+                    shared_status = thist.get("status")
+
+            if not has_target_history:
                 sample = summarize_cycle(check_res, now)
                 if "samples" not in stat or not isinstance(stat["samples"], list):
                     stat["samples"] = []
@@ -582,8 +613,8 @@ class XForwarderEngine:
                     critical_loss=crit_loss,
                     lossy_cycles=lossy_cycles
                 )
-            elif clean_tgt in self._target_history and "status" in self._target_history[clean_tgt]:
-                status = self._target_history[clean_tgt]["status"]
+            elif has_target_history and shared_status:
+                status = shared_status
             else:
                 status = classify_status(
                     short_loss=short_agg["packet_loss"],

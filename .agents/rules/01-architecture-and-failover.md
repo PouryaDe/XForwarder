@@ -30,7 +30,8 @@ A port must **NEVER** be bound by HAProxy and forwarded by NFTables DNAT at the 
   - Probing uses native 10-probe ICMP ping bursts (`ping -c 10 -i 0.2 -W 1`) with 2-packet tail padding (`ICMP_TAIL_PADDING = 2`), `LC_ALL=C`, and IPv4/IPv6 support.
   - Per-reply sequence parsing (`parse_ping_replies`) evaluates strictly sequence 1..10, eliminating false packet loss caused by iputils ping's early exit timer on long RTTs.
   - Extracts average latency, packet loss, and within-cycle jitter (`mdev` on Linux / `(max-min)/2` fallback).
-  - Cross-rule deduplicated parallel probing (`_probe_all_destinations`) executes via a persistent worker pool, probing each unique (IP, interface) endpoint only once per cycle.
+  - Cross-rule deduplicated parallel probing (`_probe_all_destinations`) executes via a persistent worker pool, probing each unique destination IP only once per cycle regardless of port count.
+  - **60-Second In-Memory Target Cache**: Probes execute 10 consecutive pings and persist metrics in memory for 60 seconds (`target_probe_interval_seconds = 60s`). All rules sharing the same destination IP consume identical latency, loss, and composite quality scores, guaranteeing synchronized failovers and eliminating inter-port latency divergence. Route or interface invalidation immediately evicts the cached entry.
 - **Two-Tier Decision Engine (`core/route_quality.py`)**:
   - **Tier 1 (Emergency Outage / Sustained Critical Loss Bypass)**:
     - Triggers on total failure (100% loss), route invalidation (WAN leak), or sustained critical degradation ($\ge \text{critical\_loss\_percent}$, default: 30% across $\ge 2$ cycles in the short window).

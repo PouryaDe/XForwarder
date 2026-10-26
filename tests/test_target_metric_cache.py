@@ -203,6 +203,92 @@ class TestTargetMetricCache(unittest.TestCase):
         self.assertEqual(res["latency_ms"], 80.0)
         mock_probe_icmp.assert_called_once_with("10.81.8.2", iface="tun0", count=10, interval_ms=200)
 
+    @patch("core.engine.prober_probe_destination_icmp")
+    def test_route_invalidation_immediately_clears_cache(self, mock_probe_icmp):
+        mock_probe_icmp.return_value = {
+            "healthy": True,
+            "packets_sent": 10,
+            "packets_received": 10,
+            "packet_loss": 0.0,
+            "latency_ms": 70.0,
+            "jitter_ms": 1.0,
+            "reason": ""
+        }
+
+        # Step 1: Initial probe when route is valid
+        with patch.object(self.engine, "_validate_probe_route", return_value=(True, "tun_gre0", None)):
+            res1 = self.engine._probe_all_destinations(self.rules, now=1000.0)
+            self.assertTrue(res1["10.81.8.2"]["healthy"])
+            self.assertIn("10.81.8.2", self.engine._target_probe_cache)
+
+        # Step 2: Route becomes invalid at t = 1010.0 (e.g. tunnel interface dropped)
+        with patch.object(self.engine, "_validate_probe_route", return_value=(False, "tun_gre0", "Interface tun_gre0 is down")):
+            res2 = self.engine._probe_all_destinations(self.rules, now=1010.0)
+            # Must immediately report failed without returning stale healthy cached ping!
+            self.assertFalse(res2["10.81.8.2"]["healthy"])
+            self.assertEqual(res2["10.81.8.2"]["packet_loss"], 100.0)
+            self.assertNotIn("10.81.8.2", self.engine._target_probe_cache)
+
+    @patch("core.engine.prober_probe_destination_icmp")
+    def test_stale_target_eviction_on_rule_removal(self, mock_probe_icmp):
+        mock_probe_icmp.return_value = {
+            "healthy": True,
+            "packets_sent": 10,
+            "packets_received": 10,
+            "packet_loss": 0.0,
+            "latency_ms": 65.0,
+            "jitter_ms": 0.8,
+            "reason": ""
+        }
+
+        rules_with_old_target = [
+            {"id": "r1", "port": 80, "destinations": [{"priority": 1, "type": "nftables", "target": "10.99.99.1"}]}
+        ]
+
+        with patch.object(self.engine, "_validate_probe_route", return_value=(True, "tun0", None)):
+            self.engine._probe_all_destinations(rules_with_old_target, now=1000.0)
+            self.assertIn("10.99.99.1", self.engine._target_probe_cache)
+
+            # Now rule is changed/removed and points to a new target
+            rules_new = [
+                {"id": "r1", "port": 80, "destinations": [{"priority": 1, "type": "nftables", "target": "10.99.99.2"}]}
+            ]
+            self.engine._probe_all_destinations(rules_new, now=1010.0)
+
+            # Old target must be evicted to prevent memory accumulation in 24/7 daemon
+            self.assertNotIn("10.99.99.1", self.engine._target_probe_cache)
+            self.assertIn("10.99.99.2", self.engine._target_probe_cache)
+
+    @patch("core.engine.prober_probe_destination_icmp")
+    def test_target_casing_normalization(self, mock_probe_icmp):
+        mock_probe_icmp.return_value = {
+            "healthy": True,
+            "packets_sent": 10,
+            "packets_received": 10,
+            "packet_loss": 0.0,
+            "latency_ms": 50.0,
+            "jitter_ms": 0.5,
+            "reason": ""
+        }
+
+        # Rule has uppercase IPv6 target
+        rule_upper = {
+            "id": "r_upper",
+            "port": 443,
+            "destinations": [
+                {"priority": 1, "type": "haproxy", "target": "2001:DB8::ABCD", "port": 443}
+            ]
+        }
+
+        with patch.object(self.engine, "_validate_probe_route", return_value=(True, None, None)):
+            cache = self.engine._probe_all_destinations([rule_upper], now=2000.0)
+            self.engine.evaluate_rule(rule_upper, probe_cache=cache)
+
+            # Must evaluate successfully and find shared history
+            rule_stat = self.engine.runtime_state["rules_state"]["r_upper"]["dest_stats"]["prio_1"]
+            self.assertEqual(rule_stat["latency_ms"], 50.0)
+            self.assertEqual(rule_stat["status"], "healthy")
+
 
 if __name__ == "__main__":
     unittest.main()
