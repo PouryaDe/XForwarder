@@ -60,8 +60,11 @@
     "Diagnosed and resolved web dashboard navigation blank screen and styling breakage post-modularization: mapped section IDs, overrode inline display none styles, restored dark theme default, restored dropped network quality monitor, and synchronized DOM element bindings across modules",
     "Implemented 10-probe ping precision with tail-padding and sequence-aware reply parsing in core/metrics.py, preventing false tail loss",
     "Implemented per-IP target probe deduplication, 10-ping burst averaging, and 60-second in-memory target metric cache in core/engine.py, eliminating inter-port latency divergence across identical tunnel endpoints",
-    "Added unit test suite tests/test_target_metric_cache.py with 100% pass rate across all 219 tests"
+    "Added unit test suite tests/test_target_metric_cache.py with 100% pass rate across all 219 tests",
+    "Separated round-trip latency and 50-probe packet loss into independent badges (.latency-pill and .loss50-pill) with relative time hover tooltips and retired manual test loss button",
+    "Implemented Priority 1 stickiness and 150ms ceiling in route quality decision engine (core/route_quality.py), preventing switches away from Priority 1 for minor ping differences unless packet loss is worse or ping exceeds 150ms",
+    "Implemented Tier 1 Degraded Backup Escape in core/route_quality.py and core/engine.py: immediately failback to Priority 1 when on a backup route that develops packet loss while Priority 1 is healthy, breaking hold guards and flushing conntrack"
   ],
   "next_steps": [],
-  "notes": "Target-level 10-ping probe deduplication and 60s in-memory caching verified. All 219 unit tests passing cleanly."
+  "notes": "Degraded Backup Escape and Priority 1 stickiness implemented. All 235 unit tests passing cleanly."
 }

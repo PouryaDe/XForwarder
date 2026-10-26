@@ -251,10 +251,32 @@ def decide_route(
             else:
                 return best_emerg_cand, "critical", 0
 
+    # Scenario 2: Degraded Backup Escape (Immediate Failback to Priority 1)
+    # If active route is a backup (current_active > 1) and suffers packet loss (degraded/loss > 0)
+    # while Priority 1 is healthy and under 150ms ceiling:
+    # Immediately failback to Priority 1 bypassing hold-down guards!
+    prio1_m = dest_metrics.get(1, {})
+    prio1_status = prio1_m.get("status", "unknown")
+    prio1_loss = float(prio1_m.get("short_loss", prio1_m.get("long_loss", 100.0)))
+    prio1_lat = prio1_m.get("avg_latency_ms")
+    if prio1_lat is None:
+        prio1_lat = prio1_m.get("latency_ms")
+    prio1_lat_val = float(prio1_lat) if prio1_lat is not None else float(prio1_m.get("short_score", 999.0))
+    prio1_is_healthy = (prio1_status == "healthy" and prio1_loss <= 1.0 and prio1_lat_val <= prio1_max_lat)
+
+    if current_active > 1 and prio1_is_healthy:
+        backup_has_loss = (curr_status in ("failed", "critical", "degraded") or curr_short_loss > 0.0 or curr_long_loss > 0.0)
+        if backup_has_loss:
+            return 1, "failback_degraded", 0
+
     # ── Tier 2: Conservative Quality Switching ──
     # Check hold-down guards
-    in_post_crit_cooldown = (time_since_switch < cooldown and rule_state.get("last_switch_reason") == "critical")
+    in_post_crit_cooldown = (time_since_switch < cooldown and rule_state.get("last_switch_reason") in ("critical", "failback_degraded"))
     in_min_hold = (time_since_switch < min_hold)
+
+    # When on a backup and Priority 1 has fully recovered, do not lock traffic to the backup
+    if current_active > 1 and prio1_is_healthy:
+        in_min_hold = False
 
     if in_post_crit_cooldown or in_min_hold:
         # Hold route to prevent flapping

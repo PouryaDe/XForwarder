@@ -569,7 +569,55 @@ class TestRouteQualityEngine(unittest.TestCase):
         self.assertEqual(pending, 120)
         self.assertEqual(rule_state.get("switch_candidate"), 2)
 
+    def test_tier1_degraded_backup_escape_immediate_failback_to_prio1(self):
+        """
+        Exact scenario from production:
+        Current active is Priority 2 (Backup NFTables: 10.81.7.2:9121).
+        Priority 2 has degraded quality (93.7ms, 10% packet loss).
+        Priority 1 is healthy (100.3ms <= 150ms ceiling, 0% packet loss).
+        Even if within min_hold (switch happened 15 seconds ago),
+        the engine must IMMEDIATELY fail back to Priority 1 without holding.
+        """
+        now = 1000.0
+        rule_state = {
+            "last_switch_time": now - 15.0,  # Only 15s ago, deep inside min_hold (600s)!
+            "switch_candidate": None,
+            "switch_streak_start": 0.0,
+            "last_switch_reason": "planned"
+        }
+        dest_metrics = {
+            1: {
+                "status": "healthy",
+                "short_loss": 0.0,
+                "long_loss": 0.0,
+                "short_score": 100.3,
+                "long_score": 100.3,
+                "avg_latency_ms": 100.3,
+                "fill_ratio": 1.0
+            },
+            2: {
+                "status": "degraded",
+                "short_loss": 0.0,
+                "long_loss": 10.0,
+                "short_score": 293.7,
+                "long_score": 293.7,
+                "avg_latency_ms": 93.7,
+                "fill_ratio": 1.0
+            }
+        }
+        config = {
+            "min_hold_seconds": 600,
+            "switch_confirm_seconds": 120,
+            "hysteresis_percent": 20,
+            "max_primary_latency_ms": 150
+        }
+        target, reason, pending = decide_route(rule_state, dest_metrics, current_active=2, config=config, now=now)
+        self.assertEqual(target, 1)
+        self.assertEqual(reason, "failback_degraded")
+        self.assertEqual(pending, 0)
+
 
 if __name__ == "__main__":
     unittest.main()
+
 

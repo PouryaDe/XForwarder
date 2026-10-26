@@ -558,7 +558,7 @@ class XForwarderEngine:
             cooldown = min(600.0, cooldown * 2.0)
 
         rule_state["hold_remaining"] = max(0, round(min_hold - time_since_switch)) if (time_since_switch < min_hold) else 0
-        is_post_crit = (rule_state.get("last_switch_reason") == "critical")
+        is_post_crit = (rule_state.get("last_switch_reason") in ("critical", "failback_degraded"))
         rule_state["cooldown_remaining"] = max(0, round(cooldown - time_since_switch)) if (is_post_crit and time_since_switch < cooldown) else 0
 
         dest_metrics: Dict[int, Dict[str, Any]] = {}
@@ -798,7 +798,7 @@ class XForwarderEngine:
             rule_state["switch_history"].append(now)
             rule_state["active_priority"] = target_active
             rule["active_priority"] = target_active
-            is_crit = (decision_reason == "critical")
+            is_crit = (decision_reason in ("critical", "failback_degraded"))
             self._hot_toggle_rule_priority(rule, old_prio=current_active, new_prio=target_active, is_critical=is_crit)
 
         # Calculate remaining hold and cooldown for UI display
