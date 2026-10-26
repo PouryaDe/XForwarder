@@ -1879,6 +1879,64 @@ class TestUIAndAPIEdgeCases(unittest.TestCase):
         self.assertIn('document.readyState === "loading"', app_js)
         self.assertIn('document.readyState === "loading"', utils_js)
 
+    def test_isolated_ping_latency_and_packet_loss_badges_and_v1_4_0_standards(self):
+        """Verifies version 1.4.0 alignment, glassmorphism sidebar, and strict separation of ping & loss badges."""
+        html_path = os.path.join(REPO_ROOT, "web", "index.html")
+        app_js_path = os.path.join(REPO_ROOT, "web", "app.js")
+        rules_js_path = os.path.join(REPO_ROOT, "web", "js", "modules", "rules.js")
+        utils_js_path = os.path.join(REPO_ROOT, "web", "js", "modules", "utils.js")
+        layout_css_path = os.path.join(REPO_ROOT, "web", "css", "layout.css")
+        style_css_path = os.path.join(REPO_ROOT, "web", "style.css")
+        service_mgr_path = os.path.join(REPO_ROOT, "core", "service_manager.py")
+        sh_path = os.path.join(REPO_ROOT, "xforwarder.sh")
+
+        with open(html_path, "r", encoding="utf-8") as f:
+            html = f.read()
+        with open(app_js_path, "r", encoding="utf-8") as f:
+            app_js = f.read()
+        with open(rules_js_path, "r", encoding="utf-8") as f:
+            rules_js = f.read()
+        with open(utils_js_path, "r", encoding="utf-8") as f:
+            utils_js = f.read()
+        with open(layout_css_path, "r", encoding="utf-8") as f:
+            layout_css = f.read()
+        with open(style_css_path, "r", encoding="utf-8") as f:
+            style_css = f.read()
+        with open(service_mgr_path, "r", encoding="utf-8") as f:
+            svc_mgr = f.read()
+        with open(sh_path, "r", encoding="utf-8") as f:
+            sh_code = f.read()
+
+        # 1. Version 1.4.0 alignment across stack
+        self.assertIn('APP_VERSION = "1.4.0"', svc_mgr)
+        self.assertIn('SCRIPT_VERSION="1.4.0"', sh_code)
+        self.assertIn('id="brandVersionBadge">v1.4.0</span>', html)
+        self.assertIn('id="valInstalledVersion">v1.4.0</span>', html)
+
+        # 2. Topbar manual refresh button completely removed
+        self.assertNotIn('id="btnManualRefresh"', html)
+        self.assertNotIn('id="refreshIcon"', html)
+        self.assertNotIn('btnManualRefresh', app_js)
+
+        # 3. Sidebar glassmorphism styling
+        self.assertIn('.sidebar {', layout_css)
+        self.assertIn('background: var(--bg-card);', layout_css)
+        self.assertIn('backdrop-filter: blur(20px);', layout_css)
+        self.assertIn('background: var(--bg-card);', style_css)
+        self.assertIn('[data-theme="light"] .sidebar {', layout_css)
+
+        # 4. Strict separation of ping latency badge and packet loss badge
+        self.assertNotIn('${loss}% loss (Degraded)', utils_js)
+        self.assertNotIn('${ms} ms · ${loss}%', utils_js)
+        self.assertIn('const label = `${ms} ms`;', utils_js)
+        self.assertIn('Down</span>', utils_js)
+
+        # 5. Format loss 50-probe fallback support
+        self.assertIn('formatLoss50Badge(lossInfo, fallbackLoss = null)', utils_js)
+        self.assertIn('formatLoss50Inline(lossInfo, fallbackLoss = null)', utils_js)
+        self.assertIn('formatLoss50Badge(lossInfo, stat.packet_loss)', rules_js)
+        self.assertIn('formatLoss50Inline(lossInfo, stat.packet_loss)', rules_js)
+
 
 if __name__ == "__main__":
     unittest.main()

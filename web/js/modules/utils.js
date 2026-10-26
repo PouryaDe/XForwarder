@@ -51,6 +51,13 @@ export function safeInlineArg(str) {
     return `'${escaped}'`;
 }
 
+/**
+ * Formats the dedicated round-trip latency pill badge (.latency-pill) for card view.
+ * Strictly displays ping latency (e.g. 100.1 ms or Down); never embeds packet loss.
+ * @param {Object|number|string} statOrMs - Destination health stat object or latency ms number
+ * @param {number} maybeLoss - Fallback loss percentage if statOrMs is a raw number
+ * @returns {string} HTML markup for .latency-pill badge
+ */
 export function formatLatencyBadge(statOrMs, maybeLoss = 0) {
     if (!statOrMs && statOrMs !== 0) return '';
     let stat = statOrMs;

@@ -114,7 +114,7 @@ XForwarder/
     - 15-Minute Background Daemon: `LossMonitorScheduler` runs periodic rounds every 900 seconds.
     - Zero-Redundancy Target Deduplication: Targets across all rules and ports are deduplicated (`get_unique_targets_from_config`); testing is performed strictly once per IP regardless of port count.
     - 30-Day SQLite Time-Series Retention: Metrics are persisted in `/etc/xforwarder/metrics.db` (WAL mode) and automatically pruned after 30 days to protect disk storage.
-    - In-Panel Path Metrics & Test Age Tooltip: Web UI displays the latest 15-minute 50-probe packet loss beside each path's ping readout (`.loss50-pill`) with relative age on hover (e.g. `Tested 4m ago`). Manual 'Test Loss' button is retired.
+    - In-Panel Path Metrics & Strict Badge Isolation: Web UI strictly isolates latency from packet loss. The ping badge displays solely the round-trip latency (`.latency-pill`, e.g. `100.1 ms`), reserving amber for elevated latency/jitter and red for severe delays or hard outages (>250ms or Down). Packet loss is rendered exclusively in its dedicated `.loss50-pill` badge with test age tooltip (e.g. `Tested 4m ago`), with automatic fallback to continuous probe loss when initial SQLite metrics are warming up. Manual 'Test Loss' button is retired.
 
 12. **In-Panel System Updates & Service Control (Mandatory)**:
     - Remote Release & Update Engine: Web dashboard compares local git commit/version against remote GitHub repository (`/api/system/version`) and initiates decoupled update executions via `systemd-run` (`/api/system/update`, `/api/system/update/status`).
