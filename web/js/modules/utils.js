@@ -108,6 +108,11 @@ export function formatLatencyBadge(statOrMs, maybeLoss = 0) {
     return `<span class="latency-pill ${cls}" title="${escapeHtml(tooltipText)}"><span class="latency-dot"></span>${label}</span>`;
 }
 
+/**
+ * Formats a 15-minute 50-probe packet loss pill badge for card view with test age tooltip.
+ * @param {Object|null} lossInfo - Latest packet loss record from SQLite
+ * @returns {string} HTML markup for .loss50-pill badge
+ */
 export function formatLoss50Badge(lossInfo) {
     if (!lossInfo || lossInfo.packet_loss === undefined || lossInfo.packet_loss === null) {
         return "";
@@ -128,6 +133,11 @@ export function formatLoss50Badge(lossInfo) {
     return `<span class="loss50-pill ${cls}" title="${escapeHtml(tooltip)}"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg><span>${loss}% loss</span></span>`;
 }
 
+/**
+ * Formats an inline 15-minute packet loss indicator for list view rows with test age tooltip.
+ * @param {Object|null} lossInfo - Latest packet loss record from SQLite
+ * @returns {string} HTML markup for .loss50-pill-inline
+ */
 export function formatLoss50Inline(lossInfo) {
     if (!lossInfo || lossInfo.packet_loss === undefined || lossInfo.packet_loss === null) {
         return "";

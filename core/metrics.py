@@ -401,8 +401,13 @@ def measure_packet_loss_50(
     return result
 
 
+_LATEST_METRICS_CACHE: Dict[str, Any] = {}
+_LATEST_METRICS_LAST_QUERY: float = 0.0
+_LATEST_METRICS_LOCK = threading.Lock()
+
+
 def record_ping_result(target: str, res: Dict[str, Any], db_path: Optional[str] = None) -> None:
-    """Inserts a ping metric probe result into SQLite database."""
+    """Inserts a ping metric probe result into SQLite database and invalidates latest cache."""
     path = db_path or get_metrics_db_path()
     init_metrics_db(path)
 
@@ -429,16 +434,13 @@ def record_ping_result(target: str, res: Dict[str, Any], db_path: Optional[str] 
             ))
             conn.commit()
             global _LATEST_METRICS_LAST_QUERY
-            _LATEST_METRICS_LAST_QUERY = 0.0
+            with _LATEST_METRICS_LOCK:
+                _LATEST_METRICS_LAST_QUERY = 0.0
+                _LATEST_METRICS_CACHE.clear()
         finally:
             conn.close()
     except Exception as e:
         print(f"[WARN] Failed to record ping metric for {target}: {e}", file=sys.stderr)
-
-
-_LATEST_METRICS_CACHE: Dict[str, Any] = {}
-_LATEST_METRICS_LAST_QUERY: float = 0.0
-_LATEST_METRICS_LOCK = threading.Lock()
 
 
 def get_latest_metrics_per_target(db_path: Optional[str] = None) -> Dict[str, Dict[str, Any]]:
@@ -449,7 +451,7 @@ def get_latest_metrics_per_target(db_path: Optional[str] = None) -> Dict[str, Di
     global _LATEST_METRICS_CACHE, _LATEST_METRICS_LAST_QUERY
     now = time.time()
     with _LATEST_METRICS_LOCK:
-        if _LATEST_METRICS_CACHE and (now - _LATEST_METRICS_LAST_QUERY < 10.0):
+        if not db_path and _LATEST_METRICS_CACHE and (now - _LATEST_METRICS_LAST_QUERY < 10.0):
             return dict(_LATEST_METRICS_CACHE)
 
     path = db_path or get_metrics_db_path()

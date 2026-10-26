@@ -383,6 +383,103 @@ class TestTargetMetricCache(unittest.TestCase):
             if os.path.exists(test_db):
                 os.remove(test_db)
 
+    def test_get_latest_metrics_nonexistent_db_returns_empty_dict(self):
+        """Verifies get_latest_metrics_per_target returns empty dict when DB does not exist."""
+        from core.metrics import get_latest_metrics_per_target
+        res = get_latest_metrics_per_target(db_path="/tmp/nonexistent_db_999999.db")
+        self.assertEqual(res, {})
+
+    @patch("core.engine.prober_probe_destination_icmp")
+    def test_fast_liveness_recovery_clears_dead_state(self, mock_probe_icmp):
+        """
+        Verifies that when a dead target starts replying during a fast liveness check,
+        its dead state is immediately cleared and probe timer reset for full re-test.
+        """
+        rule = {
+            "id": "rule-443",
+            "port": 443,
+            "active_priority": 2,
+            "destinations": [
+                {"priority": 1, "type": "haproxy", "target": "1.1.1.1", "port": 443},
+                {"priority": 2, "type": "nftables", "target": "10.81.8.2", "port": 443, "tunnel_iface": "tun0"}
+            ]
+        }
+
+        # Step 1: Target 1.1.1.1 is dead at t = 1000.0
+        mock_probe_icmp.return_value = {
+            "healthy": False,
+            "packets_sent": 10,
+            "packets_received": 0,
+            "packet_loss": 100.0,
+            "latency_ms": None,
+            "jitter_ms": 0.0,
+            "reason": "Host Unreachable"
+        }
+        with patch.object(self.engine, "_validate_probe_route", return_value=(True, "tun0", None)):
+            c1 = self.engine._probe_all_destinations([rule], now=1000.0)
+            self.assertFalse(c1["1.1.1.1"]["healthy"])
+
+            # Step 2: At t = 1015.0 (fast check), 1.1.1.1 recovers and replies with 2 packets
+            mock_probe_icmp.return_value = {
+                "healthy": True,
+                "packets_sent": 2,
+                "packets_received": 2,
+                "packet_loss": 0.0,
+                "latency_ms": 35.0,
+                "jitter_ms": 0.8,
+                "reason": ""
+            }
+            c2 = self.engine._probe_all_destinations([rule], now=1015.0)
+            # Must immediately be unmarked as dead!
+            self.assertTrue(c2["1.1.1.1"]["healthy"])
+            self.assertEqual(c2["1.1.1.1"]["packet_loss"], 0.0)
+            # Probe timer reset to 0 to trigger full 10-ping burst next cycle
+            self.assertEqual(self.engine._target_last_probe_time["1.1.1.1"], 0.0)
+
+    @patch("core.engine.prober_probe_destination_icmp")
+    def test_fast_liveness_outage_on_backup_does_not_affect_healthy_active(self, mock_probe_icmp):
+        """
+        Verifies that when Priority 1 is active and healthy, an outage on Priority 2 (backup)
+        marks Priority 2 dead without causing any unwanted switch or flapping on Priority 1.
+        """
+        rule = {
+            "id": "rule-443",
+            "port": 443,
+            "active_priority": 1,
+            "destinations": [
+                {"priority": 1, "type": "haproxy", "target": "1.1.1.1", "port": 443},
+                {"priority": 2, "type": "nftables", "target": "10.81.8.2", "port": 443, "tunnel_iface": "tun0"}
+            ]
+        }
+
+        # Step 1: Both healthy at t = 1000.0
+        def icmp_full(target, iface=None, count=10, interval_ms=200):
+            return {"healthy": True, "packets_sent": count, "packets_received": count, "packet_loss": 0.0, "latency_ms": 40.0, "jitter_ms": 1.0, "reason": ""}
+
+        mock_probe_icmp.side_effect = icmp_full
+        with patch.object(self.engine, "_validate_probe_route", return_value=(True, "tun0", None)):
+            c1 = self.engine._probe_all_destinations([rule], now=1000.0)
+            self.engine.evaluate_rule(rule, probe_cache=c1)
+            self.assertEqual(rule["active_priority"], 1)
+
+            # Step 2: At t = 1015.0, Priority 2 drops packets, but Priority 1 is fine
+            def icmp_backup_down(target, iface=None, count=10, interval_ms=200):
+                if target == "10.81.8.2":
+                    return {"healthy": False, "packets_sent": count, "packets_received": 0, "packet_loss": 100.0, "latency_ms": None, "jitter_ms": 0.0, "reason": "No reply"}
+                return {"healthy": True, "packets_sent": count, "packets_received": count, "packet_loss": 0.0, "latency_ms": 40.0, "jitter_ms": 1.0, "reason": ""}
+
+            mock_probe_icmp.side_effect = icmp_backup_down
+            c2 = self.engine._probe_all_destinations([rule], now=1015.0)
+
+            # Priority 1 must stay healthy, Priority 2 marked dead
+            self.assertTrue(c2["1.1.1.1"]["healthy"])
+            self.assertFalse(c2["10.81.8.2"]["healthy"])
+
+            # Rule must stay active on Priority 1!
+            switched = self.engine.evaluate_rule(rule, probe_cache=c2)
+            self.assertFalse(switched)
+            self.assertEqual(rule["active_priority"], 1)
+
 
 if __name__ == "__main__":
     unittest.main()

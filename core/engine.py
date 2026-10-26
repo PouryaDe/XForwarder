@@ -247,9 +247,10 @@ class XForwarderEngine:
     def _probe_all_destinations(self, rules: List[Dict[str, Any]], now: Optional[float] = None) -> Dict[Any, Dict[str, Any]]:
         """
         Deduplicates unique destination IP endpoints across all rules, caches 10-ping probes in memory
-        for target_probe_interval_seconds (default: 60s), and executes parallel probes only when needed.
-        Guarantees that an IP shared across 5 or 50 ports is probed exactly once per minute,
-        and all rules sharing that IP receive identical latency (10-ping average), loss, and score metrics.
+        for target_probe_interval_seconds (default: 60s), and executes fast 2-ping liveness checks every
+        fast_liveness_interval_seconds (default: 15s) to trigger immediate emergency failovers.
+        Guarantees that an IP shared across 5 or 50 ports is probed exactly once per cycle,
+        synchronizing latency, loss, and composite quality metrics across all matching rules.
         """
         curr_time = now if now is not None else time.time()
         probe_interval = float(self.config.get("target_probe_interval_seconds", 60.0))
@@ -405,10 +406,18 @@ class XForwarderEngine:
                             thist["samples"] = [s for s in thist["samples"] if (curr_time - float(s[0])) <= window_sec]
                             thist["status"] = "failed"
                         else:
-                            # Target is alive; if previously marked dead, reset probe timer for full re-test
+                            # Target is alive; if previously marked dead, immediately unmark dead state and trigger full probe
                             was_dead = not self._target_probe_cache.get(tgt, {}).get("healthy", True)
                             if was_dead:
+                                self._target_probe_cache[tgt] = res
                                 self._target_last_probe_time[tgt] = 0.0
+                                if tgt in self._target_history:
+                                    thist = self._target_history[tgt]
+                                    thist["consecutive_fails"] = 0
+                                    thist["consecutive_success"] = 1
+                                    sample = summarize_cycle(res, curr_time)
+                                    thist["samples"].append(sample)
+                                    thist["samples"] = [s for s in thist["samples"] if (curr_time - float(s[0])) <= window_sec]
 
         # Compute rolling window aggregates for every valid target
         with self._target_lock:
