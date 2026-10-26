@@ -365,6 +365,63 @@ rtt min/avg/max/mdev = 15.1/16.2/19.4/0.6 ms
             server.shutdown()
             server.server_close()
 
+    def test_scheduler_resilient_to_none_returning_loader_and_bound_self_fallback(self):
+        """Verifies LossMonitorScheduler runs even if config_loader_fn returns None initially."""
+        class MockEngine:
+            def __init__(self):
+                self.config = {"rules": [{"port": 80, "destinations": [{"target": "1.1.1.1"}]}]}
+            def load_config(self):
+                # Returns None like the original engine bug
+                return None
+
+        mock_engine = MockEngine()
+        scheduler = LossMonitorScheduler(
+            config_loader_fn=mock_engine.load_config,
+            interval_seconds=3600,
+            db_path=self.db_path
+        )
+        with patch("core.metrics.run_scheduled_ping_round") as mock_round:
+            mock_round.return_value = []
+            scheduler.start()
+            scheduler.trigger_now()
+            time.sleep(0.15)
+            # Must have called run_scheduled_ping_round via defensive fallback to mock_engine.config
+            self.assertTrue(mock_round.called)
+            scheduler.stop()
+
+    def test_engine_load_config_returns_dict(self):
+        """Verifies that XForwarderEngine.load_config returns the configuration dictionary."""
+        from core.engine import XForwarderEngine
+        engine = XForwarderEngine()
+        loaded = engine.load_config()
+        self.assertIsInstance(loaded, dict)
+        self.assertIs(loaded, engine.config)
+
+    def test_run_scheduled_ping_round_with_tunnel_iface(self):
+        """Verifies run_scheduled_ping_round binds to destination's tunnel_iface if specified."""
+        cfg = {
+            "rules": [
+                {
+                    "port": 443,
+                    "destinations": [
+                        {"priority": 1, "target": "2001:db8::1", "port": 443},
+                        {"priority": 2, "target": "10.88.1.2", "tunnel_iface": "gre1", "port": 443}
+                    ]
+                }
+            ]
+        }
+        with patch("core.metrics.measure_packet_loss_50") as mock_measure, \
+             patch("core.metrics.prune_old_metrics"):
+            mock_measure.return_value = {"target": "mock", "packet_loss": 0.0}
+            run_scheduled_ping_round(cfg, db_path=self.db_path)
+
+            calls = mock_measure.call_args_list
+            target_to_iface = {call.kwargs.get("target") or call.args[0]: call.kwargs.get("iface") for call in calls}
+            self.assertIn("10.88.1.2", target_to_iface)
+            self.assertEqual(target_to_iface["10.88.1.2"], "gre1")
+            self.assertIn("2001:db8::1", target_to_iface)
+            self.assertIsNone(target_to_iface["2001:db8::1"])
+
 
 if __name__ == "__main__":
     unittest.main()

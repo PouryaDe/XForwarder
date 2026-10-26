@@ -566,9 +566,27 @@ def run_scheduled_ping_round(cfg: Dict[str, Any], db_path: Optional[str] = None)
     targets = get_unique_targets_from_config(cfg)
     results: List[Dict[str, Any]] = []
 
+    # Map each target to its tunnel interface if explicitly configured on any destination
+    target_ifaces: Dict[str, Optional[str]] = {}
+    rules = cfg.get("rules", []) if isinstance(cfg, dict) else []
+    for rule in rules:
+        if not isinstance(rule, dict):
+            continue
+        for dest in rule.get("destinations", []):
+            if not isinstance(dest, dict):
+                continue
+            clean = sanitize_target_host(dest.get("target"))
+            if clean:
+                iface = dest.get("tunnel_iface")
+                if iface and clean not in target_ifaces:
+                    target_ifaces[clean] = str(iface).strip()
+                elif clean not in target_ifaces:
+                    target_ifaces[clean] = None
+
     for target in targets:
+        iface = target_ifaces.get(target)
         try:
-            res = measure_packet_loss_50(target, count=50, interval=0.2, save_to_db=True, db_path=db_path)
+            res = measure_packet_loss_50(target, iface=iface, count=50, interval=0.2, save_to_db=True, db_path=db_path)
             results.append(res)
         except Exception as e:
             print(f"[ERROR] Error probing target {target} in scheduled round: {e}", file=sys.stderr)
@@ -794,15 +812,32 @@ class LossMonitorScheduler:
             self._wake_event.clear()
 
         while not self._stop_event.is_set():
+            self._wake_event.clear()
             try:
                 cfg = self.config_loader_fn() if callable(self.config_loader_fn) else {}
-                if isinstance(cfg, dict):
+                if not isinstance(cfg, dict) or not cfg:
+                    # Defensive fallback 1: Check bound method's self.config
+                    bound_self = getattr(self.config_loader_fn, "__self__", None)
+                    if bound_self and isinstance(getattr(bound_self, "config", None), dict) and bound_self.config:
+                        cfg = bound_self.config
+                    else:
+                        # Defensive fallback 2: Try direct config loader
+                        try:
+                            from core.config_manager import load_config as cm_load
+                            cfg = cm_load()
+                        except Exception:
+                            try:
+                                from config_manager import load_config as cm_load
+                                cfg = cm_load()
+                            except Exception:
+                                cfg = {}
+
+                if isinstance(cfg, dict) and cfg:
                     run_scheduled_ping_round(cfg, db_path=self.db_path)
             except Exception as e:
                 print(f"[ERROR] Exception in LossMonitorScheduler round: {e}", file=sys.stderr)
 
             # Wait for next 15-minute interval or early manual trigger or shutdown
-            self._wake_event.clear()
-            self._wake_event.wait(timeout=self.interval_seconds)
             if self._stop_event.is_set():
                 break
+            self._wake_event.wait(timeout=self.interval_seconds)

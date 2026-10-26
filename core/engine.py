@@ -133,11 +133,12 @@ class XForwarderEngine:
         """Atomically writes current configuration to disk."""
         return cm_save_config(self.config, self.config_path)
 
-    def load_config(self) -> None:
+    def load_config(self) -> Dict[str, Any]:
         """Loads and normalizes configuration from disk using self-healing schema migration."""
         with self.lock:
             self.config = cm_load_config(self.config_path)
             self.runtime_state["wan_interface"] = self._detect_wan_interface()
+            return self.config
 
     def save_config(self) -> bool:
         with self.lock:
@@ -1040,7 +1041,9 @@ class XForwarderEngine:
         self.sync_firewall_and_proxies()
 
         if LossMonitorScheduler and not self._loss_scheduler:
-            self._loss_scheduler = LossMonitorScheduler(config_loader_fn=self.load_config)
+            self._loss_scheduler = LossMonitorScheduler(
+                config_loader_fn=lambda: (self.load_config() or getattr(self, "config", {}))
+            )
             self._loss_scheduler.start()
 
         if TrafficCollector and not self._traffic_collector:
@@ -1087,6 +1090,8 @@ class XForwarderEngine:
                             self._persist_active_priorities(changed_priorities)
                         self.sync_firewall_and_proxies()
                         self._save_state_file()
+                        if config_changed and self._loss_scheduler:
+                            self._loss_scheduler.trigger_now()
                     else:
                         self._save_state_file()
 
