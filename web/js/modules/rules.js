@@ -251,7 +251,7 @@ export function renderRuleCard(rule, rulesState) {
         const rawTarget = String(dest.target || '');
         const cleanTarget = rawTarget.toLowerCase().replace(/^\[|\]$/g, "");
         const lossInfo = (stat && stat.loss_50) || (lastLatestLoss && lastLatestLoss[cleanTarget]) || null;
-        const loss50Badge = formatLoss50Badge(lossInfo);
+        const loss50Badge = formatLoss50Badge(lossInfo, stat.packet_loss);
         const targetDisplay = rawTarget.includes(':') ? `[${escapeHtml(rawTarget)}]` : escapeHtml(rawTarget);
         const latencyBadge = formatLatencyBadge(stat);
         const tagClass = getPrioTagClass(prio);
@@ -399,7 +399,7 @@ export function renderRuleListRow(rule, rulesState) {
         const rawTarget = String(dest.target || '');
         const cleanTarget = rawTarget.toLowerCase().replace(/^\[|\]$/g, "");
         const lossInfo = (stat && stat.loss_50) || (lastLatestLoss && lastLatestLoss[cleanTarget]) || null;
-        const loss50Inline = formatLoss50Inline(lossInfo);
+        const loss50Inline = formatLoss50Inline(lossInfo, stat.packet_loss);
         const targetDisplay = rawTarget.includes(':') ? `[${escapeHtml(rawTarget)}]` : escapeHtml(rawTarget);
 
         let dotColor = '#6EE7B7';
