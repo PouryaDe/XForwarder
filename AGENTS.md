@@ -144,6 +144,12 @@ XForwarder/
     - Pre-Aggregated Hourly Rollups: Hourly traffic records (`traffic_hourly`) persist in SQLite (`metrics.db` in WAL mode) with 90-day retention and auto-pruning. Multi-granularity queries provide 24h (hourly), 7d/30d (daily), and 12m (monthly) analytical breakdowns with upload (RX), download (TX), and total usage.
     - Baseline Offset Reset Model: Billing cycle resets persist current totals in `traffic_resets` as baseline offsets. The current billing cycle counter resets instantly to 0 while historical analytical time-series charts remain intact. Granular reset endpoints (`/api/traffic/reset`) support all entities, single ports (1-65535), and tunnel interfaces with optional permanent history wipe (`wipe_history=true`).
 
+17. **Destination Enable/Disable (On/Off Toggle) Subsystem (Mandatory)**:
+    - Each priority path in a rule supports interactive enable/disable toggling (`enabled: true/false`).
+    - When disabled, the destination is retained in configuration and UI for effortless reactivation, but is completely excluded from probing, route quality evaluation, active priority switching, and proxy/firewall generation.
+    - Disabling the currently active priority or a manually forced priority automatically triggers immediate fallback to the next best enabled priority.
+
+
 
 
 ---

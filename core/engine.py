@@ -267,6 +267,8 @@ class XForwarderEngine:
 
         for rule in rules:
             for dest in rule.get("destinations", []):
+                if not dest.get("enabled", True):
+                    continue
                 raw_target = str(dest.get("target", "")).strip().strip("[]")
                 if not raw_target:
                     continue
@@ -563,6 +565,9 @@ class XForwarderEngine:
 
         dest_metrics: Dict[int, Dict[str, Any]] = {}
 
+        enabled_dests = [d for d in destinations if d.get("enabled", True)]
+        enabled_prios = [d.get("priority", 1) for d in enabled_dests]
+
         for dest in destinations:
             prio = dest.get("priority", 1)
             dest_key = f"prio_{prio}"
@@ -582,6 +587,10 @@ class XForwarderEngine:
                 }
 
             stat = rule_state["dest_stats"][dest_key]
+            stat["enabled"] = bool(dest.get("enabled", True))
+            if not stat["enabled"]:
+                stat["status"] = "disabled"
+                continue
             target = str(dest.get("target", "")).strip().strip("[]")
             clean_tgt = (sanitize_target_host(target) or target).lower()
             is_valid, iface, route_err = self._validate_probe_route(dest)
@@ -750,7 +759,25 @@ class XForwarderEngine:
                 decision_reason = "auto_reset"
                 force_reset_occurred = True
 
-        if force_override > 0:
+        if force_override > 0 and force_override not in enabled_prios:
+            print(f"[WARN] Forced Priority #{force_override} for rule '{rule_id}' is disabled. Falling back to Auto Failover.")
+            rule["force_override"] = 0
+            force_override = 0
+            rule_state["last_force_override"] = 0
+            rule_state["last_switch_time"] = 0
+            rule_state["cooldown_remaining"] = 0
+            rule_state["hold_remaining"] = 0
+            target_active = pick_best_now(rule_state.get("dest_stats", {}), enabled_dests, current_active)
+            decision_reason = "disabled_override_fallback"
+            force_reset_occurred = True
+
+        if current_active not in enabled_prios and enabled_prios:
+            # Active priority was disabled by user! Immediate fallback to best enabled priority
+            target_active = pick_best_now(rule_state.get("dest_stats", {}), enabled_dests, current_active)
+            decision_reason = "disabled_active_fallback"
+            force_reset_occurred = True
+
+        if force_override > 0 and not force_reset_occurred:
             forced_stat = rule_state["dest_stats"].get(f"prio_{force_override}", {})
             is_forced_down = (forced_stat.get("status") in ("failed", "critical") or forced_stat.get("packet_loss", 0) >= 100)
             if is_forced_down:
@@ -761,7 +788,7 @@ class XForwarderEngine:
                 rule_state["last_switch_time"] = 0
                 rule_state["cooldown_remaining"] = 0
                 rule_state["hold_remaining"] = 0
-                target_active = pick_best_now(rule_state.get("dest_stats", {}), rule.get("destinations", []), current_active)
+                target_active = pick_best_now(rule_state.get("dest_stats", {}), enabled_dests, current_active)
                 decision_reason = "auto_fallback"
                 force_reset_occurred = True
             else:
@@ -774,13 +801,17 @@ class XForwarderEngine:
                 rule_state["switch_streak_start"] = 0.0
 
         if force_override == 0 and not force_reset_occurred:
-            target_active, decision_reason, pending_sec = decide_route(
-                rule_state=rule_state,
-                dest_metrics=dest_metrics,
-                current_active=current_active,
-                config=self.config,
-                now=now
-            )
+            if not enabled_prios:
+                target_active = current_active
+                decision_reason = "all_disabled"
+            else:
+                target_active, decision_reason, pending_sec = decide_route(
+                    rule_state=rule_state,
+                    dest_metrics=dest_metrics,
+                    current_active=current_active,
+                    config=self.config,
+                    now=now
+                )
 
         rule_state["switch_pending_seconds"] = pending_sec
         rule_state["candidate_priority"] = rule_state.get("switch_candidate")
@@ -798,7 +829,7 @@ class XForwarderEngine:
             rule_state["switch_history"].append(now)
             rule_state["active_priority"] = target_active
             rule["active_priority"] = target_active
-            is_crit = (decision_reason in ("critical", "failback_degraded"))
+            is_crit = (decision_reason in ("critical", "failback_degraded", "disabled_active_fallback"))
             self._hot_toggle_rule_priority(rule, old_prio=current_active, new_prio=target_active, is_critical=is_crit)
 
         # Calculate remaining hold and cooldown for UI display
@@ -846,11 +877,14 @@ class XForwarderEngine:
 
             dest = None
             for d in rule.get("destinations", []):
-                if d.get("priority") == active_prio:
+                if d.get("enabled", True) and d.get("priority") == active_prio:
                     dest = d
                     break
-            if not dest and rule.get("destinations"):
-                dest = rule["destinations"][0]
+            if not dest:
+                for d in rule.get("destinations", []):
+                    if d.get("enabled", True):
+                        dest = d
+                        break
             if not dest:
                 continue
 

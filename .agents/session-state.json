@@ -63,8 +63,9 @@
     "Added unit test suite tests/test_target_metric_cache.py with 100% pass rate across all 219 tests",
     "Separated round-trip latency and 50-probe packet loss into independent badges (.latency-pill and .loss50-pill) with relative time hover tooltips and retired manual test loss button",
     "Implemented Priority 1 stickiness and 150ms ceiling in route quality decision engine (core/route_quality.py), preventing switches away from Priority 1 for minor ping differences unless packet loss is worse or ping exceeds 150ms",
-    "Implemented Tier 1 Degraded Backup Escape in core/route_quality.py and core/engine.py: immediately failback to Priority 1 when on a backup route that develops packet loss while Priority 1 is healthy, breaking hold guards and flushing conntrack"
+    "Implemented Tier 1 Degraded Backup Escape in core/route_quality.py and core/engine.py: immediately failback to Priority 1 when on a backup route that develops packet loss while Priority 1 is healthy, breaking hold guards and flushing conntrack",
+    "Implemented Destination Enable/Disable (On/Off Toggle) Subsystem: added sleek interactive toggle switch button to rule cards and list rows, modal checkbox, REST API POST /api/rule/toggle-destination, engine evaluation exclusion, active priority fallback, and test suite tests/test_toggle_destination.py with 100% pass rate"
   ],
   "next_steps": [],
-  "notes": "Degraded Backup Escape and Priority 1 stickiness implemented. All 235 unit tests passing cleanly."
+  "notes": "Destination on/off toggle capability implemented and verified. All 242 unit tests passing cleanly."
 }

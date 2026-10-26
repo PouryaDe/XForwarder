@@ -231,6 +231,7 @@ export function renderRuleCard(rule, rulesState) {
         const isPrimary = prio === 1;
         const isActive = prio === activePriority;
         const isFailover = isActive && !isPrimary;
+        const isEnabled = dest.enabled !== undefined ? Boolean(dest.enabled) : true;
 
         const stat = destStats[`prio_${prio}`] || {};
         const isHealthy = (stat.status === 'healthy');
@@ -238,7 +239,10 @@ export function renderRuleCard(rule, rulesState) {
 
         let statusLabel = 'STANDBY';
         let statusClass = 'status-standby';
-        if (isHealthy) {
+        if (!isEnabled) {
+            statusLabel = 'OFF';
+            statusClass = 'status-disabled';
+        } else if (isHealthy) {
             statusLabel = 'HEALTHY';
             statusClass = 'status-healthy';
         } else if (isDown) {
@@ -268,10 +272,12 @@ export function renderRuleCard(rule, rulesState) {
         }
 
         const pathBoxClasses = ['path-box'];
-        if (isActive) {
+        if (!isEnabled) {
+            pathBoxClasses.push('is-disabled');
+        } else if (isActive) {
             pathBoxClasses.push(isFailover ? 'is-failover' : 'is-active');
         }
-        if (isDown) {
+        if (isDown && isEnabled) {
             pathBoxClasses.push('is-down');
         }
 
@@ -293,6 +299,15 @@ export function renderRuleCard(rule, rulesState) {
                             <span class="status-indicator"></span>
                             ${statusLabel}
                         </span>
+                    </div>
+                    <div class="path-header-right">
+                        <button type="button" 
+                                class="btn-dest-toggle ${isEnabled ? 'is-enabled' : 'is-disabled'}" 
+                                onclick="toggleDestinationEnabled(event, decodeURIComponent('${encodedId}'), ${prio})"
+                                title="${isEnabled ? 'Priority #' + prio + ' is ON (Click to turn OFF)' : 'Priority #' + prio + ' is OFF (Click to turn ON)'}">
+                            <span class="dest-toggle-slider"></span>
+                            <span class="dest-toggle-text">${isEnabled ? 'ON' : 'OFF'}</span>
+                        </button>
                     </div>
                 </div>
                 <div class="path-dest">
@@ -387,9 +402,11 @@ export function renderRuleListRow(rule, rulesState) {
         const isHealthy = (stat.status === 'healthy');
         const isDown = (stat.status === 'failed' || stat.status === 'down' || (stat.packet_loss !== undefined && parseInt(stat.packet_loss) >= 100));
 
+        const isEnabled = dest.enabled !== undefined ? Boolean(dest.enabled) : true;
         let pillClass = 'rule-list-path-pill';
-        if (isActive) pillClass += (isFailover ? ' is-failover' : ' is-active');
-        if (isDown) pillClass += ' is-down';
+        if (!isEnabled) pillClass += ' is-disabled';
+        else if (isActive) pillClass += (isFailover ? ' is-failover' : ' is-active');
+        if (isDown && isEnabled) pillClass += ' is-down';
 
         let latText = '';
         if (stat.latency_ms !== null && stat.latency_ms !== undefined && stat.latency_ms > 0) {
@@ -403,7 +420,8 @@ export function renderRuleListRow(rule, rulesState) {
         const targetDisplay = rawTarget.includes(':') ? `[${escapeHtml(rawTarget)}]` : escapeHtml(rawTarget);
 
         let dotColor = '#6EE7B7';
-        if (isDown) dotColor = '#FB7185';
+        if (!isEnabled) dotColor = 'var(--text-muted)';
+        else if (isDown) dotColor = '#FB7185';
         else if (!isHealthy) dotColor = '#FBBF6B';
 
         return `
@@ -411,9 +429,15 @@ export function renderRuleListRow(rule, rulesState) {
                 <span style="width:7px; height:7px; border-radius:50%; background:${dotColor}; display:inline-block;"></span>
                 <span style="font-weight:700; color:var(--text-primary); font-family:var(--font-mono);">#${prio}</span>
                 <span class="font-mono" style="color:var(--text-secondary); font-size:0.75rem;">${targetDisplay}:${escapeHtml(dest.port || rule.port)}</span>
-                ${latText ? `<span class="font-mono" style="color:var(--accent-mint); font-size:0.72rem;">${latText}</span>` : ''}
-                ${loss50Inline}
-                ${isActive ? `<span style="font-size:0.68rem; font-weight:700; color:${isFailover ? 'var(--accent-amber)' : 'var(--accent-mint)'}; text-transform:uppercase;">${isFailover ? 'FAILOVER' : 'ACTIVE'}</span>` : ''}
+                ${latText && isEnabled ? `<span class="font-mono" style="color:var(--accent-mint); font-size:0.72rem;">${latText}</span>` : ''}
+                ${isEnabled ? loss50Inline : ''}
+                ${isActive && isEnabled ? `<span style="font-size:0.68rem; font-weight:700; color:${isFailover ? 'var(--accent-amber)' : 'var(--accent-mint)'}; text-transform:uppercase;">${isFailover ? 'FAILOVER' : 'ACTIVE'}</span>` : ''}
+                <button type="button" 
+                        class="btn-list-dest-toggle ${isEnabled ? 'is-enabled' : 'is-disabled'}" 
+                        onclick="toggleDestinationEnabled(event, decodeURIComponent('${encodedId}'), ${prio})"
+                        title="${isEnabled ? 'Priority #' + prio + ' is ON (Click to turn OFF)' : 'Priority #' + prio + ' is OFF (Click to turn ON)'}">
+                    ${isEnabled ? 'ON' : 'OFF'}
+                </button>
             </div>
         `;
     }).join("");
@@ -625,6 +649,57 @@ export async function handleOverrideChange(ruleId, val, fetchStatusCallback) {
         }
     } catch (_) {
         showToast("Network error updating override mode", "error");
+    }
+}
+
+export async function toggleDestinationEnabled(event, ruleId, prio, fetchStatusCallback) {
+    if (event) {
+        event.stopPropagation();
+        event.preventDefault();
+    }
+    const rule = (currentRules || []).find(r => String(r.id || `rule-${r.port}`) === ruleId);
+    if (!rule || !Array.isArray(rule.destinations)) return;
+
+    const dest = rule.destinations.find(d => (d.priority || 1) === prio);
+    if (!dest) return;
+
+    const currentEnabled = dest.enabled !== undefined ? Boolean(dest.enabled) : true;
+    const newEnabled = !currentEnabled;
+
+    // Optimistic UI update
+    dest.enabled = newEnabled;
+    if (!newEnabled && rule.active_priority === prio) {
+        const nextEnabled = rule.destinations.find(d => (d.priority || 1) !== prio && (d.enabled !== false));
+        if (nextEnabled) {
+            rule.active_priority = nextEnabled.priority || 1;
+        }
+    }
+    renderRules(currentRules, lastRuntime);
+
+    try {
+        const res = await fetch(`${API_BASE}/rule/toggle-destination`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                rule_id: ruleId,
+                priority: prio,
+                enabled: newEnabled
+            })
+        });
+        const data = await res.json().catch(() => ({}));
+        if (res.ok && data.ok) {
+            showToast(`Priority #${prio} turned ${newEnabled ? "ON" : "OFF"}`);
+            if (typeof fetchStatusCallback === "function") fetchStatusCallback();
+        } else {
+            // Revert on failure
+            dest.enabled = currentEnabled;
+            renderRules(currentRules, lastRuntime);
+            showToast(data.error || "Failed to update priority status", "error");
+        }
+    } catch (_) {
+        dest.enabled = currentEnabled;
+        renderRules(currentRules, lastRuntime);
+        showToast("Network error updating priority status", "error");
     }
 }
 

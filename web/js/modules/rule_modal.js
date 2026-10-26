@@ -40,8 +40,8 @@ export function openAddRuleModal() {
     if (ruleCreatedAtInput) ruleCreatedAtInput.value = "";
 
     currentModalDestinations = [
-        { priority: 1, type: "haproxy", target: "", port: "", comment: "", proxy_protocol: false },
-        { priority: 2, type: "nftables", target: "", port: "", comment: "", proxy_protocol: false }
+        { priority: 1, type: "haproxy", target: "", port: "", comment: "", proxy_protocol: false, enabled: true },
+        { priority: 2, type: "nftables", target: "", port: "", comment: "", proxy_protocol: false, enabled: true }
     ];
 
     renderDestinationsList();
@@ -98,7 +98,8 @@ export function openEditRuleModal(ruleId) {
         target: d.target || "",
         port: d.port !== undefined && d.port !== null ? d.port : "",
         comment: d.comment || "",
-        proxy_protocol: Boolean(d.proxy_protocol)
+        proxy_protocol: Boolean(d.proxy_protocol),
+        enabled: d.enabled !== undefined ? Boolean(d.enabled) : true
     }));
 
     if (currentModalDestinations.length === 0) {
@@ -108,7 +109,8 @@ export function openEditRuleModal(ruleId) {
             target: "",
             port: "",
             comment: "",
-            proxy_protocol: false
+            proxy_protocol: false,
+            enabled: true
         });
     }
 
@@ -165,6 +167,10 @@ export function renderDestinationRow(dest, index, totalCount) {
                 <span class="prio-sub">${isPrimary ? "Primary Path" : "Backup Path"}</span>
             </div>
             <div class="prio-header-actions">
+                <label class="dest-toggle-label" style="margin:0; font-size:0.75rem; gap:5px;" title="Enable or disable this priority path">
+                    <input type="checkbox" class="dest-enabled-check" ${dest.enabled !== false ? "checked" : ""}>
+                    <span>Enabled</span>
+                </label>
                 <button type="button" class="btn-prio-move" title="Move Priority Up" ${index === 0 ? "disabled" : ""} onclick="moveDestinationRow(${index}, -1)">
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="18 15 12 9 6 15"/></svg>
                 </button>
@@ -242,6 +248,7 @@ export function syncDestinationsFromDom() {
         const portEl = box.querySelector(".dest-port");
         const commentEl = box.querySelector(".dest-comment");
         const proxyProtoEl = box.querySelector(".dest-proxy-proto");
+        const enabledEl = box.querySelector(".dest-enabled-check");
 
         updated.push({
             priority: i + 1,
@@ -249,7 +256,8 @@ export function syncDestinationsFromDom() {
             target: targetEl ? targetEl.value.trim() : "",
             port: (portEl && portEl.value.trim()) ? parseInt(portEl.value.trim()) : null,
             comment: commentEl ? commentEl.value.trim() : "",
-            proxy_protocol: proxyProtoEl ? proxyProtoEl.checked : false
+            proxy_protocol: proxyProtoEl ? proxyProtoEl.checked : false,
+            enabled: enabledEl ? enabledEl.checked : true
         });
     });
     currentModalDestinations = updated;

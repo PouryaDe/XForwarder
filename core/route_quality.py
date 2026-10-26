@@ -161,13 +161,15 @@ def pick_best_now(
     eligible: List[Tuple[float, int]] = []
 
     for d in dests:
+        if not d.get("enabled", True):
+            continue
         p = d.get("priority", 1)
         st = dest_stats.get(f"prio_{p}", {})
         status = st.get("status", "unknown")
         loss = st.get("packet_loss", 100.0)
         score = st.get("composite_score", 999.0)
 
-        if status not in ("failed", "critical") and loss < 100.0:
+        if status not in ("failed", "critical", "disabled") and loss < 100.0:
             # Healthy routes get bonus priority
             adj_score = score if status == "healthy" else score + 50.0
             eligible.append((adj_score, p))
@@ -176,7 +178,10 @@ def pick_best_now(
         eligible.sort(key=lambda x: x[0])
         return eligible[0][1]
 
-    # If all routes are degraded or failed, return priority 1 or current
+    # If all routes are degraded or failed, return first enabled priority or 1
+    enabled_dests = [d for d in dests if d.get("enabled", True)]
+    if enabled_dests:
+        return enabled_dests[0].get("priority", 1)
     return dests[0].get("priority", 1)
 
 

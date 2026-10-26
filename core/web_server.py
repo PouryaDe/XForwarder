@@ -933,6 +933,72 @@ class XForwarderWebHandler(BaseHTTPRequestHandler):
             else:
                 self.send_json({"ok": False, "error": "Save failed"}, 500)
 
+        elif subpath in ("/api/rule/toggle-destination", "/api/destination/toggle"):
+            rule_id = str(body.get("rule_id", "")).strip()
+            try:
+                target_prio = int(body.get("priority", 1))
+            except (ValueError, TypeError):
+                self.send_json({"ok": False, "error": "Invalid priority"}, 400)
+                return
+
+            explicit_enabled = body.get("enabled")
+            if explicit_enabled is not None:
+                explicit_enabled = bool(explicit_enabled)
+
+            cfg = load_config()
+            found_rule = None
+            found_dest = None
+            matched_rule_id = rule_id
+
+            for r in cfg.get("rules", []):
+                r_id = str(r.get("id") or f"rule-{r.get('port')}")
+                if r.get("id") == rule_id or r_id == rule_id or str(r.get("port")) == rule_id:
+                    found_rule = r
+                    matched_rule_id = r.get("id") or r_id
+                    for d in r.get("destinations", []):
+                        if int(d.get("priority", 1)) == target_prio:
+                            found_dest = d
+                            break
+                    break
+
+            if not found_rule or not found_dest:
+                self.send_json({"ok": False, "error": "Rule or destination priority not found"}, 404)
+                return
+
+            curr_en = bool(found_dest.get("enabled", True))
+            new_enabled = (not curr_en) if explicit_enabled is None else explicit_enabled
+            found_dest["enabled"] = new_enabled
+
+            # If this priority was disabled, adjust active priority or override if needed
+            if not new_enabled:
+                if found_rule.get("force_override") == target_prio:
+                    found_rule["force_override"] = 0
+                if found_rule.get("active_priority") == target_prio:
+                    enabled_dests = [d for d in found_rule.get("destinations", []) if d.get("enabled", True)]
+                    if enabled_dests:
+                        found_rule["active_priority"] = enabled_dests[0].get("priority", 1)
+
+            if save_config(cfg):
+                update_state_rules({
+                    matched_rule_id: {
+                        "active_priority": found_rule.get("active_priority", 1),
+                        "force_override": found_rule.get("force_override", 0)
+                    }
+                })
+                sync_ok, sync_errors = sync_rules_and_notify(max_retries=2)
+                self.send_json({
+                    "ok": True,
+                    "rule_id": matched_rule_id,
+                    "priority": target_prio,
+                    "enabled": new_enabled,
+                    "rule": found_rule,
+                    "sync_ok": sync_ok,
+                    "sync_errors": sync_errors
+                })
+            else:
+                self.send_json({"ok": False, "error": "Save failed"}, 500)
+            return
+
         elif subpath == "/api/sync":
             sync_ok, sync_errors = sync_rules_and_notify(max_retries=2)
             self.send_json({

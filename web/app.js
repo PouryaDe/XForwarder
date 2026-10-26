@@ -41,6 +41,7 @@ import {
     handlePathDragEnd,
     handlePathDrop,
     handleOverrideChange,
+    toggleDestinationEnabled,
     deleteRule,
     initRulesViewControls
 } from "./js/modules/rules.js";
@@ -135,6 +136,7 @@ window.handleModalPrioDragLeave = handleModalPrioDragLeave;
 window.handleModalPrioDragEnd = handleModalPrioDragEnd;
 window.handleModalPrioDrop = handleModalPrioDrop;
 window.handleOverrideChange = (ruleId, val) => handleOverrideChange(ruleId, val, fetchStatus);
+window.toggleDestinationEnabled = (e, ruleId, prio) => toggleDestinationEnabled(e, ruleId, prio, fetchStatus);
 window.deleteRule = (ruleId) => deleteRule(ruleId, fetchStatus);
 window.copyIpToClipboard = copyIpToClipboard;
 window.copyText = copyText;

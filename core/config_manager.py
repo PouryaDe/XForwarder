@@ -457,6 +457,14 @@ def migrate_and_normalize_config(cfg: Dict[str, Any]) -> Tuple[Dict[str, Any], b
                 d["proxy_protocol"] = has_pp
                 modified = True
 
+            is_enabled = bool(d.get("enabled", True))
+            if "enabled" not in d:
+                d["enabled"] = is_enabled
+                modified = True
+            elif d.get("enabled") != is_enabled:
+                d["enabled"] = is_enabled
+                modified = True
+
     return cfg, modified
 
 
@@ -672,6 +680,8 @@ def validate_rule(body: dict) -> Tuple[bool, str]:
             d["priority"] = prio
         except (ValueError, TypeError):
             return False, "Destination priority must be a valid integer"
+
+        d["enabled"] = bool(d.get("enabled", True))
 
     return True, ""
 

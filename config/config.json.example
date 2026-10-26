@@ -44,6 +44,7 @@
           "type": "haproxy",
           "target": "2001:4ba0:cafe:84e::1",
           "port": 2023,
+          "enabled": true,
           "comment": "Foreign Server 1 - Primary IPv6 Relay"
         },
         {
@@ -52,6 +53,7 @@
           "target": "10.88.1.2",
           "port": 2023,
           "tunnel_iface": "gre1",
+          "enabled": true,
           "comment": "Foreign Server 1 - Backup GRE/FakeTCP Tunnel"
         }
       ]
