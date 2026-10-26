@@ -271,11 +271,13 @@ class TestRouteQualityEngine(unittest.TestCase):
         }
         dest_metrics = {
             1: {
+                # Current route has 160ms latency (exceeds 150ms ceiling, allowing switch to backup)
                 "status": "healthy",
                 "short_loss": 0.0,
                 "long_loss": 0.0,
-                "short_score": 100.0,
-                "long_score": 100.0,
+                "short_score": 160.0,
+                "long_score": 160.0,
+                "avg_latency_ms": 160.0,
                 "fill_ratio": 1.0
             },
             2: {
@@ -285,13 +287,15 @@ class TestRouteQualityEngine(unittest.TestCase):
                 "long_loss": 0.0,
                 "short_score": 50.0,
                 "long_score": 50.0,
+                "avg_latency_ms": 50.0,
                 "fill_ratio": 1.0
             }
         }
         config = {
             "min_hold_seconds": 600,
             "switch_confirm_seconds": 120,
-            "hysteresis_percent": 20
+            "hysteresis_percent": 20,
+            "max_primary_latency_ms": 150
         }
 
         # Step 1: First cycle detecting superiority -> Starts streak timer (pending 120s)
@@ -439,6 +443,131 @@ class TestRouteQualityEngine(unittest.TestCase):
         dests = [{"priority": 1, "target": "1.1.1.1"}, {"priority": 2, "target": "2.2.2.2"}]
         # When all fail, falls back to priority 1
         self.assertEqual(pick_best_now(dest_stats, dests, current_active=1), 1)
+
+    def test_tier2_priority_1_protected_when_under_150ms_and_clean_loss(self):
+        """Verifies Priority 1 does NOT switch to backup merely because backup has 20-30ms lower ping."""
+        now = 1000.0
+        rule_state = {
+            "last_switch_time": now - 700.0,
+            "switch_candidate": None,
+            "switch_streak_start": 0.0
+        }
+        dest_metrics = {
+            1: {
+                "status": "healthy",
+                "short_loss": 0.0,
+                "long_loss": 0.0,
+                "short_score": 75.0,
+                "long_score": 75.0,
+                "avg_latency_ms": 75.0,
+                "fill_ratio": 1.0
+            },
+            2: {
+                # Backup has 45ms ping (30ms lower, >20% better score)
+                "status": "healthy",
+                "short_loss": 0.0,
+                "long_loss": 0.0,
+                "short_score": 45.0,
+                "long_score": 45.0,
+                "avg_latency_ms": 45.0,
+                "fill_ratio": 1.0
+            }
+        }
+        config = {
+            "min_hold_seconds": 600,
+            "switch_confirm_seconds": 120,
+            "hysteresis_percent": 20,
+            "max_primary_latency_ms": 150
+        }
+        # Because Priority 1 is healthy, loss is 0%, and latency (75ms) <= 150ms,
+        # it MUST remain on Priority 1 and NOT start a switch to Priority 2!
+        target, reason, pending = decide_route(rule_state, dest_metrics, current_active=1, config=config, now=now)
+        self.assertEqual(target, 1)
+        self.assertEqual(reason, "hold")
+        self.assertEqual(pending, 0)
+        self.assertIsNone(rule_state.get("switch_candidate"))
+
+    def test_tier2_priority_1_switches_when_latency_exceeds_150ms(self):
+        """Verifies Priority 1 initiates switch to backup when latency exceeds 150ms ceiling."""
+        now = 1000.0
+        rule_state = {
+            "last_switch_time": now - 700.0,
+            "switch_candidate": None,
+            "switch_streak_start": 0.0
+        }
+        dest_metrics = {
+            1: {
+                # Priority 1 elevated ping > 150ms
+                "status": "healthy",
+                "short_loss": 0.0,
+                "long_loss": 0.0,
+                "short_score": 175.0,
+                "long_score": 175.0,
+                "avg_latency_ms": 175.0,
+                "fill_ratio": 1.0
+            },
+            2: {
+                "status": "healthy",
+                "short_loss": 0.0,
+                "long_loss": 0.0,
+                "short_score": 50.0,
+                "long_score": 50.0,
+                "avg_latency_ms": 50.0,
+                "fill_ratio": 1.0
+            }
+        }
+        config = {
+            "min_hold_seconds": 600,
+            "switch_confirm_seconds": 120,
+            "hysteresis_percent": 20,
+            "max_primary_latency_ms": 150
+        }
+        target, reason, pending = decide_route(rule_state, dest_metrics, current_active=1, config=config, now=now)
+        self.assertEqual(target, 1)  # pending streak confirmation
+        self.assertEqual(reason, "pending")
+        self.assertEqual(pending, 120)
+        self.assertEqual(rule_state.get("switch_candidate"), 2)
+
+    def test_tier2_priority_1_switches_when_packet_loss_worse(self):
+        """Verifies Priority 1 initiates switch to backup when it has higher packet loss."""
+        now = 1000.0
+        rule_state = {
+            "last_switch_time": now - 700.0,
+            "switch_candidate": None,
+            "switch_streak_start": 0.0
+        }
+        dest_metrics = {
+            1: {
+                # Ping is good (60ms <= 150ms), but packet loss is 6%
+                "status": "degraded",
+                "short_loss": 6.0,
+                "long_loss": 6.0,
+                "short_score": 180.0,
+                "long_score": 180.0,
+                "avg_latency_ms": 60.0,
+                "fill_ratio": 1.0
+            },
+            2: {
+                "status": "healthy",
+                "short_loss": 0.0,
+                "long_loss": 0.0,
+                "short_score": 70.0,
+                "long_score": 70.0,
+                "avg_latency_ms": 70.0,
+                "fill_ratio": 1.0
+            }
+        }
+        config = {
+            "min_hold_seconds": 600,
+            "switch_confirm_seconds": 120,
+            "hysteresis_percent": 20,
+            "max_primary_latency_ms": 150
+        }
+        target, reason, pending = decide_route(rule_state, dest_metrics, current_active=1, config=config, now=now)
+        self.assertEqual(target, 1)  # pending streak confirmation
+        self.assertEqual(reason, "pending")
+        self.assertEqual(pending, 120)
+        self.assertEqual(rule_state.get("switch_candidate"), 2)
 
 
 if __name__ == "__main__":

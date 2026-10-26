@@ -94,7 +94,8 @@ def migrate_and_normalize_config(cfg: Dict[str, Any]) -> Tuple[Dict[str, Any], b
         "priority_bias_ms": 0,
         "fast_probe_burst": 5,
         "target_probe_interval_seconds": 60,
-        "fast_liveness_interval_seconds": 15
+        "fast_liveness_interval_seconds": 15,
+        "max_primary_latency_ms": 150
     }
     for k, v in defaults.items():
         if k not in cfg:
@@ -262,6 +263,15 @@ def migrate_and_normalize_config(cfg: Dict[str, Any]) -> Tuple[Dict[str, Any], b
             modified = True
     except (ValueError, TypeError):
         cfg["fast_probe_burst"] = 5
+        modified = True
+
+    try:
+        val = max(50, min(int(cfg.get("max_primary_latency_ms", 150)), 1000))
+        if cfg.get("max_primary_latency_ms") != val:
+            cfg["max_primary_latency_ms"] = val
+            modified = True
+    except (ValueError, TypeError):
+        cfg["max_primary_latency_ms"] = 150
         modified = True
 
     if not isinstance(cfg.get("fast_failover_enabled"), bool):
@@ -733,6 +743,7 @@ def export_config_data(cfg: Optional[dict] = None) -> dict:
         "fast_probe_burst": cfg.get("fast_probe_burst", 5),
         "target_probe_interval_seconds": cfg.get("target_probe_interval_seconds", 60),
         "fast_liveness_interval_seconds": cfg.get("fast_liveness_interval_seconds", 15),
+        "max_primary_latency_ms": cfg.get("max_primary_latency_ms", 150),
         "rules": cfg.get("rules", [])
     }
 

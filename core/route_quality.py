@@ -192,6 +192,8 @@ def decide_route(
     Tier 1 (Emergency): Immediate failover on hard failure or critical degradation.
     Tier 2 (Conservative Quality): Requires min_hold expiration, significant score advantage
            (hysteresis >= 20% & >= 15 abs), non-worse packet loss, and sustained confirmation (120s).
+           Protects Priority 1: never switches away to backup routes merely for 10-20ms lower ping,
+           unless Priority 1 has worse packet loss or its latency exceeds max_primary_latency_ms (default: 150ms).
 
     Returns:
     (target_priority: int, reason: str, switch_pending_seconds: int)
@@ -205,6 +207,7 @@ def decide_route(
     cooldown = float(config.get("cooldown_seconds", 60))
     hysteresis_pct = float(config.get("hysteresis_percent", 20))
     confirm_sec = float(config.get("switch_confirm_seconds", 120))
+    prio1_max_lat = float(config.get("max_primary_latency_ms", 150.0))
     is_flapping = bool(rule_state.get("is_flapping", False))
 
     if is_flapping:
@@ -286,6 +289,24 @@ def decide_route(
         # Never trade lower latency for higher packet loss!
         if cand_loss > (curr_long_loss + 0.5):
             continue
+
+        # ── Primary Route (Priority 1) Stickiness Rule ──
+        # When Priority 1 is currently active, do NOT switch away to backup paths (p > 1)
+        # merely because the backup has 10-30ms lower latency!
+        # Only switch away from Priority 1 if:
+        # 1) Priority 1 packet loss is worse than candidate (curr_long_loss > cand_loss + 0.5), OR
+        # 2) Priority 1 latency exceeds prio1_max_lat (default: 150ms).
+        if current_active == 1 and p > 1:
+            curr_lat = curr_m.get("avg_latency_ms")
+            if curr_lat is None:
+                curr_lat = curr_m.get("latency_ms")
+            curr_lat_val = float(curr_lat) if curr_lat is not None else float(curr_m.get("long_score", 0.0))
+            loss_is_worse = (curr_long_loss > cand_loss + 0.5)
+            latency_exceeded = (curr_lat_val > prio1_max_lat)
+
+            if not loss_is_worse and not latency_exceeded:
+                # Priority 1 is healthy and <= 150ms with clean loss; keep Priority 1 active!
+                continue
 
         cand_score = float(m.get("long_score", 999.0))
         # Hysteresis requirement: candidate must beat current score by at least hysteresis_percent% AND >= 15 points (or 10 in test mode)

@@ -733,7 +733,9 @@ class XForwarderEngine:
                 "long_loss": long_agg["packet_loss"],
                 "short_score": short_score,
                 "long_score": long_score,
-                "fill_ratio": long_agg["fill_ratio"]
+                "fill_ratio": long_agg["fill_ratio"],
+                "avg_latency_ms": long_agg["avg_latency_ms"] if long_agg["avg_latency_ms"] is not None else check_res.get("latency_ms"),
+                "latency_ms": stat.get("latency_ms")
             }
 
         # ── Decision Logic ──

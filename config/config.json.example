@@ -18,6 +18,7 @@
   "jitter_penalty_weight": 2,
   "priority_bias_ms": 0,
   "fast_probe_burst": 5,
+  "max_primary_latency_ms": 150,
   "web": {
     "bind_host": "0.0.0.0",
     "port": 8090,
