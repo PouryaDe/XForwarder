@@ -840,8 +840,12 @@ class XForwarderEngine:
             min_hold = min(3600.0, min_hold * 2.0)
             cooldown = min(600.0, cooldown * 2.0)
 
+        # Hold badge is only active when the engine actively held the route this cycle
         if rule_state.get("last_switch_time", 0.0) > 0:
-            rule_state["hold_remaining"] = max(0, round(min_hold - time_since_switch))
+            if decision_reason == "hold":
+                rule_state["hold_remaining"] = max(0, round(min_hold - time_since_switch))
+            else:
+                rule_state["hold_remaining"] = 0
             rule_state["cooldown_remaining"] = max(0, round(cooldown - time_since_switch))
         else:
             rule_state["hold_remaining"] = 0

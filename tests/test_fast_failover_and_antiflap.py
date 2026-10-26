@@ -566,6 +566,60 @@ class TestFastFailoverAndAntiFlap(unittest.TestCase):
             self.assertEqual(rule["force_override"], 2)
             self.assertEqual(rule["active_priority"], 2)
 
+    def test_evaluate_rule_failback_from_degraded_backup_clears_hold_remaining(self):
+        """
+        Tests that when an active backup route (Priority 2) experiences packet loss (4%),
+        and Priority 1 is healthy (110.6ms, 0% loss), evaluate_rule immediately switches
+        back to Priority 1 and does NOT leave hold_remaining set to 1200s even if is_flapping is True.
+        """
+        now = time.time()
+        rule = {
+            "id": "rule-9224",
+            "port": 9224,
+            "protocol": "tcp",
+            "active_priority": 2,
+            "force_override": 0,
+            "destinations": [
+                {"priority": 1, "type": "haproxy", "target": "2001:4ba0:cafe:bd5::1", "port": 9224, "enabled": True},
+                {"priority": 2, "type": "nftables", "target": "10.81.8.2", "port": 9224, "enabled": True}
+            ]
+        }
+        self.engine.config["rules"] = [rule]
+        self.engine.config["min_hold_seconds"] = 600
+        self.engine.config["max_primary_latency_ms"] = 150.0
+
+        rule_state = {
+            "active_priority": 2,
+            "last_force_override": 0,
+            "last_switch_time": now - 15.0,  # Switched 15s ago
+            "last_switch_reason": "critical",
+            "is_flapping": True,
+            "switch_history": [now - 300, now - 150, now - 15],
+            "dest_stats": {
+                "prio_1": {"samples": [[now - 20, 10, 10, 110.6, 0.0, 0.0]], "status": "healthy"},
+                "prio_2": {"samples": [[now - 20, 10, 9, 123.3, 10.0, 4.0]], "status": "degraded"}
+            }
+        }
+        self.engine.runtime_state["rules_state"]["rule-9224"] = rule_state
+
+        def mock_check(dest, rule_port=None, protocol=None):
+            prio = dest.get("priority")
+            if prio == 1:
+                return {"healthy": True, "latency_ms": 110.6, "packet_loss": 0, "packets_sent": 50, "packets_received": 50, "jitter_ms": 2.0}
+            else:
+                return {"healthy": True, "latency_ms": 123.3, "packet_loss": 4.0, "packets_sent": 50, "packets_received": 48, "jitter_ms": 3.0}
+
+        with patch.object(self.engine, "check_destination", side_effect=mock_check), \
+             patch.object(self.engine, "_hot_toggle_rule_priority") as mock_toggle, \
+             patch.object(self.engine, "_validate_probe_route", return_value=(True, "eth0", None)):
+            changed = self.engine.evaluate_rule(rule)
+            self.assertTrue(changed)
+            self.assertEqual(rule["active_priority"], 1)
+            self.assertEqual(rule_state["active_priority"], 1)
+            self.assertEqual(rule_state["last_switch_reason"], "failback_degraded")
+            # Must NOT be locked in 1200s hold!
+            self.assertEqual(rule_state["hold_remaining"], 0)
+
 
 if __name__ == "__main__":
     unittest.main()

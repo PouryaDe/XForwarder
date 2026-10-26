@@ -113,6 +113,10 @@ class TestRouteQualityEngine(unittest.TestCase):
         s_healthy = classify_status(short_loss=0, long_loss=0, last_cycle_loss=0, burst_confirmed_dead=False, route_invalid=False)
         self.assertEqual(s_healthy, "healthy")
 
+        # Healthy when recovered: historical long_loss was 6.0%, but short_loss is 0% and last_cycle is 0%
+        s_recovered = classify_status(short_loss=0, long_loss=6.0, last_cycle_loss=0, burst_confirmed_dead=False, route_invalid=False)
+        self.assertEqual(s_recovered, "healthy")
+
         # Degraded: loss between 25% and 30%
         s_degraded = classify_status(short_loss=26.0, long_loss=26.0, last_cycle_loss=20.0, burst_confirmed_dead=False, route_invalid=False, max_acceptable_loss=25.0, critical_loss=30.0)
         self.assertEqual(s_degraded, "degraded")
@@ -602,6 +606,55 @@ class TestRouteQualityEngine(unittest.TestCase):
                 "short_score": 293.7,
                 "long_score": 293.7,
                 "avg_latency_ms": 93.7,
+                "fill_ratio": 1.0
+            }
+        }
+        config = {
+            "min_hold_seconds": 600,
+            "switch_confirm_seconds": 120,
+            "hysteresis_percent": 20,
+            "max_primary_latency_ms": 150
+        }
+        target, reason, pending = decide_route(rule_state, dest_metrics, current_active=2, config=config, now=now)
+        self.assertEqual(target, 1)
+        self.assertEqual(reason, "failback_degraded")
+        self.assertEqual(pending, 0)
+
+    def test_failback_from_lossy_backup_even_if_flapping_and_prio1_was_degraded(self):
+        """
+        Exact user bug report scenario:
+        - Port :9224 is on Priority 2 (NFTables 10.81.8.2:9224)
+        - Priority 2 has 4% packet loss, 123.3ms latency, and is labeled 'degraded'
+        - Priority 1 (HAProxy IPv6) has 0% short loss, 110.6ms latency (<= 150ms ceiling),
+          but status was 'degraded' due to older samples in the 5-minute window!
+        - Flap Guard is active (is_flapping=True) with 1200s hold (switched only 20s ago).
+        The engine MUST immediately return (1, 'failback_degraded', 0) without holding for 1200s!
+        """
+        now = 2000.0
+        rule_state = {
+            "last_switch_time": now - 20.0,  # Switched 20 seconds ago
+            "switch_candidate": None,
+            "switch_streak_start": 0.0,
+            "is_flapping": True,             # Flap guard active (1200s hold!)
+            "last_switch_reason": "critical"
+        }
+        dest_metrics = {
+            1: {
+                "status": "degraded",       # Still labeled degraded from older window!
+                "short_loss": 0.0,          # But 0% current loss
+                "long_loss": 5.5,
+                "short_score": 110.6,
+                "long_score": 220.6,
+                "avg_latency_ms": 110.6,
+                "fill_ratio": 1.0
+            },
+            2: {
+                "status": "degraded",
+                "short_loss": 4.0,          # 4% packet loss on active backup
+                "long_loss": 4.0,
+                "short_score": 203.3,
+                "long_score": 203.3,
+                "avg_latency_ms": 123.3,
                 "fill_ratio": 1.0
             }
         }
