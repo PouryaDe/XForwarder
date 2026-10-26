@@ -2290,6 +2290,270 @@ input:-webkit-autofill:active {
     gap: 6px;
 }
 
+/* ==========================================================================
+   Destination On/Off Switch Toggle (iOS / Material Pill Style)
+   ========================================================================== */
+.btn-dest-toggle {
+    position: relative;
+    width: 36px;
+    height: 20px;
+    border-radius: 9999px;
+    border: none;
+    outline: none;
+    cursor: pointer;
+    padding: 0;
+    margin: 0;
+    display: inline-flex;
+    align-items: center;
+    user-select: none;
+    flex-shrink: 0;
+    background: #475569;
+    transition: background-color 0.25s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.25s ease, transform 0.15s ease;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.btn-dest-toggle:hover {
+    filter: brightness(1.06);
+}
+
+.btn-dest-toggle:active {
+    transform: scale(0.95);
+}
+
+.btn-dest-toggle .dest-toggle-slider {
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #FFFFFF;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35), 0 2px 4px rgba(0, 0, 0, 0.15);
+    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    pointer-events: none;
+}
+
+/* Enabled: Vibrant Green pill with white knob shifted to the right */
+.btn-dest-toggle.is-enabled {
+    background: #22C55E;
+    box-shadow: 0 1px 4px rgba(34, 197, 94, 0.35);
+}
+
+.btn-dest-toggle.is-enabled:hover {
+    background: #16A34A;
+    box-shadow: 0 0 8px rgba(34, 197, 94, 0.5);
+}
+
+.btn-dest-toggle.is-enabled .dest-toggle-slider {
+    transform: translateX(16px);
+}
+
+/* Disabled: Neutral Slate Gray pill with white knob on the left */
+.btn-dest-toggle.is-disabled {
+    background: #475569;
+}
+
+.btn-dest-toggle.is-disabled:hover {
+    background: #64748B;
+}
+
+.btn-dest-toggle.is-disabled .dest-toggle-slider {
+    transform: translateX(0);
+}
+
+/* Light Theme Overrides */
+[data-theme="light"] .btn-dest-toggle.is-disabled {
+    background: #CBD5E1;
+}
+
+[data-theme="light"] .btn-dest-toggle.is-disabled:hover {
+    background: #94A3B8;
+}
+
+[data-theme="light"] .btn-dest-toggle.is-enabled {
+    background: #22C55E;
+    box-shadow: 0 1px 4px rgba(34, 197, 94, 0.25);
+}
+
+/* Disabled Path Box */
+.path-box.is-disabled {
+    opacity: 0.45;
+    filter: grayscale(0.5);
+    border-color: rgba(255, 255, 255, 0.05);
+    background: rgba(255, 255, 255, 0.01);
+    transition: opacity 0.2s ease, filter 0.2s ease, border-color 0.2s ease;
+}
+
+.path-box.is-disabled:hover {
+    opacity: 0.75;
+}
+
+[data-theme="light"] .path-box.is-disabled {
+    opacity: 0.48;
+    filter: grayscale(0.5);
+    border-color: rgba(15, 23, 42, 0.08);
+    background: rgba(15, 23, 42, 0.01);
+}
+
+.status-disabled {
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--text-muted);
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+.status-disabled .status-indicator {
+    background: var(--text-muted);
+}
+
+/* Compact List View Destination Toggle */
+.btn-list-dest-toggle {
+    position: relative;
+    width: 28px;
+    height: 16px;
+    border-radius: 9999px;
+    border: none;
+    outline: none;
+    cursor: pointer;
+    padding: 0;
+    margin: 0;
+    display: inline-flex;
+    align-items: center;
+    user-select: none;
+    flex-shrink: 0;
+    background: #475569;
+    transition: background-color 0.25s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.25s ease, transform 0.15s ease;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.btn-list-dest-toggle:hover {
+    filter: brightness(1.06);
+}
+
+.btn-list-dest-toggle:active {
+    transform: scale(0.94);
+}
+
+.btn-list-dest-toggle .dest-toggle-slider {
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: #FFFFFF;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    pointer-events: none;
+}
+
+.btn-list-dest-toggle.is-enabled {
+    background: #22C55E;
+    box-shadow: 0 1px 3px rgba(34, 197, 94, 0.3);
+}
+
+.btn-list-dest-toggle.is-enabled:hover {
+    background: #16A34A;
+}
+
+.btn-list-dest-toggle.is-enabled .dest-toggle-slider {
+    transform: translateX(12px);
+}
+
+.btn-list-dest-toggle.is-disabled {
+    background: #475569;
+}
+
+.btn-list-dest-toggle.is-disabled:hover {
+    background: #64748B;
+}
+
+.btn-list-dest-toggle.is-disabled .dest-toggle-slider {
+    transform: translateX(0);
+}
+
+[data-theme="light"] .btn-list-dest-toggle.is-disabled {
+    background: #CBD5E1;
+}
+
+[data-theme="light"] .btn-list-dest-toggle.is-disabled:hover {
+    background: #94A3B8;
+}
+
+[data-theme="light"] .btn-list-dest-toggle.is-enabled {
+    background: #22C55E;
+}
+
+.rule-list-path-pill.is-disabled {
+    opacity: 0.45;
+    filter: grayscale(0.6);
+}
+
+/* Modal Destination Switch */
+.dest-switch-control {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    cursor: pointer;
+    user-select: none;
+    margin: 0;
+}
+
+.dest-switch-control input.dest-enabled-check {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+    pointer-events: none;
+}
+
+.dest-switch-control .dest-switch-slider {
+    position: relative;
+    width: 36px;
+    height: 20px;
+    border-radius: 9999px;
+    background: #475569;
+    transition: background-color 0.25s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.25s ease, transform 0.15s ease;
+    display: inline-block;
+}
+
+.dest-switch-control:hover .dest-switch-slider {
+    filter: brightness(1.06);
+}
+
+.dest-switch-control:active .dest-switch-slider {
+    transform: scale(0.95);
+}
+
+.dest-switch-control .dest-switch-slider::before {
+    content: "";
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #FFFFFF;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35), 0 2px 4px rgba(0, 0, 0, 0.15);
+    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.dest-switch-control input.dest-enabled-check:checked + .dest-switch-slider {
+    background: #22C55E;
+    box-shadow: 0 1px 4px rgba(34, 197, 94, 0.35);
+}
+
+.dest-switch-control input.dest-enabled-check:checked + .dest-switch-slider::before {
+    transform: translateX(16px);
+}
+
+[data-theme="light"] .dest-switch-control .dest-switch-slider {
+    background: #CBD5E1;
+}
+
+[data-theme="light"] .dest-switch-control input.dest-enabled-check:checked + .dest-switch-slider {
+    background: #22C55E;
+}
+
 .btn-path-test {
     border: 1px solid var(--border-color);
     background: rgba(255, 255, 255, 0.04);

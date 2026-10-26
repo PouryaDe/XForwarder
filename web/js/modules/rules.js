@@ -304,9 +304,9 @@ export function renderRuleCard(rule, rulesState) {
                         <button type="button" 
                                 class="btn-dest-toggle ${isEnabled ? 'is-enabled' : 'is-disabled'}" 
                                 onclick="toggleDestinationEnabled(event, decodeURIComponent('${encodedId}'), ${prio})"
-                                title="${isEnabled ? 'Priority #' + prio + ' is ON (Click to turn OFF)' : 'Priority #' + prio + ' is OFF (Click to turn ON)'}">
+                                title="${isEnabled ? 'Priority #' + prio + ' is ON (Click to turn OFF)' : 'Priority #' + prio + ' is OFF (Click to turn ON)'}"
+                                aria-label="Toggle Priority #${prio}">
                             <span class="dest-toggle-slider"></span>
-                            <span class="dest-toggle-text">${isEnabled ? 'ON' : 'OFF'}</span>
                         </button>
                     </div>
                 </div>
@@ -435,8 +435,9 @@ export function renderRuleListRow(rule, rulesState) {
                 <button type="button" 
                         class="btn-list-dest-toggle ${isEnabled ? 'is-enabled' : 'is-disabled'}" 
                         onclick="toggleDestinationEnabled(event, decodeURIComponent('${encodedId}'), ${prio})"
-                        title="${isEnabled ? 'Priority #' + prio + ' is ON (Click to turn OFF)' : 'Priority #' + prio + ' is OFF (Click to turn ON)'}">
-                    ${isEnabled ? 'ON' : 'OFF'}
+                        title="${isEnabled ? 'Priority #' + prio + ' is ON (Click to turn OFF)' : 'Priority #' + prio + ' is OFF (Click to turn ON)'}"
+                        aria-label="Toggle Priority #${prio}">
+                    <span class="dest-toggle-slider"></span>
                 </button>
             </div>
         `;

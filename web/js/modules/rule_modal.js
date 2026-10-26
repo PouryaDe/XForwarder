@@ -167,9 +167,9 @@ export function renderDestinationRow(dest, index, totalCount) {
                 <span class="prio-sub">${isPrimary ? "Primary Path" : "Backup Path"}</span>
             </div>
             <div class="prio-header-actions">
-                <label class="dest-toggle-label" style="margin:0; font-size:0.75rem; gap:5px;" title="Enable or disable this priority path">
+                <label class="dest-switch-control" title="Enable or disable this priority path">
                     <input type="checkbox" class="dest-enabled-check" ${dest.enabled !== false ? "checked" : ""}>
-                    <span>Enabled</span>
+                    <span class="dest-switch-slider"></span>
                 </label>
                 <button type="button" class="btn-prio-move" title="Move Priority Up" ${index === 0 ? "disabled" : ""} onclick="moveDestinationRow(${index}, -1)">
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="18 15 12 9 6 15"/></svg>
