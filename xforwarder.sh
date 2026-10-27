@@ -270,6 +270,16 @@ EOF
 LimitNOFILE=1048576
 EOF
     systemctl daemon-reload >/dev/null 2>&1 || true
+
+    # Golden NIC offload tuning: TSO/GSO on for low CPU proxying, GRO off to prevent GRE/IPIP tunnel drops
+    if command -v ethtool >/dev/null 2>&1; then
+        local def_iface
+        def_iface=$(ip route show default 2>/dev/null | awk '{print $5; exit}')
+        if [[ -n "$def_iface" ]]; then
+            ethtool -K "$def_iface" tso on gso on gro off >/dev/null 2>&1 || true
+        fi
+    fi
+
     msg_ok "Kernel network tuning and system limits applied (Profile: ${sys_mem_mb}MB RAM, BBR=$(( bbr )))."
 }
 

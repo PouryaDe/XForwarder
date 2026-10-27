@@ -304,6 +304,8 @@ class TestModularSubsystems(unittest.TestCase):
         self.assertIn("table ip xfwd_orchestrator", nft_content)
         self.assertIn("chain prerouting", nft_content)
         self.assertIn("chain postrouting", nft_content)
+        self.assertIn("chain forward", nft_content)
+        self.assertIn("tcp flags syn tcp option maxseg size set rt mtu", nft_content)
         self.assertIn("dport 443", nft_content)
         self.assertIn("dnat to 10.0.0.2:443", nft_content)
         self.assertIn("masquerade", nft_content)
@@ -311,6 +313,11 @@ class TestModularSubsystems(unittest.TestCase):
         # Check named counters
         self.assertIn("counter cnt_in_443", nft_content)
         self.assertIn("counter cnt_out_443", nft_content)
+
+        # Edge case: Test with IPv6 enabled produces MSS clamping in table ip6
+        nft_ipv6_content = generate_nftables_ruleset(dnat_rules, rule_ports={443}, enable_ipv6=True)
+        self.assertIn("table ip6 xfwd_orchestrator", nft_ipv6_content)
+        self.assertIn("tcp flags syn tcp option maxseg size set rt mtu", nft_ipv6_content)
 
     # =========================================================================
     # 4. Proxy Generation Subsystem Tests
@@ -325,6 +332,10 @@ class TestModularSubsystems(unittest.TestCase):
         base_ha, fallback_ha = generate_haproxy_cfg(haproxy_entries)
         self.assertIn("global", base_ha)
         self.assertIn("defaults", base_ha)
+        self.assertIn("hard-stop-after 2m", base_ha)
+        self.assertIn("retries 3", base_ha)
+        self.assertIn("timeout connect    5s", base_ha)
+        self.assertIn("timeout client     1h", base_ha)
         self.assertIn("listen port_8443", base_ha)
         self.assertIn("server srv_1 [2001:db8::1]:8443 send-proxy-v2", base_ha)
         # Zero-copy splicing in base

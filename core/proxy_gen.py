@@ -47,6 +47,7 @@ global
     group haproxy
     daemon
     maxconn 100000
+    hard-stop-after 2m
     tune.bufsize 65536
     tune.pipesize 262144
 {nbthread_entry}{cpu_map_entry}defaults

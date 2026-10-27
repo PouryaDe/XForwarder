@@ -108,6 +108,8 @@ table ip xfwd_orchestrator {{
 
     chain forward {{
         type filter hook forward priority filter; policy accept;
+        # Automatically clamp TCP MSS to path MTU to prevent packet loss in GRE/IPIP tunnels
+        tcp flags syn tcp option maxseg size set rt mtu
 {forward_counters_str}        ct status dnat accept
         ct state {{ established, related }} accept
     }}
@@ -140,6 +142,8 @@ table ip6 xfwd_orchestrator {{
 
     chain forward {{
         type filter hook forward priority filter; policy accept;
+        # Automatically clamp TCP MSS to path MTU to prevent packet loss in GRE/IPIP tunnels
+        tcp flags syn tcp option maxseg size set rt mtu
 {forward_counters_str}        ct status dnat accept
         ct state {{ established, related }} accept
     }}

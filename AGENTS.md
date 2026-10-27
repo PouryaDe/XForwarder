@@ -128,11 +128,12 @@ XForwarder/
     - Conflicting unmanaged legacy DNAT rules must be safely deactivated using exact rule handles (`nft delete rule <family> <table> <chain> handle <id>`) to eliminate kernel PREROUTING hook collision and guarantee zero-collision forwarding.
 
 14. **Kernel Zero-Copy Splicing, BBR Tuning & Bounded UDP Timeouts (Mandatory)**:
-    - HAProxy forwarding must enforce zero-copy kernel splicing (`option splice-auto`, `tune.pipesize 262144`, `tune.bufsize 65536`) and multi-core CPU thread affinity (`nbthread {cpu_cores}`, `cpu-map`) with defensive fallback to minimize CPU usage, prevent single-core bottlenecks, and avoid user-space buffer copies.
+    - HAProxy forwarding must enforce zero-copy kernel splicing (`option splice-auto`, `tune.pipesize 262144`, `tune.bufsize 65536`), bounded worker lifecycles (`hard-stop-after 2m` preventing zombie worker accumulation on reloads), and multi-core CPU thread affinity (`nbthread {cpu_cores}`, `cpu-map`) with defensive fallback to minimize CPU usage, prevent single-core bottlenecks, and avoid user-space buffer copies.
     - Per-connection TCP logging (`option tcplog`) is forbidden on forwarding relays; logging is restricted to `notice` level and error states.
     - Client and server TCP keepalives (`option clitcpka`, `option srvtcpka`) are mandatory to sweep zombie connections.
     - UDP stream proxying must strictly enforce bounded timeouts (`proxy_timeout 60s`) and large buffers (`proxy_buffer_size 64k`) to eliminate UDP socket and memory accumulation.
-    - Dynamic host network profiling (`tune_network` in `xforwarder.sh`) automatically configures BBR congestion control, scales `somaxconn` to 65,535, expands socket buffers, sets `LimitNOFILE=1048576` for HAProxy, and scales conntrack tables.
+    - Dynamic host network profiling (`tune_network` in `xforwarder.sh`) automatically configures BBR congestion control, scales `somaxconn` to 65,535, expands socket buffers, sets `LimitNOFILE=1048576` for HAProxy, scales conntrack tables, and enforces the Golden NIC Offload profile (`tso on gso on gro off` preventing GRE/IPIP tunnel MTU drops while preserving hardware segmentation offload for low-CPU HAProxy proxying).
+    - NFTables kernel forwarding enforces TCP MSS clamping (`tcp flags syn tcp option maxseg size set rt mtu`) across all forward chains to eliminate MTU fragmentation over GRE/IPIP/AWG tunnels.
 
 15. **Granular Port & Category JSON Export/Import (Mandatory)**:
     - Web dashboard provides 1-click single-port rule JSON copy (`copyRuleJson`) and entire category JSON batch copy (`copyCategoryJson`) formatted for immediate import into external panels.
