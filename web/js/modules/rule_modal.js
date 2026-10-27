@@ -212,9 +212,9 @@ export function renderDestinationRow(dest, index, totalCount) {
                 <input type="checkbox" class="dest-proxy-proto" ${dest.proxy_protocol ? "checked" : ""}>
                 <span>Send PROXY Protocol v2 (Advanced)</span>
             </label>
-            <label class="dest-toggle-label" title="Intermediate Relay Server: Ping to this node is a partial hop. The engine strictly anchors on Priority 1 unless Priority 1 fails, has packet loss, or exceeds 150ms.">
+            <label class="dest-toggle-label" title="Mid Server: Ping to this node is a partial hop. The engine strictly anchors on Priority 1 unless Priority 1 fails, has packet loss, or exceeds 150ms.">
                 <input type="checkbox" class="dest-is-relay" ${dest.is_relay ? "checked" : ""}>
-                <span>Intermediate Relay (سرور واسط)</span>
+                <span>Mid Server</span>
             </label>
             <div class="dest-test-group">
                 <button type="button" class="btn btn-secondary btn-xs btn-test-dest" onclick="testModalDestination(${index})">
