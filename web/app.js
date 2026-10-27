@@ -188,10 +188,17 @@ function trackFailoverEvents(rules, runtime) {
         const prevPrio = previousActivePriorities[ruleId];
 
         if (prevPrio !== undefined && prevPrio !== currentPrio) {
-            if (currentPrio > prevPrio) {
-                addLogEntry("fail", `Port :${rule.port} failover triggered! Cascaded from Priority ${prevPrio} to Priority ${currentPrio}`);
+            const rState = (runtime && runtime.rules_state && (runtime.rules_state[ruleId] || runtime.rules_state[String(rule.port)])) || {};
+            const explanation = rState.last_switch_explanation || "";
+            const reason = rState.last_switch_reason || (currentPrio > prevPrio ? "failover" : "recovered");
+
+            if (explanation) {
+                const logType = (reason === "critical" || reason === "failback_degraded") ? "fail" : "probe";
+                addLogEntry(logType, `Port :${rule.port}: ${explanation}`);
+            } else if (currentPrio > prevPrio) {
+                addLogEntry("fail", `Port :${rule.port} failover triggered! Cascaded from Priority ${prevPrio} to Priority ${currentPrio} (${reason})`);
             } else {
-                addLogEntry("probe", `Port :${rule.port} recovered! Restored to Priority ${currentPrio}`);
+                addLogEntry("probe", `Port :${rule.port} recovered! Restored to Priority ${currentPrio} (${reason})`);
             }
         }
         previousActivePriorities[ruleId] = currentPrio;

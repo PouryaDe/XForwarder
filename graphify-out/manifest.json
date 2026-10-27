@@ -1,8 +1,8 @@
 {
   "core/engine.py": {
-    "mtime": 1793069622.7737544,
-    "seen": 1793070554.044535,
-    "ast_hash": "74490ca3a3fc0e2bcc99278729e469e5",
+    "mtime": 1793081886.7061837,
+    "seen": 1793082348.2921975,
+    "ast_hash": "5d3a5820c1671abb1ef1fe9b76079bc2",
     "semantic_hash": ""
   },
   "core/web_server.py": {
@@ -12,9 +12,9 @@
     "semantic_hash": ""
   },
   "web/app.js": {
-    "mtime": 1793072688.4368055,
-    "seen": 1793074283.6329556,
-    "ast_hash": "14e5e977b3e23052a756905571cb985b",
+    "mtime": 1793081938.4391983,
+    "seen": 1793082348.2922485,
+    "ast_hash": "74c4754fff3a00b8ec057af6c68a620a",
     "semantic_hash": ""
   },
   ".agents/rules/01-architecture-and-failover.md": {
@@ -342,9 +342,9 @@
     "semantic_hash": ""
   },
   "tests/test_fast_failover_and_antiflap.py": {
-    "mtime": 1793040242.3232548,
-    "seen": 1793062956.3968518,
-    "ast_hash": "f203a2479f7612f818a07f85c9d00d1b",
+    "mtime": 1793082261.9955504,
+    "seen": 1793082348.2922235,
+    "ast_hash": "a08bb269889e2394dca36aa5f01bd33b",
     "semantic_hash": ""
   },
   ".agents/experiences/009-fast-failover-multi-metric-and-anti-flapping.md": {
@@ -396,15 +396,15 @@
     "semantic_hash": ""
   },
   "core/route_quality.py": {
-    "mtime": 1793069486.705647,
-    "seen": 1793070554.0445464,
-    "ast_hash": "392150cb5fd33fae37a8074c779ac173",
+    "mtime": 1793081512.1384394,
+    "seen": 1793082348.2922103,
+    "ast_hash": "743e18315499d41ee75972bc430eb5dc",
     "semantic_hash": ""
   },
   "tests/test_route_quality.py": {
-    "mtime": 1793070483.7161663,
-    "seen": 1793070554.044572,
-    "ast_hash": "349bc48a43a04e515e890c6e04881d3f",
+    "mtime": 1793082184.4389057,
+    "seen": 1793082348.2922394,
+    "ast_hash": "1c016a763bb13306412244620402d73a",
     "semantic_hash": ""
   },
   ".agents/experiences/013-two-tier-intelligent-route-switching-and-jitter-monitoring.md": {

@@ -619,8 +619,77 @@ class TestFastFailoverAndAntiFlap(unittest.TestCase):
             self.assertEqual(rule_state["last_switch_reason"], "failback_degraded")
             # Must NOT be locked in 1200s hold!
             self.assertEqual(rule_state["hold_remaining"], 0)
+            # Must record switch event and explanation
+            self.assertTrue(len(rule_state.get("switch_events", [])) > 0)
+            last_ev = rule_state["switch_events"][-1]
+            self.assertEqual(last_ev["from_priority"], 2)
+            self.assertEqual(last_ev["to_priority"], 1)
+            self.assertEqual(last_ev["reason"], "failback_degraded")
+            self.assertIn("Immediate failback to Primary Route", rule_state.get("last_switch_explanation", ""))
+            self.assertTrue(len(self.engine.runtime_state.get("recent_switches", [])) > 0)
+
+    def test_switch_events_ring_buffer_capped_at_max(self):
+        """Verifies switch_events per rule is bounded at 20 and recent_switches is bounded at 50."""
+        rule = {
+            "id": "rule-ring-buffer",
+            "port": 9300,
+            "protocol": "both",
+            "active_priority": 1,
+            "force_override": 0,
+            "destinations": [
+                {"priority": 1, "target": "10.0.1.1", "enabled": True},
+                {"priority": 2, "target": "10.0.1.2", "enabled": True}
+            ]
+        }
+        # Simulate 25 switches back and forth
+        with patch.object(self.engine, "_hot_toggle_rule_priority"), \
+             patch.object(self.engine, "_validate_probe_route", return_value=(True, "eth0", None)):
+            for i in range(25):
+                curr = 1 if (i % 2 == 0) else 2
+                nxt = 2 if curr == 1 else 1
+                mock_cache = {
+                    ("10.0.1.1", "eth0"): {"healthy": (nxt == 1), "latency_ms": 50, "packet_loss": 0 if nxt == 1 else 100},
+                    ("10.0.1.2", "eth0"): {"healthy": (nxt == 2), "latency_ms": 60, "packet_loss": 0 if nxt == 2 else 100}
+                }
+                rule["active_priority"] = curr
+                if "rule-ring-buffer" in self.engine.runtime_state["rules_state"]:
+                    self.engine.runtime_state["rules_state"]["rule-ring-buffer"]["active_priority"] = curr
+                self.engine.evaluate_rule(rule, probe_cache=mock_cache)
+
+        rule_state = self.engine.runtime_state["rules_state"]["rule-ring-buffer"]
+        self.assertLessEqual(len(rule_state["switch_events"]), 20)
+        self.assertLessEqual(len(self.engine.runtime_state["recent_switches"]), 50)
+
+    def test_short_window_aggregates_sample_at_50_seconds(self):
+        """Verifies that 50s into a 60s probe interval, short_agg retains healthy metrics without false 100% loss."""
+        now = 1050.0
+        rule = {
+            "id": "rule-window-test",
+            "port": 9350,
+            "protocol": "both",
+            "active_priority": 1,
+            "force_override": 0,
+            "destinations": [
+                {"priority": 1, "target": "10.0.2.1", "enabled": True},
+                {"priority": 2, "target": "10.0.2.2", "enabled": True}
+            ]
+        }
+        self.engine.config["target_probe_interval_seconds"] = 60.0
+        # Sample recorded at 1000.0s (50 seconds ago)
+        cache = {
+            ("10.0.2.1", "eth0"): {"healthy": True, "latency_ms": 75.0, "packet_loss": 0.0, "packets_sent": 10, "packets_received": 10},
+            ("10.0.2.2", "eth0"): {"healthy": True, "latency_ms": 45.0, "packet_loss": 0.0, "packets_sent": 10, "packets_received": 10}
+        }
+        with patch("time.time", return_value=now), \
+             patch.object(self.engine, "_validate_probe_route", return_value=(True, "eth0", None)):
+            self.engine.evaluate_rule(rule, probe_cache=cache)
+            dest_stats = self.engine.runtime_state["rules_state"]["rule-window-test"]["dest_stats"]
+            # Must remain healthy and NOT become degraded with phantom 100% loss
+            self.assertEqual(dest_stats["prio_1"]["status"], "healthy")
+            self.assertEqual(dest_stats["prio_1"]["short_loss"], 0.0)
 
 
 if __name__ == "__main__":
     unittest.main()
+
 

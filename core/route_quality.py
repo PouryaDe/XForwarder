@@ -39,16 +39,21 @@ def aggregate_window(samples: List[List[Any]], window_seconds: float, now: Optio
     valid_samples = [s for s in (samples or []) if len(s) >= 5 and (curr_time - float(s[0])) <= window_seconds]
 
     if not valid_samples:
-        return {
-            "samples_count": 0,
-            "packets_sent": 0,
-            "packets_received": 0,
-            "packet_loss": 100.0,
-            "avg_latency_ms": None,
-            "jitter_ms": 0.0,
-            "fill_ratio": 0.0,
-            "span_seconds": 0.0
-        }
+        # Fallback to most recent valid sample if available and within extended window tolerance (e.g. probe interval jitter)
+        all_valid = [s for s in (samples or []) if len(s) >= 5]
+        if all_valid and (curr_time - float(all_valid[-1][0])) <= max(window_seconds * 1.5, window_seconds + 30.0):
+            valid_samples = [all_valid[-1]]
+        else:
+            return {
+                "samples_count": 0,
+                "packets_sent": 0,
+                "packets_received": 0,
+                "packet_loss": 100.0,
+                "avg_latency_ms": None,
+                "jitter_ms": 0.0,
+                "fill_ratio": 0.0,
+                "span_seconds": 0.0
+            }
 
     total_sent = sum(int(s[1]) for s in valid_samples)
     total_recv = sum(int(s[2]) for s in valid_samples)
@@ -241,7 +246,7 @@ def decide_route(
     curr_long_score = float(curr_m.get("long_score", 999.0))
     curr_long_loss = float(curr_m.get("long_loss", 100.0))
 
-    is_curr_failed = (curr_status == "failed" or curr_short_loss >= 100.0)
+    is_curr_failed = (curr_status == "failed")
     is_curr_critical = (curr_status == "critical")
 
     # ── Tier 1: Emergency / Critical Outage Bypass ──
@@ -273,7 +278,7 @@ def decide_route(
 
     # Scenario 2: Degraded Backup Escape (Immediate Failback to Priority 1)
     # If active route is a backup (current_active > 1) and suffers packet loss (degraded/loss > 0)
-    # while Priority 1 is viable (not failed/critical, short loss <= 1%, latency <= 150ms ceiling)
+    # while Priority 1 is viable (not failed/critical, short loss <= 5%, latency <= 150ms ceiling)
     # or strictly better than the current backup:
     # Immediately failback to Priority 1 bypassing hold-down guards!
     prio1_m = dest_metrics.get(1, {})
@@ -288,7 +293,7 @@ def decide_route(
     # Priority 1 is viable for failback if it is not failed/critical, has clean/low loss, and latency <= ceiling
     prio1_is_viable = (
         prio1_status not in ("failed", "critical")
-        and prio1_short_loss <= 1.0
+        and prio1_short_loss <= 5.0
         and prio1_lat_val <= prio1_max_lat
     )
 

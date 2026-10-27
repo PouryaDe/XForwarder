@@ -84,7 +84,8 @@ class XForwarderEngine:
                 "udp_stream": False,
                 "nftables": False
             },
-            "rules_state": {}
+            "rules_state": {},
+            "recent_switches": []
         }
         self._load_initial_runtime_state()
         self._last_applied_rules: Optional[str] = None
@@ -421,15 +422,26 @@ class XForwarderEngine:
                                     sample = summarize_cycle(res, curr_time)
                                     thist["samples"].append(sample)
                                     thist["samples"] = [s for s in thist["samples"] if (curr_time - float(s[0])) <= window_sec]
+                            else:
+                                # Target verified alive on fast liveness check: maintain probe cache reachability and reset fails
+                                if tgt in self._target_probe_cache:
+                                    self._target_probe_cache[tgt]["healthy"] = True
+                                    if res.get("latency_ms") is not None:
+                                        self._target_probe_cache[tgt]["latency_ms"] = res["latency_ms"]
+                                if tgt in self._target_history:
+                                    thist = self._target_history[tgt]
+                                    thist["consecutive_fails"] = 0
+                                    thist["last_alive_time"] = curr_time
 
         # Compute rolling window aggregates for every valid target
+        short_window_sec = max(120.0, probe_interval * 2.5)
         with self._target_lock:
             for target in unique_targets:
                 if target in self._target_probe_cache and target in self._target_history:
                     thist = self._target_history[target]
                     samples = thist.get("samples", [])
                     short_samples = samples[-3:]
-                    short_agg = aggregate_window(short_samples, window_seconds=40.0, now=curr_time)
+                    short_agg = aggregate_window(short_samples, window_seconds=short_window_sec, now=curr_time)
                     long_agg = aggregate_window(samples, window_seconds=window_sec, now=curr_time)
                     last_loss = float(self._target_probe_cache[target].get("packet_loss", 0.0))
                     lossy_cycles = sum(1 for s in short_samples if isinstance(s, (list, tuple)) and len(s) >= 3 and int(s[2]) < int(s[1]))
@@ -511,7 +523,9 @@ class XForwarderEngine:
                 "switch_pending_seconds": 0,
                 "switch_candidate": None,
                 "switch_streak_start": 0.0,
-                "last_switch_reason": "init"
+                "last_switch_reason": "init",
+                "last_switch_explanation": "",
+                "switch_events": []
             }
 
         rule_state = self.runtime_state["rules_state"][rule_id]
@@ -672,9 +686,11 @@ class XForwarderEngine:
                 # Prune samples older than quality_window_seconds
                 stat["samples"] = [s for s in stat["samples"] if (now - float(s[0])) <= window_sec]
 
-                # Aggregate short window (last 3 samples or ~30s) and long window (window_sec)
+                # Aggregate short window (last 3 samples or ~short_window_sec) and long window (window_sec)
+                probe_interval = float(self.config.get("target_probe_interval_seconds", 60.0))
+                short_window_sec = max(120.0, probe_interval * 2.5)
                 short_samples = stat["samples"][-3:]
-                short_agg = aggregate_window(short_samples, window_seconds=40.0, now=now)
+                short_agg = aggregate_window(short_samples, window_seconds=short_window_sec, now=now)
                 long_agg = aggregate_window(stat["samples"], window_seconds=window_sec, now=now)
                 lossy_cycles = sum(1 for s in short_samples if isinstance(s, (list, tuple)) and len(s) >= 3 and int(s[2]) < int(s[1]))
 
@@ -840,6 +856,72 @@ class XForwarderEngine:
             rule["active_priority"] = target_active
             is_crit = (decision_reason in ("critical", "failback_degraded", "disabled_active_fallback"))
             self._hot_toggle_rule_priority(rule, old_prio=current_active, new_prio=target_active, is_critical=is_crit)
+
+            # Build detailed decision explanation and log switch event
+            curr_info = dest_metrics.get(current_active, {})
+            tgt_info = dest_metrics.get(target_active, {})
+            curr_stat_str = curr_info.get("status", "unknown")
+            tgt_stat_str = tgt_info.get("status", "unknown")
+            curr_loss_val = curr_info.get("short_loss", 0.0)
+            tgt_loss_val = tgt_info.get("short_loss", 0.0)
+            curr_lat_val = curr_info.get("avg_latency_ms") if curr_info.get("avg_latency_ms") is not None else curr_info.get("latency_ms")
+            tgt_lat_val = tgt_info.get("avg_latency_ms") if tgt_info.get("avg_latency_ms") is not None else tgt_info.get("latency_ms")
+            curr_lat_str = f"{curr_lat_val:.1f}ms" if isinstance(curr_lat_val, (int, float)) else "N/A"
+            tgt_lat_str = f"{tgt_lat_val:.1f}ms" if isinstance(tgt_lat_val, (int, float)) else "N/A"
+
+            port_num = rule.get("port", "unknown")
+            if decision_reason == "critical":
+                explanation = f"Emergency Outage on Priority #{current_active} (Status: {curr_stat_str}, Loss: {curr_loss_val:.1f}%) -> Switched to Priority #{target_active} (Status: {tgt_stat_str}, Latency: {tgt_lat_str}, Loss: {tgt_loss_val:.1f}%)"
+            elif decision_reason == "planned":
+                explanation = f"Quality-confirmed switch: Priority #{target_active} (Latency: {tgt_lat_str}, Loss: {tgt_loss_val:.1f}%) sustained superiority over Priority #{current_active} (Latency: {curr_lat_str}, Loss: {curr_loss_val:.1f}%)"
+            elif decision_reason == "failback_degraded":
+                explanation = f"Immediate failback to Primary Route: Backup Priority #{current_active} degraded (Loss: {curr_loss_val:.1f}%) while Priority #1 is viable (Latency: {tgt_lat_str}, Loss: {tgt_loss_val:.1f}%)"
+            elif decision_reason == "disabled_active_fallback":
+                explanation = f"Active destination Priority #{current_active} was disabled by user -> Switched to next enabled Priority #{target_active}"
+            elif decision_reason == "disabled_override_fallback":
+                explanation = f"Forced destination was disabled -> Reverted to best Priority #{target_active}"
+            elif decision_reason == "auto_fallback":
+                explanation = f"Forced destination went down -> Automatically fell back to healthy Priority #{target_active}"
+            elif decision_reason == "auto_reset":
+                explanation = f"Admin reverted override to Auto Failover -> Selected best Priority #{target_active}"
+            elif decision_reason == "override":
+                explanation = f"Admin manually forced Priority #{target_active}"
+            else:
+                explanation = f"Switched Priority #{current_active} -> #{target_active} (Reason: {decision_reason})"
+
+            rule_state["last_switch_explanation"] = explanation
+
+            time_str = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(now))
+            print(f"[SWITCH] [{time_str}] Rule :{port_num} ({rule_id}) | Switched Priority #{current_active} -> Priority #{target_active} | Reason: {decision_reason} | {explanation}")
+
+            switch_event = {
+                "timestamp": now,
+                "time_str": time_str,
+                "port": port_num,
+                "rule_id": rule_id,
+                "from_priority": current_active,
+                "to_priority": target_active,
+                "reason": decision_reason,
+                "explanation": explanation,
+                "from_status": curr_stat_str,
+                "to_status": tgt_stat_str,
+                "from_latency": curr_lat_val,
+                "to_latency": tgt_lat_val,
+                "from_loss": curr_loss_val,
+                "to_loss": tgt_loss_val
+            }
+
+            if "switch_events" not in rule_state or not isinstance(rule_state["switch_events"], list):
+                rule_state["switch_events"] = []
+            rule_state["switch_events"].append(switch_event)
+            if len(rule_state["switch_events"]) > 20:
+                rule_state["switch_events"] = rule_state["switch_events"][-20:]
+
+            if "recent_switches" not in self.runtime_state or not isinstance(self.runtime_state["recent_switches"], list):
+                self.runtime_state["recent_switches"] = []
+            self.runtime_state["recent_switches"].append(switch_event)
+            if len(self.runtime_state["recent_switches"]) > 50:
+                self.runtime_state["recent_switches"] = self.runtime_state["recent_switches"][-50:]
 
         # Calculate remaining hold and cooldown for UI display
         time_since_switch = max(0.0, now - float(rule_state.get("last_switch_time", 0.0)))

@@ -897,6 +897,56 @@ class TestRouteQualityEngine(unittest.TestCase):
         self.assertEqual(reason, "pending")
         self.assertEqual(rule_state.get("switch_candidate"), 1)
 
+    def test_aggregate_window_extended_tolerance_fallback(self):
+        """Verifies aggregate_window falls back to recent sample instead of falsely returning 100% loss on slight window gap."""
+        now = 1045.0
+        # Sample taken 45s ago (e.g. at 1000.0s), 10 sent, 10 received, latency 55.0ms, jitter 1.5ms
+        samples = [
+            [1000.0, 10, 10, 55.0, 1.5]
+        ]
+        # With window_seconds=40.0, sample at 1000.0 is 45s old, but within 40.0 * 1.5 = 60s tolerance
+        agg = aggregate_window(samples, window_seconds=40.0, now=now)
+        self.assertEqual(agg["samples_count"], 1)
+        self.assertEqual(agg["packet_loss"], 0.0)
+        self.assertEqual(agg["avg_latency_ms"], 55.0)
+
+    def test_decide_route_does_not_emergency_failover_on_degraded(self):
+        """Verifies that a route with status='degraded' does not trigger Tier 1 emergency failover."""
+        now = 1000.0
+        rule_state = {
+            "last_switch_time": now - 30.0,
+            "switch_candidate": None,
+            "switch_streak_start": 0.0
+        }
+        dest_metrics = {
+            1: {
+                "status": "degraded",
+                "short_loss": 15.0,
+                "long_loss": 15.0,
+                "short_score": 150.0,
+                "long_score": 150.0,
+                "avg_latency_ms": 70.0,
+                "fill_ratio": 1.0
+            },
+            2: {
+                "status": "healthy",
+                "short_loss": 0.0,
+                "long_loss": 0.0,
+                "short_score": 50.0,
+                "long_score": 50.0,
+                "avg_latency_ms": 50.0,
+                "fill_ratio": 1.0
+            }
+        }
+        config = {
+            "min_hold_seconds": 600,
+            "switch_confirm_seconds": 120
+        }
+        target, reason, pending = decide_route(rule_state, dest_metrics, current_active=1, config=config, now=now)
+        # Should stay on Priority 1 due to hold-down guard, because degraded does NOT bypass hold-down (only critical/failed bypass)
+        self.assertEqual(target, 1)
+        self.assertEqual(reason, "hold")
+
 
 if __name__ == "__main__":
     unittest.main()
