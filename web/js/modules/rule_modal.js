@@ -40,8 +40,8 @@ export function openAddRuleModal() {
     if (ruleCreatedAtInput) ruleCreatedAtInput.value = "";
 
     currentModalDestinations = [
-        { priority: 1, type: "haproxy", target: "", port: "", comment: "", proxy_protocol: false, enabled: true },
-        { priority: 2, type: "nftables", target: "", port: "", comment: "", proxy_protocol: false, enabled: true }
+        { priority: 1, type: "haproxy", target: "", port: "", comment: "", proxy_protocol: false, is_relay: false, enabled: true },
+        { priority: 2, type: "nftables", target: "", port: "", comment: "", proxy_protocol: false, is_relay: true, enabled: true }
     ];
 
     renderDestinationsList();
@@ -99,6 +99,7 @@ export function openEditRuleModal(ruleId) {
         port: d.port !== undefined && d.port !== null ? d.port : "",
         comment: d.comment || "",
         proxy_protocol: Boolean(d.proxy_protocol),
+        is_relay: Boolean(d.is_relay),
         enabled: d.enabled !== undefined ? Boolean(d.enabled) : true
     }));
 
@@ -110,6 +111,7 @@ export function openEditRuleModal(ruleId) {
             port: "",
             comment: "",
             proxy_protocol: false,
+            is_relay: false,
             enabled: true
         });
     }
@@ -205,10 +207,14 @@ export function renderDestinationRow(dest, index, totalCount) {
             <label>Comment / Label</label>
             <input type="text" class="form-control dest-comment" placeholder="e.g. ${isPrimary ? 'Foreign Server 1 - Primary IPv6' : 'Backup Tunnel Node ' + prio}" value="${escapeHtml(comment)}">
         </div>
-        <div class="dest-extra-row">
+        <div class="dest-extra-row" style="flex-wrap: wrap; gap: 10px;">
             <label class="dest-toggle-label" title="Enable only if remote destination (e.g. Xray/V2Ray with acceptProxyProtocol) is configured to receive PROXY Protocol headers.">
                 <input type="checkbox" class="dest-proxy-proto" ${dest.proxy_protocol ? "checked" : ""}>
                 <span>Send PROXY Protocol v2 (Advanced)</span>
+            </label>
+            <label class="dest-toggle-label" title="Intermediate Relay Server: Ping to this node is a partial hop. The engine strictly anchors on Priority 1 unless Priority 1 fails, has packet loss, or exceeds 150ms.">
+                <input type="checkbox" class="dest-is-relay" ${dest.is_relay ? "checked" : ""}>
+                <span>Intermediate Relay (سرور واسط)</span>
             </label>
             <div class="dest-test-group">
                 <button type="button" class="btn btn-secondary btn-xs btn-test-dest" onclick="testModalDestination(${index})">
@@ -219,6 +225,18 @@ export function renderDestinationRow(dest, index, totalCount) {
             </div>
         </div>
     `;
+
+    const targetInput = div.querySelector(".dest-target");
+    if (targetInput && prio > 1) {
+        targetInput.addEventListener("input", () => {
+            const val = targetInput.value.trim().toLowerCase();
+            const relayCheck = div.querySelector(".dest-is-relay");
+            if (relayCheck && (val.startsWith("10.") || val.startsWith("172.") || val.startsWith("192.168.") || val.startsWith("fc") || val.startsWith("fd"))) {
+                relayCheck.checked = true;
+            }
+        });
+    }
+
     return div;
 }
 
@@ -248,6 +266,7 @@ export function syncDestinationsFromDom() {
         const portEl = box.querySelector(".dest-port");
         const commentEl = box.querySelector(".dest-comment");
         const proxyProtoEl = box.querySelector(".dest-proxy-proto");
+        const relayEl = box.querySelector(".dest-is-relay");
         const enabledEl = box.querySelector(".dest-enabled-check");
 
         updated.push({
@@ -257,6 +276,7 @@ export function syncDestinationsFromDom() {
             port: (portEl && portEl.value.trim()) ? parseInt(portEl.value.trim()) : null,
             comment: commentEl ? commentEl.value.trim() : "",
             proxy_protocol: proxyProtoEl ? proxyProtoEl.checked : false,
+            is_relay: relayEl ? relayEl.checked : false,
             enabled: enabledEl ? enabledEl.checked : true
         });
     });
@@ -427,7 +447,9 @@ export function initRuleModal(fetchStatusCallback) {
                 target: "",
                 port: "",
                 comment: "",
-                proxy_protocol: false
+                proxy_protocol: false,
+                is_relay: nextPrio > 1,
+                enabled: true
             });
             renderDestinationsList();
         });

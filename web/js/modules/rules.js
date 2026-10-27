@@ -295,6 +295,7 @@ export function renderRuleCard(rule, rulesState) {
                             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="9" cy="6" r="1.5"/><circle cx="15" cy="6" r="1.5"/><circle cx="9" cy="12" r="1.5"/><circle cx="15" cy="12" r="1.5"/><circle cx="9" cy="18" r="1.5"/><circle cx="15" cy="18" r="1.5"/></svg>
                         </span>
                         <span class="path-tag ${tagClass}">#${prio}</span>
+                        ${dest.is_relay ? `<span class="badge-relay-pill" title="Intermediate Relay: The engine anchors on Priority 1 and only fails over here on outage, packet loss, or latency > 150ms.">Relay</span>` : ''}
                         <span class="path-status ${statusClass}">
                             <span class="status-indicator"></span>
                             ${statusLabel}
@@ -428,6 +429,7 @@ export function renderRuleListRow(rule, rulesState) {
             <div class="${pillClass}" title="Priority #${prio}: ${escapeHtml(String(dest.type || 'haproxy').toUpperCase())} ${targetDisplay}:${escapeHtml(dest.port || rule.port)}${latText}">
                 <span style="width:7px; height:7px; border-radius:50%; background:${dotColor}; display:inline-block;"></span>
                 <span style="font-weight:700; color:var(--text-primary); font-family:var(--font-mono);">#${prio}</span>
+                ${dest.is_relay ? `<span class="badge-relay-pill" style="font-size:0.62rem; padding:1px 4px;" title="Intermediate Relay Server">Relay</span>` : ''}
                 <span class="font-mono" style="color:var(--text-secondary); font-size:0.75rem;">${targetDisplay}:${escapeHtml(dest.port || rule.port)}</span>
                 ${latText && isEnabled ? `<span class="font-mono" style="color:var(--accent-mint); font-size:0.72rem;">${latText}</span>` : ''}
                 ${isEnabled ? loss50Inline : ''}

@@ -588,6 +588,7 @@ class XForwarderEngine:
 
             stat = rule_state["dest_stats"][dest_key]
             stat["enabled"] = bool(dest.get("enabled", True))
+            stat["is_relay"] = bool(dest.get("is_relay", False))
             if not stat["enabled"]:
                 stat["status"] = "disabled"
                 continue
@@ -744,7 +745,8 @@ class XForwarderEngine:
                 "long_score": long_score,
                 "fill_ratio": long_agg["fill_ratio"],
                 "avg_latency_ms": long_agg["avg_latency_ms"] if long_agg["avg_latency_ms"] is not None else check_res.get("latency_ms"),
-                "latency_ms": stat.get("latency_ms")
+                "latency_ms": stat.get("latency_ms"),
+                "is_relay": bool(dest.get("is_relay", False))
             }
 
         # ── Decision Logic ──

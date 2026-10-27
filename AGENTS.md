@@ -149,6 +149,12 @@ XForwarder/
     - When disabled, the destination is retained in configuration and UI for effortless reactivation, but is completely excluded from probing, route quality evaluation, active priority switching, and proxy/firewall generation.
     - Disabling the currently active priority or a manually forced priority automatically triggers immediate fallback to the next best enabled priority.
 
+18. **Intermediate Relay (`is_relay`) & Primary Anchor Subsystem (Mandatory)**:
+    - Intermediate relay nodes (where ICMP ping measures only hop 1 to an intermediate relay or tunnel node) can be explicitly marked (`is_relay: true`).
+    - The engine enforces the Primary Anchor pattern: Priority 1 is protected as the authoritative destination as long as it has no packet loss and latency <= 150ms.
+    - Low hop ping on an intermediate relay never supersedes healthy Priority 1.
+    - When active on an intermediate relay, the engine triggers failback to Priority 1 as soon as Priority 1 recovers.
+
 
 
 

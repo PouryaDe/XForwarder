@@ -669,6 +669,225 @@ class TestRouteQualityEngine(unittest.TestCase):
         self.assertEqual(reason, "failback_degraded")
         self.assertEqual(pending, 0)
 
+    def test_is_relay_backup_cannot_steal_traffic_from_healthy_priority_1(self):
+        """
+        Verifies that an intermediate relay (is_relay=True) with deceptively low hop ping (e.g. 12ms)
+        CANNOT steal traffic from Priority 1 when Priority 1 is healthy (80ms <= 150ms, 0% loss).
+        """
+        now = 1000.0
+        rule_state = {
+            "last_switch_time": now - 700.0,
+            "switch_candidate": None,
+            "switch_streak_start": 0.0
+        }
+        dest_metrics = {
+            1: {
+                "status": "healthy",
+                "short_loss": 0.0,
+                "long_loss": 0.0,
+                "short_score": 80.0,
+                "long_score": 80.0,
+                "avg_latency_ms": 80.0,
+                "fill_ratio": 1.0,
+                "is_relay": False
+            },
+            2: {
+                "status": "healthy",
+                "short_loss": 0.0,
+                "long_loss": 0.0,
+                "short_score": 12.0,
+                "long_score": 12.0,
+                "avg_latency_ms": 12.0,
+                "fill_ratio": 1.0,
+                "is_relay": True  # Intermediate Relay Server!
+            }
+        }
+        config = {
+            "min_hold_seconds": 600,
+            "switch_confirm_seconds": 120,
+            "hysteresis_percent": 20,
+            "max_primary_latency_ms": 150
+        }
+        target, reason, pending = decide_route(rule_state, dest_metrics, current_active=1, config=config, now=now)
+        self.assertEqual(target, 1)
+        self.assertEqual(reason, "hold")
+        self.assertEqual(pending, 0)
+
+    def test_is_relay_fails_over_when_priority_1_latency_exceeds_150ms(self):
+        """Verifies that traffic fails over to intermediate relay when Priority 1 exceeds 150ms."""
+        now = 1000.0
+        rule_state = {
+            "last_switch_time": now - 700.0,
+            "switch_candidate": None,
+            "switch_streak_start": 0.0
+        }
+        dest_metrics = {
+            1: {
+                "status": "healthy",
+                "short_loss": 0.0,
+                "long_loss": 0.0,
+                "short_score": 175.0,
+                "long_score": 175.0,
+                "avg_latency_ms": 175.0,  # > 150ms ceiling!
+                "fill_ratio": 1.0,
+                "is_relay": False
+            },
+            2: {
+                "status": "healthy",
+                "short_loss": 0.0,
+                "long_loss": 0.0,
+                "short_score": 15.0,
+                "long_score": 15.0,
+                "avg_latency_ms": 15.0,
+                "fill_ratio": 1.0,
+                "is_relay": True
+            }
+        }
+        config = {
+            "min_hold_seconds": 600,
+            "switch_confirm_seconds": 120,
+            "hysteresis_percent": 20,
+            "max_primary_latency_ms": 150
+        }
+        target, reason, pending = decide_route(rule_state, dest_metrics, current_active=1, config=config, now=now)
+        self.assertEqual(target, 1)
+        self.assertEqual(reason, "pending")
+        self.assertEqual(rule_state.get("switch_candidate"), 2)
+
+    def test_is_relay_failback_to_priority_1_when_priority_1_recovers_even_with_zero_loss_on_relay(self):
+        """
+        Verifies that when currently on an intermediate relay (is_relay=True) with 0% loss and 15ms ping,
+        as soon as Priority 1 recovers (<= 150ms, 0% loss), the engine initiates failback to Priority 1
+        instead of staying trapped on the intermediate relay!
+        """
+        now = 1000.0
+        rule_state = {
+            "last_switch_time": now - 700.0,
+            "switch_candidate": None,
+            "switch_streak_start": 0.0
+        }
+        dest_metrics = {
+            1: {
+                # Recovered direct exit server
+                "status": "healthy",
+                "short_loss": 0.0,
+                "long_loss": 0.0,
+                "short_score": 75.0,
+                "long_score": 75.0,
+                "avg_latency_ms": 75.0,
+                "fill_ratio": 1.0,
+                "is_relay": False
+            },
+            2: {
+                # Active intermediate relay with lower ping (15ms vs 75ms)
+                "status": "healthy",
+                "short_loss": 0.0,
+                "long_loss": 0.0,
+                "short_score": 15.0,
+                "long_score": 15.0,
+                "avg_latency_ms": 15.0,
+                "fill_ratio": 1.0,
+                "is_relay": True
+            }
+        }
+        config = {
+            "min_hold_seconds": 600,
+            "switch_confirm_seconds": 120,
+            "hysteresis_percent": 20,
+            "max_primary_latency_ms": 150
+        }
+        target, reason, pending = decide_route(rule_state, dest_metrics, current_active=2, config=config, now=now)
+        self.assertEqual(target, 2)  # pending streak confirmation towards 1
+        self.assertEqual(reason, "pending")
+        self.assertEqual(rule_state.get("switch_candidate"), 1)
+
+    def test_pick_best_now_penalizes_is_relay_over_direct_exit(self):
+        """Verifies pick_best_now selects direct Priority 1 (80ms) over intermediate relay (15ms)."""
+        dest_stats = {
+            "prio_1": {
+                "status": "healthy",
+                "packet_loss": 0.0,
+                "composite_score": 80.0
+            },
+            "prio_2": {
+                "status": "healthy",
+                "packet_loss": 0.0,
+                "composite_score": 15.0
+            }
+        }
+        destinations = [
+            {"priority": 1, "enabled": True, "is_relay": False},
+            {"priority": 2, "enabled": True, "is_relay": True}
+        ]
+        best = pick_best_now(dest_stats, destinations, current_active=1)
+        self.assertEqual(best, 1)
+
+    def test_pick_best_now_accidental_is_relay_on_priority_1_does_not_penalize_priority_1(self):
+        """Verifies that accidental is_relay=True on Priority 1 does not add a penalty to Priority 1."""
+        dest_stats = {
+            "prio_1": {
+                "status": "healthy",
+                "packet_loss": 0.0,
+                "composite_score": 50.0
+            },
+            "prio_2": {
+                "status": "healthy",
+                "packet_loss": 0.0,
+                "composite_score": 60.0
+            }
+        }
+        destinations = [
+            {"priority": 1, "enabled": True, "is_relay": True},  # Accidental is_relay on P1
+            {"priority": 2, "enabled": True, "is_relay": False}
+        ]
+        best = pick_best_now(dest_stats, destinations, current_active=1)
+        self.assertEqual(best, 1)
+
+    def test_relay_failback_to_priority_1_not_blocked_by_relay_warmup(self):
+        """
+        Verifies that when on an intermediate relay (curr_is_relay=True) with low fill_ratio (e.g. 0.20),
+        failback to a viable Priority 1 is NOT blocked by the warmup check.
+        """
+        now = 1000.0
+        rule_state = {
+            "last_switch_time": now - 30.0,  # Switch happened 30s ago
+            "switch_candidate": None,
+            "switch_streak_start": 0.0
+        }
+        dest_metrics = {
+            1: {
+                "status": "healthy",
+                "short_loss": 0.0,
+                "long_loss": 0.0,
+                "short_score": 80.0,
+                "long_score": 80.0,
+                "avg_latency_ms": 80.0,
+                "fill_ratio": 1.0,
+                "is_relay": False
+            },
+            2: {
+                "status": "healthy",
+                "short_loss": 0.0,
+                "long_loss": 0.0,
+                "short_score": 20.0,
+                "long_score": 20.0,
+                "avg_latency_ms": 20.0,
+                "fill_ratio": 0.20,  # Relay is in warmup (< 0.60)
+                "is_relay": True
+            }
+        }
+        config = {
+            "min_hold_seconds": 600,
+            "switch_confirm_seconds": 120,
+            "hysteresis_percent": 20,
+            "max_primary_latency_ms": 150
+        }
+        target, reason, pending = decide_route(rule_state, dest_metrics, current_active=2, config=config, now=now)
+        # Must initiate pending switch to Priority 1 rather than returning 'warmup'
+        self.assertEqual(target, 2)
+        self.assertEqual(reason, "pending")
+        self.assertEqual(rule_state.get("switch_candidate"), 1)
+
 
 if __name__ == "__main__":
     unittest.main()

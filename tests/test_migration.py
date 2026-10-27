@@ -255,6 +255,104 @@ class TestXForwarderMigration(unittest.TestCase):
         self.assertEqual(rules[3]["category"], "CleanscriptCategoryName")
         self.assertEqual(rules[3]["created_at"], 0.0)
 
+    def test_is_relay_and_boolean_coercion_edge_cases(self):
+        """Verifies _coerce_bool safely handles string representations ('false', '0', 'true', etc.)."""
+        from core.config_manager import _coerce_bool
+
+        # Falsy variations
+        self.assertFalse(_coerce_bool("false"))
+        self.assertFalse(_coerce_bool("FALSE"))
+        self.assertFalse(_coerce_bool("0"))
+        self.assertFalse(_coerce_bool("no"))
+        self.assertFalse(_coerce_bool("off"))
+        self.assertFalse(_coerce_bool(""))
+        self.assertFalse(_coerce_bool(False))
+        self.assertFalse(_coerce_bool(0))
+        self.assertFalse(_coerce_bool(0.0))
+        self.assertFalse(_coerce_bool(None, default=False))
+
+        # Truthy variations
+        self.assertTrue(_coerce_bool("true"))
+        self.assertTrue(_coerce_bool("TRUE"))
+        self.assertTrue(_coerce_bool("1"))
+        self.assertTrue(_coerce_bool("yes"))
+        self.assertTrue(_coerce_bool("on"))
+        self.assertTrue(_coerce_bool(True))
+        self.assertTrue(_coerce_bool(1))
+        self.assertTrue(_coerce_bool(42))
+        self.assertTrue(_coerce_bool(None, default=True))
+
+    def test_migration_normalizes_string_boolean_destinations(self):
+        """Verifies migration parses string booleans ('false', 'true') without bool('false') pitfalls."""
+        raw_cfg = {
+            "rules": [
+                {
+                    "port": 443,
+                    "destinations": [
+                        {
+                            "priority": 1,
+                            "target": "2a01:4f8:cafe::1",
+                            "enabled": "true",
+                            "is_relay": "false"  # Must become False, not bool('false') -> True
+                        },
+                        {
+                            "priority": 2,
+                            "target": "10.88.0.2",
+                            "enabled": "1",
+                            "is_relay": "true"   # Must become True
+                        },
+                        {
+                            "priority": 3,
+                            "target": "10.88.0.3"
+                            # Missing enabled and is_relay; defaults: enabled=True, is_relay=False
+                        }
+                    ]
+                }
+            ]
+        }
+        migrated, modified = XForwarderEngine.migrate_and_normalize_config(raw_cfg)
+        self.assertTrue(modified)
+        dests = migrated["rules"][0]["destinations"]
+        self.assertIs(dests[0]["enabled"], True)
+        self.assertIs(dests[0]["is_relay"], False)
+        self.assertIs(dests[1]["enabled"], True)
+        self.assertIs(dests[1]["is_relay"], True)
+        self.assertIs(dests[2]["enabled"], True)
+        self.assertIs(dests[2]["is_relay"], False)
+
+    def test_validate_rule_boolean_coercion(self):
+        """Verifies validate_rule coerces string boolean fields on destinations cleanly."""
+        from core.config_manager import validate_rule
+
+        rule = {
+            "port": 8443,
+            "protocol": "both",
+            "destinations": [
+                {
+                    "priority": 1,
+                    "target": "2a01:4f8:cafe::1",
+                    "type": "haproxy",
+                    "port": 8443,
+                    "enabled": "false",
+                    "is_relay": "false"
+                },
+                {
+                    "priority": 2,
+                    "target": "10.88.0.2",
+                    "type": "nftables",
+                    "port": 8443,
+                    "enabled": "true",
+                    "is_relay": "true"
+                }
+            ]
+        }
+        valid, msg = validate_rule(rule)
+        self.assertTrue(valid, msg)
+        self.assertIs(rule["destinations"][0]["enabled"], False)
+        self.assertIs(rule["destinations"][0]["is_relay"], False)
+        self.assertIs(rule["destinations"][1]["enabled"], True)
+        self.assertIs(rule["destinations"][1]["is_relay"], True)
+
 
 if __name__ == "__main__":
     unittest.main()

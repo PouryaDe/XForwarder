@@ -54,6 +54,23 @@ def get_state_file_path(override_path: Optional[str] = None) -> str:
     return os.path.join(tempfile.gettempdir(), "xforwarder_state.json")
 
 
+def _coerce_bool(val: Any, default: bool = False) -> bool:
+    """Safely converts boolean, string, or numeric values to bool, preventing 'false'/'0' string pitfalls."""
+    if val is None:
+        return default
+    if isinstance(val, bool):
+        return val
+    if isinstance(val, (int, float)):
+        return bool(val)
+    if isinstance(val, str):
+        clean = val.strip().lower()
+        if clean in ("true", "1", "yes", "on"):
+            return True
+        if clean in ("false", "0", "no", "off", ""):
+            return False
+    return bool(val)
+
+
 def migrate_and_normalize_config(cfg: Dict[str, Any]) -> Tuple[Dict[str, Any], bool]:
     """Automatically migrates and normalizes legacy configuration schemas for seamless backward compatibility."""
     if not isinstance(cfg, dict):
@@ -452,17 +469,25 @@ def migrate_and_normalize_config(cfg: Dict[str, Any]) -> Tuple[Dict[str, Any], b
                     d["target"] = clean_target
                     modified = True
 
-            has_pp = bool(d.get("proxy_protocol", False) or d.get("send_proxy", False))
+            has_pp = _coerce_bool(d.get("proxy_protocol", False) or d.get("send_proxy", False), False)
             if d.get("proxy_protocol") != has_pp:
                 d["proxy_protocol"] = has_pp
                 modified = True
 
-            is_enabled = bool(d.get("enabled", True))
+            is_enabled = _coerce_bool(d.get("enabled"), True)
             if "enabled" not in d:
                 d["enabled"] = is_enabled
                 modified = True
             elif d.get("enabled") != is_enabled:
                 d["enabled"] = is_enabled
+                modified = True
+
+            is_relay = _coerce_bool(d.get("is_relay"), False)
+            if "is_relay" not in d:
+                d["is_relay"] = is_relay
+                modified = True
+            elif d.get("is_relay") != is_relay:
+                d["is_relay"] = is_relay
                 modified = True
 
     return cfg, modified
@@ -681,7 +706,8 @@ def validate_rule(body: dict) -> Tuple[bool, str]:
         except (ValueError, TypeError):
             return False, "Destination priority must be a valid integer"
 
-        d["enabled"] = bool(d.get("enabled", True))
+        d["enabled"] = _coerce_bool(d.get("enabled"), True)
+        d["is_relay"] = _coerce_bool(d.get("is_relay"), False)
 
     return True, ""
 

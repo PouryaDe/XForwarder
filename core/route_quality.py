@@ -174,6 +174,10 @@ def pick_best_now(
         if status not in ("failed", "critical", "disabled") and loss < 100.0:
             # Healthy routes get bonus priority
             adj_score = score if status == "healthy" else score + 50.0
+            is_relay = bool(d.get("is_relay", False) or st.get("is_relay", False))
+            if is_relay and p > 1:
+                # Penalize intermediate relay hop so it does not falsely beat a healthy direct route
+                adj_score += 100.0
             eligible.append((adj_score, p))
 
     if eligible:
@@ -299,9 +303,10 @@ def decide_route(
     in_post_crit_cooldown = (time_since_switch < cooldown and rule_state.get("last_switch_reason") in ("critical", "failback_degraded"))
     in_min_hold = (time_since_switch < min_hold)
 
+    curr_is_relay = bool(curr_m.get("is_relay", False))
     # When on a backup route, NEVER lock traffic to the backup if Priority 1 is viable
-    # or if the current backup route has packet loss / is degraded!
-    if current_active > 1 and (prio1_is_viable or backup_has_loss or curr_short_loss > 0.0 or curr_long_loss > 0.0):
+    # or if the current backup route has packet loss / is degraded or is an intermediate relay!
+    if current_active > 1 and (prio1_is_viable or backup_has_loss or curr_is_relay or curr_short_loss > 0.0 or curr_long_loss > 0.0):
         in_min_hold = False
 
     if in_post_crit_cooldown or in_min_hold:
@@ -313,7 +318,7 @@ def decide_route(
     # Minimum window warm-up check: need at least 60% fill ratio unless test mode (min_hold=0 and confirm=0)
     is_test_mode = (min_hold == 0.0 and confirm_sec == 0.0)
     curr_fill = float(curr_m.get("fill_ratio", 0.0))
-    if not is_test_mode and curr_fill < 0.60:
+    if not is_test_mode and curr_fill < 0.60 and not (current_active > 1 and curr_is_relay and prio1_is_viable):
         rule_state["switch_candidate"] = None
         rule_state["switch_streak_start"] = 0.0
         return current_active, "warmup", 0
@@ -322,48 +327,53 @@ def decide_route(
     best_cand = None
     best_cand_score = curr_long_score
 
-    for p, m in dest_metrics.items():
-        if p == current_active:
-            continue
-        cand_status = m.get("status", "unknown")
-        if cand_status in ("failed", "critical"):
-            continue
-
-        cand_fill = float(m.get("fill_ratio", 0.0))
-        if not is_test_mode and cand_fill < 0.60:
-            continue
-
-        cand_loss = float(m.get("long_loss", 100.0))
-        # Never trade lower latency for higher packet loss!
-        if cand_loss > (curr_long_loss + 0.5):
-            continue
-
-        # ── Primary Route (Priority 1) Stickiness Rule ──
-        # When Priority 1 is currently active, do NOT switch away to backup paths (p > 1)
-        # merely because the backup has 10-30ms lower latency!
-        # Only switch away from Priority 1 if:
-        # 1) Priority 1 packet loss is worse than candidate (curr_long_loss > cand_loss + 0.5), OR
-        # 2) Priority 1 latency exceeds prio1_max_lat (default: 150ms).
-        if current_active == 1 and p > 1:
-            curr_lat = curr_m.get("avg_latency_ms")
-            if curr_lat is None:
-                curr_lat = curr_m.get("latency_ms")
-            curr_lat_val = float(curr_lat) if curr_lat is not None else float(curr_m.get("long_score", 0.0))
-            loss_is_worse = (curr_long_loss > cand_loss + 0.5)
-            latency_exceeded = (curr_lat_val > prio1_max_lat)
-
-            if not loss_is_worse and not latency_exceeded:
-                # Priority 1 is healthy and <= 150ms with clean loss; keep Priority 1 active!
+    # Check Priority 1 failback when active route is an intermediate relay
+    if current_active > 1 and prio1_is_viable and curr_is_relay:
+        best_cand = 1
+        best_cand_score = prio1_lat_val
+    else:
+        for p, m in dest_metrics.items():
+            if p == current_active:
+                continue
+            cand_status = m.get("status", "unknown")
+            if cand_status in ("failed", "critical"):
                 continue
 
-        cand_score = float(m.get("long_score", 999.0))
-        # Hysteresis requirement: candidate must beat current score by at least hysteresis_percent% AND >= 15 points (or 10 in test mode)
-        min_adv = 10.0 if is_test_mode else 15.0
-        required_advantage = max(min_adv, curr_long_score * (hysteresis_pct / 100.0))
-        if (curr_long_score - cand_score) >= required_advantage:
-            if cand_score < best_cand_score:
-                best_cand_score = cand_score
-                best_cand = p
+            cand_fill = float(m.get("fill_ratio", 0.0))
+            if not is_test_mode and cand_fill < 0.60:
+                continue
+
+            cand_loss = float(m.get("long_loss", 100.0))
+            # Never trade lower latency for higher packet loss!
+            if cand_loss > (curr_long_loss + 0.5):
+                continue
+
+            # ── Primary Route (Priority 1) Stickiness Rule ──
+            # When Priority 1 is currently active, do NOT switch away to backup paths (p > 1)
+            # merely because the backup has 10-30ms lower latency (especially if backup is an intermediate relay)!
+            # Only switch away from Priority 1 if:
+            # 1) Priority 1 packet loss is worse than candidate (curr_long_loss > cand_loss + 0.5), OR
+            # 2) Priority 1 latency exceeds prio1_max_lat (default: 150ms).
+            if current_active == 1 and p > 1:
+                curr_lat = curr_m.get("avg_latency_ms")
+                if curr_lat is None:
+                    curr_lat = curr_m.get("latency_ms")
+                curr_lat_val = float(curr_lat) if curr_lat is not None else float(curr_m.get("long_score", 0.0))
+                loss_is_worse = (curr_long_loss > cand_loss + 0.5)
+                latency_exceeded = (curr_lat_val > prio1_max_lat)
+
+                if not loss_is_worse and not latency_exceeded:
+                    # Priority 1 is healthy and <= 150ms with clean loss; keep Priority 1 active!
+                    continue
+
+            cand_score = float(m.get("long_score", 999.0))
+            # Hysteresis requirement: candidate must beat current score by at least hysteresis_percent% AND >= 15 points (or 10 in test mode)
+            min_adv = 10.0 if is_test_mode else 15.0
+            required_advantage = max(min_adv, curr_long_score * (hysteresis_pct / 100.0))
+            if (curr_long_score - cand_score) >= required_advantage:
+                if cand_score < best_cand_score:
+                    best_cand_score = cand_score
+                    best_cand = p
 
     if best_cand is None:
         rule_state["switch_candidate"] = None

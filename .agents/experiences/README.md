@@ -18,3 +18,4 @@ Records of architectural decisions, critical invariants, and lessons learned dur
 | `012` | [Kernel Zero-Copy Splicing, BBR Network Tuning, and Session Timeout Optimization](012-kernel-zero-copy-splicing-bbr-network-tuning-and-session-timeout-optimization.md) | `Performance & Networking` | 2026-10-22 |
 | `013` | [Two-Tier Intelligent Route Switching & Jitter Monitoring](013-two-tier-intelligent-route-switching-and-jitter-monitoring.md) | `Routing & Quality Engine` | 2026-10-23 |
 | `014` | [Per-Port and Per-Tunnel Traffic Accounting & Delta Engine](014-per-port-and-per-tunnel-traffic-accounting-and-delta-engine.md) | `Accounting & Bandwidth` | 2026-10-24 |
+| `015` | [Intermediate Relay Subsystem & Primary Anchor Failover](015-intermediate-relay-subsystem-and-primary-anchor-failover.md) | `Networking & Architecture` | 2026-10-27 |

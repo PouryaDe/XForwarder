@@ -55,6 +55,7 @@ Add the rule object to the `rules` array in `/etc/xforwarder/config.json`:
       "target": "<TUNNEL_IP>",
       "port": <PORT>,
       "tunnel_iface": "<IFACE>",
+      "is_relay": true,
       "comment": "<BACKUP_LABEL>"
     }
   ]
