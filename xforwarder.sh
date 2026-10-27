@@ -593,6 +593,9 @@ update_xforwarder() {
         rm -rf "$cleanup_tmp"
     fi
 
+    # Apply latest kernel network tuning & NIC offloads automatically on update
+    tune_network
+
     # Restart services cleanly
     msg_info "Restarting XForwarder services..."
     systemctl restart "$DAEMON_SERVICE" 2>/dev/null || true
