@@ -1812,6 +1812,8 @@
 .status-healthy { color: var(--accent-emerald); }
 .status-failed .status-indicator { background: var(--accent-rose); }
 .status-failed { color: var(--accent-rose); }
+.status-degraded .status-indicator { background: var(--accent-amber, #FBBF6B); }
+.status-degraded { color: var(--accent-amber, #FBBF6B); }
 .status-standby .status-indicator { background: var(--text-muted); }
 .status-standby { color: var(--text-muted); }
 

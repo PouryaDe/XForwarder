@@ -434,7 +434,7 @@ class XForwarderEngine:
                     last_loss = float(self._target_probe_cache[target].get("packet_loss", 0.0))
                     lossy_cycles = sum(1 for s in short_samples if isinstance(s, (list, tuple)) and len(s) >= 3 and int(s[2]) < int(s[1]))
                     burst_dead = (last_loss >= 100.0 and not self._target_probe_cache[target].get("healthy", True))
-                    status = classify_status(
+                    status, reason = classify_status(
                         short_loss=short_agg["packet_loss"],
                         long_loss=long_agg["packet_loss"],
                         last_cycle_loss=last_loss,
@@ -442,11 +442,13 @@ class XForwarderEngine:
                         route_invalid=False,
                         max_acceptable_loss=max_loss,
                         critical_loss=crit_loss,
-                        lossy_cycles=lossy_cycles
+                        lossy_cycles=lossy_cycles,
+                        return_reason=True
                     )
                     thist["short_agg"] = short_agg
                     thist["long_agg"] = long_agg
                     thist["status"] = status
+                    thist["reason"] = reason
                     thist["last_cycle_loss"] = last_loss
                     thist["lossy_cycles"] = lossy_cycles
 
@@ -679,7 +681,7 @@ class XForwarderEngine:
             # Classify status
             is_route_invalid = (not is_valid and not check_res.get("healthy", False))
             if burst_confirmed_dead or is_route_invalid:
-                status = classify_status(
+                status, reason = classify_status(
                     short_loss=short_agg["packet_loss"],
                     long_loss=long_agg["packet_loss"],
                     last_cycle_loss=last_cycle_loss,
@@ -687,12 +689,14 @@ class XForwarderEngine:
                     route_invalid=is_route_invalid,
                     max_acceptable_loss=max_loss,
                     critical_loss=crit_loss,
-                    lossy_cycles=lossy_cycles
+                    lossy_cycles=lossy_cycles,
+                    return_reason=True
                 )
             elif has_target_history and shared_status:
                 status = shared_status
+                reason = self._target_history.get(clean_tgt, {}).get("reason", "")
             else:
-                status = classify_status(
+                status, reason = classify_status(
                     short_loss=short_agg["packet_loss"],
                     long_loss=long_agg["packet_loss"],
                     last_cycle_loss=last_cycle_loss,
@@ -700,7 +704,8 @@ class XForwarderEngine:
                     route_invalid=is_route_invalid,
                     max_acceptable_loss=max_loss,
                     critical_loss=crit_loss,
-                    lossy_cycles=lossy_cycles
+                    lossy_cycles=lossy_cycles,
+                    return_reason=True
                 )
 
             # Compute short and long composite scores
@@ -723,6 +728,7 @@ class XForwarderEngine:
             )
 
             stat["status"] = status
+            stat["reason"] = reason
             stat["packet_loss"] = long_agg["packet_loss"]
             stat["short_loss"] = short_agg["packet_loss"]
             stat["latency_ms"] = long_agg["avg_latency_ms"] if long_agg["avg_latency_ms"] is not None else check_res.get("latency_ms")
@@ -739,6 +745,7 @@ class XForwarderEngine:
 
             dest_metrics[prio] = {
                 "status": status,
+                "reason": reason,
                 "short_loss": short_agg["packet_loss"],
                 "long_loss": long_agg["packet_loss"],
                 "short_score": short_score,

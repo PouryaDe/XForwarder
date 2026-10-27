@@ -117,6 +117,8 @@ export function formatLatencyBadge(statOrMs, maybeLoss = 0) {
  * @returns {string} HTML markup for .loss50-pill badge
  */
 export function formatLoss50Badge(lossInfo, fallbackLoss = null) {
+    const fbLoss = (fallbackLoss !== null && fallbackLoss !== undefined && !isNaN(fallbackLoss)) ? Math.round(Number(fallbackLoss)) : 0;
+
     if (lossInfo && lossInfo.packet_loss !== undefined && lossInfo.packet_loss !== null) {
         const loss = Math.round(Number(lossInfo.packet_loss));
         const agoStr = lossInfo.tested_ago_str || "recently";
@@ -124,14 +126,23 @@ export function formatLoss50Badge(lossInfo, fallbackLoss = null) {
         const recv = lossInfo.packets_received !== undefined ? lossInfo.packets_received : (sent - Math.round(sent * loss / 100));
 
         let cls = "loss-good";
-        if (loss >= 30) {
+        if (loss >= 30 || fbLoss >= 30) {
             cls = "loss-bad";
-        } else if (loss > 0) {
+        } else if (loss > 0 || fbLoss > 0) {
             cls = "loss-warn";
         }
 
-        const tooltip = `15m Test: ${loss}% loss (${recv}/${sent} pkts) · Tested ${escapeHtml(agoStr)}`;
-        return `<span class="loss50-pill ${cls}" title="${escapeHtml(tooltip)}"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg><span>${loss}% loss</span></span>`;
+        let tooltip = `15m Test: ${loss}% loss (${recv}/${sent} pkts) · Tested ${escapeHtml(agoStr)}`;
+        let displayLoss = `${loss}% loss`;
+
+        if (fbLoss > 0 && loss === 0) {
+            tooltip += ` · Active rolling probe: ${fbLoss}% loss`;
+            displayLoss = `${fbLoss}% probe loss`;
+        } else if (fbLoss > 0) {
+            tooltip += ` · Active rolling probe: ${fbLoss}% loss`;
+        }
+
+        return `<span class="loss50-pill ${cls}" title="${escapeHtml(tooltip)}"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg><span>${escapeHtml(displayLoss)}</span></span>`;
     }
     if (fallbackLoss !== null && fallbackLoss !== undefined && !isNaN(fallbackLoss)) {
         const loss = Math.round(Number(fallbackLoss));
@@ -151,6 +162,8 @@ export function formatLoss50Badge(lossInfo, fallbackLoss = null) {
  * @returns {string} HTML markup for .loss50-pill-inline
  */
 export function formatLoss50Inline(lossInfo, fallbackLoss = null) {
+    const fbLoss = (fallbackLoss !== null && fallbackLoss !== undefined && !isNaN(fallbackLoss)) ? Math.round(Number(fallbackLoss)) : 0;
+
     if (lossInfo && lossInfo.packet_loss !== undefined && lossInfo.packet_loss !== null) {
         const loss = Math.round(Number(lossInfo.packet_loss));
         const agoStr = lossInfo.tested_ago_str || "recently";
@@ -158,11 +171,20 @@ export function formatLoss50Inline(lossInfo, fallbackLoss = null) {
         const recv = lossInfo.packets_received !== undefined ? lossInfo.packets_received : (sent - Math.round(sent * loss / 100));
 
         let color = "var(--accent-mint)";
-        if (loss >= 30) color = "var(--accent-rose)";
-        else if (loss > 0) color = "var(--accent-amber)";
+        if (loss >= 30 || fbLoss >= 30) color = "var(--accent-rose)";
+        else if (loss > 0 || fbLoss > 0) color = "var(--accent-amber)";
 
-        const tooltip = `15m Test: ${loss}% loss (${recv}/${sent} pkts) · Tested ${escapeHtml(agoStr)}`;
-        return `<span class="loss50-pill-inline font-mono" style="color:${color};" title="${escapeHtml(tooltip)}">· ${loss}% loss</span>`;
+        let tooltip = `15m Test: ${loss}% loss (${recv}/${sent} pkts) · Tested ${escapeHtml(agoStr)}`;
+        let displayText = `· ${loss}% loss`;
+
+        if (fbLoss > 0 && loss === 0) {
+            tooltip += ` · Active rolling probe: ${fbLoss}% loss`;
+            displayText = `· ${fbLoss}% probe loss`;
+        } else if (fbLoss > 0) {
+            tooltip += ` · Active rolling probe: ${fbLoss}% loss`;
+        }
+
+        return `<span class="loss50-pill-inline font-mono" style="color:${color};" title="${escapeHtml(tooltip)}">${escapeHtml(displayText)}</span>`;
     }
     if (fallbackLoss !== null && fallbackLoss !== undefined && !isNaN(fallbackLoss)) {
         const loss = Math.round(Number(fallbackLoss));
@@ -178,9 +200,22 @@ export function formatLoss50Inline(lossInfo, fallbackLoss = null) {
 export function formatConciseReason(reason) {
     if (!reason) return "";
     const r = String(reason).trim();
-    if (r.includes("100% loss") || r.includes("Unreachable")) return "Unreachable";
+    if (r.includes("100% loss") || r.includes("Unreachable") || r.includes("unresponsive")) return "Unreachable";
     if (r.includes("timed out")) return "Timeout";
     if (r.includes("Connection refused")) return "Conn Refused";
+    if (r.includes("leaks to WAN") || r.includes("missing interface")) return "WAN Leak";
+    if (r.includes("Critical packet loss")) {
+        const m = r.match(/([\d.]+%)/);
+        return m ? `Crit Loss ${m[1]}` : "Crit Loss";
+    }
+    if (r.includes("Active probe loss") || r.includes("probe loss")) {
+        const m = r.match(/([\d.]+%)/);
+        return m ? `Loss: ${m[1]}` : "Probe Loss";
+    }
+    if (r.includes("Sustained 5m packet loss")) {
+        const m = r.match(/([\d.]+%)/);
+        return m ? `5m Loss: ${m[1]}` : "5m Loss";
+    }
     if (r.length > 25) return r.substring(0, 22) + "...";
     return r;
 }

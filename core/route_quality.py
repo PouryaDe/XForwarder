@@ -8,7 +8,7 @@ Zero third-party dependencies (system standard library only).
 
 import math
 import time
-from typing import Dict, List, Any, Optional, Tuple
+from typing import Dict, List, Any, Optional, Tuple, Union
 
 
 def summarize_cycle(parsed_ping: Dict[str, Any], timestamp: Optional[float] = None) -> List[Any]:
@@ -121,8 +121,9 @@ def classify_status(
     route_invalid: bool,
     max_acceptable_loss: float = 25.0,
     critical_loss: float = 30.0,
-    lossy_cycles: Optional[int] = None
-) -> str:
+    lossy_cycles: Optional[int] = None,
+    return_reason: bool = False
+) -> Union[str, Tuple[str, str]]:
     """
     Determines route health classification:
     - 'failed': Target unreachable / route invalid / 100% loss confirmed by burst.
@@ -130,21 +131,29 @@ def classify_status(
     - 'degraded': Noticeable packet loss (>= max_acceptable_loss / 2 or long-term loss >= 5%).
     - 'healthy': Clean operational health.
 
-    lossy_cycles: number of probe cycles inside the short window that lost at least one
-    packet. When provided, 'critical' requires loss in >= 2 cycles so that one transient
-    blip (a single fully-lost 10-ping cycle = 33% of a 3-cycle window) cannot trigger an
-    emergency switch on its own. Confirmed total outages are still caught as 'failed'.
+    When return_reason=True, returns (status: str, reason: str) tuple.
     """
-    if route_invalid or burst_confirmed_dead or (last_cycle_loss >= 100.0 and short_loss >= 100.0):
-        return "failed"
-    sustained = (lossy_cycles is None or lossy_cycles >= 2)
-    if short_loss >= critical_loss and sustained:
-        return "critical"
-    if short_loss >= (max_acceptable_loss / 2.0):
-        return "degraded"
-    if long_loss >= 5.0 and (short_loss > 1.0 or last_cycle_loss > 1.0):
-        return "degraded"
-    return "healthy"
+    if route_invalid:
+        status, reason = "failed", "Invalid route (leaks to WAN or missing interface)"
+    elif burst_confirmed_dead:
+        status, reason = "failed", "Target unreachable (100% loss confirmed by fast burst)"
+    elif last_cycle_loss >= 100.0 and short_loss >= 100.0:
+        status, reason = "failed", "Target host unresponsive (100% packet loss)"
+    else:
+        sustained = (lossy_cycles is None or lossy_cycles >= 2)
+        if short_loss >= critical_loss and sustained:
+            cycles_str = f" across {lossy_cycles} cycles" if lossy_cycles else ""
+            status, reason = "critical", f"Critical packet loss ({short_loss:.1f}%{cycles_str})"
+        elif short_loss >= (max_acceptable_loss / 2.0):
+            status, reason = "degraded", f"Active probe loss: {short_loss:.1f}% in rolling window"
+        elif long_loss >= 5.0 and (short_loss > 1.0 or last_cycle_loss > 1.0):
+            status, reason = "degraded", f"Sustained 5m packet loss: {long_loss:.1f}%"
+        else:
+            status, reason = "healthy", "Clean connectivity (0% loss)"
+
+    if return_reason:
+        return status, reason
+    return status
 
 
 def pick_best_now(

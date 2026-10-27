@@ -133,6 +133,15 @@ class TestRouteQualityEngine(unittest.TestCase):
         s_invalid = classify_status(short_loss=100.0, long_loss=100.0, last_cycle_loss=100.0, burst_confirmed_dead=False, route_invalid=True)
         self.assertEqual(s_invalid, "failed")
 
+        # Descriptive reasons with return_reason=True
+        stat_deg, reason_deg = classify_status(short_loss=15.0, long_loss=10.0, last_cycle_loss=10.0, burst_confirmed_dead=False, route_invalid=False, max_acceptable_loss=25.0, return_reason=True)
+        self.assertEqual(stat_deg, "degraded")
+        self.assertIn("Active probe loss: 15.0%", reason_deg)
+
+        stat_ok, reason_ok = classify_status(short_loss=0.0, long_loss=0.0, last_cycle_loss=0.0, burst_confirmed_dead=False, route_invalid=False, return_reason=True)
+        self.assertEqual(stat_ok, "healthy")
+        self.assertIn("Clean connectivity", reason_ok)
+
     def test_tier1_emergency_failover_bypasses_hold_and_streak(self):
         """Verifies that hard failure or critical outage triggers immediate switch without delay."""
         now = 1000.0

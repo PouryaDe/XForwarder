@@ -248,6 +248,12 @@ export function renderRuleCard(rule, rulesState) {
         } else if (isDown) {
             statusLabel = 'DOWN';
             statusClass = 'status-failed';
+        } else if (stat.status === 'degraded') {
+            statusLabel = 'DEGRADED';
+            statusClass = 'status-degraded';
+        } else if (stat.status === 'critical') {
+            statusLabel = 'CRITICAL';
+            statusClass = 'status-failed';
         } else if (stat.status) {
             statusLabel = String(stat.status).toUpperCase();
         }
@@ -260,13 +266,16 @@ export function renderRuleCard(rule, rulesState) {
         const latencyBadge = formatLatencyBadge(stat);
         const tagClass = getPrioTagClass(prio);
 
-        const fullReason = (stat.reason && isDown) ? String(stat.reason) : '';
+        const isDegraded = (stat.status === 'degraded');
+        const isProblem = isDown || isDegraded || (stat.status === 'critical');
+        const fullReason = (stat.reason && isProblem) ? String(stat.reason) : '';
         const conciseReason = fullReason ? formatConciseReason(fullReason) : '';
         const commentText = escapeHtml(dest.comment || '');
         let metaText = '';
         if (conciseReason) {
             const prefix = commentText ? `${commentText} · ` : '';
-            metaText = `<span class="text-amber" title="${escapeHtml(fullReason)}">${prefix}${escapeHtml(conciseReason)}</span>`;
+            const reasonClass = isDown ? 'text-rose' : 'text-amber';
+            metaText = `<span class="${reasonClass}" title="${escapeHtml(fullReason)}">${prefix}${escapeHtml(conciseReason)}</span>`;
         } else if (commentText) {
             metaText = commentText;
         }
@@ -296,7 +305,7 @@ export function renderRuleCard(rule, rulesState) {
                         </span>
                         <span class="path-tag ${tagClass}">#${prio}</span>
                         ${dest.is_relay ? `<span class="badge-relay-pill" title="Mid Server: The engine anchors on Priority 1 and only fails over here on outage, packet loss, or latency > 150ms.">Mid Server</span>` : ''}
-                        <span class="path-status ${statusClass}">
+                        <span class="path-status ${statusClass}" title="${escapeHtml(stat.reason || statusLabel)}">
                             <span class="status-indicator"></span>
                             ${statusLabel}
                         </span>
@@ -425,8 +434,10 @@ export function renderRuleListRow(rule, rulesState) {
         else if (isDown) dotColor = '#FB7185';
         else if (!isHealthy) dotColor = '#FBBF6B';
 
+        const statusDetail = stat.reason ? ` · ${stat.reason}` : (stat.status ? ` · ${String(stat.status).toUpperCase()}` : '');
+
         return `
-            <div class="${pillClass}" title="Priority #${prio}: ${escapeHtml(String(dest.type || 'haproxy').toUpperCase())} ${targetDisplay}:${escapeHtml(dest.port || rule.port)}${latText}">
+            <div class="${pillClass}" title="Priority #${prio}: ${escapeHtml(String(dest.type || 'haproxy').toUpperCase())} ${targetDisplay}:${escapeHtml(dest.port || rule.port)}${latText}${escapeHtml(statusDetail)}">
                 <span style="width:7px; height:7px; border-radius:50%; background:${dotColor}; display:inline-block;"></span>
                 <span style="font-weight:700; color:var(--text-primary); font-family:var(--font-mono);">#${prio}</span>
                 ${dest.is_relay ? `<span class="badge-relay-pill" style="font-size:0.62rem; padding:1px 4px;" title="Mid Server">Mid Server</span>` : ''}
