@@ -149,10 +149,12 @@ def classify_status(
         if short_loss >= critical_loss and sustained:
             cycles_str = f" across {lossy_cycles} cycles" if lossy_cycles else ""
             status, reason = "critical", f"Critical packet loss ({short_loss:.1f}%{cycles_str})"
-        elif short_loss >= (max_acceptable_loss / 2.0):
+        elif short_loss >= min(10.0, max_acceptable_loss / 2.0) or (short_loss >= 5.0 and sustained):
             status, reason = "degraded", f"Active probe loss: {short_loss:.1f}% in rolling window"
         elif long_loss >= 5.0 and (short_loss > 1.0 or last_cycle_loss > 1.0):
             status, reason = "degraded", f"Sustained 5m packet loss: {long_loss:.1f}%"
+        elif short_loss > 1.0 or last_cycle_loss > 1.0:
+            status, reason = "degraded", f"Intermittent packet loss ({max(short_loss, last_cycle_loss):.1f}%)"
         else:
             status, reason = "healthy", "Clean connectivity (0% loss)"
 
@@ -323,6 +325,23 @@ def decide_route(
     if current_active > 1 and (prio1_is_viable or backup_has_loss or curr_is_relay or curr_short_loss > 0.0 or curr_long_loss > 0.0):
         in_min_hold = False
 
+    # NEVER lock traffic in min_hold if the currently active route suffers packet loss
+    # and a cleaner candidate route is available!
+    curr_effective_loss = max(curr_short_loss, curr_long_loss)
+    curr_has_loss = (
+        curr_status in ("failed", "critical", "degraded")
+        or curr_effective_loss >= 5.0
+    )
+    if curr_has_loss:
+        for p, m in dest_metrics.items():
+            if p == current_active:
+                continue
+            cand_loss = float(m.get("long_loss", m.get("short_loss", 100.0)))
+            cand_status = m.get("status", "unknown")
+            if cand_status not in ("failed", "critical") and cand_loss < (curr_effective_loss - 0.5):
+                in_min_hold = False
+                break
+
     if in_post_crit_cooldown or in_min_hold:
         # Hold route to prevent flapping
         rule_state["switch_candidate"] = None
@@ -332,7 +351,7 @@ def decide_route(
     # Minimum window warm-up check: need at least 60% fill ratio unless test mode (min_hold=0 and confirm=0)
     is_test_mode = (min_hold == 0.0 and confirm_sec == 0.0)
     curr_fill = float(curr_m.get("fill_ratio", 0.0))
-    if not is_test_mode and curr_fill < 0.60 and not (current_active > 1 and curr_is_relay and prio1_is_viable):
+    if not is_test_mode and curr_fill < 0.60 and not (current_active > 1 and curr_is_relay and prio1_is_viable) and not curr_has_loss:
         rule_state["switch_candidate"] = None
         rule_state["switch_streak_start"] = 0.0
         return current_active, "warmup", 0
@@ -354,26 +373,26 @@ def decide_route(
                 continue
 
             cand_fill = float(m.get("fill_ratio", 0.0))
-            if not is_test_mode and cand_fill < 0.60:
+            if not is_test_mode and cand_fill < 0.60 and not curr_has_loss:
                 continue
 
             cand_loss = float(m.get("long_loss", 100.0))
             # Never trade lower latency for higher packet loss!
-            if cand_loss > (curr_long_loss + 0.5):
+            if cand_loss > (curr_effective_loss + 0.5):
                 continue
 
             # ── Primary Route (Priority 1) Stickiness Rule ──
             # When Priority 1 is currently active, do NOT switch away to backup paths (p > 1)
             # merely because the backup has 10-30ms lower latency (especially if backup is an intermediate relay)!
             # Only switch away from Priority 1 if:
-            # 1) Priority 1 packet loss is worse than candidate (curr_long_loss > cand_loss + 0.5), OR
+            # 1) Priority 1 packet loss is worse than candidate (curr_effective_loss > cand_loss + 0.5), OR
             # 2) Priority 1 latency exceeds prio1_max_lat (default: 150ms).
             if current_active == 1 and p > 1:
                 curr_lat = curr_m.get("avg_latency_ms")
                 if curr_lat is None:
                     curr_lat = curr_m.get("latency_ms")
                 curr_lat_val = float(curr_lat) if curr_lat is not None else float(curr_m.get("long_score", 0.0))
-                loss_is_worse = (curr_long_loss > cand_loss + 0.5)
+                loss_is_worse = (curr_effective_loss > cand_loss + 0.5)
                 latency_exceeded = (curr_lat_val > prio1_max_lat)
 
                 if not loss_is_worse and not latency_exceeded:

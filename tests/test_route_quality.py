@@ -911,7 +911,7 @@ class TestRouteQualityEngine(unittest.TestCase):
         self.assertEqual(agg["avg_latency_ms"], 55.0)
 
     def test_decide_route_does_not_emergency_failover_on_degraded(self):
-        """Verifies that a route with status='degraded' does not trigger Tier 1 emergency failover."""
+        """Verifies that a route with status='degraded' does not trigger Tier 1 emergency failover (stays on active during streak)."""
         now = 1000.0
         rule_state = {
             "last_switch_time": now - 30.0,
@@ -943,9 +943,130 @@ class TestRouteQualityEngine(unittest.TestCase):
             "switch_confirm_seconds": 120
         }
         target, reason, pending = decide_route(rule_state, dest_metrics, current_active=1, config=config, now=now)
-        # Should stay on Priority 1 due to hold-down guard, because degraded does NOT bypass hold-down (only critical/failed bypass)
+        # Does NOT trigger Tier 1 emergency switch (target remains 1, not immediately 2, reason is pending not critical)
+        self.assertEqual(target, 1)
+        self.assertEqual(reason, "pending")
+        self.assertEqual(pending, 120)
+        self.assertEqual(rule_state.get("switch_candidate"), 2)
+
+    def test_priority1_with_10_percent_loss_bypasses_min_hold_and_switches(self):
+        """
+        Verifies that Priority 1 with 10% packet loss (degraded) bypasses the 10-minute hold
+        and selects Priority 2 (with 2% loss) via Tier 2 planned confirmation.
+        """
+        now = 1000.0
+        rule_state = {
+            "last_switch_time": now - 419.0,  # 181s left of 600s min_hold!
+            "switch_candidate": None,
+            "switch_streak_start": 0.0
+        }
+        dest_metrics = {
+            1: {
+                "status": "degraded",
+                "short_loss": 10.0,
+                "long_loss": 10.0,
+                "avg_latency_ms": 93.3,
+                "long_score": 293.3,
+                "fill_ratio": 1.0
+            },
+            2: {
+                "status": "degraded",
+                "short_loss": 2.0,
+                "long_loss": 2.0,
+                "avg_latency_ms": 86.7,
+                "long_score": 126.7,
+                "fill_ratio": 1.0
+            }
+        }
+        config = {
+            "min_hold_seconds": 600,
+            "switch_confirm_seconds": 120,
+            "hysteresis_percent": 20
+        }
+        # First check: min_hold is waived because P1 has 10% loss and P2 has 2% loss
+        target, reason, pending = decide_route(rule_state, dest_metrics, current_active=1, config=config, now=now)
+        self.assertEqual(target, 1)
+        self.assertEqual(reason, "pending")
+        self.assertEqual(pending, 120)
+        self.assertEqual(rule_state.get("switch_candidate"), 2)
+
+        # After confirmation duration (120s), planned switch to Priority 2 completes!
+        target_done, reason_done, pending_done = decide_route(rule_state, dest_metrics, current_active=1, config=config, now=now + 120.0)
+        self.assertEqual(target_done, 2)
+        self.assertEqual(reason_done, "planned")
+        self.assertEqual(pending_done, 0)
+
+    def test_hold_not_bypassed_when_candidate_has_equal_or_worse_loss(self):
+        """Verifies that hold is preserved if candidate does not offer lower packet loss."""
+        now = 1000.0
+        rule_state = {
+            "last_switch_time": now - 30.0,  # inside 600s min_hold
+            "switch_candidate": None,
+            "switch_streak_start": 0.0
+        }
+        dest_metrics = {
+            1: {
+                "status": "degraded",
+                "short_loss": 10.0,
+                "long_loss": 10.0,
+                "long_score": 250.0,
+                "fill_ratio": 1.0
+            },
+            2: {
+                "status": "degraded",
+                "short_loss": 10.0,
+                "long_loss": 10.0,
+                "long_score": 220.0,
+                "fill_ratio": 1.0
+            }
+        }
+        config = {
+            "min_hold_seconds": 600,
+            "switch_confirm_seconds": 120,
+            "hysteresis_percent": 20
+        }
+        target, reason, pending = decide_route(rule_state, dest_metrics, current_active=1, config=config, now=now)
+        # Should remain on Priority 1 in 'hold' because Candidate 2 does not have lower loss
         self.assertEqual(target, 1)
         self.assertEqual(reason, "hold")
+
+    def test_candidate_evaluated_when_curr_long_loss_zero_but_short_loss_elevated(self):
+        """
+        Verifies that when Priority 1 has short-term loss spike (short_loss=10%, long_loss=0%),
+        Candidate 2 (with long_loss=2%) is correctly evaluated and NOT rejected by long_loss comparisons.
+        """
+        now = 1000.0
+        rule_state = {
+            "last_switch_time": now - 30.0,
+            "switch_candidate": None,
+            "switch_streak_start": 0.0
+        }
+        dest_metrics = {
+            1: {
+                "status": "degraded",
+                "short_loss": 10.0,
+                "long_loss": 0.0,
+                "long_score": 290.0,
+                "fill_ratio": 1.0
+            },
+            2: {
+                "status": "healthy",
+                "short_loss": 2.0,
+                "long_loss": 2.0,
+                "long_score": 120.0,
+                "fill_ratio": 1.0
+            }
+        }
+        config = {
+            "min_hold_seconds": 600,
+            "switch_confirm_seconds": 120,
+            "hysteresis_percent": 20
+        }
+        target, reason, pending = decide_route(rule_state, dest_metrics, current_active=1, config=config, now=now)
+        self.assertEqual(target, 1)
+        self.assertEqual(reason, "pending")
+        self.assertEqual(pending, 120)
+        self.assertEqual(rule_state.get("switch_candidate"), 2)
 
 
 if __name__ == "__main__":

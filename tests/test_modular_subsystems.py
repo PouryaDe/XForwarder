@@ -12,6 +12,7 @@ import json
 import time
 import tempfile
 import unittest
+from unittest.mock import patch
 
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if REPO_ROOT not in sys.path:
@@ -361,10 +362,14 @@ class TestModularSubsystems(unittest.TestCase):
             "target": "192.0.2.1",
             "port": 54321
         }
-        res = check_destination(dest, rule_port=54321, wan_iface="eth0")
-        self.assertIsInstance(res, dict)
-        self.assertFalse(res["healthy"])
-        self.assertIn("reason", res)
+        with patch("socket.socket") as mock_sock, \
+             patch("core.prober.probe_destination_icmp", return_value={"healthy": False, "reason": "Connection refused"}):
+            mock_inst = mock_sock.return_value.__enter__.return_value
+            mock_inst.connect_ex.return_value = 111  # Connection refused
+            res = check_destination(dest, rule_port=54321, wan_iface="eth0")
+            self.assertIsInstance(res, dict)
+            self.assertFalse(res["healthy"])
+            self.assertIn("reason", res)
 
     # =========================================================================
     # 6. System Info Subsystem Tests

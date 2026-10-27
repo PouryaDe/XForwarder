@@ -42,7 +42,7 @@ A port must **NEVER** be bound by HAProxy and forwarded by NFTables DNAT at the 
   - **Tier 2 (Conservative Planned Quality Switching)**:
     - Designed to prevent frequent, disruptive route flapping on live client sessions.
     - Evaluates performance over a 5-minute sliding window (`quality_window_seconds = 300s`) requiring $\ge 60\%$ window warm-up.
-    - **10-Minute Hold-Down**: Newly activated routes remain locked for at least 10 minutes (`min_hold_seconds = 600s`).
+    - **10-Minute Hold-Down with Loss Exemption**: Newly activated routes remain locked for at least 10 minutes (`min_hold_seconds = 600s`) to prevent flapping between clean routes. However, if the active route experiences packet loss (degraded / >=5%) and an eligible candidate offers lower packet loss, the hold guard is waived to prevent trapping client sessions on degraded paths.
     - **Packet Loss Shield**: Never trades lower latency for higher packet loss (`cand_loss > curr_loss + 0.5` is rejected).
     - **Significant Advantage Margin**: Candidate must beat current score by $\ge 20\%$ (`hysteresis_percent = 20%`) AND $\ge 15$ points.
     - **120-Second Streak Confirmation**: Candidate must maintain superior quality continuously for 120 seconds (`switch_confirm_seconds = 120s`). UI displays countdown badge (`Switch in Ns`).

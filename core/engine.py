@@ -840,6 +840,8 @@ class XForwarderEngine:
 
         rule_state["switch_pending_seconds"] = pending_sec
         rule_state["candidate_priority"] = rule_state.get("switch_candidate")
+        if decision_reason != "hold" or pending_sec > 0:
+            rule_state["hold_remaining"] = 0
 
         # Flap detection: 3 or more switches in 10 minutes
         recent_switches = [t for t in rule_state.get("switch_history", []) if (now - t) <= 600.0]
