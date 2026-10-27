@@ -97,8 +97,13 @@ export function switchSection(sectionId) {
     }
 
     // Section specific triggers
-    if (sec === "overview" && typeof window.loadNetworkQualityMetrics === "function") {
-        window.loadNetworkQualityMetrics();
+    if (sec === "overview") {
+        if (typeof window.loadNetworkQualityMetrics === "function") {
+            window.loadNetworkQualityMetrics();
+        }
+        if (typeof window.loadOverviewTrafficChart === "function") {
+            window.loadOverviewTrafficChart();
+        }
     }
     if (sec === "security" && typeof window.fetchSystemVersionInfo === "function") {
         window.fetchSystemVersionInfo(false);

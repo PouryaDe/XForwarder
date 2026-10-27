@@ -1937,6 +1937,130 @@ class TestUIAndAPIEdgeCases(unittest.TestCase):
         self.assertIn('formatLoss50Badge(lossInfo, stat.packet_loss)', rules_js)
         self.assertIn('formatLoss50Inline(lossInfo, stat.packet_loss)', rules_js)
 
+    def test_overview_telemetry_gauges_and_daily_traffic_chart(self):
+        """Verifies Overview graphical telemetry dashboard, 24h daily traffic chart, and edge case resilience."""
+        web_dir = os.path.join(REPO_ROOT, "web")
+        with open(os.path.join(web_dir, "index.html"), "r", encoding="utf-8") as f:
+            html = f.read()
+        with open(os.path.join(web_dir, "style.css"), "r", encoding="utf-8") as f:
+            css = f.read()
+        with open(os.path.join(web_dir, "js", "modules", "stats.js"), "r", encoding="utf-8") as f:
+            stats_js = f.read()
+        with open(os.path.join(web_dir, "js", "modules", "traffic.js"), "r", encoding="utf-8") as f:
+            traffic_js = f.read()
+        with open(os.path.join(web_dir, "js", "modules", "navigation.js"), "r", encoding="utf-8") as f:
+            nav_js = f.read()
+        with open(os.path.join(web_dir, "app.js"), "r", encoding="utf-8") as f:
+            app_js = f.read()
+
+        # 1. Telemetry Dashboard Grid and Card Widgets
+        self.assertIn('class="overview-telemetry-grid"', html)
+        self.assertIn('id="cpuPill"', html)
+        self.assertIn('id="ramPill"', html)
+        self.assertIn('id="loadPill"', html)
+        self.assertIn('id="connsPill"', html)
+        self.assertIn('id="trafficPill"', html)
+
+        # 2. CPU Radial Gauge & Dynamic Elements
+        self.assertIn('id="ovCpuRing"', html)
+        self.assertIn('id="ovCpuVal"', html)
+        self.assertIn('id="ovCpuBadge"', html)
+        self.assertIn('id="ovCpuBar"', html)
+        self.assertIn('id="cpuText"', html)
+        self.assertIn('ovCpuRing.style.strokeDashoffset', stats_js)
+
+        # 3. RAM Gradient Progress Bar & Metrics
+        self.assertIn('id="ramText"', html)
+        self.assertIn('id="ovRamBar"', html)
+        self.assertIn('id="ovRamPctChip"', html)
+        self.assertIn('id="ovRamBadge"', html)
+        self.assertIn('class="ram-full"', html)
+        self.assertIn('class="ram-short"', html)
+
+        # 4. System Load 3-Tier Comparison Bars
+        self.assertIn('id="loadText"', html)
+        self.assertIn('id="ovLoadBar1m"', html)
+        self.assertIn('id="ovLoadBar5m"', html)
+        self.assertIn('id="ovLoadBar15m"', html)
+        self.assertIn('id="ovLoadBadge"', html)
+        self.assertIn('id="ovLoadText"', html)
+
+        # 5. Socket Ratio & Bandwidth Dual Pulse Meters
+        self.assertIn('id="connsText"', html)
+        self.assertIn('id="ovSocketTcpSeg"', html)
+        self.assertIn('id="ovSocketUdpSeg"', html)
+        self.assertIn('id="ovTcpCount"', html)
+        self.assertIn('id="ovUdpCount"', html)
+        self.assertIn('id="trafficText"', html)
+        self.assertIn('id="ovNetRxFill"', html)
+        self.assertIn('id="ovNetTxFill"', html)
+        self.assertIn('id="ovNetRxSpeed"', html)
+        self.assertIn('id="ovNetTxSpeed"', html)
+        self.assertIn('id="ovTrafficRateBadge"', html)
+
+        # 6. Daily Traffic 24h Card & Interactive Hourly Chart
+        self.assertIn('id="cardDailyTrafficAnalytics"', html)
+        self.assertIn('id="ovTrafficRangeBadge"', html)
+        self.assertIn('id="btnOvTraffic24h"', html)
+        self.assertIn('id="btnOvTraffic7d"', html)
+        self.assertIn('id="btnRefreshOvTraffic"', html)
+        self.assertIn('id="ovTrafficCardTotal"', html)
+        self.assertIn('id="ovTrafficCardRx"', html)
+        self.assertIn('id="ovTrafficCardTx"', html)
+        self.assertIn('id="ovTrafficCardPeak"', html)
+        self.assertIn('id="ovTrafficCardPeakTime"', html)
+        self.assertIn('id="ovTrafficBarsContainer"', html)
+        self.assertIn('id="ovTrafficTimelineTicks"', html)
+        self.assertIn('id="ovTrafficMethodSection"', html)
+        self.assertIn('id="ovMethodTrack"', html)
+        self.assertIn('id="ovMethodLegend"', html)
+
+        # 7. JS Module Functions, Bindings & Navigation Integration
+        self.assertIn('export async function loadOverviewTrafficChart', traffic_js)
+        self.assertIn('export function renderOverviewTrafficBars', traffic_js)
+        self.assertIn('export function renderOverviewMethods', traffic_js)
+        self.assertIn('window.loadOverviewTrafficChart = loadOverviewTrafficChart', app_js)
+        self.assertIn('renderStats(currentRules, lastRuntime, data.traffic)', app_js)
+        self.assertIn('window.loadOverviewTrafficChart()', nav_js)
+
+        # 8. 24h Traffic Card Wiring & Robust Fallbacks in renderStats
+        self.assertIn('statTrafficTotal.textContent = formatBytes(totalBytes)', stats_js)
+        self.assertIn('statTrafficSubtext.innerHTML', stats_js)
+        self.assertIn('statTrafficTotal.textContent = "0 B";', stats_js)
+        self.assertIn('ovLoadBadge.className = "telemetry-badge text-emerald";', stats_js)
+
+        # 9. Idempotent Event Binding & Defensive Period Argument Sanitation
+        self.assertIn('btnOv24h._xfwdBound = true', traffic_js)
+        self.assertIn('btnRefreshOv._xfwdBound = true', traffic_js)
+        self.assertIn('if (typeof period !== "string" || (period !== "24h" && period !== "7d"))', traffic_js)
+
+        # 10. Dual-Theme Light Mode Overrides & Clipping Prevention
+        self.assertIn('[data-theme="light"] .radial-bg', css)
+        self.assertIn('[data-theme="light"] .telemetry-badge', css)
+        self.assertIn('[data-theme="light"] .ov-traffic-bars-container', css)
+        self.assertIn('.ov-traffic-bars-container .traffic-tooltip', css)
+
+        # 11. Backend Traffic Queries Edge Cases (Empty DB / Non-existent paths)
+        from core.traffic import get_traffic_summary, get_traffic_timeseries, reset_traffic_counter
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            empty_db = os.path.join(tmp_dir, "empty_metrics.db")
+            # Query on non-existent DB file should return safe default summary
+            summary = get_traffic_summary(period="24h", db_path=empty_db)
+            self.assertIsInstance(summary, dict)
+            self.assertEqual(summary["total_bytes"], 0)
+            self.assertEqual(summary["total_rx"], 0)
+            self.assertEqual(summary["total_tx"], 0)
+
+            # Query timeseries on empty DB file should return empty list
+            ts = get_traffic_timeseries(period="24h", db_path=empty_db)
+            self.assertIsInstance(ts, list)
+            self.assertEqual(len(ts), 0)
+
+            # Resetting counter on empty DB should initialize and succeed
+            res = reset_traffic_counter("port", "9999", wipe_history=False, db_path=empty_db)
+            self.assertTrue(res["success"])
+            self.assertEqual(res["entity_id"], "9999")
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -4405,7 +4405,474 @@ select option {
     to { transform: translateX(0); opacity: 1; }
 }
 
-/* ── Overview Live System Telemetry Bar ── */
+/* ── Overview Live System Telemetry Dashboard (Graphical Cards) ── */
+.overview-telemetry-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+    gap: 14px;
+    margin-bottom: 24px;
+    width: 100%;
+}
+
+.telemetry-card {
+    background: var(--bg-card);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid var(--border-color);
+    border-radius: 14px;
+    padding: 14px 16px;
+    box-shadow: var(--card-shadow);
+    transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    min-height: 110px;
+    position: relative;
+    overflow: hidden;
+}
+
+.telemetry-card:hover {
+    background: var(--bg-card-hover);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.28);
+}
+
+.telemetry-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 10px;
+}
+
+.telemetry-icon-box {
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.telemetry-icon-box.icon-cyan {
+    background: rgba(56, 189, 248, 0.12);
+    color: var(--accent-cyan);
+}
+
+.telemetry-icon-box.icon-emerald {
+    background: rgba(110, 231, 183, 0.12);
+    color: var(--accent-emerald);
+}
+
+.telemetry-icon-box.icon-amber {
+    background: rgba(251, 191, 107, 0.12);
+    color: var(--accent-amber);
+}
+
+.telemetry-icon-box.icon-violet {
+    background: rgba(167, 139, 250, 0.12);
+    color: var(--accent-violet);
+}
+
+.telemetry-icon-box.icon-mint {
+    background: rgba(110, 231, 183, 0.12);
+    color: var(--accent-mint);
+}
+
+.telemetry-label {
+    font-size: 0.76rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    flex: 1;
+}
+
+.telemetry-badge {
+    font-size: 0.68rem;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-family: var(--font-mono);
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid var(--border-color);
+}
+
+.telemetry-card-body {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex: 1;
+}
+
+/* Radial Gauge (CPU) */
+.telemetry-radial-gauge {
+    width: 44px;
+    height: 44px;
+    position: relative;
+    flex-shrink: 0;
+}
+
+.radial-svg {
+    width: 100%;
+    height: 100%;
+    transform: rotate(-90deg);
+}
+
+.radial-bg {
+    fill: none;
+    stroke: rgba(255, 255, 255, 0.08);
+    stroke-width: 3.5;
+}
+
+.radial-fill {
+    fill: none;
+    stroke: var(--accent-cyan);
+    stroke-width: 3.5;
+    stroke-linecap: round;
+    transition: stroke-dashoffset 0.6s cubic-bezier(0.4, 0, 0.2, 1), stroke 0.3s ease;
+}
+
+.radial-center-val {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.7rem;
+    font-weight: 700;
+    font-family: var(--font-mono);
+    color: var(--text-primary);
+}
+
+.telemetry-details {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.telemetry-val-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+}
+
+.telemetry-main-text {
+    font-size: 0.88rem;
+    font-weight: 700;
+    font-family: var(--font-mono);
+    color: var(--text-primary);
+    white-space: nowrap;
+}
+
+.telemetry-val-chip {
+    font-size: 0.72rem;
+    font-weight: 600;
+    font-family: var(--font-mono);
+}
+
+.telemetry-bar-wrap {
+    width: 100%;
+    margin: 2px 0;
+}
+
+.telemetry-bar-track {
+    width: 100%;
+    height: 5px;
+    border-radius: 3px;
+    background: rgba(255, 255, 255, 0.08);
+    overflow: hidden;
+}
+
+.telemetry-bar-fill {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 0.5s ease;
+}
+
+.telemetry-bar-fill.fill-cyan {
+    background: linear-gradient(90deg, #0284c7, var(--accent-cyan));
+    box-shadow: 0 0 8px rgba(56, 189, 248, 0.4);
+}
+
+.telemetry-bar-fill.fill-emerald {
+    background: linear-gradient(90deg, #059669, var(--accent-emerald));
+    box-shadow: 0 0 8px rgba(110, 231, 183, 0.4);
+}
+
+.telemetry-subtext {
+    font-size: 0.69rem;
+    color: var(--text-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* 3-Tier Load Bars */
+.telemetry-load-bars {
+    display: flex;
+    gap: 5px;
+    align-items: flex-end;
+    height: 24px;
+    margin: 0;
+}
+
+.load-bar-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    height: 100%;
+}
+
+.load-bar-track {
+    width: 100%;
+    flex: 1;
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 2px;
+    display: flex;
+    align-items: flex-end;
+    overflow: hidden;
+}
+
+.load-bar-fill {
+    width: 100%;
+    background: var(--accent-amber);
+    border-radius: 2px;
+    transition: height 0.4s ease;
+    min-height: 2px;
+}
+
+.load-bar-lbl {
+    font-size: 0.62rem;
+    color: var(--text-muted);
+    font-family: var(--font-mono);
+}
+
+/* Socket Ratio Bar */
+.telemetry-socket-ratio {
+    width: 100%;
+    margin: 2px 0;
+}
+
+.socket-ratio-bar {
+    width: 100%;
+    height: 6px;
+    border-radius: 3px;
+    display: flex;
+    overflow: hidden;
+    background: rgba(255, 255, 255, 0.08);
+    margin-bottom: 4px;
+}
+
+.socket-segment.segment-tcp {
+    background: var(--accent-violet);
+    box-shadow: 0 0 6px rgba(167, 139, 250, 0.4);
+    transition: width 0.4s ease;
+}
+
+.socket-segment.segment-udp {
+    background: var(--accent-cyan);
+    box-shadow: 0 0 6px rgba(56, 189, 248, 0.4);
+    transition: width 0.4s ease;
+}
+
+.socket-legend-row {
+    display: flex;
+    gap: 10px;
+    font-size: 0.68rem;
+    color: var(--text-muted);
+    font-family: var(--font-mono);
+}
+
+.socket-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    display: inline-block;
+    vertical-align: middle;
+}
+
+.socket-dot.dot-tcp {
+    background: var(--accent-violet);
+}
+
+.socket-dot.dot-udp {
+    background: var(--accent-cyan);
+}
+
+/* Network Speed Meters */
+.telemetry-net-meters {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    margin: 2px 0;
+    width: 100%;
+}
+
+.net-meter-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.7rem;
+}
+
+.net-meter-label {
+    width: 28px;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+}
+
+.net-meter-track {
+    flex: 1;
+    height: 4px;
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 2px;
+    overflow: hidden;
+}
+
+.net-meter-fill {
+    height: 100%;
+    border-radius: 2px;
+    transition: width 0.4s ease;
+}
+
+.net-meter-fill.fill-cyan {
+    background: var(--accent-cyan);
+    box-shadow: 0 0 6px rgba(56, 189, 248, 0.5);
+}
+
+.net-meter-fill.fill-mint {
+    background: var(--accent-mint);
+    box-shadow: 0 0 6px rgba(110, 231, 183, 0.5);
+}
+
+.net-meter-val {
+    font-size: 0.69rem;
+    color: var(--text-secondary);
+    min-width: 68px;
+    text-align: right;
+}
+
+/* ── Daily Traffic 24h Hourly Chart ── */
+.ov-traffic-bars-container {
+    display: flex;
+    align-items: flex-end;
+    gap: 4px;
+    height: 146px;
+    padding: 34px 10px 4px;
+    background: var(--bg-surface);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    position: relative;
+}
+
+.ov-traffic-bars-container .traffic-bar-col {
+    flex: 1;
+    min-width: 16px;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    align-items: center;
+    position: relative;
+    cursor: pointer;
+}
+
+.ov-traffic-bars-container .traffic-bar-stack {
+    width: 100%;
+    max-width: 16px;
+    min-height: 3px;
+    display: flex;
+    flex-direction: column-reverse;
+    border-radius: 3px 3px 0 0;
+    overflow: hidden;
+    transition: all 0.25s ease;
+    background: rgba(255, 255, 255, 0.04);
+}
+
+.ov-traffic-bars-container .traffic-bar-col:hover .traffic-bar-stack {
+    filter: brightness(1.28);
+    box-shadow: 0 0 8px rgba(110, 231, 183, 0.4);
+}
+
+.ov-traffic-bars-container .segment-tx {
+    background: var(--accent-mint);
+    width: 100%;
+}
+
+.ov-traffic-bars-container .segment-rx {
+    background: var(--accent-cyan);
+    width: 100%;
+}
+
+.ov-traffic-bars-container .traffic-bar-label {
+    margin-top: 4px;
+    font-size: 0.65rem;
+    font-family: var(--font-mono);
+    color: var(--text-muted);
+    white-space: nowrap;
+}
+
+.ov-traffic-bars-container .traffic-tooltip {
+    position: absolute;
+    bottom: calc(100% + 4px);
+    left: 50%;
+    transform: translateX(-50%);
+    background: #0f141f;
+    border: 1px solid var(--border-strong);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.65);
+    border-radius: 6px;
+    padding: 4px 8px;
+    font-size: 0.69rem;
+    color: #fff;
+    white-space: nowrap;
+    pointer-events: none;
+    z-index: 25;
+    display: none;
+    flex-direction: column;
+    gap: 2px;
+    font-family: var(--font-mono);
+}
+
+.ov-traffic-bars-container .traffic-bar-col:hover .traffic-tooltip {
+    display: flex;
+}
+
+.btn-range-tab.spinning svg,
+.btn.spinning svg {
+    animation: spinBtn 0.7s linear infinite;
+}
+
+/* Light Mode Overrides for Telemetry & Overview Traffic */
+[data-theme="light"] .radial-bg {
+    stroke: rgba(0, 0, 0, 0.08);
+}
+[data-theme="light"] .telemetry-badge {
+    background: rgba(0, 0, 0, 0.04);
+}
+[data-theme="light"] .telemetry-bar-track,
+[data-theme="light"] .load-bar-track,
+[data-theme="light"] .socket-ratio-bar,
+[data-theme="light"] .net-meter-track {
+    background: rgba(0, 0, 0, 0.07);
+}
+[data-theme="light"] .ov-traffic-bars-container .traffic-bar-stack {
+    background: rgba(0, 0, 0, 0.05);
+}
+[data-theme="light"] .ov-method-track {
+    background: rgba(0, 0, 0, 0.07) !important;
+}
+
+/* ── Legacy Overview Live System Telemetry Bar (Fallback Support) ── */
 .overview-telemetry-bar {
     display: flex;
     align-items: center;

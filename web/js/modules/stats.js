@@ -34,6 +34,37 @@ export function renderSystemStats(sys) {
         const ovCpuBar = document.getElementById("ovCpuBar");
         if (ovCpuText) ovCpuText.innerText = `${cpuPct}%`;
         if (ovCpuBar) ovCpuBar.style.width = `${Math.min(100, Math.max(0, cpuPct))}%`;
+
+        // Graphical Circular SVG Ring & Badge
+        const ovCpuRing = document.getElementById("ovCpuRing");
+        if (ovCpuRing) {
+            // Circumference of r=18 is ~113.1
+            const offset = 113.1 * (1 - Math.min(100, Math.max(0, cpuPct)) / 100);
+            ovCpuRing.style.strokeDashoffset = offset;
+            if (cpuPct > 80) {
+                ovCpuRing.style.stroke = "var(--accent-rose)";
+            } else if (cpuPct > 55) {
+                ovCpuRing.style.stroke = "var(--accent-amber)";
+            } else {
+                ovCpuRing.style.stroke = "var(--accent-cyan)";
+            }
+        }
+        const ovCpuVal = document.getElementById("ovCpuVal");
+        if (ovCpuVal) ovCpuVal.innerText = `${cpuPct}%`;
+
+        const ovCpuBadge = document.getElementById("ovCpuBadge");
+        if (ovCpuBadge) {
+            if (cpuPct > 80) {
+                ovCpuBadge.innerText = "Heavy";
+                ovCpuBadge.className = "telemetry-badge text-rose";
+            } else if (cpuPct > 55) {
+                ovCpuBadge.innerText = "Elevated";
+                ovCpuBadge.className = "telemetry-badge text-amber";
+            } else {
+                ovCpuBadge.innerText = "Normal";
+                ovCpuBadge.className = "telemetry-badge text-cyan";
+            }
+        }
     }
 
     // 2. RAM Usage
@@ -47,7 +78,33 @@ export function renderSystemStats(sys) {
         const ovRamText = document.getElementById("ovRamText");
         const ovRamBar = document.getElementById("ovRamBar");
         if (ovRamText) ovRamText.innerText = `${used} / ${total} MB (${pct}%)`;
-        if (ovRamBar) ovRamBar.style.width = `${Math.min(100, Math.max(0, pct))}%`;
+        if (ovRamBar) {
+            ovRamBar.style.width = `${Math.min(100, Math.max(0, pct))}%`;
+            if (pct > 85) {
+                ovRamBar.style.background = "var(--accent-rose)";
+            } else if (pct > 70) {
+                ovRamBar.style.background = "var(--accent-amber)";
+            } else {
+                ovRamBar.style.background = "var(--accent-emerald)";
+            }
+        }
+
+        const ovRamPctChip = document.getElementById("ovRamPctChip");
+        if (ovRamPctChip) ovRamPctChip.innerText = `${pct}%`;
+
+        const ovRamBadge = document.getElementById("ovRamBadge");
+        if (ovRamBadge) {
+            if (pct > 85) {
+                ovRamBadge.innerText = "Critical";
+                ovRamBadge.className = "telemetry-badge text-rose";
+            } else if (pct > 70) {
+                ovRamBadge.innerText = "Elevated";
+                ovRamBadge.className = "telemetry-badge text-amber";
+            } else {
+                ovRamBadge.innerText = "Optimal";
+                ovRamBadge.className = "telemetry-badge text-emerald";
+            }
+        }
     }
 
     // 3. System Load Average
@@ -64,6 +121,31 @@ export function renderSystemStats(sys) {
             const l5 = sys.load_5 !== undefined ? Number(sys.load_5).toFixed(2) : "--";
             const l15 = sys.load_15 !== undefined ? Number(sys.load_15).toFixed(2) : "--";
             ovLoadText.textContent = `${l1} (1m), ${l5} (5m), ${l15} (15m)`;
+        }
+
+        // Graphical 3-tier visual load bars
+        const val1 = Number(sys.load_1) || 0;
+        const val5 = Number(sys.load_5) || 0;
+        const val15 = Number(sys.load_15) || 0;
+        const b1 = document.getElementById("ovLoadBar1m");
+        const b5 = document.getElementById("ovLoadBar5m");
+        const b15 = document.getElementById("ovLoadBar15m");
+        if (b1) b1.style.height = `${Math.min(100, Math.max(8, Math.round(val1 * 35)))}%`;
+        if (b5) b5.style.height = `${Math.min(100, Math.max(8, Math.round(val5 * 35)))}%`;
+        if (b15) b15.style.height = `${Math.min(100, Math.max(8, Math.round(val15 * 35)))}%`;
+
+        const ovLoadBadge = document.getElementById("ovLoadBadge");
+        if (ovLoadBadge) {
+            if (val1 > 3.0) {
+                ovLoadBadge.innerText = "Heavy";
+                ovLoadBadge.className = "telemetry-badge text-rose";
+            } else if (val1 > 1.5) {
+                ovLoadBadge.innerText = "Elevated";
+                ovLoadBadge.className = "telemetry-badge text-amber";
+            } else {
+                ovLoadBadge.innerText = "Balanced";
+                ovLoadBadge.className = "telemetry-badge text-emerald";
+            }
         }
     }
 
@@ -92,6 +174,21 @@ export function renderSystemStats(sys) {
 
         if (ovTrafficText) {
             ovTrafficText.textContent = `↓ ${rRx} MB/s · ↑ ${rTx} MB/s`;
+        }
+
+        // Graphical Network Speed Visual Bars
+        const netRxFill = document.getElementById("ovNetRxFill");
+        const netTxFill = document.getElementById("ovNetTxFill");
+        const netRxSpeed = document.getElementById("ovNetRxSpeed");
+        const netTxSpeed = document.getElementById("ovNetTxSpeed");
+        if (netRxFill) netRxFill.style.width = `${Math.min(100, Math.max(4, Math.round((Number(rawRateRx) / 25) * 100)))}%`;
+        if (netTxFill) netTxFill.style.width = `${Math.min(100, Math.max(4, Math.round((Number(rawRateTx) / 25) * 100)))}%`;
+        if (netRxSpeed) netRxSpeed.textContent = _trafficModeRate ? `${rRx} MB/s` : `${rxMb} MB`;
+        if (netTxSpeed) netTxSpeed.textContent = _trafficModeRate ? `${rTx} MB/s` : `${txMb} MB`;
+
+        const ovTrafficRateBadge = document.getElementById("ovTrafficRateBadge");
+        if (ovTrafficRateBadge) {
+            ovTrafficRateBadge.textContent = _trafficModeRate ? "Live MB/s" : "Total MB";
         }
 
         if (trafficPill) {
@@ -124,6 +221,23 @@ export function renderSystemStats(sys) {
         if (ovConnsText) {
             ovConnsText.textContent = `${tcp} TCP · ${udp} UDP`;
         }
+
+        // Graphical Socket Ratio Split
+        const tcpNum = Number(tcpVal) || 0;
+        const udpNum = Number(udpVal) || 0;
+        const totalConns = tcpNum + udpNum;
+        const tcpSeg = document.getElementById("ovSocketTcpSeg");
+        const udpSeg = document.getElementById("ovSocketUdpSeg");
+        const ovTcpCount = document.getElementById("ovTcpCount");
+        const ovUdpCount = document.getElementById("ovUdpCount");
+        if (tcpSeg && udpSeg) {
+            const tcpPct = totalConns > 0 ? Math.round((tcpNum / totalConns) * 100) : 50;
+            const udpPct = 100 - tcpPct;
+            tcpSeg.style.width = `${tcpPct}%`;
+            udpSeg.style.width = `${udpPct}%`;
+        }
+        if (ovTcpCount) ovTcpCount.innerText = tcp;
+        if (ovUdpCount) ovUdpCount.innerText = udp;
     }
 }
 
@@ -298,7 +412,7 @@ export function renderServicesStatus(services) {
     }
 }
 
-export function renderStats(rules, runtime) {
+export function renderStats(rules, runtime, traffic) {
     const statTotalRules = document.getElementById("statTotalRules");
     const statActiveHaproxy = document.getElementById("statActiveHaproxy");
     const statActiveNftables = document.getElementById("statActiveNftables");
@@ -382,6 +496,27 @@ export function renderStats(rules, runtime) {
 
     const svcHaproxyBinds = document.getElementById("svcHaproxyBinds");
     if (svcHaproxyBinds) svcHaproxyBinds.innerText = `${haproxyCount} ports`;
+
+    // 6. Traffic (24h) Stat Card
+    const statTrafficTotal = document.getElementById("statTrafficTotal");
+    const statTrafficSubtext = document.getElementById("statTrafficSubtext");
+    const tData = traffic || lastTrafficData;
+    if (statTrafficTotal) {
+        if (tData) {
+            const totalBytes = tData.total_bytes !== undefined ? tData.total_bytes : (tData.cycle_bytes || 0);
+            const rxBytes = tData.total_rx !== undefined ? tData.total_rx : (tData.rx_bytes || 0);
+            const txBytes = tData.total_tx !== undefined ? tData.total_tx : (tData.tx_bytes || 0);
+            statTrafficTotal.textContent = formatBytes(totalBytes);
+            if (statTrafficSubtext) {
+                statTrafficSubtext.innerHTML = `<span class="text-cyan">↓ ${formatBytes(rxBytes)}</span> &middot; <span class="text-mint">↑ ${formatBytes(txBytes)}</span>`;
+            }
+        } else {
+            statTrafficTotal.textContent = "0 B";
+            if (statTrafficSubtext) {
+                statTrafficSubtext.innerHTML = `<span class="text-cyan">↓ 0 B</span> &middot; <span class="text-mint">↑ 0 B</span>`;
+            }
+        }
+    }
 }
 
 export function renderNetworkTopology(network) {

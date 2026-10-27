@@ -517,4 +517,205 @@ export function initTrafficAnalytics() {
     if (btnWipeHistory) {
         btnWipeHistory.addEventListener("click", () => triggerWipeHistoryFromModal());
     }
+
+    // Overview 24h Daily Traffic Range Tabs & Refresh
+    const btnOv24h = document.getElementById("btnOvTraffic24h");
+    if (btnOv24h && !btnOv24h._xfwdBound) {
+        btnOv24h._xfwdBound = true;
+        btnOv24h.addEventListener("click", () => loadOverviewTrafficChart("24h"));
+    }
+    const btnOv7d = document.getElementById("btnOvTraffic7d");
+    if (btnOv7d && !btnOv7d._xfwdBound) {
+        btnOv7d._xfwdBound = true;
+        btnOv7d.addEventListener("click", () => loadOverviewTrafficChart("7d"));
+    }
+    const btnRefreshOv = document.getElementById("btnRefreshOvTraffic");
+    if (btnRefreshOv && !btnRefreshOv._xfwdBound) {
+        btnRefreshOv._xfwdBound = true;
+        btnRefreshOv.addEventListener("click", async () => {
+            btnRefreshOv.classList.add("spinning");
+            await loadOverviewTrafficChart();
+            setTimeout(() => btnRefreshOv.classList.remove("spinning"), 400);
+        });
+    }
+}
+
+// ── Overview Page Daily Traffic Chart & KPIs ──
+let currentOverviewPeriod = "24h";
+let overviewTrafficLoading = false;
+
+export async function loadOverviewTrafficChart(period = currentOverviewPeriod) {
+    if (typeof period !== "string" || (period !== "24h" && period !== "7d")) {
+        period = (currentOverviewPeriod === "7d") ? "7d" : "24h";
+    }
+    if (overviewTrafficLoading) return;
+    overviewTrafficLoading = true;
+    currentOverviewPeriod = period;
+
+    const barsContainer = document.getElementById("ovTrafficBarsContainer");
+    const kpiTotal = document.getElementById("ovTrafficCardTotal");
+    const kpiRx = document.getElementById("ovTrafficCardRx");
+    const kpiTx = document.getElementById("ovTrafficCardTx");
+    const kpiPeak = document.getElementById("ovTrafficCardPeak");
+    const kpiPeakTime = document.getElementById("ovTrafficCardPeakTime");
+    const rangeBadge = document.getElementById("ovTrafficRangeBadge");
+    const chartTitle = document.getElementById("ovTrafficChartRangeTitle");
+
+    if (rangeBadge) rangeBadge.textContent = period === "24h" ? "Past 24 Hours" : "Past 7 Days";
+    if (chartTitle) chartTitle.textContent = period === "24h" ? "Past 24 Hours" : "Past 7 Days";
+
+    // Range tabs active state
+    const btn24h = document.getElementById("btnOvTraffic24h");
+    const btn7d = document.getElementById("btnOvTraffic7d");
+    if (btn24h) btn24h.classList.toggle("active", period === "24h");
+    if (btn7d) btn7d.classList.toggle("active", period === "7d");
+
+    const ticks = document.getElementById("ovTrafficTimelineTicks");
+    if (ticks) {
+        if (period === "24h") {
+            ticks.innerHTML = `<span>24h ago</span><span>18h ago</span><span>12h ago</span><span>6h ago</span><span>Now</span>`;
+        } else {
+            ticks.innerHTML = `<span>7d ago</span><span>5d ago</span><span>3d ago</span><span>1d ago</span><span>Today</span>`;
+        }
+    }
+
+    try {
+        const [sumRes, tsRes] = await Promise.all([
+            fetch(`${API_BASE}/traffic/summary?entity_type=all&entity_id=all&period=${encodeURIComponent(period)}`),
+            fetch(`${API_BASE}/traffic/timeseries?entity_type=all&entity_id=all&period=${encodeURIComponent(period)}`)
+        ]);
+
+        const sumJson = sumRes.ok ? await sumRes.json().catch(() => ({})) : {};
+        const tsJson = tsRes.ok ? await tsRes.json().catch(() => ({})) : {};
+
+        const summary = (sumJson && sumJson.data) ? sumJson.data : (sumJson || {});
+        const rows = (tsJson && Array.isArray(tsJson.data)) ? tsJson.data : (Array.isArray(tsJson) ? tsJson : []);
+
+        const totalRx = summary.total_rx_bytes !== undefined ? summary.total_rx_bytes : (summary.total_rx !== undefined ? summary.total_rx : (summary.rx_bytes || 0));
+        const totalTx = summary.total_tx_bytes !== undefined ? summary.total_tx_bytes : (summary.total_tx !== undefined ? summary.total_tx : (summary.tx_bytes || 0));
+        const totalBytes = summary.total_bytes || 0;
+
+        if (kpiTotal) kpiTotal.textContent = formatBytes(totalBytes);
+        if (kpiRx) kpiRx.textContent = `↓ ${formatBytes(totalRx)}`;
+        if (kpiTx) kpiTx.textContent = `↑ ${formatBytes(totalTx)}`;
+
+        // Peak computation
+        if (rows.length > 0) {
+            let maxRow = rows[0];
+            rows.forEach(r => {
+                if ((r.total_bytes || 0) > (maxRow.total_bytes || 0)) maxRow = r;
+            });
+            const pVal = maxRow.total_bytes || 0;
+            let pLabel = maxRow.period || maxRow.label || "";
+            if (pLabel.includes(" ")) pLabel = pLabel.split(" ")[1] || pLabel;
+            if (kpiPeak) kpiPeak.textContent = pVal > 0 ? `${formatBytes(pVal)}/${period === "24h" ? "h" : "d"}` : "0 B";
+            if (kpiPeakTime) kpiPeakTime.textContent = pVal > 0 ? `Peak window at ${pLabel}` : "No peak usage recorded";
+        } else {
+            if (kpiPeak) kpiPeak.textContent = "0 B";
+            if (kpiPeakTime) kpiPeakTime.textContent = "No data recorded";
+        }
+
+        renderOverviewTrafficBars(rows, period);
+        renderOverviewMethods(summary);
+    } catch (err) {
+        console.warn("Error loading overview traffic:", err);
+        if (barsContainer) {
+            barsContainer.innerHTML = `<div style="display:flex;align-items:center;justify-content:center;height:100%;width:100%;color:var(--text-muted);font-size:0.8rem;">Traffic data unavailable (${escapeHtml(err.message)})</div>`;
+        }
+    } finally {
+        overviewTrafficLoading = false;
+    }
+}
+
+export function renderOverviewTrafficBars(rows, period) {
+    const container = document.getElementById("ovTrafficBarsContainer");
+    if (!container) return;
+
+    if (!rows || rows.length === 0) {
+        container.innerHTML = `
+            <div style="display:flex;align-items:center;justify-content:center;width:100%;height:100%;color:var(--text-muted);font-size:0.8rem;gap:8px;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                <span>No traffic recorded during this period yet. Data automatically aggregates every ~30s.</span>
+            </div>
+        `;
+        return;
+    }
+
+    const maxVal = Math.max(...rows.map(r => r.total_bytes || 0), 1);
+
+    container.innerHTML = rows.map(r => {
+        const total = r.total_bytes || 0;
+        const tx = r.tx_bytes || 0;
+        const rx = r.rx_bytes || 0;
+
+        const stackHeightPct = total > 0 ? Math.min(100, Math.max(6, Math.round((total / maxVal) * 100))) : 2;
+        const txPct = total > 0 ? Math.round((tx / total) * 100) : 0;
+        const rxPct = total > 0 ? (100 - txPct) : 0;
+
+        let label = r.period || r.label || "";
+        if (period === "24h" && label.includes(" ")) {
+            label = label.split(" ")[1] || label;
+        } else if (label.includes("-")) {
+            const parts = label.split("-");
+            if (parts.length === 3) label = `${parts[1]}/${parts[2]}`;
+        }
+
+        const fullTime = r.period || r.label || "";
+
+        return `
+            <div class="traffic-bar-col">
+                <div class="traffic-tooltip">
+                    <strong style="color:var(--text-primary);">${escapeHtml(fullTime)}</strong>
+                    <div style="margin-top:4px; font-weight:700;">Total: ${formatBytes(total)}</div>
+                    <div style="color:var(--accent-mint);">↑ TX: ${formatBytes(tx)}</div>
+                    <div style="color:var(--accent-cyan);">↓ RX: ${formatBytes(rx)}</div>
+                </div>
+                <div class="traffic-bar-stack" style="height:${stackHeightPct}%;">
+                    <div class="traffic-bar-segment segment-tx" style="height:${txPct}%;"></div>
+                    <div class="traffic-bar-segment segment-rx" style="height:${rxPct}%;"></div>
+                </div>
+                <span class="traffic-bar-label">${escapeHtml(label)}</span>
+            </div>
+        `;
+    }).join("");
+}
+
+export function renderOverviewMethods(summary) {
+    const section = document.getElementById("ovTrafficMethodSection");
+    const track = document.getElementById("ovMethodTrack");
+    const legend = document.getElementById("ovMethodLegend");
+    if (!section || !track || !legend) return;
+
+    const items = summary && summary.type_breakdown ? summary.type_breakdown : [];
+    if (!items || items.length === 0) {
+        section.style.display = "none";
+        return;
+    }
+
+    section.style.display = "block";
+    const colors = [
+        "var(--accent-mint)",
+        "var(--accent-cyan)",
+        "var(--accent-violet)",
+        "var(--accent-amber)"
+    ];
+
+    track.innerHTML = items.map((it, idx) => {
+        const color = colors[idx % colors.length];
+        const pct = Math.min(100, Math.max(0, it.percentage || 0));
+        return `<div style="width:${pct}%; height:100%; background:${color};" title="${escapeHtml(it.label)}: ${pct}% (${formatBytes(it.total_bytes || 0)})"></div>`;
+    }).join("");
+
+    legend.innerHTML = items.map((it, idx) => {
+        const color = colors[idx % colors.length];
+        const pct = it.percentage || 0;
+        return `
+            <span style="display:inline-flex; align-items:center; gap:6px;">
+                <span style="width:8px; height:8px; border-radius:2px; background:${color};"></span>
+                <span style="color:var(--text-secondary); font-weight:600;">${escapeHtml(it.label)}:</span>
+                <span class="font-mono text-cyan" style="font-weight:700;">${formatBytes(it.total_bytes || 0)}</span>
+                <span style="color:var(--text-muted); font-size:0.7rem;">(${pct}%)</span>
+            </span>
+        `;
+    }).join("");
 }

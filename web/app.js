@@ -70,6 +70,7 @@ import {
     promptResetTraffic,
     handleTrafficEntityChange,
     handleTrafficPeriodChange,
+    loadOverviewTrafficChart,
     initTrafficAnalytics
 } from "./js/modules/traffic.js";
 import {
@@ -120,6 +121,7 @@ window.openImportModal = openImportModal;
 window.closeImportModal = closeImportModal;
 window.openTrafficModal = openTrafficModal;
 window.closeTrafficModal = closeTrafficModal;
+window.loadOverviewTrafficChart = loadOverviewTrafficChart;
 window.promptResetTraffic = (type, id) => promptResetTraffic(type, id, fetchStatus);
 window.triggerTrafficResetFromModal = () => triggerTrafficResetFromModal(fetchStatus);
 window.triggerWipeHistoryFromModal = () => triggerWipeHistoryFromModal(fetchStatus);
@@ -214,7 +216,7 @@ export async function fetchStatus() {
         setLastLatestLoss(data.latest_loss || {});
         updateCategoryDatalist(currentRules);
 
-        renderStats(currentRules, lastRuntime);
+        renderStats(currentRules, lastRuntime, data.traffic);
         renderSystemStats(data.system);
         renderServicesStatus(data.services);
         renderNetworkTopology(data.network);
