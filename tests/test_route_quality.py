@@ -1390,6 +1390,178 @@ class TestRouteQualityEngine(unittest.TestCase):
         self.assertEqual(reason, "hold")
         self.assertIsNone(rule_state.get("switch_candidate"))
 
+    def test_severe_critical_loss_triggers_deadlock_prevention_when_candidate_significantly_better(self):
+        """
+        Tests that when current route suffers severe critical loss (80%), even if status is 'critical'
+        (not failed/100%), and backup candidate is also critical (35% loss), deadlock prevention triggers
+        because candidate is >= 20% cleaner (80% - 35% = 45% advantage).
+        """
+        now = 1000.0
+        rule_state = {
+            "last_switch_time": now - 30.0,
+            "switch_candidate": None,
+            "switch_streak_start": 0.0
+        }
+        dest_metrics = {
+            1: {
+                "status": "critical",
+                "short_loss": 80.0,
+                "long_loss": 80.0,
+                "short_score": 1700.0,
+                "long_score": 1700.0,
+                "fill_ratio": 1.0
+            },
+            2: {
+                "status": "critical",
+                "short_loss": 35.0,
+                "long_loss": 35.0,
+                "short_score": 750.0,
+                "long_score": 750.0,
+                "fill_ratio": 1.0
+            }
+        }
+        config = {
+            "min_hold_seconds": 600,
+            "switch_confirm_seconds": 120,
+            "hysteresis_percent": 20,
+            "max_primary_latency_ms": 150
+        }
+        target, reason, remaining = decide_route(rule_state, dest_metrics, current_active=1, config=config, now=now)
+        self.assertEqual(target, 2)
+        self.assertEqual(reason, "critical")
+        self.assertEqual(remaining, 0)
+
+    def test_severe_critical_loss_does_not_deadlock_switch_if_advantage_under_20_percent(self):
+        """
+        Tests that if current active route has 65% loss and candidate has 55% loss (only 10% gap < 20%),
+        deadlock emergency switch does not trigger to avoid flapping between two equally bad routes.
+        """
+        now = 1000.0
+        rule_state = {
+            "last_switch_time": now - 30.0,
+            "switch_candidate": None,
+            "switch_streak_start": 0.0
+        }
+        dest_metrics = {
+            1: {
+                "status": "critical",
+                "short_loss": 65.0,
+                "long_loss": 65.0,
+                "short_score": 1350.0,
+                "long_score": 1350.0,
+                "fill_ratio": 1.0
+            },
+            2: {
+                "status": "critical",
+                "short_loss": 55.0,
+                "long_loss": 55.0,
+                "short_score": 1150.0,
+                "long_score": 1150.0,
+                "fill_ratio": 1.0
+            }
+        }
+        config = {
+            "min_hold_seconds": 600,
+            "switch_confirm_seconds": 120,
+            "hysteresis_percent": 20,
+            "max_primary_latency_ms": 150
+        }
+        target, reason, remaining = decide_route(rule_state, dest_metrics, current_active=1, config=config, now=now)
+        # Should stay on current active (1) - advantage is insufficient to risk flapping
+        self.assertEqual(target, 1)
+
+    def test_multi_priority_failback_allows_backup_with_natural_higher_latency(self):
+        """
+        Tests that when on Priority 3 with packet loss (15%), Priority 2 with 0% loss and 175ms latency
+        (natural tunnel latency exceeding 150ms ceiling) is successfully selected without being blocked
+        by prio1_max_lat.
+        """
+        now = 1000.0
+        rule_state = {
+            "last_switch_time": now - 30.0,
+            "switch_candidate": None,
+            "switch_streak_start": 0.0
+        }
+        dest_metrics = {
+            1: {
+                "status": "failed",
+                "short_loss": 100.0,
+                "long_loss": 100.0,
+                "short_score": 3000.0,
+                "long_score": 3000.0,
+                "fill_ratio": 1.0
+            },
+            2: {
+                "status": "healthy",
+                "short_loss": 0.0,
+                "long_loss": 0.0,
+                "short_score": 175.0,
+                "long_score": 175.0,
+                "avg_latency_ms": 175.0,  # 175ms > 150ms!
+                "fill_ratio": 1.0
+            },
+            3: {
+                "status": "degraded",
+                "short_loss": 15.0,
+                "long_loss": 15.0,
+                "short_score": 380.0,
+                "long_score": 380.0,
+                "avg_latency_ms": 80.0,
+                "fill_ratio": 1.0
+            }
+        }
+        config = {
+            "min_hold_seconds": 600,
+            "switch_confirm_seconds": 120,
+            "hysteresis_percent": 20,
+            "max_primary_latency_ms": 150
+        }
+        target, reason, remaining = decide_route(rule_state, dest_metrics, current_active=3, config=config, now=now)
+        self.assertEqual(target, 2)
+        self.assertEqual(reason, "failback_degraded")
+        self.assertEqual(remaining, 0)
+
+    def test_failback_degraded_does_not_switch_to_dirtier_priority_1(self):
+        """
+        Tests that when Priority 2 has 2% loss and Priority 1 has 4% loss, failback_degraded
+        does NOT switch to Priority 1 because Priority 1 has worse loss than Priority 2.
+        """
+        now = 1000.0
+        rule_state = {
+            "last_switch_time": now - 30.0,
+            "switch_candidate": None,
+            "switch_streak_start": 0.0
+        }
+        dest_metrics = {
+            1: {
+                "status": "healthy",
+                "short_loss": 4.0,  # 4% loss on P1
+                "long_loss": 4.0,
+                "short_score": 160.0,
+                "long_score": 160.0,
+                "avg_latency_ms": 80.0,
+                "fill_ratio": 1.0
+            },
+            2: {
+                "status": "healthy",
+                "short_loss": 2.0,  # 2% loss on P2
+                "long_loss": 2.0,
+                "short_score": 130.0,
+                "long_score": 130.0,
+                "avg_latency_ms": 90.0,
+                "fill_ratio": 1.0
+            }
+        }
+        config = {
+            "min_hold_seconds": 600,
+            "switch_confirm_seconds": 120,
+            "hysteresis_percent": 20,
+            "max_primary_latency_ms": 150
+        }
+        target, reason, remaining = decide_route(rule_state, dest_metrics, current_active=2, config=config, now=now)
+        # Must NOT jump to Priority 1 which has 4% loss when active P2 only has 2% loss!
+        self.assertNotEqual(target, 1)
+
 
 if __name__ == "__main__":
     unittest.main()

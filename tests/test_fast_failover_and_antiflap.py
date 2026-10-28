@@ -616,7 +616,8 @@ class TestFastFailoverAndAntiFlap(unittest.TestCase):
             self.assertTrue(changed)
             self.assertEqual(rule["active_priority"], 1)
             self.assertEqual(rule_state["active_priority"], 1)
-            self.assertEqual(rule_state["last_switch_reason"], "failback_degraded")
+            # Failback to primary must NOT be critical (is_critical=False) to avoid flushing conntrack!
+            mock_toggle.assert_called_once_with(rule, old_prio=2, new_prio=1, is_critical=False)
             # Must NOT be locked in 1200s hold!
             self.assertEqual(rule_state["hold_remaining"], 0)
             # Must record switch event and explanation

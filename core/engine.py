@@ -540,6 +540,7 @@ class XForwarderEngine:
             rule_state["switch_streak_start"] = 0.0
 
         current_active = rule_state.get("active_priority", rule.get("active_priority", 1))
+        rule_state["max_primary_latency_ms"] = rule.get("max_primary_latency_ms")
 
         # Reset hold/streak if admin changed the override mode
         prev_force_override = rule_state.get("last_force_override", force_override)
@@ -860,7 +861,8 @@ class XForwarderEngine:
             rule_state["is_flapping"] = (len(recent_switches) >= 3)
             rule_state["active_priority"] = target_active
             rule["active_priority"] = target_active
-            is_crit = (decision_reason in ("critical", "failback_degraded", "disabled_active_fallback"))
+            # Conntrack is only flushed on hard outages ('critical', 'disabled_active_fallback'); soft failback preserves active client sockets.
+            is_crit = (decision_reason in ("critical", "disabled_active_fallback"))
             self._hot_toggle_rule_priority(rule, old_prio=current_active, new_prio=target_active, is_critical=is_crit)
 
             # Build detailed decision explanation and log switch event

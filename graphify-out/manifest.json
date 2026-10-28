@@ -1,8 +1,8 @@
 {
   "core/engine.py": {
-    "mtime": 1793146043.7422879,
-    "seen": 1793148966.3494143,
-    "ast_hash": "b4390f151b54299c6db2edac99578aaf",
+    "mtime": 1793152974.003193,
+    "seen": 1793153015.8386838,
+    "ast_hash": "0296e4552f5427fcbe3b720878c83544",
     "semantic_hash": ""
   },
   "core/web_server.py": {
@@ -174,9 +174,9 @@
     "semantic_hash": ""
   },
   ".agents/experiences/README.md": {
-    "mtime": 1793085049.1303937,
-    "seen": 1793122103.1952677,
-    "ast_hash": "acda307d5e853248be191d62e4b13241",
+    "mtime": 1793153063.478718,
+    "seen": 1793153094.5198948,
+    "ast_hash": "a7cac4351c82c63e534c761868bb950d",
     "semantic_hash": ""
   },
   ".agents/rules/blast-radius-analysis.md": {
@@ -342,9 +342,9 @@
     "semantic_hash": ""
   },
   "tests/test_fast_failover_and_antiflap.py": {
-    "mtime": 1793083551.754073,
-    "seen": 1793122103.195161,
-    "ast_hash": "d458f66a83a16f843d4de0145db99d8a",
+    "mtime": 1793152876.2480738,
+    "seen": 1793153015.8386972,
+    "ast_hash": "99cf6713d1b211077c3a5b48ad11b438",
     "semantic_hash": ""
   },
   ".agents/experiences/009-fast-failover-multi-metric-and-anti-flapping.md": {
@@ -396,15 +396,15 @@
     "semantic_hash": ""
   },
   "core/route_quality.py": {
-    "mtime": 1793151604.4800255,
-    "seen": 1793151705.5361283,
-    "ast_hash": "d429e87e359ecdd6cde6421f220c9f12",
+    "mtime": 1793152962.2984786,
+    "seen": 1793153015.838691,
+    "ast_hash": "8445643eaf8b29f1e4191259781619a8",
     "semantic_hash": ""
   },
   "tests/test_route_quality.py": {
-    "mtime": 1793151667.2122786,
-    "seen": 1793151705.5361428,
-    "ast_hash": "19784e2b5a882c23b849aa18eaf065a5",
+    "mtime": 1793152859.3370662,
+    "seen": 1793153015.8387053,
+    "ast_hash": "047b7ccf4ee6551bb2b803ce8a6ad691",
     "semantic_hash": ""
   },
   ".agents/experiences/013-two-tier-intelligent-route-switching-and-jitter-monitoring.md": {
@@ -621,6 +621,12 @@
     "mtime": 1793145397.5551076,
     "seen": 1793148966.3494895,
     "ast_hash": "dec3b3249de38a3cc77e9fdbba7c5647",
+    "semantic_hash": ""
+  },
+  ".agents/experiences/017-resilient-failover-and-non-disruptive-failback.md": {
+    "mtime": 1793153082.4350514,
+    "seen": 1793153094.5198932,
+    "ast_hash": "0b496fc411b1f0c8e4d5c37a58291235",
     "semantic_hash": ""
   }
 }

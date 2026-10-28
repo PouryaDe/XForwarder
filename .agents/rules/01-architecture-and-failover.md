@@ -39,8 +39,8 @@ A port must **NEVER** be bound by HAProxy and forwarded by NFTables DNAT at the 
     - Bypasses minimum hold-down and streak confirmation immediately.
     - Critical switches execute conntrack flushing (`conntrack -D`) to clear dead states.
     - Transient single-cycle packet loss degrades quality score without triggering disruptive emergency failovers.
-    - **Deadlock Prevention on Complete Outage**: If the active path is completely dead (100% loss) and no healthy alternative exists, the engine selects the candidate with the lowest packet loss (<100%), preventing traffic blackholing on dead routes.
-    - **Degraded Backup Escape & Multi-Priority Failback**: If active on a backup path (Priority > 1) and packet loss occurs, the engine immediately fails back to Priority 1 or any cleaner higher-priority path (`1..current_active-1`) bypassing hold-down guards.
+    - **Deadlock Prevention on Complete Outage & Severe Loss**: If the active path is completely dead (100% loss) or severely degraded (>=60% loss with >=20% candidate advantage), the engine selects the candidate with the lowest packet loss, preventing traffic blackholing on dead routes.
+    - **Degraded Backup Escape & Multi-Priority Failback**: If active on a backup path (Priority > 1) and packet loss occurs, the engine immediately fails back to Priority 1 or any cleaner higher-priority path (`1..current_active-1`) preserving active client sockets without conntrack flush. Higher backup paths are evaluated naturally without being gated by the primary latency ceiling, and individual rules can define custom `max_primary_latency_ms` overrides.
   - **Tier 2 (Conservative Planned Quality Switching)**:
     - Designed to prevent frequent, disruptive route flapping on live client sessions.
     - Evaluates performance over a 5-minute sliding window (`quality_window_seconds = 300s`) requiring $\ge 60\%$ window warm-up.

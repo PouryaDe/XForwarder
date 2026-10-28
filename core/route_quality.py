@@ -240,7 +240,12 @@ def decide_route(
     cooldown = float(config.get("cooldown_seconds", 60))
     hysteresis_pct = float(config.get("hysteresis_percent", 20))
     confirm_sec = float(config.get("switch_confirm_seconds", 120))
-    prio1_max_lat = float(config.get("max_primary_latency_ms", 150.0))
+    try:
+        prio1_max_lat = float(rule_state.get("max_primary_latency_ms") or config.get("max_primary_latency_ms", 150.0))
+        if prio1_max_lat <= 0:
+            prio1_max_lat = 150.0
+    except (ValueError, TypeError):
+        prio1_max_lat = 150.0
     is_flapping = bool(rule_state.get("is_flapping", False))
 
     if is_flapping:
@@ -276,10 +281,11 @@ def decide_route(
                     best_emerg_cand = p
 
         # Deadlock Prevention (LOGIC-01):
-        # If current active is 100% dead (failed) and no healthy/degraded alternative exists,
-        # find ANY enabled candidate with < 100% loss (even if critical), because a partially
-        # working route is infinitely better than blackholing traffic on a dead route!
-        if best_emerg_cand is None and is_curr_failed:
+        # If current active is 100% dead (failed) or severely degraded (>=60% loss) and no healthy/degraded alternative exists,
+        # find ANY enabled candidate with lower loss (requiring at least 20% lower loss on severe degradation),
+        # because a partially working route is infinitely better than blackholing traffic on a dead route!
+        is_severe_critical = (is_curr_critical and curr_short_loss >= 60.0)
+        if best_emerg_cand is None and (is_curr_failed or is_severe_critical):
             lowest_cand_loss = 100.0
             best_cand_emerg_score = 999999.0
             for p in sorted(dest_metrics.keys()):
@@ -289,6 +295,9 @@ def decide_route(
                 cand_loss = float(m.get("short_loss", 100.0))
                 cand_status = m.get("status", "unknown")
                 cand_score = float(m.get("short_score", 999.0))
+                # For severe critical (not completely failed), require at least 20% lower loss to prevent flapping
+                if is_severe_critical and not is_curr_failed and (curr_short_loss - cand_loss < 20.0):
+                    continue
                 if cand_status != "failed" and (cand_loss < lowest_cand_loss or (cand_loss == lowest_cand_loss and cand_score < best_cand_emerg_score)):
                     lowest_cand_loss = cand_loss
                     best_cand_emerg_score = cand_score
@@ -304,7 +313,7 @@ def decide_route(
                 return best_emerg_cand, "critical", 0
 
     # Scenario 2: Degraded Backup Escape (Immediate Failback to viable higher priority)
-    # If active route is a backup (current_active > 1) and suffers packet loss (degraded/loss > 0)
+    # If active route is a backup (current_active > 1) and suffers packet loss (degraded/loss >= 5%)
     # while Priority 1 (or any higher priority) is viable or cleaner:
     # Immediately failback bypassing hold-down guards!
     prio1_m = dest_metrics.get(1, {})
@@ -316,11 +325,13 @@ def decide_route(
         prio1_lat = prio1_m.get("latency_ms")
     prio1_lat_val = float(prio1_lat) if prio1_lat is not None else float(prio1_m.get("short_score", 999.0))
 
-    # Priority 1 is viable for failback if it is not failed/critical, has clean/low loss, and latency <= ceiling
+    # Priority 1 is viable for failback if it is not failed/critical, has low loss (<=5%),
+    # latency <= ceiling, and is clean (<= 1%) or strictly cleaner than current backup.
     prio1_is_viable = (
         prio1_status not in ("failed", "critical")
         and prio1_short_loss <= 5.0
         and prio1_lat_val <= prio1_max_lat
+        and (prio1_short_loss <= 1.0 or prio1_short_loss < curr_short_loss)
     )
 
     backup_has_loss = False
@@ -342,25 +353,21 @@ def decide_route(
                 hp_lat = hp_m.get("latency_ms")
             hp_lat_val = float(hp_lat) if hp_lat is not None else float(hp_m.get("short_score", 999.0))
             if higher_p == 1:
-                # Priority 1 is the Primary Anchor (direct path). Viable if loss <= 5% and latency <= ceiling
-                hp_is_viable = (
-                    hp_status not in ("failed", "critical")
-                    and hp_short_loss <= 5.0
-                    and hp_lat_val <= prio1_max_lat
-                )
+                # Priority 1 is the Primary Anchor (direct path). Viable if loss <= 5%, latency <= ceiling,
+                # and Priority 1 is clean (<= 1%) or strictly cleaner than current backup.
                 hp_strictly_better = (
                     hp_status not in ("failed", "critical")
                     and hp_lat_val <= prio1_max_lat
                     and (hp_short_loss <= 1.0 or hp_short_loss < curr_short_loss)
                 )
-                if backup_has_loss and (hp_is_viable or hp_strictly_better):
+                if backup_has_loss and (prio1_is_viable or hp_strictly_better):
                     return 1, "failback_degraded", 0
             else:
                 # Higher backup paths (e.g. P2 when active is P3):
                 # Must be strictly cleaner than current backup to avoid jumping to another lossy backup!
+                # Backup paths naturally have higher latency than P1; do not gate by prio1_max_lat.
                 hp_strictly_better = (
                     hp_status not in ("failed", "critical")
-                    and hp_lat_val <= prio1_max_lat
                     and hp_short_loss < curr_short_loss
                     and hp_short_loss <= 5.0
                 )
@@ -375,7 +382,7 @@ def decide_route(
     curr_is_relay = bool(curr_m.get("is_relay", False))
     # When on a backup route, NEVER lock traffic to the backup if Priority 1 is viable
     # or if the current backup route has packet loss / is degraded or is an intermediate relay!
-    if current_active > 1 and (prio1_is_viable or backup_has_loss or curr_is_relay or curr_short_loss > 0.0 or curr_long_loss > 0.0):
+    if current_active > 1 and (prio1_is_viable or backup_has_loss or curr_is_relay or curr_short_loss >= 5.0 or curr_long_loss >= 5.0):
         in_min_hold = False
 
     # NEVER lock traffic in min_hold if the currently active route suffers packet loss
