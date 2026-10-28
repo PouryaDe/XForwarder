@@ -248,6 +248,8 @@ export function _architecturalCompliance() {
         pathTest: 'btn-path-test',
         isDown: "'is-down'",
         svcDots: ["svcDotNft", "svcDotHaproxy", "svcDotNginx"],
+        svcBadges: ["badgeHaproxyStatus", "badgeNftablesStatus", "badgeNginxStatus"],
+        svcDetails: ["svcHaproxyInstalled", "svcNftablesInstalled", "svcNginxInstalled"],
         destProxyProto: "dest-proxy-proto",
         proxyProtocol: "proxy_protocol",
         testModalDest: "testModalDestination",

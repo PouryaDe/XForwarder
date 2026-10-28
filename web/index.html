@@ -377,7 +377,7 @@
 
             <!-- SECTION 1: Port Routing & Multi-Path Matrix -->
             <section class="dashboard-section active" id="sectionRules">
-                <main class="main-panel">
+                <div class="main-panel rules-header-card">
                     <div class="panel-header">
                         <div>
                             <h2>Port Routing & Multi-Path Matrix</h2>
@@ -515,12 +515,12 @@
                             </button>
                         </div>
                     </div>
+                </div>
 
-                    <!-- Rules Grid -->
-                    <div class="rules-container" id="rulesContainer">
-                        <!-- Dynamically loaded via app.js -->
-                    </div>
-                </main>
+                <!-- Rules Grid (Placed OUTSIDE the Port Routing & Multi-Path Matrix Card) -->
+                <div class="rules-container" id="rulesContainer">
+                    <!-- Dynamically loaded via app.js -->
+                </div>
             </section>
 
             <!-- SECTION 2: System Overview & Health -->

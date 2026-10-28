@@ -354,7 +354,125 @@ export function renderServicesStatus(services) {
         }
     }
 
-    // 4. Fallback items (if present in DOM)
+    // 4. Detailed Relay Services Page Cards (sectionServices)
+    // HAProxy Service Card
+    const badgeHa = document.getElementById("badgeHaproxyStatus");
+    const svcHaproxyInstalled = document.getElementById("svcHaproxyInstalled");
+    const svcHaproxyState = document.getElementById("svcHaproxyState");
+    const svcHaproxyVersion = document.getElementById("svcHaproxyVersion");
+
+    if (badgeHa) {
+        if (!ha.installed) {
+            badgeHa.className = "stat-badge badge-fail";
+            badgeHa.textContent = "NOT INSTALLED";
+        } else if (ha.active) {
+            badgeHa.className = "stat-badge badge-active";
+            badgeHa.textContent = "RUNNING";
+        } else {
+            badgeHa.className = "stat-badge badge-warn";
+            badgeHa.textContent = "STANDBY";
+        }
+    }
+    if (svcHaproxyInstalled) {
+        svcHaproxyInstalled.textContent = ha.installed ? "Installed" : "Not Installed";
+        svcHaproxyInstalled.className = ha.installed ? "info-value text-emerald font-mono" : "info-value text-rose font-mono";
+    }
+    if (svcHaproxyState) {
+        if (!ha.installed) {
+            svcHaproxyState.textContent = "Not Installed";
+            svcHaproxyState.className = "info-value text-muted font-mono";
+        } else if (ha.active) {
+            svcHaproxyState.textContent = "Active & Running";
+            svcHaproxyState.className = "info-value text-emerald font-mono";
+        } else {
+            svcHaproxyState.textContent = "Standby (Stopped)";
+            svcHaproxyState.className = "info-value text-amber font-mono";
+        }
+    }
+    if (svcHaproxyVersion) {
+        svcHaproxyVersion.textContent = ha.version || "--";
+    }
+
+    // NFTables DNAT Service Card
+    const badgeNft = document.getElementById("badgeNftablesStatus");
+    const svcNftablesInstalled = document.getElementById("svcNftablesInstalled");
+    const svcNftablesKernel = document.getElementById("svcNftablesKernel");
+    const svcNftablesVersion = document.getElementById("svcNftablesVersion");
+
+    if (badgeNft) {
+        if (!nft.installed) {
+            badgeNft.className = "stat-badge badge-fail";
+            badgeNft.textContent = "NOT INSTALLED";
+        } else if (nft.active) {
+            badgeNft.className = "stat-badge badge-active";
+            badgeNft.textContent = nft.table_active ? "ACTIVE & SYNCED" : "ACTIVE";
+        } else {
+            badgeNft.className = "stat-badge badge-warn";
+            badgeNft.textContent = "INACTIVE";
+        }
+    }
+    if (svcNftablesInstalled) {
+        svcNftablesInstalled.textContent = nft.installed ? "Installed" : "Not Installed";
+        svcNftablesInstalled.className = nft.installed ? "info-value text-emerald font-mono" : "info-value text-rose font-mono";
+    }
+    if (svcNftablesKernel) {
+        if (!nft.installed) {
+            svcNftablesKernel.textContent = "Not Installed";
+            svcNftablesKernel.className = "info-value text-muted font-mono";
+        } else if (nft.table_active) {
+            svcNftablesKernel.textContent = "Active & Orchestrator Loaded";
+            svcNftablesKernel.className = "info-value text-emerald font-mono";
+        } else if (nft.active) {
+            svcNftablesKernel.textContent = "Active (Table Idle)";
+            svcNftablesKernel.className = "info-value text-emerald font-mono";
+        } else {
+            svcNftablesKernel.textContent = "Inactive";
+            svcNftablesKernel.className = "info-value text-amber font-mono";
+        }
+    }
+    if (svcNftablesVersion) {
+        svcNftablesVersion.textContent = nft.version || "--";
+    }
+
+    // Nginx Stream Service Card
+    const badgeNgx = document.getElementById("badgeNginxStatus");
+    const svcNginxInstalled = document.getElementById("svcNginxInstalled");
+    const svcNginxState = document.getElementById("svcNginxState");
+    const svcNginxVersion = document.getElementById("svcNginxVersion");
+
+    if (badgeNgx) {
+        if (!ngx.installed) {
+            badgeNgx.className = "stat-badge badge-fail";
+            badgeNgx.textContent = "NOT INSTALLED";
+        } else if (ngx.active) {
+            badgeNgx.className = "stat-badge badge-active";
+            badgeNgx.textContent = "RUNNING";
+        } else {
+            badgeNgx.className = "stat-badge badge-warn";
+            badgeNgx.textContent = "STANDBY";
+        }
+    }
+    if (svcNginxInstalled) {
+        svcNginxInstalled.textContent = ngx.installed ? "Installed" : "Not Installed";
+        svcNginxInstalled.className = ngx.installed ? "info-value text-emerald font-mono" : "info-value text-rose font-mono";
+    }
+    if (svcNginxState) {
+        if (!ngx.installed) {
+            svcNginxState.textContent = "Not Installed";
+            svcNginxState.className = "info-value text-muted font-mono";
+        } else if (ngx.active) {
+            svcNginxState.textContent = "Active & Running";
+            svcNginxState.className = "info-value text-emerald font-mono";
+        } else {
+            svcNginxState.textContent = "Standby (Stopped)";
+            svcNginxState.className = "info-value text-amber font-mono";
+        }
+    }
+    if (svcNginxVersion) {
+        svcNginxVersion.textContent = ngx.version || "--";
+    }
+
+    // 5. Fallback items (if present in DOM)
     const ovNftStatus = document.getElementById("ovNftStatus");
     if (ovNftStatus) {
         const nftVerShort = formatEngineVersion(nft.version);
@@ -496,6 +614,12 @@ export function renderStats(rules, runtime, traffic) {
 
     const svcHaproxyBinds = document.getElementById("svcHaproxyBinds");
     if (svcHaproxyBinds) svcHaproxyBinds.innerText = `${haproxyCount} ports`;
+
+    const svcNftablesBinds = document.getElementById("svcNftablesBinds");
+    if (svcNftablesBinds) svcNftablesBinds.innerText = `${nftablesCount} ports`;
+
+    const svcNginxBinds = document.getElementById("svcNginxBinds");
+    if (svcNginxBinds) svcNginxBinds.innerText = `${nginxCount} ports`;
 
     // 6. Traffic (24h) Stat Card
     const statTrafficTotal = document.getElementById("statTrafficTotal");

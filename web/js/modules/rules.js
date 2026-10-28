@@ -527,8 +527,8 @@ export function renderRules(rules, runtime) {
         lastRenderedRulesFingerprint = "__empty__";
         rulesContainer.className = "rules-container";
         rulesContainer.innerHTML = `
-            <div style="text-align:center;padding:48px 20px;color:var(--text-secondary);border:1px dashed var(--border-color);border-radius:14px;width:100%;grid-column:1/-1;">
-                <p style="font-size:1.1rem;margin-bottom:8px;">No port forwarding rules configured yet.</p>
+            <div style="text-align:center;padding:48px 20px;color:var(--text-secondary);border:1px dashed var(--border-color);border-radius:18px;width:100%;grid-column:1/-1;background:var(--bg-card);backdrop-filter:blur(16px);box-shadow:var(--panel-shadow);">
+                <p style="font-size:1.1rem;margin-bottom:8px;font-weight:600;color:var(--text-primary);">No port forwarding rules configured yet.</p>
                 <p style="font-size:0.85rem;color:var(--text-muted);">Click "Add Port Rule" above to specify your ports and priority uplinks.</p>
             </div>
         `;
@@ -579,8 +579,8 @@ export function renderRules(rules, runtime) {
         lastRenderedRulesFingerprint = `__nofilter__${activeFilter}__${searchQuery}__v:${currentViewMode}__srt:${currentSort}`;
         rulesContainer.className = "rules-container";
         rulesContainer.innerHTML = `
-            <div style="text-align:center;padding:40px 20px;color:var(--text-secondary);border:1px dashed var(--border-color);border-radius:14px;width:100%;grid-column:1/-1;">
-                <p style="font-size:1rem;margin-bottom:6px;">No rules matching your search or active filter.</p>
+            <div style="text-align:center;padding:40px 20px;color:var(--text-secondary);border:1px dashed var(--border-color);border-radius:18px;width:100%;grid-column:1/-1;background:var(--bg-card);backdrop-filter:blur(16px);box-shadow:var(--panel-shadow);">
+                <p style="font-size:1rem;margin-bottom:6px;font-weight:600;color:var(--text-primary);">No rules matching your search or active filter.</p>
                 <p style="font-size:0.8rem;color:var(--text-muted);">Try clearing the search input or switching filter tabs.</p>
             </div>
         `;
@@ -609,7 +609,7 @@ export function renderRules(rules, runtime) {
             return a.localeCompare(b);
         });
 
-        rulesContainer.className = "";
+        rulesContainer.className = "rules-categories-wrapper";
         rulesContainer.innerHTML = sortedKeys.map(catKey => {
             const groupRules = groups.get(catKey);
             const isUncat = catKey === "__uncategorized__";

@@ -237,6 +237,9 @@ class TestUIAndAPIEdgeCases(unittest.TestCase):
         with open(os.path.join(web_dir, "style.css"), "r", encoding="utf-8") as f:
             style_content = f.read()
 
+        with open(os.path.join(web_dir, "js", "modules", "stats.js"), "r", encoding="utf-8") as f:
+            stats_content = f.read()
+
         # Check DOM element IDs
         for expected_id in (
             "servicesStatusBar",
@@ -244,15 +247,24 @@ class TestUIAndAPIEdgeCases(unittest.TestCase):
             "svcPillHaproxy", "svcValHaproxy", "svcDotHaproxy",
             "svcPillNginx", "svcValNginx", "svcDotNginx",
             "servicesWarningBanner",
-            "badgeHaproxyStatus", "badgeNftablesStatus", "badgeNginxStatus"
+            "badgeHaproxyStatus", "badgeNftablesStatus", "badgeNginxStatus",
+            "svcHaproxyInstalled", "svcNftablesInstalled", "svcNginxInstalled",
+            "svcHaproxyState", "svcNftablesKernel", "svcNginxState",
+            "svcHaproxyBinds", "svcNftablesBinds", "svcNginxBinds"
         ):
             self.assertIn(f'id="{expected_id}"', index_content, f"Missing services DOM ID: {expected_id}")
 
-        # Check app.js function and services rendering
+        # Check app.js and stats.js services rendering
         self.assertIn("renderServicesStatus", app_content)
         self.assertIn("svcDotNft", app_content)
         self.assertIn("svcDotHaproxy", app_content)
         self.assertIn("svcDotNginx", app_content)
+
+        # Check that stats.js updates detailed service cards
+        for svc_el in ("badgeHaproxyStatus", "badgeNftablesStatus", "badgeNginxStatus",
+                       "svcHaproxyInstalled", "svcNftablesInstalled", "svcNginxInstalled",
+                       "svcNftablesBinds", "svcNginxBinds"):
+            self.assertIn(svc_el, stats_content, f"Missing {svc_el} update in stats.js")
 
         # Check style.css classes
         self.assertIn(".services-status-bar", style_content)
