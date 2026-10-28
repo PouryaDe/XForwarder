@@ -1872,8 +1872,8 @@ class TestUIAndAPIEdgeCases(unittest.TestCase):
 
         # 1. HTML index.html contains btnLogin button with cache busters
         self.assertIn('id="btnLogin"', html)
-        self.assertIn('style.css?v=3.2.17', html)
-        self.assertIn('app.js?v=3.2.17', html)
+        self.assertIn('style.css?v=3.2.18', html)
+        self.assertIn('app.js?v=3.2.18', html)
 
         # 2. auth.js attaches direct click event listener to btnLogin
         self.assertIn('btnLogin.addEventListener("click", doLogin)', auth_js)

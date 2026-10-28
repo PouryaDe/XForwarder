@@ -32,7 +32,7 @@ export function renderSystemStats(sys) {
         if (cpuText) cpuText.textContent = `CPU: ${cpuPct}%`;
         const ovCpuText = document.getElementById("ovCpuText");
         const ovCpuBar = document.getElementById("ovCpuBar");
-        if (ovCpuText) ovCpuText.innerText = `${cpuPct}%`;
+        if (ovCpuText) ovCpuText.innerText = sys.cpu_count ? `${sys.cpu_count} Cores Active` : "Processor Load";
         if (ovCpuBar) ovCpuBar.style.width = `${Math.min(100, Math.max(0, cpuPct))}%`;
 
         // Graphical Circular SVG Ring & Badge
@@ -583,16 +583,15 @@ export function renderStats(rules, runtime, traffic) {
         if (proxyDetailEl) {
             if (nginxCount > 0 && haproxyCount > 0) {
                 proxyDetailEl.innerText = `${haproxyCount} HA · ${nginxCount} Nginx`;
-                proxyDetailEl.style.display = "block";
                 statActiveHaproxy.title = `${haproxyCount} via HAProxy, ${nginxCount} via Nginx`;
             } else if (nginxCount > 0) {
-                proxyDetailEl.innerText = `${nginxCount} Nginx`;
-                proxyDetailEl.style.display = "block";
+                proxyDetailEl.innerText = `${nginxCount} Active via Nginx`;
                 statActiveHaproxy.title = `${nginxCount} via Nginx`;
             } else {
-                proxyDetailEl.style.display = "none";
+                proxyDetailEl.innerText = "Layer-4 Direct Relay";
                 statActiveHaproxy.title = `${haproxyCount} via HAProxy`;
             }
+            proxyDetailEl.style.display = "block";
         }
     }
 
