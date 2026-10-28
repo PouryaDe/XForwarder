@@ -235,6 +235,28 @@ export function initNetworkQualityMonitor() {
             }
         });
     }
+
+    const btnPrev = document.getElementById("btnDisruptionsPrev");
+    const btnNext = document.getElementById("btnDisruptionsNext");
+    if (btnPrev && !btnPrev._bound) {
+        btnPrev._bound = true;
+        btnPrev.addEventListener("click", () => {
+            if (disruptionsPage > 1) {
+                disruptionsPage--;
+                renderDisruptionsCurrentPage();
+            }
+        });
+    }
+    if (btnNext && !btnNext._bound) {
+        btnNext._bound = true;
+        btnNext.addEventListener("click", () => {
+            const totalPages = Math.max(1, Math.ceil(currentDisruptions.length / DISRUPTIONS_PAGE_SIZE));
+            if (disruptionsPage < totalPages) {
+                disruptionsPage++;
+                renderDisruptionsCurrentPage();
+            }
+        });
+    }
 }
 
 export async function loadNetworkQualityMetrics() {
@@ -353,11 +375,29 @@ export function renderTimelineBar(timeline, range) {
     }
 }
 
+let currentDisruptions = [];
+let disruptionsPage = 1;
+const DISRUPTIONS_PAGE_SIZE = 5;
+
 export function renderDisruptionsTable(disruptions) {
+    if (Array.isArray(disruptions)) {
+        currentDisruptions = disruptions;
+        disruptionsPage = 1;
+    }
+    renderDisruptionsCurrentPage();
+}
+
+export function renderDisruptionsCurrentPage() {
     const tbody = document.getElementById("disruptionsTableBody");
+    const pagination = document.getElementById("disruptionsPagination");
+    const pageInfo = document.getElementById("disruptionsPageInfo");
+    const pageNum = document.getElementById("disruptionsPageNumber");
+    const btnPrev = document.getElementById("btnDisruptionsPrev");
+    const btnNext = document.getElementById("btnDisruptionsNext");
+
     if (!tbody) return;
 
-    if (!disruptions || disruptions.length === 0) {
+    if (!currentDisruptions || currentDisruptions.length === 0) {
         tbody.innerHTML = `
             <tr>
                 <td colspan="6" class="text-center text-emerald" style="padding:18px; font-weight:600;">
@@ -365,11 +405,21 @@ export function renderDisruptionsTable(disruptions) {
                 </td>
             </tr>
         `;
+        if (pagination) pagination.style.display = "none";
         return;
     }
 
+    const total = currentDisruptions.length;
+    const totalPages = Math.max(1, Math.ceil(total / DISRUPTIONS_PAGE_SIZE));
+    if (disruptionsPage > totalPages) disruptionsPage = totalPages;
+    if (disruptionsPage < 1) disruptionsPage = 1;
+
+    const startIdx = (disruptionsPage - 1) * DISRUPTIONS_PAGE_SIZE;
+    const endIdx = Math.min(startIdx + DISRUPTIONS_PAGE_SIZE, total);
+    const pageItems = currentDisruptions.slice(startIdx, endIdx);
+
     let rowsHtml = "";
-    disruptions.forEach(d => {
+    pageItems.forEach(d => {
         const loss = d.packet_loss !== undefined ? d.packet_loss : 100;
         const lossBadge = loss >= 50
             ? `<span class="disruption-badge-alert font-mono">${loss}% LOSS</span>`
@@ -399,4 +449,20 @@ export function renderDisruptionsTable(disruptions) {
     });
 
     tbody.innerHTML = rowsHtml;
+
+    if (pagination) {
+        pagination.style.display = total > DISRUPTIONS_PAGE_SIZE ? "flex" : "none";
+        if (pageInfo) {
+            pageInfo.innerText = `Showing ${startIdx + 1}–${endIdx} of ${total} incident${total > 1 ? 's' : ''}`;
+        }
+        if (pageNum) {
+            pageNum.innerText = `${disruptionsPage} / ${totalPages}`;
+        }
+        if (btnPrev) {
+            btnPrev.disabled = disruptionsPage <= 1;
+        }
+        if (btnNext) {
+            btnNext.disabled = disruptionsPage >= totalPages;
+        }
+    }
 }

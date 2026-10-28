@@ -62,7 +62,7 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap"
         rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=3.2.19">
+    <link rel="stylesheet" href="style.css?v=3.2.20">
 </head>
 
 <body>
@@ -527,8 +527,8 @@
             <section class="dashboard-section" id="sectionOverview" style="display:none;">
                 <!-- Live System Resource & Telemetry Dashboard (Graphical Gauges) -->
                 <div class="overview-telemetry-grid">
-                    <!-- CPU Utilization Card -->
-                    <div class="telemetry-card" id="cpuPill" title="Server CPU Load">
+                    <!-- CPU Utilization & System Load Card -->
+                    <div class="telemetry-card" id="cpuPill" title="Server CPU Load & System Load Average">
                         <div class="telemetry-card-header">
                             <div class="telemetry-icon-box icon-cyan">
                                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -540,7 +540,7 @@
                                     <line x1="1" y1="9" x2="4" y2="9" /><line x1="1" y1="14" x2="4" y2="14" />
                                 </svg>
                             </div>
-                            <span class="telemetry-label">CPU Load</span>
+                            <span class="telemetry-label">CPU &amp; Load</span>
                             <span class="telemetry-badge text-cyan" id="ovCpuBadge">Normal</span>
                         </div>
                         <div class="telemetry-card-body">
@@ -554,13 +554,27 @@
                                 </div>
                             </div>
                             <div class="telemetry-details">
-                                <span class="telemetry-main-text" id="cpuText">CPU: 0%</span>
+                                <div class="telemetry-val-row" style="display:flex; justify-content:space-between; align-items:center;">
+                                    <span class="telemetry-main-text" id="cpuText">CPU: 0%</span>
+                                    <span id="loadPill" class="telemetry-load-chip" title="System Load Average (1m · 5m · 15m)">
+                                        <span class="font-mono text-amber" id="loadText" style="font-size:0.75rem; font-weight:700;">Load: 0.00</span>
+                                    </span>
+                                </div>
                                 <div class="telemetry-bar-wrap">
                                     <div class="telemetry-bar-track">
                                         <div class="telemetry-bar-fill fill-cyan" id="ovCpuBar" style="width: 0%;"></div>
                                     </div>
                                 </div>
-                                <span class="telemetry-subtext" id="ovCpuText">Processor Load</span>
+                                <div style="display:flex; justify-content:space-between; align-items:center; gap:6px;">
+                                    <span class="telemetry-subtext font-mono" id="ovLoadText" style="font-size:0.72rem;">0.00 (1m), 0.00 (5m), 0.00 (15m)</span>
+                                    <span id="ovCpuText" style="display:none;">Processor Load</span>
+                                    <span id="ovLoadBadge" style="display:none;">Balanced</span>
+                                </div>
+                                <div class="telemetry-load-bars" style="display:none;">
+                                    <div class="load-bar-item"><div class="load-bar-track"><div class="load-bar-fill" id="ovLoadBar1m"></div></div></div>
+                                    <div class="load-bar-item"><div class="load-bar-track"><div class="load-bar-fill" id="ovLoadBar5m"></div></div></div>
+                                    <div class="load-bar-item"><div class="load-bar-track"><div class="load-bar-fill" id="ovLoadBar15m"></div></div></div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -589,42 +603,6 @@
                                     </div>
                                 </div>
                                 <span class="telemetry-subtext font-mono" id="ovRamText">0 / 0 MB (0%)</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- System Load Card -->
-                    <div class="telemetry-card" id="loadPill" title="System Load Average (1m · 5m · 15m)">
-                        <div class="telemetry-card-header">
-                            <div class="telemetry-icon-box icon-amber">
-                                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <circle cx="12" cy="12" r="10" />
-                                    <polyline points="12 6 12 12 16 14" />
-                                </svg>
-                            </div>
-                            <span class="telemetry-label">System Load</span>
-                            <span class="telemetry-badge text-amber" id="ovLoadBadge">Balanced</span>
-                        </div>
-                        <div class="telemetry-card-body">
-                            <div class="telemetry-details" style="width:100%;">
-                                <div class="telemetry-val-row">
-                                    <span class="telemetry-main-text" id="loadText">Load: 0.00</span>
-                                    <div class="telemetry-load-bars">
-                                        <div class="load-bar-item" title="1-minute load">
-                                            <div class="load-bar-track"><div class="load-bar-fill" id="ovLoadBar1m" style="height:15%;"></div></div>
-                                            <span class="load-bar-lbl">1m</span>
-                                        </div>
-                                        <div class="load-bar-item" title="5-minute load">
-                                            <div class="load-bar-track"><div class="load-bar-fill" id="ovLoadBar5m" style="height:12%;"></div></div>
-                                            <span class="load-bar-lbl">5m</span>
-                                        </div>
-                                        <div class="load-bar-item" title="15-minute load">
-                                            <div class="load-bar-track"><div class="load-bar-fill" id="ovLoadBar15m" style="height:10%;"></div></div>
-                                            <span class="load-bar-lbl">15m</span>
-                                        </div>
-                                    </div>
-                                </div>
-                                <span class="telemetry-subtext font-mono" id="ovLoadText">0.00 (1m), 0.00 (5m), 0.00 (15m)</span>
                             </div>
                         </div>
                     </div>
@@ -1098,6 +1076,20 @@
                                             </tr>
                                         </tbody>
                                     </table>
+                                </div>
+                                <div class="disruptions-pagination" id="disruptionsPagination" style="display:none;">
+                                    <span class="pagination-info text-muted" id="disruptionsPageInfo">Showing 1-5 of 0 incidents</span>
+                                    <div class="pagination-controls">
+                                        <button type="button" class="btn btn-secondary btn-xs" id="btnDisruptionsPrev" disabled title="Previous Page">
+                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+                                            <span>Prev</span>
+                                        </button>
+                                        <span class="font-mono text-cyan" id="disruptionsPageNumber">1 / 1</span>
+                                        <button type="button" class="btn btn-secondary btn-xs" id="btnDisruptionsNext" disabled title="Next Page">
+                                            <span>Next</span>
+                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -2129,7 +2121,7 @@
     <!-- Notification Toast Container -->
     <div class="toast-container" id="toastContainer"></div>
 
-    <script type="module" src="app.js?v=3.2.19"></script>
+    <script type="module" src="app.js?v=3.2.20"></script>
 </body>
 
 </html>
