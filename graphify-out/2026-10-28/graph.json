@@ -3425,7 +3425,7 @@
       "file_type": "code",
       "norm_label": "rendernetworktopology()",
       "source_file": "web/js/modules/stats.js",
-      "source_location": "L646"
+      "source_location": "L645"
     },
     {
       "id": "web_js_modules_traffic_closetrafficmodal",
@@ -3821,7 +3821,7 @@
       "file_type": "code",
       "norm_label": "copyiptoclipboard()",
       "source_file": "web/js/modules/stats.js",
-      "source_location": "L778"
+      "source_location": "L777"
     },
     {
       "id": "web_js_modules_stats_renderservicesstatus",
@@ -26271,7 +26271,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/js/modules/stats.js",
-      "source_location": "L781",
+      "source_location": "L780",
       "weight": 1.0
     },
     {
@@ -26283,7 +26283,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/js/modules/stats.js",
-      "source_location": "L663",
+      "source_location": "L662",
       "weight": 1.0
     },
     {
@@ -26295,7 +26295,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/js/modules/stats.js",
-      "source_location": "L725",
+      "source_location": "L724",
       "weight": 1.0
     },
     {
@@ -26319,7 +26319,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/js/modules/stats.js",
-      "source_location": "L633",
+      "source_location": "L632",
       "weight": 1.0
     },
     {
@@ -43657,7 +43657,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "web/js/modules/stats.js",
-      "source_location": "L646",
+      "source_location": "L645",
       "weight": 1.0
     },
     {
@@ -43668,7 +43668,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "web/js/modules/stats.js",
-      "source_location": "L778",
+      "source_location": "L777",
       "weight": 1.0
     },
     {
@@ -55496,5 +55496,5 @@
     }
   ],
   "hyperedges": [],
-  "built_at_commit": "69a94649ef4452c7f5cb99768ca739adeae9f2c8"
+  "built_at_commit": "a46a09274a55b6616117ec04a28463a73a8f6fcc"
 }

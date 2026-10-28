@@ -390,10 +390,15 @@ export function renderRuleCard(rule, rulesState) {
             ${rState.last_switch_explanation ? `
                 <div class="rule-switch-banner" onclick="openSwitchLogsModal(decodeURIComponent('${encodedId}'), '${escapeHtml(portKey)}')" title="Click to view switch decision history">
                     <div class="switch-banner-content">
-                        <span class="switch-banner-icon">⚡</span>
+                        <span class="switch-banner-icon" aria-hidden="true">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+                        </span>
                         <span class="switch-banner-text">${escapeHtml(rState.last_switch_explanation)}</span>
                     </div>
-                    <span class="switch-banner-link">Logs &rarr;</span>
+                    <span class="switch-banner-link">
+                        <span>Logs</span>
+                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+                    </span>
                 </div>
             ` : ''}
         </div>
@@ -951,7 +956,7 @@ export function renderSwitchLogsContent(filterRuleId = "all") {
             <div class="switch-log-card">
                 <div class="switch-log-header">
                     <div class="switch-log-header-left">
-                        <span class="switch-time-pill">${timeStr}</span>
+                        <span class="switch-time-pill"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="opacity:0.75;"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg><span>${timeStr}</span></span>
                         ${portStr ? `<span class="switch-port-badge">:${portStr}</span>` : ''}
                         <div class="switch-prio-flow">
                             <span>P#${fromP}</span>
