@@ -39,16 +39,19 @@ A port must **NEVER** be bound by HAProxy and forwarded by NFTables DNAT at the 
     - Bypasses minimum hold-down and streak confirmation immediately.
     - Critical switches execute conntrack flushing (`conntrack -D`) to clear dead states.
     - Transient single-cycle packet loss degrades quality score without triggering disruptive emergency failovers.
+    - **Deadlock Prevention on Complete Outage**: If the active path is completely dead (100% loss) and no healthy alternative exists, the engine selects the candidate with the lowest packet loss (<100%), preventing traffic blackholing on dead routes.
+    - **Degraded Backup Escape & Multi-Priority Failback**: If active on a backup path (Priority > 1) and packet loss occurs, the engine immediately fails back to Priority 1 or any cleaner higher-priority path (`1..current_active-1`) bypassing hold-down guards.
   - **Tier 2 (Conservative Planned Quality Switching)**:
     - Designed to prevent frequent, disruptive route flapping on live client sessions.
     - Evaluates performance over a 5-minute sliding window (`quality_window_seconds = 300s`) requiring $\ge 60\%$ window warm-up.
     - **10-Minute Hold-Down with Loss Exemption**: Newly activated routes remain locked for at least 10 minutes (`min_hold_seconds = 600s`) to prevent flapping between clean routes. However, if the active route experiences packet loss (degraded / >=5%) and an eligible candidate offers lower packet loss, the hold guard is waived to prevent trapping client sessions on degraded paths.
     - **Packet Loss Shield**: Never trades lower latency for higher packet loss (`cand_loss > curr_loss + 0.5` is rejected).
     - **Significant Advantage Margin**: Candidate must beat current score by $\ge 20\%$ (`hysteresis_percent = 20%`) AND $\ge 15$ points.
-    - **120-Second Streak Confirmation**: Candidate must maintain superior quality continuously for 120 seconds (`switch_confirm_seconds = 120s`). UI displays countdown badge (`Switch in Ns`).
+    - **120-Second Streak Confirmation & Anti-Reset Guard**: Candidate must maintain superior quality continuously for 120 seconds (`switch_confirm_seconds = 120s`). UI displays countdown badge (`Switch in Ns`). The Anti-Reset Guard prevents candidate streak resets caused by slight ping jitter between two close backup routes.
     - **Priority 1 Primary Route Stickiness & 150ms Ceiling (Primary Anchor Pattern)**: When Priority 1 is active, the engine never switches away to backup routes merely for lower ping (10-30ms lower ping). It strictly stays on Priority 1 unless Priority 1 packet loss is worse than candidate (`curr_loss > cand_loss + 0.5`), or latency exceeds 150ms (`max_primary_latency_ms = 150`), or upon critical failure.
     - **Intermediate Relay Server (`is_relay`) Subsystem**: Intermediate tunnel and relay hops with partial-hop ping measurements can be explicitly marked (`is_relay: true`). The engine guarantees that viable Priority 1 (`loss <= 1%`, `latency <= 150ms`) is never superseded by intermediate relay ping, and triggers guaranteed failback to Priority 1 when active on an intermediate relay.
     - **Socket Preservation**: Planned switches reload HAProxy seamlessly without flushing conntrack, preserving existing client connections while new traffic routes via the superior path.
+    - **Switch Decision Logs & Modal UI**: Every priority switch records an immutable audit log detailing old/new priority, decision reason, packet loss, latency, and human-readable explanation, displayed in the dashboard via `#switchLogsModal` and per-rule decision banners.
 - **Composite Quality Formula**:
   $$\text{Composite Score} = \text{Avg Latency (ms)} + 2 \times \text{Jitter (ms)} + 20 \times \text{Loss Pct} + \text{Priority Bias}$$
 - **Anti-Flap Damping**: $\ge 3$ route switches within 10 minutes triggers flap damping, dynamically doubling `min_hold` (to 20m) and `cooldown` (to 2m).

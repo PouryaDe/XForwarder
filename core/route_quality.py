@@ -171,6 +171,7 @@ def pick_best_now(
     """
     Picks the best available route priority for immediate manual override resets.
     Filters out 'failed' and 'critical' routes, selecting lowest composite score.
+    If all routes have loss, selects the enabled route with lowest packet loss.
     """
     if not destinations:
         return 1
@@ -184,8 +185,8 @@ def pick_best_now(
         p = d.get("priority", 1)
         st = dest_stats.get(f"prio_{p}", {})
         status = st.get("status", "unknown")
-        loss = st.get("packet_loss", 100.0)
-        score = st.get("composite_score", 999.0)
+        loss = float(st.get("packet_loss", 100.0))
+        score = float(st.get("composite_score", 999.0))
 
         if status not in ("failed", "critical", "disabled") and loss < 100.0:
             # Healthy routes get bonus priority
@@ -217,14 +218,16 @@ def decide_route(
     """
     Master two-tier route decision engine:
     Tier 1 (Emergency): Immediate failover on hard failure or critical degradation.
-    Tier 2 (Conservative Quality): Requires min_hold expiration, significant score advantage
-           (hysteresis >= 20% & >= 15 abs), non-worse packet loss, and sustained confirmation (120s).
-           Protects Priority 1: never switches away to backup routes merely for 10-20ms lower ping,
-           unless Priority 1 has worse packet loss or its latency exceeds max_primary_latency_ms (default: 150ms).
+           Prevents deadlocks: if current is failed and all backups critical, picks lowest loss backup.
+    Tier 2 (Conservative Quality): Natural priority hierarchy (P1 > P2 > P3).
+           Packet-loss driven: never trades latency for higher loss.
+           Relay ping neutrality: intermediate relay (mid-server) ping cannot steal from direct routes.
+           Anti-reset streak guard: prevents candidate jitter flapping between close backups.
+           Instant failback from degraded backups to viable higher priorities.
 
     Returns:
     (target_priority: int, reason: str, switch_pending_seconds: int)
-    reason values: 'hold', 'critical', 'planned', 'no_candidate', 'override'
+    reason values: 'hold', 'critical', 'planned', 'failback_degraded', 'warmup', 'pending'
     """
     curr_time = now if now is not None else time.time()
     last_switch = float(rule_state.get("last_switch_time", 0.0))
@@ -269,6 +272,25 @@ def decide_route(
                     best_emerg_score = score
                     best_emerg_cand = p
 
+        # Deadlock Prevention (LOGIC-01):
+        # If current active is 100% dead (failed) and no healthy/degraded alternative exists,
+        # find ANY enabled candidate with < 100% loss (even if critical), because a partially
+        # working route is infinitely better than blackholing traffic on a dead route!
+        if best_emerg_cand is None and is_curr_failed:
+            lowest_cand_loss = 100.0
+            best_cand_emerg_score = 999999.0
+            for p in sorted(dest_metrics.keys()):
+                if p == current_active:
+                    continue
+                m = dest_metrics[p]
+                cand_loss = float(m.get("short_loss", 100.0))
+                cand_status = m.get("status", "unknown")
+                cand_score = float(m.get("short_score", 999.0))
+                if cand_status != "failed" and (cand_loss < lowest_cand_loss or (cand_loss == lowest_cand_loss and cand_score < best_cand_emerg_score)):
+                    lowest_cand_loss = cand_loss
+                    best_cand_emerg_score = cand_score
+                    best_emerg_cand = p
+
         if best_emerg_cand is not None:
             # If current is critical (not completely failed), only switch if candidate is significantly better
             if is_curr_critical and not is_curr_failed:
@@ -278,11 +300,10 @@ def decide_route(
             else:
                 return best_emerg_cand, "critical", 0
 
-    # Scenario 2: Degraded Backup Escape (Immediate Failback to Priority 1)
+    # Scenario 2: Degraded Backup Escape (Immediate Failback to viable higher priority)
     # If active route is a backup (current_active > 1) and suffers packet loss (degraded/loss > 0)
-    # while Priority 1 is viable (not failed/critical, short loss <= 5%, latency <= 150ms ceiling)
-    # or strictly better than the current backup:
-    # Immediately failback to Priority 1 bypassing hold-down guards!
+    # while Priority 1 (or any higher priority) is viable or cleaner:
+    # Immediately failback bypassing hold-down guards!
     prio1_m = dest_metrics.get(1, {})
     prio1_status = prio1_m.get("status", "unknown")
     prio1_short_loss = float(prio1_m.get("short_loss", prio1_m.get("long_loss", 100.0)))
@@ -306,13 +327,42 @@ def decide_route(
             or curr_short_loss > 0.0
             or curr_long_loss > 0.0
         )
-        prio1_strictly_better = (
-            prio1_status not in ("failed", "critical")
-            and prio1_lat_val <= prio1_max_lat
-            and (prio1_short_loss <= 1.0 or prio1_short_loss < curr_short_loss)
-        )
-        if backup_has_loss and (prio1_is_viable or prio1_strictly_better):
-            return 1, "failback_degraded", 0
+        # Check higher priorities in ascending order (1, 2, ... current_active - 1)
+        for higher_p in range(1, current_active):
+            hp_m = dest_metrics.get(higher_p)
+            if not hp_m:
+                continue
+            hp_status = hp_m.get("status", "unknown")
+            hp_short_loss = float(hp_m.get("short_loss", hp_m.get("long_loss", 100.0)))
+            hp_lat = hp_m.get("avg_latency_ms")
+            if hp_lat is None:
+                hp_lat = hp_m.get("latency_ms")
+            hp_lat_val = float(hp_lat) if hp_lat is not None else float(hp_m.get("short_score", 999.0))
+            if higher_p == 1:
+                # Priority 1 is the Primary Anchor (direct path). Viable if loss <= 5% and latency <= ceiling
+                hp_is_viable = (
+                    hp_status not in ("failed", "critical")
+                    and hp_short_loss <= 5.0
+                    and hp_lat_val <= prio1_max_lat
+                )
+                hp_strictly_better = (
+                    hp_status not in ("failed", "critical")
+                    and hp_lat_val <= prio1_max_lat
+                    and (hp_short_loss <= 1.0 or hp_short_loss < curr_short_loss)
+                )
+                if backup_has_loss and (hp_is_viable or hp_strictly_better):
+                    return 1, "failback_degraded", 0
+            else:
+                # Higher backup paths (e.g. P2 when active is P3):
+                # Must be strictly cleaner than current backup to avoid jumping to another lossy backup!
+                hp_strictly_better = (
+                    hp_status not in ("failed", "critical")
+                    and hp_lat_val <= prio1_max_lat
+                    and hp_short_loss < curr_short_loss
+                    and hp_short_loss <= 5.0
+                )
+                if backup_has_loss and hp_strictly_better:
+                    return higher_p, "failback_degraded", 0
 
     # ── Tier 2: Conservative Quality Switching ──
     # Check hold-down guards
@@ -381,6 +431,18 @@ def decide_route(
             if cand_loss > (curr_effective_loss + 0.5):
                 continue
 
+            cand_is_relay = bool(m.get("is_relay", False))
+            # Intermediate Relay (Mid-Server) Ping Rule:
+            # Mid-server ping is only hop-1 (fake low ping). It must NEVER beat a healthy
+            # direct route based on latency! Only eligible if current route has packet loss or latency > 150ms.
+            if cand_is_relay and current_active == 1:
+                curr_lat = curr_m.get("avg_latency_ms")
+                if curr_lat is None:
+                    curr_lat = curr_m.get("latency_ms")
+                curr_lat_val = float(curr_lat) if curr_lat is not None else float(curr_m.get("long_score", 0.0))
+                if not curr_has_loss and curr_lat_val <= prio1_max_lat:
+                    continue
+
             # ── Primary Route (Priority 1) Stickiness Rule ──
             # When Priority 1 is currently active, do NOT switch away to backup paths (p > 1)
             # merely because the backup has 10-30ms lower latency (especially if backup is an intermediate relay)!
@@ -400,6 +462,10 @@ def decide_route(
                     continue
 
             cand_score = float(m.get("long_score", 999.0))
+            if cand_is_relay and p > 1:
+                # Neutralize fake low hop-1 ping for mid-servers
+                cand_score += 100.0
+
             # Hysteresis requirement: candidate must beat current score by at least hysteresis_percent% AND >= 15 points (or 10 in test mode)
             min_adv = 10.0 if is_test_mode else 15.0
             required_advantage = max(min_adv, curr_long_score * (hysteresis_pct / 100.0))
@@ -407,6 +473,39 @@ def decide_route(
                 if cand_score < best_cand_score:
                     best_cand_score = cand_score
                     best_cand = p
+
+    # Anti-Reset Guard (LOGIC-02):
+    # If tracked_cand is already undergoing streak confirmation and is still a valid candidate
+    # that beats current_active, do NOT abort/reset streak just because another backup fluctuated by 1ms!
+    tracked_cand = rule_state.get("switch_candidate")
+    streak_start = float(rule_state.get("switch_streak_start", 0.0))
+
+    if tracked_cand is not None and tracked_cand in dest_metrics and tracked_cand != current_active:
+        tc_m = dest_metrics[tracked_cand]
+        tc_status = tc_m.get("status", "unknown")
+        tc_loss = float(tc_m.get("long_loss", 100.0))
+        tc_is_relay = bool(tc_m.get("is_relay", False))
+
+        # Check relay eligibility: if tracked_cand is a relay and current_active is 1,
+        # but Priority 1 is healthy (no loss, lat <= 150), relay cannot be tracked
+        tc_relay_eligible = True
+        if tc_is_relay and current_active == 1:
+            curr_lat = curr_m.get("avg_latency_ms")
+            if curr_lat is None:
+                curr_lat = curr_m.get("latency_ms")
+            curr_lat_val = float(curr_lat) if curr_lat is not None else float(curr_m.get("long_score", 0.0))
+            if not curr_has_loss and curr_lat_val <= prio1_max_lat:
+                tc_relay_eligible = False
+
+        if tc_relay_eligible and tc_status not in ("failed", "critical") and tc_loss <= (curr_effective_loss + 0.5):
+            tc_score = float(tc_m.get("long_score", 999.0))
+            if tc_is_relay and tracked_cand > 1:
+                tc_score += 100.0
+            min_adv = 10.0 if is_test_mode else 15.0
+            req_adv = max(min_adv, curr_long_score * (hysteresis_pct / 100.0))
+            if (curr_long_score - tc_score) >= req_adv:
+                # Tracked candidate is still valid and superior! Keep tracking it to prevent reset trap!
+                best_cand = tracked_cand
 
     if best_cand is None:
         rule_state["switch_candidate"] = None
@@ -419,9 +518,6 @@ def decide_route(
         return best_cand, "planned", 0
 
     # Sustained advantage streak confirmation
-    tracked_cand = rule_state.get("switch_candidate")
-    streak_start = float(rule_state.get("switch_streak_start", 0.0))
-
     if tracked_cand != best_cand or streak_start <= 0.0:
         rule_state["switch_candidate"] = best_cand
         rule_state["switch_streak_start"] = curr_time
@@ -437,3 +533,4 @@ def decide_route(
 
     remaining = max(1, round(confirm_sec - elapsed_streak))
     return current_active, "pending", remaining
+

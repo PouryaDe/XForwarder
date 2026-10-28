@@ -819,3 +819,228 @@ select option {
     to { transform: translateX(0); opacity: 1; }
 }
 
+/* ── Switch Decision Banner on Rule Cards ── */
+.rule-switch-banner {
+    margin-top: 10px;
+    padding: 8px 12px;
+    background: rgba(110, 231, 183, 0.05);
+    border: 1px solid rgba(110, 231, 183, 0.2);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.rule-switch-banner:hover {
+    background: rgba(110, 231, 183, 0.1);
+    border-color: rgba(110, 231, 183, 0.4);
+    transform: translateY(-1px);
+}
+
+.switch-banner-content {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+    min-width: 0;
+}
+
+.switch-banner-icon {
+    font-size: 0.9rem;
+    flex-shrink: 0;
+}
+
+.switch-banner-text {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.switch-banner-link {
+    font-size: 0.74rem;
+    font-weight: 600;
+    color: var(--accent-mint);
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+/* ── Switch Logs Modal & Timeline ── */
+.switch-logs-timeline {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.switch-log-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 14px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    transition: border-color 0.2s ease;
+}
+
+.switch-log-card:hover {
+    border-color: rgba(255, 255, 255, 0.18);
+}
+
+.switch-log-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.switch-log-header-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.switch-time-pill {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    font-family: var(--font-mono);
+}
+
+.switch-port-badge {
+    background: rgba(167, 139, 250, 0.12);
+    color: var(--accent-violet);
+    border: 1px solid rgba(167, 139, 250, 0.3);
+    padding: 2px 7px;
+    border-radius: 6px;
+    font-weight: 700;
+    font-size: 0.78rem;
+    font-family: var(--font-mono);
+}
+
+.switch-prio-flow {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.82rem;
+    font-weight: 700;
+    font-family: var(--font-mono);
+}
+
+.switch-prio-arrow {
+    color: var(--text-muted);
+    font-size: 0.75rem;
+}
+
+.switch-reason-tag {
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.switch-reason-critical {
+    background: rgba(251, 113, 133, 0.15);
+    color: #FB7185;
+    border: 1px solid rgba(251, 113, 133, 0.3);
+}
+
+.switch-reason-recovery {
+    background: rgba(110, 231, 183, 0.15);
+    color: #6EE7B7;
+    border: 1px solid rgba(110, 231, 183, 0.3);
+}
+
+.switch-reason-planned {
+    background: rgba(167, 139, 250, 0.15);
+    color: #A78BFA;
+    border: 1px solid rgba(167, 139, 250, 0.3);
+}
+
+.switch-reason-override {
+    background: rgba(56, 189, 248, 0.15);
+    color: #38BDF8;
+    border: 1px solid rgba(56, 189, 248, 0.3);
+}
+
+.switch-reason-fallback {
+    background: rgba(251, 191, 107, 0.15);
+    color: #FBBF6B;
+    border: 1px solid rgba(251, 191, 107, 0.3);
+}
+
+.switch-metrics-grid {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    gap: 12px;
+    background: rgba(0, 0, 0, 0.15);
+    padding: 10px 14px;
+    border-radius: 8px;
+    font-size: 0.8rem;
+}
+
+[data-theme="light"] .switch-metrics-grid {
+    background: rgba(15, 23, 42, 0.04);
+}
+
+.switch-metrics-side {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.switch-metrics-side.target {
+    text-align: right;
+}
+
+.switch-metrics-label {
+    font-size: 0.68rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    font-weight: 600;
+}
+
+.switch-metrics-values {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--font-mono);
+}
+
+.switch-metrics-side.target .switch-metrics-values {
+    justify-content: flex-end;
+}
+
+.switch-metrics-arrow {
+    color: var(--text-muted);
+    font-size: 1.1rem;
+    text-align: center;
+}
+
+.switch-explanation-text {
+    font-size: 0.82rem;
+    color: var(--text-secondary);
+    line-height: 1.45;
+    background: rgba(255, 255, 255, 0.02);
+    border-left: 3px solid var(--accent-mint);
+    padding: 6px 10px;
+    border-radius: 0 6px 6px 0;
+}
+
+.switch-logs-empty {
+    text-align: center;
+    padding: 48px 20px;
+    color: var(--text-secondary);
+    border: 1px dashed var(--border-color);
+    border-radius: 12px;
+    font-size: 0.92rem;
+}
+
+

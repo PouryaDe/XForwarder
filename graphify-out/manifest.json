@@ -1,8 +1,8 @@
 {
   "core/engine.py": {
-    "mtime": 1793128566.8145633,
-    "seen": 1793129469.0881815,
-    "ast_hash": "86e1167c951d3be4560a2d67017fa33f",
+    "mtime": 1793146043.7422879,
+    "seen": 1793148966.3494143,
+    "ast_hash": "b4390f151b54299c6db2edac99578aaf",
     "semantic_hash": ""
   },
   "core/web_server.py": {
@@ -12,15 +12,15 @@
     "semantic_hash": ""
   },
   "web/app.js": {
-    "mtime": 1793083497.5088744,
-    "seen": 1793122103.1951742,
-    "ast_hash": "cec15527f989116cff64c3936183ad85",
+    "mtime": 1793148682.0734422,
+    "seen": 1793148966.3494408,
+    "ast_hash": "6aee0bf0b059e826a988edab9efe8426",
     "semantic_hash": ""
   },
   ".agents/rules/01-architecture-and-failover.md": {
-    "mtime": 1793085946.5860686,
-    "seen": 1793122103.1952689,
-    "ast_hash": "96e304fe95ce85e2b66f764be00163be",
+    "mtime": 1793150207.1643796,
+    "seen": 1793150255.9655905,
+    "ast_hash": "bb2bab6a9003c45b2c8ff11eb0154534",
     "semantic_hash": ""
   },
   ".agents/rules/02-python-core-standards.md": {
@@ -72,9 +72,9 @@
     "semantic_hash": ""
   },
   "AGENTS.md": {
-    "mtime": 1793097638.103499,
-    "seen": 1793122103.1952877,
-    "ast_hash": "3c0c6502b79d45439fa7c898e61efbf2",
+    "mtime": 1793150158.0254548,
+    "seen": 1793150255.9656081,
+    "ast_hash": "ac47355337412cc5d870001e6e5be075",
     "semantic_hash": ""
   },
   "README.md": {
@@ -84,9 +84,9 @@
     "semantic_hash": ""
   },
   "web/index.html": {
-    "mtime": 1793072777.4156747,
-    "seen": 1793074283.633002,
-    "ast_hash": "907f24607b28ea427862d7ca07a02f22",
+    "mtime": 1793147122.3856542,
+    "seen": 1793148966.3494911,
+    "ast_hash": "bfbe899a1daef787256a29245ac3022e",
     "semantic_hash": ""
   },
   "xforwarder.sh": {
@@ -150,9 +150,9 @@
     "semantic_hash": ""
   },
   ".agents/AGENTS.md": {
-    "mtime": 1793097677.2327068,
-    "seen": 1793122103.1952507,
-    "ast_hash": "4e2a4c24e56fa02f109b952615002b73",
+    "mtime": 1793150186.6286187,
+    "seen": 1793150255.965576,
+    "ast_hash": "3daecceecf8f9bfec918f0937f367670",
     "semantic_hash": ""
   },
   ".agents/experiences/001-zero-collision-haproxy-nftables-failover.md": {
@@ -288,9 +288,9 @@
     "semantic_hash": ""
   },
   "tests/test_ui_and_api_edge_cases.py": {
-    "mtime": 1793077135.827518,
-    "seen": 1793077327.450664,
-    "ast_hash": "98595ee0e2371eefc2fafec0b5860f43",
+    "mtime": 1793150100.9423447,
+    "seen": 1793150255.965562,
+    "ast_hash": "028c84843db202734430d6679a2ae9cf",
     "semantic_hash": ""
   },
   "tests/test_network_interfaces.py": {
@@ -396,15 +396,15 @@
     "semantic_hash": ""
   },
   "core/route_quality.py": {
-    "mtime": 1793128661.7391272,
-    "seen": 1793129469.0881925,
-    "ast_hash": "d2b04cad0d828d6214c20abbebf7fede",
+    "mtime": 1793149965.1008496,
+    "seen": 1793150255.9655437,
+    "ast_hash": "9b7a27573553e1bbc8632a938bcbf202",
     "semantic_hash": ""
   },
   "tests/test_route_quality.py": {
-    "mtime": 1793128691.3753874,
-    "seen": 1793129469.0882165,
-    "ast_hash": "3a3cc7f68fba0d4f11762825d5111ee7",
+    "mtime": 1793149996.3517008,
+    "seen": 1793150255.965558,
+    "ast_hash": "bc06b858c564f952547800df47b7bf0e",
     "semantic_hash": ""
   },
   ".agents/experiences/013-two-tier-intelligent-route-switching-and-jitter-monitoring.md": {
@@ -516,9 +516,9 @@
     "semantic_hash": ""
   },
   "web/js/modules/rules.js": {
-    "mtime": 1793070381.1336179,
-    "seen": 1793070554.044591,
-    "ast_hash": "86a3495f4bbcf21d0f1408159c878dcc",
+    "mtime": 1793148464.9858284,
+    "seen": 1793148966.3494473,
+    "ast_hash": "d74de8467448c3304d631a9e13ec19a2",
     "semantic_hash": ""
   },
   "web/js/modules/state.js": {
@@ -615,6 +615,12 @@
     "mtime": 1793085112.5777686,
     "seen": 1793122103.1952662,
     "ast_hash": "89caf44025b915c19bef19d459cce8f9",
+    "semantic_hash": ""
+  },
+  "IMPLEMENTATION_PLAN.md": {
+    "mtime": 1793145397.5551076,
+    "seen": 1793148966.3494895,
+    "ast_hash": "dec3b3249de38a3cc77e9fdbba7c5647",
     "semantic_hash": ""
   }
 }

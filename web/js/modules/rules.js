@@ -356,6 +356,9 @@ export function renderRuleCard(rule, rulesState) {
                     ${rState.is_flapping ? `<span class="badge-flapping" title="Repeated route flapping detected. Cooldown extended."><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>Flap Guard</span>` : ''}
                 </div>
                 <div class="rule-actions">
+                    <button class="btn btn-secondary btn-sm" onclick="openSwitchLogsModal(decodeURIComponent('${encodedId}'), '${escapeHtml(portKey)}')" title="Switch Decision Logs & History">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                    </button>
                     <button class="btn btn-secondary btn-sm" onclick="openTrafficModal('port', '${escapeHtml(portKey)}')" title="Traffic & Bandwidth Analytics">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
                     </button>
@@ -384,6 +387,15 @@ export function renderRuleCard(rule, rulesState) {
             <div class="paths-grid">
                 ${pathsHtml}
             </div>
+            ${rState.last_switch_explanation ? `
+                <div class="rule-switch-banner" onclick="openSwitchLogsModal(decodeURIComponent('${encodedId}'), '${escapeHtml(portKey)}')" title="Click to view switch decision history">
+                    <div class="switch-banner-content">
+                        <span class="switch-banner-icon">⚡</span>
+                        <span class="switch-banner-text">${escapeHtml(rState.last_switch_explanation)}</span>
+                    </div>
+                    <span class="switch-banner-link">Logs &rarr;</span>
+                </div>
+            ` : ''}
         </div>
     `;
 }
@@ -483,6 +495,9 @@ export function renderRuleListRow(rule, rulesState) {
             </div>
 
             <div class="rule-list-right">
+                <button class="btn btn-secondary btn-sm" onclick="openSwitchLogsModal(decodeURIComponent('${encodedId}'), '${escapeHtml(portKey)}')" title="Switch Decision Logs & History">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                </button>
                 <button class="btn btn-secondary btn-sm" onclick="openTrafficModal('port', '${escapeHtml(portKey)}')" title="Traffic & Bandwidth Analytics">
                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
                 </button>
@@ -806,4 +821,178 @@ export function initRulesViewControls(fetchStatusCallback) {
             renderRules(currentRules, lastRuntime);
         });
     });
+
+    // Switch Decision Logs Modal controls
+    const btnOpenSwitchLogs = document.getElementById("btnOpenSwitchLogsModal");
+    if (btnOpenSwitchLogs) {
+        btnOpenSwitchLogs.addEventListener("click", () => openSwitchLogsModal("all"));
+    }
+
+    const btnCloseSwitchLogs = document.getElementById("btnCloseSwitchLogsModal");
+    if (btnCloseSwitchLogs) {
+        btnCloseSwitchLogs.addEventListener("click", closeSwitchLogsModal);
+    }
+
+    const btnCloseSwitchLogsFooter = document.getElementById("btnCloseSwitchLogsModalFooter");
+    if (btnCloseSwitchLogsFooter) {
+        btnCloseSwitchLogsFooter.addEventListener("click", closeSwitchLogsModal);
+    }
+
+    const selectFilter = document.getElementById("switchLogsRuleFilter");
+    if (selectFilter) {
+        selectFilter.addEventListener("change", (e) => {
+            renderSwitchLogsContent(e.target.value);
+        });
+    }
 }
+
+export function openSwitchLogsModal(targetRuleId = "all", port = "") {
+    const modal = document.getElementById("switchLogsModal");
+    if (!modal) return;
+
+    const select = document.getElementById("switchLogsRuleFilter");
+    if (select) {
+        select.innerHTML = '<option value="all">All Port Rules</option>';
+        if (Array.isArray(currentRules)) {
+            currentRules.forEach(r => {
+                const rid = String(r.id || `rule-${r.port}`);
+                const opt = document.createElement("option");
+                opt.value = rid;
+                opt.textContent = `Port :${r.port} (${rid})`;
+                if (rid === targetRuleId) opt.selected = true;
+                select.appendChild(opt);
+            });
+        }
+        if (targetRuleId === "all") select.value = "all";
+    }
+
+    renderSwitchLogsContent(targetRuleId);
+    modal.classList.add("show");
+}
+
+export function closeSwitchLogsModal() {
+    const modal = document.getElementById("switchLogsModal");
+    if (modal) modal.classList.remove("show");
+}
+
+export function renderSwitchLogsContent(filterRuleId = "all") {
+    const timeline = document.getElementById("switchLogsTimeline");
+    const summary = document.getElementById("switchLogsSummary");
+    if (!timeline) return;
+
+    let events = [];
+    const rulesState = (lastRuntime && lastRuntime.rules_state) ? lastRuntime.rules_state : {};
+
+    if (filterRuleId === "all") {
+        if (lastRuntime && Array.isArray(lastRuntime.recent_switches) && lastRuntime.recent_switches.length > 0) {
+            events = [...lastRuntime.recent_switches];
+        } else {
+            Object.values(rulesState).forEach(rs => {
+                if (Array.isArray(rs.switch_events)) {
+                    events.push(...rs.switch_events);
+                }
+            });
+        }
+    } else {
+        const rs = rulesState[filterRuleId] || {};
+        if (Array.isArray(rs.switch_events)) {
+            events = [...rs.switch_events];
+        }
+    }
+
+    // Sort descending by timestamp
+    events.sort((a, b) => (parseFloat(b.timestamp) || 0) - (parseFloat(a.timestamp) || 0));
+
+    if (summary) {
+        summary.textContent = `Showing ${events.length} recorded switch event${events.length === 1 ? '' : 's'}`;
+    }
+
+    if (events.length === 0) {
+        timeline.innerHTML = `
+            <div class="switch-logs-empty">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin-bottom:8px; opacity:0.5;"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                <p style="margin-bottom:4px; font-weight:600;">No switch events recorded yet.</p>
+                <p style="font-size:0.8rem; color:var(--text-muted);">The engine is operating stably on active forwarding priorities.</p>
+            </div>
+        `;
+        return;
+    }
+
+    const html = events.map(ev => {
+        const timeStr = escapeHtml(ev.time_str || (ev.timestamp ? new Date(ev.timestamp * 1000).toLocaleTimeString() : 'N/A'));
+        const portStr = escapeHtml(String(ev.port || ''));
+        const fromP = ev.from_priority || 1;
+        const toP = ev.to_priority || 1;
+        const reason = String(ev.reason || 'switch');
+
+        let reasonClass = 'switch-reason-planned';
+        let reasonLabel = 'Quality Confirmed';
+        if (reason === 'critical') {
+            reasonClass = 'switch-reason-critical';
+            reasonLabel = 'Emergency Outage';
+        } else if (reason === 'failback_degraded' || reason === 'auto_reset') {
+            reasonClass = 'switch-reason-recovery';
+            reasonLabel = 'Priority Recovery';
+        } else if (reason === 'override') {
+            reasonClass = 'switch-reason-override';
+            reasonLabel = 'Manual Override';
+        } else if (reason.includes('disabled')) {
+            reasonClass = 'switch-reason-fallback';
+            reasonLabel = 'Destination Disabled';
+        }
+
+        const fromLoss = ev.from_loss !== undefined ? `${parseFloat(ev.from_loss).toFixed(1)}%` : 'N/A';
+        const toLoss = ev.to_loss !== undefined ? `${parseFloat(ev.to_loss).toFixed(1)}%` : '0.0%';
+        const fromLat = (ev.from_latency !== undefined && ev.from_latency !== null) ? `${parseFloat(ev.from_latency).toFixed(1)}ms` : 'Down';
+        const toLat = (ev.to_latency !== undefined && ev.to_latency !== null) ? `${parseFloat(ev.to_latency).toFixed(1)}ms` : 'N/A';
+        const explanation = escapeHtml(ev.explanation || `Switched Priority #${fromP} -> #${toP}`);
+
+        return `
+            <div class="switch-log-card">
+                <div class="switch-log-header">
+                    <div class="switch-log-header-left">
+                        <span class="switch-time-pill">${timeStr}</span>
+                        ${portStr ? `<span class="switch-port-badge">:${portStr}</span>` : ''}
+                        <div class="switch-prio-flow">
+                            <span>P#${fromP}</span>
+                            <span class="switch-prio-arrow">&rarr;</span>
+                            <span style="color:var(--accent-mint);">P#${toP}</span>
+                        </div>
+                    </div>
+                    <span class="switch-reason-tag ${reasonClass}">${escapeHtml(reasonLabel)}</span>
+                </div>
+
+                <div class="switch-metrics-grid">
+                    <div class="switch-metrics-side">
+                        <span class="switch-metrics-label">Previous Path (P#${fromP})</span>
+                        <div class="switch-metrics-values">
+                            <span style="color:${ev.from_status === 'failed' ? '#FB7185' : 'var(--text-secondary)'}; font-weight:600;">${escapeHtml(String(ev.from_status || '').toUpperCase())}</span>
+                            <span>·</span>
+                            <span>Loss: ${fromLoss}</span>
+                            <span>·</span>
+                            <span>${fromLat}</span>
+                        </div>
+                    </div>
+                    <div class="switch-metrics-arrow">&rarr;</div>
+                    <div class="switch-metrics-side target">
+                        <span class="switch-metrics-label">Active Path (P#${toP})</span>
+                        <div class="switch-metrics-values">
+                            <span style="color:var(--accent-mint); font-weight:600;">${escapeHtml(String(ev.to_status || 'healthy').toUpperCase())}</span>
+                            <span>·</span>
+                            <span>Loss: ${toLoss}</span>
+                            <span>·</span>
+                            <span>${toLat}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="switch-explanation-text">
+                    ${explanation}
+                </div>
+            </div>
+        `;
+    }).join("");
+
+    timeline.innerHTML = html;
+}
+

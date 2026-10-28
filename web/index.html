@@ -415,6 +415,14 @@
                                 </svg>
                                 <span class="btn-text">Traffic</span>
                             </button>
+                            <button class="btn btn-secondary btn-sm" id="btnOpenSwitchLogsModal"
+                                title="Switch Decision Logs & History (Inspect why and when priorities changed)">
+                                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
+                                    <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+                                </svg>
+                                <span class="btn-text">Switch Logs</span>
+                            </button>
                             <button class="btn btn-primary" id="btnOpenAddModal">
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                                     stroke-width="2">
@@ -2153,6 +2161,50 @@
                 <div class="traffic-footer-right">
                     <button type="button" class="btn btn-secondary" id="btnCloseTrafficModalFooter">Close</button>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Switch Decision Logs Modal -->
+    <div class="modal-backdrop" id="switchLogsModal">
+        <div class="modal modal-switch-dialog" style="max-width: 980px; width: 95%;">
+            <div class="modal-header">
+                <div class="modal-title-wrap">
+                    <div style="display:flex; align-items:center; gap:12px;">
+                        <div class="stat-icon icon-emerald modal-switch-icon" style="background: rgba(110, 231, 183, 0.1); color: #6EE7B7;">
+                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+                            </svg>
+                        </div>
+                        <div>
+                            <h3 id="switchLogsModalTitle">Switch Decision Logs</h3>
+                            <p class="modal-subtitle" id="switchLogsModalSubtitle">Real-time audit log of multi-path failovers and automated decision reasons</p>
+                        </div>
+                    </div>
+                </div>
+                <button type="button" class="modal-close" id="btnCloseSwitchLogsModal" title="Close dialog">&times;</button>
+            </div>
+
+            <div class="modal-body switch-modal-body" style="padding: 20px 24px; max-height: 70vh; overflow-y: auto;">
+                <div class="switch-logs-controls" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; flex-wrap:wrap; gap:10px;">
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        <span style="font-size:0.85rem; color:var(--text-secondary);">Filter Rule:</span>
+                        <select id="switchLogsRuleFilter" class="form-input" style="padding:5px 12px; font-size:0.85rem; border-radius:8px; width:auto; background:var(--bg-card); color:var(--text-primary); border:1px solid var(--border-color);">
+                            <option value="all">All Port Rules</option>
+                        </select>
+                    </div>
+                    <div id="switchLogsSummary" style="font-size:0.85rem; color:var(--text-muted);">
+                        Showing recent switch events
+                    </div>
+                </div>
+
+                <div class="switch-logs-timeline" id="switchLogsTimeline">
+                    <!-- Switch events dynamically injected here -->
+                </div>
+            </div>
+
+            <div class="modal-footer" style="display:flex; justify-content:flex-end;">
+                <button type="button" class="btn btn-secondary" id="btnCloseSwitchLogsModalFooter">Close</button>
             </div>
         </div>
     </div>

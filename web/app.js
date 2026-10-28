@@ -43,7 +43,9 @@ import {
     handleOverrideChange,
     toggleDestinationEnabled,
     deleteRule,
-    initRulesViewControls
+    initRulesViewControls,
+    openSwitchLogsModal,
+    closeSwitchLogsModal
 } from "./js/modules/rules.js";
 import {
     openAddRuleModal,
@@ -121,6 +123,8 @@ window.openImportModal = openImportModal;
 window.closeImportModal = closeImportModal;
 window.openTrafficModal = openTrafficModal;
 window.closeTrafficModal = closeTrafficModal;
+window.openSwitchLogsModal = openSwitchLogsModal;
+window.closeSwitchLogsModal = closeSwitchLogsModal;
 window.loadOverviewTrafficChart = loadOverviewTrafficChart;
 window.promptResetTraffic = (type, id) => promptResetTraffic(type, id, fetchStatus);
 window.triggerTrafficResetFromModal = () => triggerTrafficResetFromModal(fetchStatus);

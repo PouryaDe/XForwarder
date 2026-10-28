@@ -1068,8 +1068,252 @@ class TestRouteQualityEngine(unittest.TestCase):
         self.assertEqual(pending, 120)
         self.assertEqual(rule_state.get("switch_candidate"), 2)
 
+    def test_emergency_failover_when_all_backups_critical_picks_lowest_loss(self):
+        """
+        LOGIC-01 Verification:
+        Priority 1 is failed (100% loss).
+        Priority 2 has 35% loss (critical status).
+        Priority 3 has 65% loss (critical status).
+        The engine must NOT deadlock on dead Priority 1, but failover immediately to Priority 2.
+        """
+        now = 1000.0
+        rule_state = {
+            "last_switch_time": now - 30.0,
+            "switch_candidate": None,
+            "switch_streak_start": 0.0
+        }
+        dest_metrics = {
+            1: {
+                "status": "failed",
+                "short_loss": 100.0,
+                "long_loss": 100.0,
+                "short_score": 3000.0,
+                "long_score": 3000.0,
+                "fill_ratio": 1.0
+            },
+            2: {
+                "status": "critical",
+                "short_loss": 35.0,
+                "long_loss": 35.0,
+                "short_score": 750.0,
+                "long_score": 750.0,
+                "fill_ratio": 1.0
+            },
+            3: {
+                "status": "critical",
+                "short_loss": 65.0,
+                "long_loss": 65.0,
+                "short_score": 1350.0,
+                "long_score": 1350.0,
+                "fill_ratio": 1.0
+            }
+        }
+        config = {
+            "min_hold_seconds": 600,
+            "switch_confirm_seconds": 120
+        }
+        target, reason, pending = decide_route(rule_state, dest_metrics, current_active=1, config=config, now=now)
+        self.assertEqual(target, 2)
+        self.assertEqual(reason, "critical")
+        self.assertEqual(pending, 0)
+
+    def test_streak_reset_guard_prevents_reset_trap_between_close_candidates(self):
+        """
+        LOGIC-02 Verification:
+        Priority 1 has high latency (180ms > 150ms ceiling).
+        Candidate 2 (score 50.0) is tracked.
+        Next cycle, Candidate 3 fluctuates to score 49.5 while Candidate 2 is score 50.0.
+        Because Candidate 2 is still valid and superior to active Priority 1,
+        the streak timer must NOT reset to 0!
+        """
+        now = 1000.0
+        rule_state = {
+            "last_switch_time": now - 700.0,
+            "switch_candidate": 2,
+            "switch_streak_start": now - 60.0  # 60s into 120s streak
+        }
+        dest_metrics = {
+            1: {
+                "status": "healthy",
+                "short_loss": 0.0,
+                "long_loss": 0.0,
+                "long_score": 180.0,
+                "avg_latency_ms": 180.0,
+                "fill_ratio": 1.0
+            },
+            2: {
+                "status": "healthy",
+                "short_loss": 0.0,
+                "long_loss": 0.0,
+                "long_score": 50.0,
+                "avg_latency_ms": 50.0,
+                "fill_ratio": 1.0
+            },
+            3: {
+                "status": "healthy",
+                "short_loss": 0.0,
+                "long_loss": 0.0,
+                "long_score": 49.5,  # 0.5ms lower score
+                "avg_latency_ms": 49.5,
+                "fill_ratio": 1.0
+            }
+        }
+        config = {
+            "min_hold_seconds": 600,
+            "switch_confirm_seconds": 120,
+            "hysteresis_percent": 20,
+            "max_primary_latency_ms": 150
+        }
+        target, reason, remaining = decide_route(rule_state, dest_metrics, current_active=1, config=config, now=now)
+        self.assertEqual(target, 1)
+        self.assertEqual(reason, "pending")
+        # Remaining must be 60s (120 - 60), NOT 120s reset!
+        self.assertEqual(remaining, 60)
+        self.assertEqual(rule_state.get("switch_candidate"), 2)
+
+    def test_multi_priority_chain_failback(self):
+        """
+        LOGIC-05 Verification:
+        Active route is Priority 3 (current_active=3) which suffers 15% packet loss (degraded).
+        Priority 1 is down/failed (100% loss).
+        Priority 2 is healthy (0% loss, 40ms latency).
+        The engine must IMMEDIATELY fail back to Priority 2 (failback_degraded) without waiting 120s!
+        """
+        now = 1000.0
+        rule_state = {
+            "last_switch_time": now - 20.0,
+            "switch_candidate": None,
+            "switch_streak_start": 0.0
+        }
+        dest_metrics = {
+            1: {
+                "status": "failed",
+                "short_loss": 100.0,
+                "long_loss": 100.0,
+                "long_score": 3000.0,
+                "fill_ratio": 1.0
+            },
+            2: {
+                "status": "healthy",
+                "short_loss": 0.0,
+                "long_loss": 0.0,
+                "long_score": 40.0,
+                "avg_latency_ms": 40.0,
+                "fill_ratio": 1.0
+            },
+            3: {
+                "status": "degraded",
+                "short_loss": 15.0,
+                "long_loss": 15.0,
+                "long_score": 350.0,
+                "avg_latency_ms": 50.0,
+                "fill_ratio": 1.0
+            }
+        }
+        config = {
+            "min_hold_seconds": 600,
+            "switch_confirm_seconds": 120,
+            "hysteresis_percent": 20,
+            "max_primary_latency_ms": 150
+        }
+        target, reason, remaining = decide_route(rule_state, dest_metrics, current_active=3, config=config, now=now)
+        self.assertEqual(target, 2)
+        self.assertEqual(reason, "failback_degraded")
+        self.assertEqual(remaining, 0)
+
+    def test_multi_priority_failback_does_not_jump_to_worse_loss_backup(self):
+        """
+        Verifies that when current active is Priority 3 with 5% loss, and Priority 1 is down,
+        if Priority 2 has 10% loss (worse than Priority 3), the engine does NOT jump to Priority 2.
+        """
+        now = 1000.0
+        rule_state = {
+            "last_switch_time": now - 20.0,
+            "switch_candidate": None,
+            "switch_streak_start": 0.0
+        }
+        dest_metrics = {
+            1: {
+                "status": "failed",
+                "short_loss": 100.0,
+                "long_loss": 100.0,
+                "long_score": 3000.0,
+                "fill_ratio": 1.0
+            },
+            2: {
+                "status": "degraded",
+                "short_loss": 10.0,
+                "long_loss": 10.0,
+                "long_score": 250.0,
+                "avg_latency_ms": 50.0,
+                "fill_ratio": 1.0
+            },
+            3: {
+                "status": "degraded",
+                "short_loss": 5.0,
+                "long_loss": 5.0,
+                "long_score": 150.0,
+                "avg_latency_ms": 50.0,
+                "fill_ratio": 1.0
+            }
+        }
+        config = {
+            "min_hold_seconds": 600,
+            "switch_confirm_seconds": 120,
+            "hysteresis_percent": 20,
+            "max_primary_latency_ms": 150
+        }
+        target, reason, remaining = decide_route(rule_state, dest_metrics, current_active=3, config=config, now=now)
+        # Priority 2 has worse packet loss (10% > 5%), so do NOT jump to Priority 2!
+        self.assertNotEqual(target, 2)
+        self.assertNotEqual(reason, "failback_degraded")
+
+    def test_anti_reset_guard_rejects_relay_when_priority1_is_healthy(self):
+        """
+        Verifies that if an intermediate relay was tracked as switch_candidate, but Priority 1
+        is healthy (0% loss, latency <= 150ms), the Anti-Reset Guard does NOT retain the relay candidate.
+        """
+        now = 1000.0
+        rule_state = {
+            "last_switch_time": now - 100.0,
+            "switch_candidate": 2,  # Relay candidate was tracked
+            "switch_streak_start": now - 30.0
+        }
+        dest_metrics = {
+            1: {
+                "status": "healthy",
+                "short_loss": 0.0,
+                "long_loss": 0.0,
+                "long_score": 60.0,
+                "avg_latency_ms": 60.0,
+                "fill_ratio": 1.0,
+                "is_relay": False
+            },
+            2: {
+                "status": "healthy",
+                "short_loss": 0.0,
+                "long_loss": 0.0,
+                "long_score": 15.0,  # Low hop-1 ping
+                "avg_latency_ms": 15.0,
+                "fill_ratio": 1.0,
+                "is_relay": True
+            }
+        }
+        config = {
+            "min_hold_seconds": 600,
+            "switch_confirm_seconds": 120,
+            "hysteresis_percent": 20,
+            "max_primary_latency_ms": 150
+        }
+        target, reason, remaining = decide_route(rule_state, dest_metrics, current_active=1, config=config, now=now)
+        # Should stay on Priority 1 with 'hold', and switch_candidate should be cleared!
+        self.assertEqual(target, 1)
+        self.assertEqual(reason, "hold")
+        self.assertIsNone(rule_state.get("switch_candidate"))
+
 
 if __name__ == "__main__":
     unittest.main()
+
 
 

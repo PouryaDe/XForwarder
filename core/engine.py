@@ -854,6 +854,10 @@ class XForwarderEngine:
             rule_state["last_switch_time"] = now
             rule_state["last_switch_reason"] = decision_reason
             rule_state["switch_history"].append(now)
+            # Re-evaluate flap detection immediately on new switch
+            recent_switches = [t for t in rule_state.get("switch_history", []) if (now - t) <= 600.0]
+            rule_state["switch_history"] = recent_switches
+            rule_state["is_flapping"] = (len(recent_switches) >= 3)
             rule_state["active_priority"] = target_active
             rule["active_priority"] = target_active
             is_crit = (decision_reason in ("critical", "failback_degraded", "disabled_active_fallback"))
@@ -865,6 +869,8 @@ class XForwarderEngine:
             curr_stat_str = curr_info.get("status", "unknown")
             tgt_stat_str = tgt_info.get("status", "unknown")
             curr_loss_val = curr_info.get("short_loss", 0.0)
+            if decision_reason == "critical" and curr_stat_str == "failed":
+                curr_loss_val = 100.0
             tgt_loss_val = tgt_info.get("short_loss", 0.0)
             curr_lat_val = curr_info.get("avg_latency_ms") if curr_info.get("avg_latency_ms") is not None else curr_info.get("latency_ms")
             tgt_lat_val = tgt_info.get("avg_latency_ms") if tgt_info.get("avg_latency_ms") is not None else tgt_info.get("latency_ms")

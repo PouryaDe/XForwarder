@@ -2061,6 +2061,44 @@ class TestUIAndAPIEdgeCases(unittest.TestCase):
             self.assertTrue(res["success"])
             self.assertEqual(res["entity_id"], "9999")
 
+    def test_switch_logs_modal_and_event_persistence(self):
+        """Verifies Switch Decision Logs HTML modal elements, CSS styling, and JS module bindings."""
+        web_dir = os.path.join(REPO_ROOT, "web")
+        with open(os.path.join(web_dir, "index.html"), "r", encoding="utf-8") as f:
+            html = f.read()
+        with open(os.path.join(web_dir, "css", "modals.css"), "r", encoding="utf-8") as f:
+            modals_css = f.read()
+        with open(os.path.join(web_dir, "js", "modules", "rules.js"), "r", encoding="utf-8") as f:
+            rules_js = f.read()
+        with open(os.path.join(web_dir, "app.js"), "r", encoding="utf-8") as f:
+            app_js = f.read()
+
+        # 1. HTML Modal & Trigger Elements
+        self.assertIn('id="switchLogsModal"', html)
+        self.assertIn('id="switchLogsRuleFilter"', html)
+        self.assertIn('id="switchLogsSummary"', html)
+        self.assertIn('id="switchLogsTimeline"', html)
+        self.assertIn('id="btnOpenSwitchLogsModal"', html)
+        self.assertIn('id="btnCloseSwitchLogsModal"', html)
+
+        # 2. CSS Styling for Switch Logs
+        self.assertIn(".switch-logs-timeline", modals_css)
+        self.assertIn(".switch-log-card", modals_css)
+        self.assertIn(".switch-reason-tag", modals_css)
+        self.assertIn(".switch-reason-critical", modals_css)
+        self.assertIn(".switch-reason-planned", modals_css)
+        self.assertIn(".switch-reason-recovery", modals_css)
+        self.assertIn(".switch-metrics-grid", modals_css)
+        self.assertIn(".switch-explanation-text", modals_css)
+
+        # 3. JS Module Exports and App Bindings
+        self.assertIn("export function openSwitchLogsModal", rules_js)
+        self.assertIn("export function closeSwitchLogsModal", rules_js)
+        self.assertIn("export function renderSwitchLogsContent", rules_js)
+        self.assertIn("window.openSwitchLogsModal = openSwitchLogsModal", app_js)
+        self.assertIn("window.closeSwitchLogsModal = closeSwitchLogsModal", app_js)
+        self.assertIn("btnOpenSwitchLogsModal", rules_js)
+
 
 if __name__ == "__main__":
     unittest.main()
