@@ -1020,6 +1020,7 @@
 .main-panel {
     background: var(--bg-card);
     backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
     border: 1px solid var(--border-color);
     border-radius: 18px;
     padding: 24px;
@@ -1087,13 +1088,12 @@
     -webkit-backdrop-filter: blur(16px);
     border: 1px solid var(--border-color);
     border-radius: 18px;
-    padding: 22px;
+    padding: 24px;
     box-shadow: var(--panel-shadow);
     display: flex;
     flex-direction: column;
-    contain: layout style;
     will-change: transform, opacity;
-    transition: transform 0.22s ease, opacity 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease;
+    transition: transform 0.22s ease, opacity 0.22s ease, box-shadow 0.22s ease;
 }
 
 .rule-card:hover {
@@ -1120,7 +1120,9 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 12px;
+    margin-bottom: 16px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid var(--border-color);
 }
 
 .port-badge { display: flex; align-items: center; gap: 8px; }
@@ -1212,17 +1214,19 @@
     align-items: center;
     justify-content: space-between;
     gap: 8px;
-    padding: 6px 10px;
-    margin-bottom: 12px;
-    border-radius: 10px;
-    background: rgba(15, 23, 42, 0.45);
+    padding: 8px 12px;
+    margin-bottom: 14px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.03);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
     border: 1px solid var(--border-color);
     flex-wrap: wrap;
 }
 
 [data-theme="light"] .rule-test-bar {
-    background: rgba(241, 245, 249, 0.7);
-    border-color: rgba(226, 232, 240, 0.9);
+    background: rgba(255, 255, 255, 0.5);
+    border-color: var(--border-color);
 }
 
 .test-bar-label {
@@ -1323,12 +1327,19 @@
 }
 
 .path-box {
-    background: var(--bg-card);
+    background: rgba(255, 255, 255, 0.03);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
     border: 1px solid var(--border-color);
     border-radius: 12px;
     padding: 12px 14px;
     position: relative;
     transition: all 0.2s ease;
+}
+
+[data-theme="light"] .path-box {
+    background: rgba(255, 255, 255, 0.5);
+    border-color: var(--border-color);
 }
 
 .path-box.is-active {
