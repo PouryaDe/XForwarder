@@ -1379,7 +1379,7 @@ class TestUIAndAPIEdgeCases(unittest.TestCase):
         with patch("core.web_server.get_local_version_info") as mock_loc:
             # 1. When local matches remote -> update_available is False
             mock_loc.return_value = {
-                "version": "1.4.0",
+                "version": "1.5.0",
                 "commit": "abc1234",
                 "commit_date": "2026-10-22",
                 "is_git": False
@@ -1396,7 +1396,7 @@ class TestUIAndAPIEdgeCases(unittest.TestCase):
 
             # 3. When local commit is unrecorded (None) -> update_available is True so user can sync
             mock_loc.return_value = {
-                "version": "1.4.0",
+                "version": "1.5.0",
                 "commit": None,
                 "commit_date": None,
                 "is_git": False
@@ -1892,7 +1892,7 @@ class TestUIAndAPIEdgeCases(unittest.TestCase):
         self.assertIn('document.readyState === "loading"', utils_js)
 
     def test_isolated_ping_latency_and_packet_loss_badges_and_v1_4_0_standards(self):
-        """Verifies version 1.4.0 alignment, glassmorphism sidebar, and strict separation of ping & loss badges."""
+        """Verifies version 1.5.0 alignment, glassmorphism sidebar, and strict separation of ping & loss badges."""
         html_path = os.path.join(REPO_ROOT, "web", "index.html")
         app_js_path = os.path.join(REPO_ROOT, "web", "app.js")
         rules_js_path = os.path.join(REPO_ROOT, "web", "js", "modules", "rules.js")
@@ -1919,11 +1919,11 @@ class TestUIAndAPIEdgeCases(unittest.TestCase):
         with open(sh_path, "r", encoding="utf-8") as f:
             sh_code = f.read()
 
-        # 1. Version 1.4.0 alignment across stack
-        self.assertIn('APP_VERSION = "1.4.0"', svc_mgr)
-        self.assertIn('SCRIPT_VERSION="1.4.0"', sh_code)
-        self.assertIn('id="brandVersionBadge">v1.4.0</span>', html)
-        self.assertIn('id="valInstalledVersion">v1.4.0</span>', html)
+        # 1. Version 1.5.0 alignment across stack
+        self.assertIn('APP_VERSION = "1.5.0"', svc_mgr)
+        self.assertIn('SCRIPT_VERSION="1.5.0"', sh_code)
+        self.assertIn('id="brandVersionBadge">v1.5.0</span>', html)
+        self.assertIn('id="valInstalledVersion">v1.5.0</span>', html)
 
         # 2. Topbar manual refresh button completely removed
         self.assertNotIn('id="btnManualRefresh"', html)

@@ -17,7 +17,7 @@ import re
 from typing import Dict, Any, Tuple, Optional
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-APP_VERSION = "1.4.0"
+APP_VERSION = "1.5.0"
 
 _REMOTE_VERSION_CACHE: Dict[str, Any] = {"data": None, "expires": 0}
 _REMOTE_VERSION_LOCK = threading.Lock()

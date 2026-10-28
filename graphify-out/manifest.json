@@ -78,21 +78,21 @@
     "semantic_hash": ""
   },
   "README.md": {
-    "mtime": 1792422867.9001484,
-    "seen": 1792422954.4739103,
-    "ast_hash": "45bc862143b0495e500049590ebb134f",
+    "mtime": 1793199554.975603,
+    "seen": 1793199900.5760293,
+    "ast_hash": "2804d7f12fc614e68c538a28b346a7cd",
     "semantic_hash": ""
   },
   "web/index.html": {
-    "mtime": 1793198194.0260787,
-    "seen": 1793198441.0519977,
-    "ast_hash": "88b7ca58d51001ac11d30b1d03ab77ec",
+    "mtime": 1793200207.1260364,
+    "seen": 1793200555.044758,
+    "ast_hash": "62de5137b0defebc4b24f2f51108a356",
     "semantic_hash": ""
   },
   "xforwarder.sh": {
-    "mtime": 1793122030.409658,
-    "seen": 1793122103.1952493,
-    "ast_hash": "3e2b063fd3aa70482d1295f1b8aaf958",
+    "mtime": 1793199532.7553544,
+    "seen": 1793199900.5759957,
+    "ast_hash": "4babc4ed199399cc147451ae2d0044b6",
     "semantic_hash": ""
   },
   ".agents/skills/xfwd-ops/SKILL.md": {
@@ -288,9 +288,9 @@
     "semantic_hash": ""
   },
   "tests/test_ui_and_api_edge_cases.py": {
-    "mtime": 1793198234.45117,
-    "seen": 1793198441.0519454,
-    "ast_hash": "c1787072fcc9ce770ddc248db162a331",
+    "mtime": 1793199798.0717182,
+    "seen": 1793199900.575983,
+    "ast_hash": "89b2990d94e5fa84cba03ca8b084a897",
     "semantic_hash": ""
   },
   "tests/test_network_interfaces.py": {
@@ -462,9 +462,9 @@
     "semantic_hash": ""
   },
   "core/service_manager.py": {
-    "mtime": 1793020691.1515436,
-    "seen": 1793021008.8271658,
-    "ast_hash": "ca75c30456a57060cee9acdcac96b68e",
+    "mtime": 1793199501.5975418,
+    "seen": 1793199900.5759661,
+    "ast_hash": "3d5c1133b54a612ebc486413b07b6ed0",
     "semantic_hash": ""
   },
   "core/system_info.py": {

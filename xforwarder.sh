@@ -12,7 +12,7 @@ if [[ ! -t 0 && -e /dev/tty ]]; then
     exec < /dev/tty 2>/dev/null || true
 fi
 
-SCRIPT_VERSION="1.4.0"
+SCRIPT_VERSION="1.5.0"
 INSTALL_DIR="/opt/xforwarder"
 CONFIG_DIR="/etc/xforwarder"
 CONFIG_FILE="$CONFIG_DIR/config.json"
