@@ -128,7 +128,7 @@ export function formatLoss50Badge(lossInfo, fallbackLoss = null) {
         let cls = "loss-good";
         if (loss >= 30 || fbLoss >= 30) {
             cls = "loss-bad";
-        } else if (loss > 0 || fbLoss > 0) {
+        } else if (loss >= 5 || fbLoss >= 5) {
             cls = "loss-warn";
         }
 
@@ -136,8 +136,13 @@ export function formatLoss50Badge(lossInfo, fallbackLoss = null) {
         let displayLoss = `${loss}% loss`;
 
         if (fbLoss > 0 && loss === 0) {
-            tooltip += ` · Active rolling probe: ${fbLoss}% loss`;
-            displayLoss = `${fbLoss}% probe loss`;
+            if (fbLoss < 5) {
+                tooltip += ` · Active rolling probe: ${fbLoss}% transient drop (Stable)`;
+                displayLoss = `${loss}% loss`;
+            } else {
+                tooltip += ` · Active rolling probe: ${fbLoss}% loss`;
+                displayLoss = `${fbLoss}% probe loss`;
+            }
         } else if (fbLoss > 0) {
             tooltip += ` · Active rolling probe: ${fbLoss}% loss`;
         }
@@ -148,7 +153,7 @@ export function formatLoss50Badge(lossInfo, fallbackLoss = null) {
         const loss = Math.round(Number(fallbackLoss));
         let cls = "loss-good";
         if (loss >= 30) cls = "loss-bad";
-        else if (loss > 0) cls = "loss-warn";
+        else if (loss >= 5) cls = "loss-warn";
         const tooltip = `Engine Loss: ${loss}% (10-probe sliding window)`;
         return `<span class="loss50-pill ${cls}" title="${escapeHtml(tooltip)}"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg><span>${loss}% loss</span></span>`;
     }
@@ -172,14 +177,19 @@ export function formatLoss50Inline(lossInfo, fallbackLoss = null) {
 
         let color = "var(--accent-mint)";
         if (loss >= 30 || fbLoss >= 30) color = "var(--accent-rose)";
-        else if (loss > 0 || fbLoss > 0) color = "var(--accent-amber)";
+        else if (loss >= 5 || fbLoss >= 5) color = "var(--accent-amber)";
 
         let tooltip = `15m Test: ${loss}% loss (${recv}/${sent} pkts) · Tested ${escapeHtml(agoStr)}`;
         let displayText = `· ${loss}% loss`;
 
         if (fbLoss > 0 && loss === 0) {
-            tooltip += ` · Active rolling probe: ${fbLoss}% loss`;
-            displayText = `· ${fbLoss}% probe loss`;
+            if (fbLoss < 5) {
+                tooltip += ` · Active rolling probe: ${fbLoss}% transient drop (Stable)`;
+                displayText = `· ${loss}% loss`;
+            } else {
+                tooltip += ` · Active rolling probe: ${fbLoss}% loss`;
+                displayText = `· ${fbLoss}% probe loss`;
+            }
         } else if (fbLoss > 0) {
             tooltip += ` · Active rolling probe: ${fbLoss}% loss`;
         }
@@ -190,7 +200,7 @@ export function formatLoss50Inline(lossInfo, fallbackLoss = null) {
         const loss = Math.round(Number(fallbackLoss));
         let color = "var(--accent-mint)";
         if (loss >= 30) color = "var(--accent-rose)";
-        else if (loss > 0) color = "var(--accent-amber)";
+        else if (loss >= 5) color = "var(--accent-amber)";
         const tooltip = `Engine Loss: ${loss}% (10-probe sliding window)`;
         return `<span class="loss50-pill-inline font-mono" style="color:${color};" title="${escapeHtml(tooltip)}">· ${loss}% loss</span>`;
     }

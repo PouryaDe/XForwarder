@@ -1311,6 +1311,85 @@ class TestRouteQualityEngine(unittest.TestCase):
         self.assertEqual(reason, "hold")
         self.assertIsNone(rule_state.get("switch_candidate"))
 
+    def test_classify_status_single_packet_drop_remains_healthy(self):
+        """
+        Verifies that an isolated 2% or 10% packet drop in a single cycle (lossy_cycles=1)
+        remains 'healthy' with transient drop note, avoiding false 'degraded' alarms.
+        """
+        stat, reason = classify_status(
+            short_loss=2.0,
+            long_loss=2.0,
+            last_cycle_loss=10.0,
+            burst_confirmed_dead=False,
+            route_invalid=False,
+            lossy_cycles=1,
+            return_reason=True
+        )
+        self.assertEqual(stat, "healthy")
+        self.assertIn("transient drop", reason)
+
+    def test_classify_status_sustained_two_cycle_loss_becomes_degraded(self):
+        """
+        Verifies that sustained packet loss (short_loss=5.0% across lossy_cycles=2)
+        correctly transitions status to 'degraded'.
+        """
+        stat, reason = classify_status(
+            short_loss=5.0,
+            long_loss=5.0,
+            last_cycle_loss=10.0,
+            burst_confirmed_dead=False,
+            route_invalid=False,
+            lossy_cycles=2,
+            return_reason=True
+        )
+        self.assertEqual(stat, "degraded")
+        self.assertIn("Active probe loss: 5.0%", reason)
+
+    def test_priority_1_stickiness_ignores_minor_two_percent_loss(self):
+        """
+        Verifies that Priority 1 with only 2.0% loss (1 packet drop out of 50 in 5m)
+        does NOT trigger a planned switch to backup Priority 2 (0% loss).
+        """
+        now = 1000.0
+        rule_state = {
+            "last_switch_time": now - 700.0,
+            "switch_candidate": None,
+            "switch_streak_start": 0.0
+        }
+        dest_metrics = {
+            1: {
+                "status": "healthy",
+                "short_loss": 2.0,
+                "long_loss": 2.0,
+                "short_score": 100.0,
+                "long_score": 100.0,
+                "avg_latency_ms": 60.0,
+                "fill_ratio": 1.0,
+                "is_relay": False
+            },
+            2: {
+                "status": "healthy",
+                "short_loss": 0.0,
+                "long_loss": 0.0,
+                "short_score": 50.0,
+                "long_score": 50.0,
+                "avg_latency_ms": 50.0,
+                "fill_ratio": 1.0,
+                "is_relay": False
+            }
+        }
+        config = {
+            "min_hold_seconds": 600,
+            "switch_confirm_seconds": 120,
+            "hysteresis_percent": 20,
+            "max_primary_latency_ms": 150
+        }
+        target, reason, remaining = decide_route(rule_state, dest_metrics, current_active=1, config=config, now=now)
+        # Should remain on Priority 1 with 'hold' - 2% loss is harmless noise!
+        self.assertEqual(target, 1)
+        self.assertEqual(reason, "hold")
+        self.assertIsNone(rule_state.get("switch_candidate"))
+
 
 if __name__ == "__main__":
     unittest.main()

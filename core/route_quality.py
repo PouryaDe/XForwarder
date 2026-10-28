@@ -151,10 +151,13 @@ def classify_status(
             status, reason = "critical", f"Critical packet loss ({short_loss:.1f}%{cycles_str})"
         elif short_loss >= min(10.0, max_acceptable_loss / 2.0) or (short_loss >= 5.0 and sustained):
             status, reason = "degraded", f"Active probe loss: {short_loss:.1f}% in rolling window"
-        elif long_loss >= 5.0 and (short_loss > 1.0 or last_cycle_loss > 1.0):
+        elif long_loss >= 5.0 and (short_loss >= 5.0 or (short_loss > 1.0 and sustained)):
             status, reason = "degraded", f"Sustained 5m packet loss: {long_loss:.1f}%"
-        elif short_loss > 1.0 or last_cycle_loss > 1.0:
+        elif (short_loss >= 5.0 or last_cycle_loss >= 15.0) and sustained:
             status, reason = "degraded", f"Intermittent packet loss ({max(short_loss, last_cycle_loss):.1f}%)"
+        elif (short_loss > 0.0 or long_loss > 0.0 or last_cycle_loss > 0.0):
+            # Transient, isolated, or <5% single-packet drops remain healthy with informative note
+            status, reason = "healthy", f"Clean operational health ({max(short_loss, long_loss, last_cycle_loss):.1f}% transient drop)"
         else:
             status, reason = "healthy", "Clean connectivity (0% loss)"
 
@@ -388,7 +391,7 @@ def decide_route(
                 continue
             cand_loss = float(m.get("long_loss", m.get("short_loss", 100.0)))
             cand_status = m.get("status", "unknown")
-            if cand_status not in ("failed", "critical") and cand_loss < (curr_effective_loss - 0.5):
+            if cand_status not in ("failed", "critical") and cand_loss < (curr_effective_loss - 2.0):
                 in_min_hold = False
                 break
 
@@ -447,14 +450,14 @@ def decide_route(
             # When Priority 1 is currently active, do NOT switch away to backup paths (p > 1)
             # merely because the backup has 10-30ms lower latency (especially if backup is an intermediate relay)!
             # Only switch away from Priority 1 if:
-            # 1) Priority 1 packet loss is worse than candidate (curr_effective_loss > cand_loss + 0.5), OR
+            # 1) Priority 1 has noticeable packet loss (>= 5.0%) and is distinctly worse than candidate (curr_effective_loss > cand_loss + 2.0), OR
             # 2) Priority 1 latency exceeds prio1_max_lat (default: 150ms).
             if current_active == 1 and p > 1:
                 curr_lat = curr_m.get("avg_latency_ms")
                 if curr_lat is None:
                     curr_lat = curr_m.get("latency_ms")
                 curr_lat_val = float(curr_lat) if curr_lat is not None else float(curr_m.get("long_score", 0.0))
-                loss_is_worse = (curr_effective_loss > cand_loss + 0.5)
+                loss_is_worse = (curr_effective_loss >= 5.0 and (curr_effective_loss > cand_loss + 2.0))
                 latency_exceeded = (curr_lat_val > prio1_max_lat)
 
                 if not loss_is_worse and not latency_exceeded:
