@@ -50,7 +50,7 @@ A port must **NEVER** be bound by HAProxy and forwarded by NFTables DNAT at the 
     - **120-Second Streak Confirmation & Anti-Reset Guard**: Candidate must maintain superior quality continuously for 120 seconds (`switch_confirm_seconds = 120s`). UI displays countdown badge (`Switch in Ns`). The Anti-Reset Guard prevents candidate streak resets caused by slight ping jitter between two close backup routes.
     - **Priority 1 Primary Route Stickiness & 150ms Ceiling (Primary Anchor Pattern)**: When Priority 1 is active, the engine never switches away to backup routes merely for lower ping (10-30ms lower ping). It strictly stays on Priority 1 unless Priority 1 packet loss is worse than candidate (`curr_loss > cand_loss + 0.5`), or latency exceeds 150ms (`max_primary_latency_ms = 150`), or upon critical failure.
     - **Intermediate Relay Server (`is_relay`) Subsystem**: Intermediate tunnel and relay hops with partial-hop ping measurements can be explicitly marked (`is_relay: true`). The engine guarantees that viable Priority 1 (`loss <= 1%`, `latency <= 150ms`) is never superseded by intermediate relay ping, and triggers guaranteed failback to Priority 1 when active on an intermediate relay.
-    - **Socket Preservation**: Planned switches reload HAProxy seamlessly without flushing conntrack, preserving existing client connections while new traffic routes via the superior path.
+    - **Socket Preservation**: Planned switches reload HAProxy seamlessly without flushing conntrack, preserving existing client connections while new traffic routes via the superior path. In contrast, hard outages ('critical'), disabling the active priority ('disabled_active_fallback'), and administrative overrides ('override') execute targeted per-port conntrack flushes (`flush_conntrack(port)`) to purge stale states without affecting other ports.
     - **Switch Decision Logs & Modal UI**: Every priority switch records an immutable audit log detailing old/new priority, decision reason, packet loss, latency, and human-readable explanation, displayed in the dashboard via `#switchLogsModal` and per-rule decision banners.
 - **Composite Quality Formula**:
   $$\text{Composite Score} = \text{Avg Latency (ms)} + 2 \times \text{Jitter (ms)} + 20 \times \text{Loss Pct} + \text{Priority Bias}$$
@@ -59,7 +59,7 @@ A port must **NEVER** be bound by HAProxy and forwarded by NFTables DNAT at the 
   - `0`: Auto Failover (default)
   - `1`: Force Priority 1 (Primary)
   - `2`: Force Priority 2 (Backup)
-  - *Changing override mode immediately clears hold-down guards and recalculates best priority via `pick_best_now`.*
+  - *Changing override mode immediately clears hold-down guards, flushes port conntrack, and recalculates best priority via `pick_best_now`.*
 
 ## 4. State & Configuration Persistence
 - **Persistent Configuration**: `/etc/xforwarder/config.json` (fallback: `/etc/forward-manager/config.json` or `config/config.json`).

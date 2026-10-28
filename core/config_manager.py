@@ -687,6 +687,14 @@ def validate_rule(body: dict) -> Tuple[bool, str]:
                     return False, f"HAProxy destination target must be a valid IPv6 address (got IPv4 '{target}')"
             except ValueError:
                 return False, f"HAProxy destination target must be a valid IPv6 address (got '{target}')"
+        elif d_type == "nftables":
+            # NFTables kernel DNAT rules require raw numeric IPv4 or IPv6 addresses.
+            # Hostnames/domains cause syntax errors during atomic ruleset commit ('nft -c -f').
+            clean_target = target.strip("[]")
+            try:
+                ipaddress.ip_address(clean_target)
+            except ValueError:
+                return False, f"NFTables destination target must be a valid IPv4 or IPv6 address (got '{target}')"
 
         d_port = d.get("port", port)
         try:

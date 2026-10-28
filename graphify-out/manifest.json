@@ -1,14 +1,14 @@
 {
   "core/engine.py": {
-    "mtime": 1793152974.003193,
-    "seen": 1793153015.8386838,
-    "ast_hash": "0296e4552f5427fcbe3b720878c83544",
+    "mtime": 1793155584.344468,
+    "seen": 1793156144.8394752,
+    "ast_hash": "f7f4b350adedc7232ab8b97bce5dabb5",
     "semantic_hash": ""
   },
   "core/web_server.py": {
-    "mtime": 1793036170.0472815,
-    "seen": 1793037949.5942216,
-    "ast_hash": "9ac5250b9010802e5bcc9c4d006a400e",
+    "mtime": 1793156113.9352212,
+    "seen": 1793156144.8394933,
+    "ast_hash": "1fe30e08578713908824cc87aca3121e",
     "semantic_hash": ""
   },
   "web/app.js": {
@@ -18,9 +18,9 @@
     "semantic_hash": ""
   },
   ".agents/rules/01-architecture-and-failover.md": {
-    "mtime": 1793150207.1643796,
-    "seen": 1793150255.9655905,
-    "ast_hash": "bb2bab6a9003c45b2c8ff11eb0154534",
+    "mtime": 1793155930.2808964,
+    "seen": 1793156144.839567,
+    "ast_hash": "feebc4a824c4cc2874216dca7a1ccfb9",
     "semantic_hash": ""
   },
   ".agents/rules/02-python-core-standards.md": {
@@ -30,9 +30,9 @@
     "semantic_hash": ""
   },
   ".agents/rules/03-networking-and-kernel.md": {
-    "mtime": 1793097721.910807,
-    "seen": 1793122103.1952705,
-    "ast_hash": "d6735b5c2c848fc79655bdfc704a3cdf",
+    "mtime": 1793155914.0191808,
+    "seen": 1793156144.8395696,
+    "ast_hash": "95e04b5229c93913b0ea1da54fc960d2",
     "semantic_hash": ""
   },
   ".agents/rules/04-web-dashboard-and-security.md": {
@@ -72,9 +72,9 @@
     "semantic_hash": ""
   },
   "AGENTS.md": {
-    "mtime": 1793150158.0254548,
-    "seen": 1793150255.9656081,
-    "ast_hash": "ac47355337412cc5d870001e6e5be075",
+    "mtime": 1793155966.4151902,
+    "seen": 1793156144.839596,
+    "ast_hash": "1e20789887d459719c722920de27939f",
     "semantic_hash": ""
   },
   "README.md": {
@@ -150,9 +150,9 @@
     "semantic_hash": ""
   },
   ".agents/AGENTS.md": {
-    "mtime": 1793150186.6286187,
-    "seen": 1793150255.965576,
-    "ast_hash": "3daecceecf8f9bfec918f0937f367670",
+    "mtime": 1793155997.2084641,
+    "seen": 1793156144.8395417,
+    "ast_hash": "5c2f1e852e041b0bc22f8482fe1c63e9",
     "semantic_hash": ""
   },
   ".agents/experiences/001-zero-collision-haproxy-nftables-failover.md": {
@@ -288,9 +288,9 @@
     "semantic_hash": ""
   },
   "tests/test_ui_and_api_edge_cases.py": {
-    "mtime": 1793150100.9423447,
-    "seen": 1793150255.965562,
-    "ast_hash": "028c84843db202734430d6679a2ae9cf",
+    "mtime": 1793155734.5229068,
+    "seen": 1793156144.8395188,
+    "ast_hash": "0165255a19681f3c602fde49a44f7a56",
     "semantic_hash": ""
   },
   "tests/test_network_interfaces.py": {
@@ -342,9 +342,9 @@
     "semantic_hash": ""
   },
   "tests/test_fast_failover_and_antiflap.py": {
-    "mtime": 1793152876.2480738,
-    "seen": 1793153015.8386972,
-    "ast_hash": "99cf6713d1b211077c3a5b48ad11b438",
+    "mtime": 1793154904.9466627,
+    "seen": 1793155043.8229172,
+    "ast_hash": "f829bcf56704bc0b93ad3f220a43a4f9",
     "semantic_hash": ""
   },
   ".agents/experiences/009-fast-failover-multi-metric-and-anti-flapping.md": {
@@ -396,9 +396,9 @@
     "semantic_hash": ""
   },
   "core/route_quality.py": {
-    "mtime": 1793152962.2984786,
-    "seen": 1793153015.838691,
-    "ast_hash": "8445643eaf8b29f1e4191259781619a8",
+    "mtime": 1793153179.578989,
+    "seen": 1793155043.8229074,
+    "ast_hash": "16b9876478e5b173990686ff4f4143e5",
     "semantic_hash": ""
   },
   "tests/test_route_quality.py": {
@@ -438,9 +438,9 @@
     "semantic_hash": ""
   },
   "core/config_manager.py": {
-    "mtime": 1793064996.4507363,
-    "seen": 1793070554.0445328,
-    "ast_hash": "933182e29b46a214ca1fd6d0b95df51d",
+    "mtime": 1793156056.0224476,
+    "seen": 1793156144.839473,
+    "ast_hash": "347b75040357045dc19073814d5c1d57",
     "semantic_hash": ""
   },
   "core/firewall.py": {
@@ -456,9 +456,9 @@
     "semantic_hash": ""
   },
   "core/proxy_gen.py": {
-    "mtime": 1793093640.9529543,
-    "seen": 1793122103.195154,
-    "ast_hash": "fc264c3fd7a103dd21efd2cfd76f940b",
+    "mtime": 1793156080.496229,
+    "seen": 1793156144.839485,
+    "ast_hash": "d6579329063a0b2bf2a109f5310d4a98",
     "semantic_hash": ""
   },
   "core/service_manager.py": {
@@ -558,9 +558,9 @@
     "semantic_hash": ""
   },
   "tests/test_modular_subsystems.py": {
-    "mtime": 1793129223.3633142,
-    "seen": 1793129469.0882084,
-    "ast_hash": "29bd15f2d4202269124d22ac1ca1a245",
+    "mtime": 1793155834.1395605,
+    "seen": 1793156144.8395038,
+    "ast_hash": "2d54c40fc02d8a255a76cd9f849eac0a",
     "semantic_hash": ""
   },
   ".agents/scripts/check_es_imports.py": {
@@ -615,12 +615,6 @@
     "mtime": 1793085112.5777686,
     "seen": 1793122103.1952662,
     "ast_hash": "89caf44025b915c19bef19d459cce8f9",
-    "semantic_hash": ""
-  },
-  "IMPLEMENTATION_PLAN.md": {
-    "mtime": 1793145397.5551076,
-    "seen": 1793148966.3494895,
-    "ast_hash": "dec3b3249de38a3cc77e9fdbba7c5647",
     "semantic_hash": ""
   },
   ".agents/experiences/017-resilient-failover-and-non-disruptive-failback.md": {

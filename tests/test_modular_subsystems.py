@@ -351,6 +351,91 @@ class TestModularSubsystems(unittest.TestCase):
         self.assertIn("listen 9000;", nginx_cfg)
         self.assertIn("proxy_pass 10.0.0.5:9000;", nginx_cfg)
 
+    def test_apply_haproxy_reloads_without_destructive_restart(self):
+        """Verifies apply_haproxy performs non-destructive reload when active and never executes restart fallback."""
+        from core.proxy_gen import apply_haproxy
+        import tempfile
+        import subprocess
+
+        with tempfile.NamedTemporaryFile(suffix=".cfg", delete=False) as f:
+            cfg_path = f.name
+
+        try:
+            entries = ["listen p80\n    bind *:80\n    server s1 [2001:db8::1]:80"]
+
+            which_systemctl_only = lambda cmd: "/bin/systemctl" if cmd == "systemctl" else None
+
+            # Scenario 1: HAProxy is active, reload succeeds
+            with patch("shutil.which", side_effect=which_systemctl_only), \
+                 patch("subprocess.run") as mock_run:
+                # 1st call: is-active -> returncode 0
+                # 2nd call: reload -> returncode 0
+                mock_run.side_effect = [
+                    subprocess.CompletedProcess(args=[], returncode=0),
+                    subprocess.CompletedProcess(args=[], returncode=0)
+                ]
+                ok, err = apply_haproxy(entries, conf_path=cfg_path)
+                self.assertTrue(ok)
+                self.assertIsNone(err)
+                calls = [c[0][0] for c in mock_run.call_args_list]
+                self.assertEqual(calls[0], ["systemctl", "is-active", "--quiet", "haproxy"])
+                self.assertEqual(calls[1], ["systemctl", "reload", "haproxy"])
+                self.assertNotIn(["systemctl", "restart", "haproxy"], calls)
+
+            # Scenario 2: HAProxy is active, reload fails -> MUST NOT call restart!
+            if os.path.exists(cfg_path):
+                os.remove(cfg_path)
+            with patch("shutil.which", side_effect=which_systemctl_only), \
+                 patch("subprocess.run") as mock_run:
+                # 1st call: is-active -> returncode 0
+                # 2nd call: reload -> returncode 1 (failure)
+                mock_run.side_effect = [
+                    subprocess.CompletedProcess(args=[], returncode=0),
+                    subprocess.CompletedProcess(args=[], returncode=1)
+                ]
+                ok, err = apply_haproxy(entries, conf_path=cfg_path)
+                self.assertFalse(ok)
+                self.assertEqual(err, "HAProxy service reload failed")
+                calls = [c[0][0] for c in mock_run.call_args_list]
+                self.assertEqual(len(calls), 2)
+                self.assertNotIn(["systemctl", "restart", "haproxy"], calls)
+
+            # Scenario 3: HAProxy is inactive (e.g. stopped), start succeeds
+            if os.path.exists(cfg_path):
+                os.remove(cfg_path)
+            with patch("shutil.which", side_effect=which_systemctl_only), \
+                 patch("subprocess.run") as mock_run:
+                # 1st call: is-active -> returncode 3 (inactive)
+                # 2nd call: start -> returncode 0
+                mock_run.side_effect = [
+                    subprocess.CompletedProcess(args=[], returncode=3),
+                    subprocess.CompletedProcess(args=[], returncode=0)
+                ]
+                ok, err = apply_haproxy(entries, conf_path=cfg_path)
+                self.assertTrue(ok)
+                self.assertIsNone(err)
+                calls = [c[0][0] for c in mock_run.call_args_list]
+                self.assertEqual(calls[0], ["systemctl", "is-active", "--quiet", "haproxy"])
+                self.assertEqual(calls[1], ["systemctl", "start", "haproxy"])
+
+            # Scenario 4: HAProxy is inactive, start fails
+            if os.path.exists(cfg_path):
+                os.remove(cfg_path)
+            with patch("shutil.which", side_effect=which_systemctl_only), \
+                 patch("subprocess.run") as mock_run:
+                # 1st call: is-active -> returncode 3
+                # 2nd call: start -> returncode 1
+                mock_run.side_effect = [
+                    subprocess.CompletedProcess(args=[], returncode=3),
+                    subprocess.CompletedProcess(args=[], returncode=1)
+                ]
+                ok, err = apply_haproxy(entries, conf_path=cfg_path)
+                self.assertFalse(ok)
+                self.assertEqual(err, "HAProxy service start failed")
+        finally:
+            if os.path.exists(cfg_path):
+                os.remove(cfg_path)
+
     # =========================================================================
     # 5. Prober Subsystem Tests
     # =========================================================================

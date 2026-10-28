@@ -689,6 +689,30 @@ class TestFastFailoverAndAntiFlap(unittest.TestCase):
             self.assertEqual(dest_stats["prio_1"]["status"], "healthy")
             self.assertEqual(dest_stats["prio_1"]["short_loss"], 0.0)
 
+    def test_manual_override_triggers_conntrack_flush(self):
+        """Verifies that an administrative override switch invokes _hot_toggle_rule_priority with is_critical=True to flush conntrack."""
+        rule = {
+            "id": "rule-override-test",
+            "port": 9400,
+            "protocol": "both",
+            "active_priority": 1,
+            "force_override": 2,
+            "destinations": [
+                {"priority": 1, "target": "10.0.3.1", "enabled": True},
+                {"priority": 2, "target": "10.0.3.2", "enabled": True}
+            ]
+        }
+        mock_cache = {
+            ("10.0.3.1", "eth0"): {"healthy": True, "latency_ms": 50, "packet_loss": 0},
+            ("10.0.3.2", "eth0"): {"healthy": True, "latency_ms": 60, "packet_loss": 0}
+        }
+        with patch.object(self.engine, "_hot_toggle_rule_priority") as mock_toggle, \
+             patch.object(self.engine, "_validate_probe_route", return_value=(True, "eth0", None)):
+            switched = self.engine.evaluate_rule(rule, probe_cache=mock_cache)
+            self.assertTrue(switched)
+            self.assertEqual(rule["active_priority"], 2)
+            mock_toggle.assert_called_once_with(rule, old_prio=1, new_prio=2, is_critical=True)
+
 
 if __name__ == "__main__":
     unittest.main()

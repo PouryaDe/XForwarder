@@ -127,11 +127,17 @@ def apply_haproxy(haproxy_entries: List[str], conf_path: Optional[str] = None) -
         os.replace(tmp_haproxy, target_path)
 
         if shutil.which("systemctl"):
-            res = subprocess.run(["systemctl", "reload", "haproxy"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-            if res.returncode != 0:
-                res = subprocess.run(["systemctl", "restart", "haproxy"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            # Non-destructive service management: reload if already active; start if stopped.
+            # Destructive 'restart' fallback is strictly prohibited to preserve active client sockets across all ports.
+            chk_active = subprocess.run(["systemctl", "is-active", "--quiet", "haproxy"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            if chk_active.returncode == 0:
+                res = subprocess.run(["systemctl", "reload", "haproxy"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
                 if res.returncode != 0:
-                    return False, "HAProxy service reload/restart failed"
+                    return False, "HAProxy service reload failed"
+            else:
+                res = subprocess.run(["systemctl", "start", "haproxy"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                if res.returncode != 0:
+                    return False, "HAProxy service start failed"
 
         return True, None
     except Exception as ex:

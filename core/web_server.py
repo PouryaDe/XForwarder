@@ -64,6 +64,14 @@ from core.service_manager import (
     APP_VERSION, _UPDATE_STATE, _UPDATE_LOCK
 )
 
+try:
+    from core.firewall import flush_conntrack
+except ImportError:
+    try:
+        from firewall import flush_conntrack
+    except ImportError:
+        flush_conntrack = lambda port, proto=None: None
+
 def get_network_interfaces_info() -> Dict[str, Any]:
     return sys_get_network_interfaces_info(config_loader_fn=load_config)
 
@@ -821,10 +829,12 @@ class XForwarderWebHandler(BaseHTTPRequestHandler):
 
             cfg = load_config()
             found = False
+            matched_rule = None
             matched_rule_id = rule_id
             for r in cfg.get("rules", []):
                 r_id = str(r.get("id") or f"rule-{r.get('port')}")
                 if r.get("id") == rule_id or r_id == rule_id or str(r.get("port")) == rule_id:
+                    matched_rule = r
                     matched_rule_id = r.get("id") or r_id
                     r["force_override"] = override_prio
                     if override_prio > 0:
@@ -850,19 +860,26 @@ class XForwarderWebHandler(BaseHTTPRequestHandler):
                             r["active_priority"] = chosen if chosen is not None else (dests[0].get("priority", 1) if dests else 1)
                     found = True
                     break
-            if not found:
+            if not found or not matched_rule:
                 self.send_json({"ok": False, "error": "Rule not found"}, 404)
                 return
 
             if save_config(cfg):
                 update_state_rules({
                     matched_rule_id: {
-                        "active_priority": r["active_priority"],
+                        "active_priority": matched_rule["active_priority"],
                         "last_force_override": override_prio,
                         "last_switch_time": 0,
                         "cooldown_remaining": 0
                     }
                 })
+                # Purge stale conntrack states for the modified rule port so established client sessions switch over immediately
+                try:
+                    p_num = int(matched_rule.get("port", 0))
+                    if p_num > 0:
+                        flush_conntrack(p_num)
+                except Exception:
+                    pass
                 sync_ok, sync_errors = sync_rules_and_notify(max_retries=2)
                 self.send_json({
                     "ok": True,
@@ -922,6 +939,13 @@ class XForwarderWebHandler(BaseHTTPRequestHandler):
                     } for r in rules if r.get("id")
                 }
                 update_state_rules(batch_updates)
+                for r in rules:
+                    try:
+                        p_num = int(r.get("port", 0))
+                        if p_num > 0:
+                            flush_conntrack(p_num)
+                    except Exception:
+                        pass
                 sync_ok, sync_errors = sync_rules_and_notify(max_retries=2)
                 self.send_json({
                     "ok": True,
@@ -970,6 +994,7 @@ class XForwarderWebHandler(BaseHTTPRequestHandler):
             found_dest["enabled"] = new_enabled
 
             # If this priority was disabled, adjust active priority or override if needed
+            active_prio_changed = False
             if not new_enabled:
                 if found_rule.get("force_override") == target_prio:
                     found_rule["force_override"] = 0
@@ -977,6 +1002,7 @@ class XForwarderWebHandler(BaseHTTPRequestHandler):
                     enabled_dests = [d for d in found_rule.get("destinations", []) if d.get("enabled", True)]
                     if enabled_dests:
                         found_rule["active_priority"] = enabled_dests[0].get("priority", 1)
+                        active_prio_changed = True
 
             if save_config(cfg):
                 update_state_rules({
@@ -985,6 +1011,14 @@ class XForwarderWebHandler(BaseHTTPRequestHandler):
                         "force_override": found_rule.get("force_override", 0)
                     }
                 })
+                if active_prio_changed:
+                    # Active priority was disabled; flush conntrack for this rule's port so sessions switch immediately to the fallback priority
+                    try:
+                        p_num = int(found_rule.get("port", 0))
+                        if p_num > 0:
+                            flush_conntrack(p_num)
+                    except Exception:
+                        pass
                 sync_ok, sync_errors = sync_rules_and_notify(max_retries=2)
                 self.send_json({
                     "ok": True,

@@ -2099,6 +2099,132 @@ class TestUIAndAPIEdgeCases(unittest.TestCase):
         self.assertIn("window.closeSwitchLogsModal = closeSwitchLogsModal", app_js)
         self.assertIn("btnOpenSwitchLogsModal", rules_js)
 
+    def test_nftables_destination_must_be_ip_address(self):
+        """Verifies validate_rule strictly requires NFTables destination targets to be valid IPv4 or IPv6 addresses."""
+        # 1. Valid IPv4 for nftables succeeds
+        rule_v4 = {
+            "port": 10443,
+            "protocol": "both",
+            "destinations": [{"priority": 1, "type": "nftables", "target": "10.0.0.5"}]
+        }
+        ok, msg = validate_rule(rule_v4)
+        self.assertTrue(ok, msg)
+
+        # 2. Valid IPv6 for nftables succeeds
+        rule_v6 = {
+            "port": 10444,
+            "protocol": "both",
+            "destinations": [{"priority": 1, "type": "nftables", "target": "2001:db8::5"}]
+        }
+        ok, msg = validate_rule(rule_v6)
+        self.assertTrue(ok, msg)
+
+        # 3. Valid bracketed IPv6 for nftables succeeds
+        rule_v6_bracketed = {
+            "port": 10445,
+            "protocol": "both",
+            "destinations": [{"priority": 1, "type": "nftables", "target": "[2001:db8::6]"}]
+        }
+        ok, msg = validate_rule(rule_v6_bracketed)
+        self.assertTrue(ok, msg)
+
+        # 4. Hostname for nftables fails validation
+        rule_hostname = {
+            "port": 10446,
+            "protocol": "both",
+            "destinations": [{"priority": 1, "type": "nftables", "target": "vpn.example.com"}]
+        }
+        ok, msg = validate_rule(rule_hostname)
+        self.assertFalse(ok)
+        self.assertIn("NFTables destination target must be a valid IPv4 or IPv6 address", msg)
+
+        # 5. Out-of-bounds IPv4 octet fails validation
+        rule_bad_octet = {
+            "port": 10447,
+            "protocol": "both",
+            "destinations": [{"priority": 1, "type": "nftables", "target": "192.168.1.300"}]
+        }
+        ok, msg = validate_rule(rule_bad_octet)
+        self.assertFalse(ok)
+        self.assertIn("Invalid destination target '192.168.1.300'", msg)
+
+        # 6. Command injection attempt fails validation
+        rule_injection = {
+            "port": 10448,
+            "protocol": "both",
+            "destinations": [{"priority": 1, "type": "nftables", "target": "10.0.0.1; rm -rf /"}]
+        }
+        ok, msg = validate_rule(rule_injection)
+        self.assertFalse(ok)
+        self.assertIn("Destination target contains invalid characters", msg)
+
+    @patch("core.web_server.flush_conntrack")
+    @patch("core.web_server.sync_rules_and_notify", return_value=(True, []))
+    def test_override_endpoint_flushes_conntrack(self, mock_sync, mock_flush):
+        """Verifies /api/override, /api/override/batch, and /api/rule/toggle-destination invoke flush_conntrack."""
+        import io
+        from core.web_server import XForwarderWebHandler
+
+        test_cfg = {
+            "rules": [
+                {
+                    "id": "rule-11500",
+                    "port": 11500,
+                    "active_priority": 1,
+                    "force_override": 0,
+                    "destinations": [
+                        {"priority": 1, "target": "10.0.0.1", "enabled": True},
+                        {"priority": 2, "target": "10.0.0.2", "enabled": True}
+                    ]
+                },
+                {
+                    "id": "rule-11501",
+                    "port": 11501,
+                    "active_priority": 1,
+                    "force_override": 0,
+                    "destinations": [
+                        {"priority": 1, "target": "10.0.1.1", "enabled": True},
+                        {"priority": 2, "target": "10.0.1.2", "enabled": True}
+                    ]
+                }
+            ]
+        }
+
+        handler = MagicMock()
+        handler.headers = {"Host": "127.0.0.1:8080", "Origin": "http://127.0.0.1:8080"}
+        handler.is_authenticated.return_value = True
+        handler.check_origin.return_value = True
+
+        def set_request(path, payload):
+            handler.resolve_path.return_value = (True, path, "")
+            raw = json.dumps(payload).encode("utf-8")
+            handler.headers["Content-Length"] = str(len(raw))
+            handler.rfile = io.BytesIO(raw)
+
+        with patch("core.web_server.load_config", return_value=test_cfg), \
+             patch("core.web_server.save_config", return_value=True), \
+             patch("core.web_server.update_state_rules"):
+
+            # 1. Test single rule override -> flushes conntrack for port 11500
+            mock_flush.reset_mock()
+            set_request("/api/override", {"rule_id": "rule-11500", "override_priority": 2})
+            XForwarderWebHandler.do_POST(handler)
+            mock_flush.assert_called_with(11500)
+
+            # 2. Test batch override -> flushes conntrack for both 11500 and 11501
+            mock_flush.reset_mock()
+            set_request("/api/override/batch", {"override_priority": 1})
+            XForwarderWebHandler.do_POST(handler)
+            flushed_ports = [c[0][0] for c in mock_flush.call_args_list]
+            self.assertIn(11500, flushed_ports)
+            self.assertIn(11501, flushed_ports)
+
+            # 3. Test toggle destination disabling active priority -> flushes conntrack for port 11500
+            mock_flush.reset_mock()
+            set_request("/api/rule/toggle-destination", {"rule_id": "rule-11500", "priority": 1, "enabled": False})
+            XForwarderWebHandler.do_POST(handler)
+            mock_flush.assert_called_with(11500)
+
 
 if __name__ == "__main__":
     unittest.main()

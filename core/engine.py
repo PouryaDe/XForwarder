@@ -384,7 +384,6 @@ class XForwarderEngine:
                         # Fast liveness check (2-ping test every 15s)
                         self._target_last_fast_check[tgt] = curr_time
                         if res.get("packets_received", 0) == 0:
-                            # Immediate Hard Outage: mark dead, invalidate cache, set 100% loss
                             fail_res = {
                                 "healthy": False,
                                 "packets_sent": res.get("packets_sent", 2),
@@ -861,8 +860,8 @@ class XForwarderEngine:
             rule_state["is_flapping"] = (len(recent_switches) >= 3)
             rule_state["active_priority"] = target_active
             rule["active_priority"] = target_active
-            # Conntrack is only flushed on hard outages ('critical', 'disabled_active_fallback'); soft failback preserves active client sockets.
-            is_crit = (decision_reason in ("critical", "disabled_active_fallback"))
+            # Conntrack is flushed on hard outages ('critical', 'disabled_active_fallback') and administrative overrides ('override') to purge stale sockets.
+            is_crit = (decision_reason in ("critical", "disabled_active_fallback", "override"))
             self._hot_toggle_rule_priority(rule, old_prio=current_active, new_prio=target_active, is_critical=is_crit)
 
             # Build detailed decision explanation and log switch event
@@ -1052,8 +1051,9 @@ class XForwarderEngine:
                         f"    server {{ {listens_str} proxy_pass {target_str};{pp_ngx} proxy_timeout 60s; }}"
                     )
             elif dest_type == "nftables":
-                is_ipv6 = ":" in target
-                dnat_target = f"[{target}]:{target_port}" if is_ipv6 else f"{target}:{target_port}"
+                clean_target = target.strip("[]")
+                is_ipv6 = ":" in clean_target
+                dnat_target = f"[{clean_target}]:{target_port}" if is_ipv6 else f"{clean_target}:{target_port}"
                 if proto in ("tcp", "both"):
                     nft_dnat_rules.append(
                         f'        iifname "{wan_iface}" tcp dport {port} dnat to {dnat_target}'

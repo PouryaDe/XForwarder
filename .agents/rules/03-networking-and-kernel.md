@@ -23,7 +23,7 @@ All DNAT routing managed by XForwarder must strictly reside inside the dedicated
 - **Protocol**: `mode tcp`, with TCP keepalives and appropriate timeouts (`timeout connect 5s`, `timeout client 1h`, `timeout server 1h`).
 - **Worker Lifecycle Management**: The `global` section must enforce `hard-stop-after 2m` so old worker processes from previous reloads terminate cleanly after 2 minutes instead of lingering as zombie workers.
 - **Proxy Protocol**: Clean raw TCP forwarding is the default. Backend servers receive `send-proxy-v2` ONLY when `proxy_protocol` is explicitly toggled on for that destination. Never hardcode `send-proxy-v2`.
-- **Reloading Mechanism**: Use non-disruptive reload (`systemctl reload haproxy`) to preserve existing connections during rule updates.
+- **Reloading Mechanism**: Use non-disruptive reload (`systemctl reload haproxy`) when active to preserve existing connections during rule updates. If inactive, start the service (`systemctl start haproxy`). Destructive `restart` fallback is strictly prohibited to prevent mass connection drops across all ports.
 
 ## 3. Kernel Forwarding Requirements
 - Ensure `net.ipv4.ip_forward = 1` is persistently enabled via `/etc/sysctl.conf`.
