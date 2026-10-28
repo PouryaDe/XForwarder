@@ -1346,6 +1346,52 @@
             <!-- SECTION 4: Security & Access -->
             <section class="dashboard-section" id="sectionSecurity" style="display:none;">
                 <div class="overview-grid settings-grid">
+                    <!-- Configuration Backup & Migration Card -->
+                    <div class="overview-card" style="grid-column: 1 / -1;">
+                        <div class="overview-card-header">
+                            <div class="overview-card-title">
+                                <div class="stat-icon icon-cyan" style="width:36px;height:36px;">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                        stroke-width="2">
+                                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                                        <polyline points="7 10 12 15 17 10" />
+                                        <line x1="12" y1="15" x2="12" y2="3" />
+                                    </svg>
+                                </div>
+                                <div>
+                                    <h3>Backup &amp; Migration</h3>
+                                    <span class="overview-card-sub">Export or import routing rules and server
+                                        parameters</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="overview-card-body">
+                            <p class="section-desc" style="margin-bottom:14px;">Safely backup or restore your forwarding
+                                rules and operational parameters. Exported files are cryptographically sanitized to
+                                exclude administrative passwords.</p>
+                            <div class="settings-btn-grid" style="max-width: 480px;">
+                                <button type="button" class="btn btn-secondary" id="btnExportConfigSec">
+                                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                        stroke-width="2">
+                                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                                        <polyline points="7 10 12 15 17 10" />
+                                        <line x1="12" y1="15" x2="12" y2="3" />
+                                    </svg>
+                                    <span>Export Backup JSON</span>
+                                </button>
+                                <button type="button" class="btn btn-primary" id="btnOpenImportModalSec">
+                                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                        stroke-width="2">
+                                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                                        <polyline points="17 8 12 3 7 8" />
+                                        <line x1="12" y1="3" x2="12" y2="15" />
+                                    </svg>
+                                    <span>Import Config</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Administrator Credentials Card -->
                     <div class="overview-card">
                         <div class="overview-card-header">
@@ -1391,99 +1437,6 @@
                                 <button type="submit" class="btn btn-primary" id="btnSaveSecurityInline">Update
                                     Credentials</button>
                             </form>
-                        </div>
-                    </div>
-
-                    <!-- Cryptographic & Lockout Specs Card -->
-                    <div class="overview-card">
-                        <div class="overview-card-header">
-                            <div class="overview-card-title">
-                                <div class="stat-icon icon-emerald" style="width:36px;height:36px;">
-                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                        stroke-width="2">
-                                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-                                    </svg>
-                                </div>
-                                <div>
-                                    <h3>Cryptographic Shielding</h3>
-                                    <span class="overview-card-sub">Defense-in-depth protection parameters</span>
-                                </div>
-                            </div>
-                            <span class="stat-badge badge-active">ENFORCED</span>
-                        </div>
-                        <div class="overview-card-body">
-                            <div class="overview-info-list">
-                                <div class="info-item">
-                                    <span class="info-label">Password Hashing</span>
-                                    <span class="info-value text-emerald">PBKDF2-HMAC-SHA256</span>
-                                </div>
-                                <div class="info-item">
-                                    <span class="info-label">Salt & Iterations</span>
-                                    <span class="info-value">16-byte random salt, 100,000 iters</span>
-                                </div>
-                                <div class="info-item">
-                                    <span class="info-label">Brute-Force Lockout</span>
-                                    <span class="info-value text-rose">5 failed attempts &rarr; 15 min lock</span>
-                                </div>
-                                <div class="info-item">
-                                    <span class="info-label">Session Idle Timeout</span>
-                                    <span class="info-value">4 hours inactivity limit</span>
-                                </div>
-                                <div class="info-item">
-                                    <span class="info-label">Session Security</span>
-                                    <span class="info-value">SameSite=Strict, HttpOnly</span>
-                                </div>
-                                <div class="info-item">
-                                    <span class="info-label">Timing Attack Defense</span>
-                                    <span class="info-value">400-700ms adaptive jitter</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Configuration Backup & Migration Card -->
-                    <div class="overview-card">
-                        <div class="overview-card-header">
-                            <div class="overview-card-title">
-                                <div class="stat-icon icon-cyan" style="width:36px;height:36px;">
-                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                        stroke-width="2">
-                                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                                        <polyline points="7 10 12 15 17 10" />
-                                        <line x1="12" y1="15" x2="12" y2="3" />
-                                    </svg>
-                                </div>
-                                <div>
-                                    <h3>Backup & Migration</h3>
-                                    <span class="overview-card-sub">Export or import routing rules and server
-                                        parameters</span>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="overview-card-body">
-                            <p class="section-desc" style="margin-bottom:14px;">Safely backup or restore your forwarding
-                                rules and operational parameters. Exported files are cryptographically sanitized to
-                                exclude administrative passwords.</p>
-                            <div class="settings-btn-grid">
-                                <button type="button" class="btn btn-secondary" id="btnExportConfigSec">
-                                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                        stroke-width="2">
-                                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                                        <polyline points="7 10 12 15 17 10" />
-                                        <line x1="12" y1="15" x2="12" y2="3" />
-                                    </svg>
-                                    <span>Export Backup JSON</span>
-                                </button>
-                                <button type="button" class="btn btn-primary" id="btnOpenImportModalSec">
-                                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                        stroke-width="2">
-                                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                                        <polyline points="17 8 12 3 7 8" />
-                                        <line x1="12" y1="3" x2="12" y2="15" />
-                                    </svg>
-                                    <span>Import Config</span>
-                                </button>
-                            </div>
                         </div>
                     </div>
 
