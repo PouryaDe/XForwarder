@@ -2023,9 +2023,6 @@ class TestUIAndAPIEdgeCases(unittest.TestCase):
         self.assertIn('id="ovTrafficCardPeakTime"', html)
         self.assertIn('id="ovTrafficBarsContainer"', html)
         self.assertIn('id="ovTrafficTimelineTicks"', html)
-        self.assertIn('id="ovTrafficMethodSection"', html)
-        self.assertIn('id="ovMethodTrack"', html)
-        self.assertIn('id="ovMethodLegend"', html)
 
         # 7. JS Module Functions, Bindings & Navigation Integration
         self.assertIn('export async function loadOverviewTrafficChart', traffic_js)

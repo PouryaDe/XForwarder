@@ -2129,7 +2129,7 @@
       "file_type": "code",
       "norm_label": "closeswitchlogsmodal()",
       "source_file": "web/js/modules/rules.js",
-      "source_location": "L873"
+      "source_location": "L878"
     },
     {
       "id": "web_js_modules_rules_getpriotagclass",
@@ -2153,7 +2153,7 @@
       "file_type": "code",
       "norm_label": "handleoverridechange()",
       "source_file": "web/js/modules/rules.js",
-      "source_location": "L649"
+      "source_location": "L654"
     },
     {
       "id": "web_js_modules_rules_handlepathdragend",
@@ -2225,7 +2225,7 @@
       "file_type": "code",
       "norm_label": "initrulesviewcontrols()",
       "source_file": "web/js/modules/rules.js",
-      "source_location": "L756"
+      "source_location": "L761"
     },
     {
       "id": "web_js_modules_rules_openswitchlogsmodal",
@@ -2237,7 +2237,7 @@
       "file_type": "code",
       "norm_label": "openswitchlogsmodal()",
       "source_file": "web/js/modules/rules.js",
-      "source_location": "L849"
+      "source_location": "L854"
     },
     {
       "id": "web_js_modules_rules_renderrulecard",
@@ -2261,7 +2261,7 @@
       "file_type": "code",
       "norm_label": "renderrulelistrow()",
       "source_file": "web/js/modules/rules.js",
-      "source_location": "L403"
+      "source_location": "L408"
     },
     {
       "id": "web_js_modules_rules_renderrules",
@@ -2273,7 +2273,7 @@
       "file_type": "code",
       "norm_label": "renderrules()",
       "source_file": "web/js/modules/rules.js",
-      "source_location": "L518"
+      "source_location": "L523"
     },
     {
       "id": "web_js_modules_rules_renderswitchlogscontent",
@@ -2285,7 +2285,7 @@
       "file_type": "code",
       "norm_label": "renderswitchlogscontent()",
       "source_file": "web/js/modules/rules.js",
-      "source_location": "L878"
+      "source_location": "L883"
     },
     {
       "id": "web_js_modules_rules_sortruleslist",
@@ -2309,7 +2309,7 @@
       "file_type": "code",
       "norm_label": "toggledestinationenabled()",
       "source_file": "web/js/modules/rules.js",
-      "source_location": "L684"
+      "source_location": "L689"
     },
     {
       "id": "web_js_modules_utils_formatconcisereason",
@@ -3413,7 +3413,7 @@
       "file_type": "code",
       "norm_label": "deleterule()",
       "source_file": "web/js/modules/rules.js",
-      "source_location": "L735"
+      "source_location": "L740"
     },
     {
       "id": "web_js_modules_stats_rendernetworktopology",
@@ -25947,7 +25947,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/js/modules/rules.js",
-      "source_location": "L736",
+      "source_location": "L741",
       "weight": 1.0
     },
     {
@@ -25959,7 +25959,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/js/modules/rules.js",
-      "source_location": "L746",
+      "source_location": "L751",
       "weight": 1.0
     },
     {
@@ -25971,7 +25971,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/js/modules/rules.js",
-      "source_location": "L663",
+      "source_location": "L668",
       "weight": 1.0
     },
     {
@@ -25983,7 +25983,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/js/modules/rules.js",
-      "source_location": "L674",
+      "source_location": "L679",
       "weight": 1.0
     },
     {
@@ -26019,7 +26019,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/js/modules/rules.js",
-      "source_location": "L777",
+      "source_location": "L782",
       "weight": 1.0
     },
     {
@@ -26031,7 +26031,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/js/modules/rules.js",
-      "source_location": "L828",
+      "source_location": "L833",
       "weight": 1.0
     },
     {
@@ -26043,7 +26043,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/js/modules/rules.js",
-      "source_location": "L844",
+      "source_location": "L849",
       "weight": 1.0
     },
     {
@@ -26055,7 +26055,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/js/modules/rules.js",
-      "source_location": "L869",
+      "source_location": "L874",
       "weight": 1.0
     },
     {
@@ -26139,7 +26139,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/js/modules/rules.js",
-      "source_location": "L441",
+      "source_location": "L446",
       "weight": 1.0
     },
     {
@@ -26151,7 +26151,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/js/modules/rules.js",
-      "source_location": "L442",
+      "source_location": "L447",
       "weight": 1.0
     },
     {
@@ -26163,7 +26163,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/js/modules/rules.js",
-      "source_location": "L474",
+      "source_location": "L479",
       "weight": 1.0
     },
     {
@@ -26175,7 +26175,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/js/modules/rules.js",
-      "source_location": "L590",
+      "source_location": "L595",
       "weight": 1.0
     },
     {
@@ -26187,7 +26187,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/js/modules/rules.js",
-      "source_location": "L594",
+      "source_location": "L599",
       "weight": 1.0
     },
     {
@@ -26199,7 +26199,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/js/modules/rules.js",
-      "source_location": "L594",
+      "source_location": "L599",
       "weight": 1.0
     },
     {
@@ -26211,7 +26211,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/js/modules/rules.js",
-      "source_location": "L616",
+      "source_location": "L621",
       "weight": 1.0
     },
     {
@@ -26223,7 +26223,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/js/modules/rules.js",
-      "source_location": "L922",
+      "source_location": "L927",
       "weight": 1.0
     },
     {
@@ -26235,7 +26235,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/js/modules/rules.js",
-      "source_location": "L706",
+      "source_location": "L711",
       "weight": 1.0
     },
     {
@@ -26247,7 +26247,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/js/modules/rules.js",
-      "source_location": "L720",
+      "source_location": "L725",
       "weight": 1.0
     },
     {
@@ -43393,7 +43393,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "web/js/modules/rules.js",
-      "source_location": "L403",
+      "source_location": "L408",
       "weight": 1.0
     },
     {
@@ -43404,7 +43404,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "web/js/modules/rules.js",
-      "source_location": "L518",
+      "source_location": "L523",
       "weight": 1.0
     },
     {
@@ -43415,7 +43415,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "web/js/modules/rules.js",
-      "source_location": "L649",
+      "source_location": "L654",
       "weight": 1.0
     },
     {
@@ -43426,7 +43426,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "web/js/modules/rules.js",
-      "source_location": "L684",
+      "source_location": "L689",
       "weight": 1.0
     },
     {
@@ -43448,7 +43448,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "web/js/modules/rules.js",
-      "source_location": "L735",
+      "source_location": "L740",
       "weight": 1.0
     },
     {
@@ -43459,7 +43459,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "web/js/modules/rules.js",
-      "source_location": "L756",
+      "source_location": "L761",
       "weight": 1.0
     },
     {
@@ -43470,7 +43470,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "web/js/modules/rules.js",
-      "source_location": "L849",
+      "source_location": "L854",
       "weight": 1.0
     },
     {
@@ -43481,7 +43481,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "web/js/modules/rules.js",
-      "source_location": "L873",
+      "source_location": "L878",
       "weight": 1.0
     },
     {
@@ -43492,7 +43492,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "web/js/modules/rules.js",
-      "source_location": "L878",
+      "source_location": "L883",
       "weight": 1.0
     },
     {
@@ -53411,7 +53411,7 @@
       "confidence_score": 0.85,
       "context": "argument",
       "source_file": "web/js/modules/rules.js",
-      "source_location": "L833",
+      "source_location": "L838",
       "weight": 1.0
     },
     {
@@ -55496,5 +55496,5 @@
     }
   ],
   "hyperedges": [],
-  "built_at_commit": "a46a09274a55b6616117ec04a28463a73a8f6fcc"
+  "built_at_commit": "866d88f92eaf6444d40afd6b40334d4a4080e39e"
 }

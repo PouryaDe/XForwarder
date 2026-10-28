@@ -893,7 +893,7 @@
       "file_type": "code",
       "norm_label": ".test_switch_logs_modal_and_event_persistence()",
       "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L2076"
+      "source_location": "L2073"
     },
     {
       "id": "tests_test_fast_failover_and_antiflap_testfastfailoverandantiflap_test_multi_metric_composite_scoring_and_loss_penalization",
@@ -6389,7 +6389,7 @@
       "file_type": "code",
       "norm_label": ".test_override_endpoint_flushes_conntrack()",
       "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L2175"
+      "source_location": "L2172"
     },
     {
       "id": "tests_test_ui_and_api_edge_cases_testuiandapiedgecases_test_override_endpoint_flushes_conntrack_set_request",
@@ -6401,7 +6401,7 @@
       "file_type": "code",
       "norm_label": "set_request()",
       "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L2210"
+      "source_location": "L2207"
     },
     {
       "id": "web_js_modules_theme_inittheme",
@@ -6449,7 +6449,7 @@
       "file_type": "code",
       "norm_label": ".test_nftables_destination_must_be_ip_address()",
       "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L2114"
+      "source_location": "L2111"
     },
     {
       "id": "tests_test_ui_and_api_edge_cases_testuiandapiedgecases_test_frontend_css_no_hover_motion_transforms",
@@ -8968,7 +8968,7 @@
       "source_location": "L445"
     },
     {
-      "id": "tests_test_ui_and_api_edge_cases_rationale_2077",
+      "id": "tests_test_ui_and_api_edge_cases_rationale_2074",
       "label": "Verifies Switch Decision Logs HTML modal elements, CSS styling, and JS module\u2026",
       "_origin": "ast",
       "community": 107,
@@ -8976,7 +8976,7 @@
       "file_type": "rationale",
       "norm_label": "verifies switch decision logs html modal elements, css styling, and js module...",
       "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L2077"
+      "source_location": "L2074"
     },
     {
       "id": "agents_experiences_015_intermediate_relay_subsystem_and_primary_anchor_failover",
@@ -15254,7 +15254,7 @@
       "source_location": ""
     },
     {
-      "id": "tests_test_ui_and_api_edge_cases_rationale_2176",
+      "id": "tests_test_ui_and_api_edge_cases_rationale_2173",
       "label": "Verifies /api/override, /api/override/batch, and /api/rule/toggle-destination\u2026",
       "_origin": "ast",
       "community": 62,
@@ -15262,7 +15262,7 @@
       "file_type": "rationale",
       "norm_label": "verifies /api/override, /api/override/batch, and /api/rule/toggle-destination...",
       "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L2176"
+      "source_location": "L2173"
     },
     {
       "id": "web_js_modules_theme",
@@ -15276,7 +15276,7 @@
       "source_location": "L1"
     },
     {
-      "id": "tests_test_ui_and_api_edge_cases_rationale_2115",
+      "id": "tests_test_ui_and_api_edge_cases_rationale_2112",
       "label": "Verifies validate_rule strictly requires NFTables destination targets to be\u2026",
       "_origin": "ast",
       "community": 64,
@@ -15284,7 +15284,7 @@
       "file_type": "rationale",
       "norm_label": "verifies validate_rule strictly requires nftables destination targets to be...",
       "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L2115"
+      "source_location": "L2112"
     },
     {
       "id": "agents_rules_03_networking_and_kernel",
@@ -24543,7 +24543,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L2223",
+      "source_location": "L2220",
       "weight": 1.0
     },
     {
@@ -24555,7 +24555,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L2060",
+      "source_location": "L2057",
       "weight": 1.0
     },
     {
@@ -24567,7 +24567,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L2067",
+      "source_location": "L2064",
       "weight": 1.0
     },
     {
@@ -24579,7 +24579,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L2072",
+      "source_location": "L2069",
       "weight": 1.0
     },
     {
@@ -28695,7 +28695,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L2210",
+      "source_location": "L2207",
       "weight": 1.0
     },
     {
@@ -28839,7 +28839,7 @@
       "confidence_score": 1.0,
       "context": "decorator",
       "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L2174",
+      "source_location": "L2171",
       "weight": 1.0
     },
     {
@@ -34443,7 +34443,7 @@
       "confidence_score": 1.0,
       "context": "import",
       "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L2056",
+      "source_location": "L2053",
       "weight": 1.0
     },
     {
@@ -34455,7 +34455,7 @@
       "confidence_score": 1.0,
       "context": "import",
       "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L2056",
+      "source_location": "L2053",
       "weight": 1.0
     },
     {
@@ -34467,7 +34467,7 @@
       "confidence_score": 1.0,
       "context": "import",
       "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L2056",
+      "source_location": "L2053",
       "weight": 1.0
     },
     {
@@ -48079,7 +48079,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L2076",
+      "source_location": "L2073",
       "weight": 1.0
     },
     {
@@ -48090,7 +48090,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L2114",
+      "source_location": "L2111",
       "weight": 1.0
     },
     {
@@ -48101,7 +48101,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L2175",
+      "source_location": "L2172",
       "weight": 1.0
     },
     {
@@ -52131,36 +52131,36 @@
       "weight": 1.0
     },
     {
-      "source": "tests_test_ui_and_api_edge_cases_rationale_2077",
+      "source": "tests_test_ui_and_api_edge_cases_rationale_2074",
       "target": "tests_test_ui_and_api_edge_cases_testuiandapiedgecases_test_switch_logs_modal_and_event_persistence",
       "relation": "rationale_for",
       "_origin": "ast",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L2077",
+      "source_location": "L2074",
       "weight": 1.0
     },
     {
-      "source": "tests_test_ui_and_api_edge_cases_rationale_2115",
+      "source": "tests_test_ui_and_api_edge_cases_rationale_2112",
       "target": "tests_test_ui_and_api_edge_cases_testuiandapiedgecases_test_nftables_destination_must_be_ip_address",
       "relation": "rationale_for",
       "_origin": "ast",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L2115",
+      "source_location": "L2112",
       "weight": 1.0
     },
     {
-      "source": "tests_test_ui_and_api_edge_cases_rationale_2176",
+      "source": "tests_test_ui_and_api_edge_cases_rationale_2173",
       "target": "tests_test_ui_and_api_edge_cases_testuiandapiedgecases_test_override_endpoint_flushes_conntrack",
       "relation": "rationale_for",
       "_origin": "ast",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L2176",
+      "source_location": "L2173",
       "weight": 1.0
     },
     {
@@ -53951,7 +53951,7 @@
       "confidence_score": 0.85,
       "context": "call",
       "source_file": "tests/test_ui_and_api_edge_cases.py",
-      "source_location": "L2122",
+      "source_location": "L2119",
       "weight": 1.0
     },
     {
@@ -55496,5 +55496,5 @@
     }
   ],
   "hyperedges": [],
-  "built_at_commit": "866d88f92eaf6444d40afd6b40334d4a4080e39e"
+  "built_at_commit": "3fa3ff6513f78c71a36dce820b24646d5b59586c"
 }
