@@ -68,8 +68,9 @@
     "Revamped Overview & Health dashboard with modern graphical telemetry widgets: circular radial SVG CPU gauge, RAM gradient progress bar, 3-tier system load comparator, socket ratio split bar, and dual-pulse live bandwidth meters with MB/s toggle",
     "Fixed Traffic (24h) stat card integration in web/js/modules/stats.js with real-time data from /api/status and robust 0 B fallback",
     "Implemented Daily Traffic Analytics & 24h/7d Hourly Stacked Bar Chart in Overview: pure Vanilla CSS/SVG (<2KB), peak throughput calculation, interactive tooltips with clipping prevention, forwarding methods distribution bar, and full dual-theme Light Mode support",
-    "Completed logical, structural, and security audit: fixed balanced load badge color to emerald, enforced listener idempotency, defended against non-string period arguments, verified zero untracked files, and expanded unit tests to 254 tests with 100% pass rate"
+    "Completed logical, structural, and security audit: fixed balanced load badge color to emerald, enforced listener idempotency, defended against non-string period arguments, verified zero untracked files, and expanded unit tests to 254 tests with 100% pass rate",
+    "Enhanced route quality failover engine: implemented total outage deadlock prevention (<100% loss candidate selection), multi-priority degraded backup escape, anti-reset streak guard, intermediate relay hop-1 ping neutrality, and full Switch Decision Logs modal (#switchLogsModal) & timeline UI with 100% pass rate across all 256 unit tests"
   ],
   "next_steps": [],
-  "notes": "Overview dashboard revamp and Daily Traffic Analytics fully implemented and verified. All 254 unit tests passing cleanly."
+  "notes": "Route quality failover engine enhancements, anti-reset streak guard, and Switch Decision Logs modal fully implemented, audited, tested, documented, and pushed to git."
 }
