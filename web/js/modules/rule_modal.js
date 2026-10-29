@@ -376,22 +376,22 @@ export async function testModalDestination(index) {
 
     if (!target) {
         showToast("Please enter a destination target IP or host", "warn");
-        if (resEl) { resEl.innerHTML = '<span class="text-amber">Enter target IP</span>'; }
+        if (resEl) { resEl.innerHTML = `<span class="text-amber">${escapeHtml(t("status.enter_target", {}, "Enter target IP"))}</span>`; }
         return;
     }
     if ((dest.type || "haproxy") === "haproxy" && !target.includes(':')) {
         showToast("HAProxy destination target must be a valid IPv6 address", "warn");
-        if (resEl) { resEl.innerHTML = '<span class="text-amber">IPv6 required for HAProxy</span>'; }
+        if (resEl) { resEl.innerHTML = `<span class="text-amber">${escapeHtml(t("status.ipv6_required", {}, "IPv6 required for HAProxy"))}</span>`; }
         return;
     }
     if (!port) {
         showToast("Please specify a port to test", "warn");
-        if (resEl) { resEl.innerHTML = '<span class="text-amber">Enter port</span>'; }
+        if (resEl) { resEl.innerHTML = `<span class="text-amber">${escapeHtml(t("status.enter_port", {}, "Enter port"))}</span>`; }
         return;
     }
 
     if (resEl) {
-        resEl.innerHTML = '<span class="btn-spinner" style="width:11px;height:11px;display:inline-block;vertical-align:middle;"></span> <span class="text-muted" style="font-size:0.75rem;">Probing...</span>';
+        resEl.innerHTML = `<span class="btn-spinner" style="width:11px;height:11px;display:inline-block;vertical-align:middle;"></span> <span class="text-muted" style="font-size:0.75rem;">${escapeHtml(t("status.probing", {}, "Probing..."))}</span>`;
     }
 
     try {
@@ -411,11 +411,11 @@ export async function testModalDestination(index) {
             const loss = data.packet_loss !== undefined ? data.packet_loss : (data.healthy ? 0 : 100);
             if (data.healthy) {
                 const latStr = (data.latency_ms !== null && data.latency_ms !== undefined && data.latency_ms > 0) ? ` (${data.latency_ms}ms · ${loss}% loss)` : ` (${loss}% loss)`;
-                if (resEl) resEl.innerHTML = `<span class="badge-probe text-emerald" style="display:inline-flex;align-items:center;gap:4px;font-size:0.75rem;">Reachable${latStr}</span>`;
+                if (resEl) resEl.innerHTML = `<span class="badge-probe text-emerald" style="display:inline-flex;align-items:center;gap:4px;font-size:0.75rem;">${escapeHtml(t("status.reachable", {}, "Reachable"))}${latStr}</span>`;
                 showToast(`Destination [${target}]:${port} reachable${latStr}`);
             } else {
                 const reason = data.reason ? `: ${data.reason}` : "";
-                if (resEl) resEl.innerHTML = `<span class="badge-fail text-rose" style="display:inline-flex;align-items:center;gap:4px;font-size:0.75rem;" title="${escapeHtml(data.reason || '')}">Unreachable (100% loss${escapeHtml(reason)})</span>`;
+                if (resEl) resEl.innerHTML = `<span class="badge-fail text-rose" style="display:inline-flex;align-items:center;gap:4px;font-size:0.75rem;" title="${escapeHtml(data.reason || '')}">${escapeHtml(t("status.unreachable", {}, "Unreachable"))} (100% loss${escapeHtml(reason)})</span>`;
                 showToast(`Destination [${target}]:${port} failed health probe${reason}`, "error");
             }
         } else {
@@ -424,7 +424,7 @@ export async function testModalDestination(index) {
             showToast(`Target test error: ${errMsg}`, "error");
         }
     } catch (err) {
-        if (resEl) resEl.innerHTML = `<span class="badge-fail text-rose" style="font-size:0.75rem;">Network Error</span>`;
+        if (resEl) resEl.innerHTML = `<span class="badge-fail text-rose" style="font-size:0.75rem;">${escapeHtml(t("status.network_error", {}, "Network Error"))}</span>`;
         showToast("Error executing target probe: " + err.message, "error");
     }
 }

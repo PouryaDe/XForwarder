@@ -255,19 +255,19 @@ export function renderServicesStatus(services) {
     if (dotNft && valNft) {
         if (!nft.installed) {
             dotNft.className = "svc-pill-dot dot-rose";
-            valNft.innerText = "Not Installed";
+            valNft.textContent = t("status.not_installed", {}, "Not Installed");
             valNft.className = "svc-pill-val text-rose";
             valNft.title = "";
         } else if (nft.active) {
             dotNft.className = "svc-pill-dot dot-emerald";
             const nftVerShort = formatEngineVersion(nft.version);
             const verStr = nftVerShort ? ` (${nftVerShort})` : "";
-            valNft.innerText = nft.table_active ? `Active & Synced${verStr}` : `Active${verStr}`;
+            valNft.textContent = nft.table_active ? `${t("status.active_synced", {}, "Active & Synced")}${verStr}` : `${t("status.active", {}, "Active")}${verStr}`;
             valNft.className = "svc-pill-val";
             valNft.title = nft.version || "";
         } else {
             dotNft.className = "svc-pill-dot dot-amber";
-            valNft.innerText = "Inactive";
+            valNft.textContent = t("status.inactive", {}, "Inactive");
             valNft.className = "svc-pill-val text-muted";
             valNft.title = "";
         }
@@ -279,17 +279,17 @@ export function renderServicesStatus(services) {
         const haVerShort = formatEngineVersion(ha.version);
         if (!ha.installed) {
             dotHa.className = "svc-pill-dot dot-rose";
-            valHa.innerText = "Not Installed";
+            valHa.textContent = t("status.not_installed", {}, "Not Installed");
             valHa.className = "svc-pill-val text-rose";
             valHa.title = "";
         } else if (ha.active) {
             dotHa.className = "svc-pill-dot dot-emerald";
-            valHa.innerText = haVerShort ? `Running (${haVerShort})` : "Running";
+            valHa.textContent = haVerShort ? `${t("status.running", {}, "Running")} (${haVerShort})` : t("status.running", {}, "Running");
             valHa.className = "svc-pill-val";
             valHa.title = ha.version || "";
         } else {
             dotHa.className = "svc-pill-dot dot-amber";
-            valHa.innerText = haVerShort ? `Standby (${haVerShort})` : "Standby";
+            valHa.textContent = haVerShort ? `${t("status.standby", {}, "Standby")} (${haVerShort})` : t("status.standby", {}, "Standby");
             valHa.className = "svc-pill-val text-muted";
             valHa.title = ha.version || "";
         }
@@ -301,17 +301,17 @@ export function renderServicesStatus(services) {
         const ngxVerShort = formatEngineVersion(ngx.version);
         if (!ngx.installed) {
             dotNgx.className = "svc-pill-dot dot-rose";
-            valNgx.innerText = "Not Installed";
+            valNgx.textContent = t("status.not_installed", {}, "Not Installed");
             valNgx.className = "svc-pill-val text-rose";
             valNgx.title = "";
         } else if (ngx.active) {
             dotNgx.className = "svc-pill-dot dot-emerald";
-            valNgx.innerText = ngxVerShort ? `Running (${ngxVerShort})` : "Running";
+            valNgx.textContent = ngxVerShort ? `${t("status.running", {}, "Running")} (${ngxVerShort})` : t("status.running", {}, "Running");
             valNgx.className = "svc-pill-val";
             valNgx.title = ngx.version || "";
         } else {
             dotNgx.className = "svc-pill-dot dot-amber";
-            valNgx.innerText = ngxVerShort ? `Standby (${ngxVerShort})` : "Standby";
+            valNgx.textContent = ngxVerShort ? `${t("status.standby", {}, "Standby")} (${ngxVerShort})` : t("status.standby", {}, "Standby");
             valNgx.className = "svc-pill-val text-muted";
             valNgx.title = ngx.version || "";
         }
@@ -348,10 +348,10 @@ export function renderServicesStatus(services) {
     if (topRelayBadge) {
         if (missing.length > 0) {
             topRelayBadge.className = "stat-badge badge-warn";
-            topRelayBadge.innerText = `${3 - missing.length}/3 ACTIVE`;
+            topRelayBadge.textContent = `${3 - missing.length}/3 ${t("status.active", {}, "ACTIVE")}`;
         } else {
             topRelayBadge.className = "stat-badge badge-active";
-            topRelayBadge.innerText = "ALL ACTIVE";
+            topRelayBadge.textContent = t("overview.all_active", {}, "ALL ACTIVE");
         }
     }
 
@@ -365,29 +365,29 @@ export function renderServicesStatus(services) {
     if (badgeHa) {
         if (!ha.installed) {
             badgeHa.className = "stat-badge badge-fail";
-            badgeHa.textContent = "NOT INSTALLED";
+            badgeHa.textContent = t("status.not_installed_caps", {}, "NOT INSTALLED");
         } else if (ha.active) {
             badgeHa.className = "stat-badge badge-active";
-            badgeHa.textContent = "RUNNING";
+            badgeHa.textContent = t("status.running", {}, "RUNNING");
         } else {
             badgeHa.className = "stat-badge badge-warn";
-            badgeHa.textContent = "STANDBY";
+            badgeHa.textContent = t("status.standby", {}, "STANDBY");
         }
     }
     if (svcHaproxyInstalled) {
-        svcHaproxyInstalled.textContent = ha.installed ? "Installed" : "Not Installed";
-        svcHaproxyInstalled.className = ha.installed ? "info-value text-emerald font-mono" : "info-value text-rose font-mono";
+        svcHaproxyInstalled.textContent = ha.installed ? t("status.installed", {}, "Installed") : t("status.not_installed", {}, "Not Installed");
+        svcHaproxyInstalled.className = ha.installed ? "info-value text-emerald" : "info-value text-rose";
     }
     if (svcHaproxyState) {
         if (!ha.installed) {
-            svcHaproxyState.textContent = "Not Installed";
-            svcHaproxyState.className = "info-value text-muted font-mono";
+            svcHaproxyState.textContent = t("status.not_installed", {}, "Not Installed");
+            svcHaproxyState.className = "info-value text-muted";
         } else if (ha.active) {
-            svcHaproxyState.textContent = "Active & Running";
-            svcHaproxyState.className = "info-value text-emerald font-mono";
+            svcHaproxyState.textContent = t("status.active_running", {}, "Active & Running");
+            svcHaproxyState.className = "info-value text-emerald";
         } else {
-            svcHaproxyState.textContent = "Standby (Stopped)";
-            svcHaproxyState.className = "info-value text-amber font-mono";
+            svcHaproxyState.textContent = t("status.standby_stopped", {}, "Standby (Stopped)");
+            svcHaproxyState.className = "info-value text-amber";
         }
     }
     if (svcHaproxyVersion) {
@@ -403,32 +403,32 @@ export function renderServicesStatus(services) {
     if (badgeNft) {
         if (!nft.installed) {
             badgeNft.className = "stat-badge badge-fail";
-            badgeNft.textContent = "NOT INSTALLED";
+            badgeNft.textContent = t("status.not_installed_caps", {}, "NOT INSTALLED");
         } else if (nft.active) {
             badgeNft.className = "stat-badge badge-active";
-            badgeNft.textContent = nft.table_active ? "ACTIVE & SYNCED" : "ACTIVE";
+            badgeNft.textContent = nft.table_active ? t("status.active_synced", {}, "ACTIVE & SYNCED") : t("status.active", {}, "ACTIVE");
         } else {
             badgeNft.className = "stat-badge badge-warn";
-            badgeNft.textContent = "INACTIVE";
+            badgeNft.textContent = t("status.inactive", {}, "INACTIVE");
         }
     }
     if (svcNftablesInstalled) {
-        svcNftablesInstalled.textContent = nft.installed ? "Installed" : "Not Installed";
-        svcNftablesInstalled.className = nft.installed ? "info-value text-emerald font-mono" : "info-value text-rose font-mono";
+        svcNftablesInstalled.textContent = nft.installed ? t("status.installed", {}, "Installed") : t("status.not_installed", {}, "Not Installed");
+        svcNftablesInstalled.className = nft.installed ? "info-value text-emerald" : "info-value text-rose";
     }
     if (svcNftablesKernel) {
         if (!nft.installed) {
-            svcNftablesKernel.textContent = "Not Installed";
-            svcNftablesKernel.className = "info-value text-muted font-mono";
+            svcNftablesKernel.textContent = t("status.not_installed", {}, "Not Installed");
+            svcNftablesKernel.className = "info-value text-muted";
         } else if (nft.table_active) {
-            svcNftablesKernel.textContent = "Active & Orchestrator Loaded";
-            svcNftablesKernel.className = "info-value text-emerald font-mono";
+            svcNftablesKernel.textContent = t("status.table_loaded", {}, "Active & Orchestrator Loaded");
+            svcNftablesKernel.className = "info-value text-emerald";
         } else if (nft.active) {
-            svcNftablesKernel.textContent = "Active (Table Idle)";
-            svcNftablesKernel.className = "info-value text-emerald font-mono";
+            svcNftablesKernel.textContent = t("status.table_idle", {}, "Active (Table Idle)");
+            svcNftablesKernel.className = "info-value text-emerald";
         } else {
-            svcNftablesKernel.textContent = "Inactive";
-            svcNftablesKernel.className = "info-value text-amber font-mono";
+            svcNftablesKernel.textContent = t("status.inactive", {}, "Inactive");
+            svcNftablesKernel.className = "info-value text-amber";
         }
     }
     if (svcNftablesVersion) {
@@ -444,29 +444,29 @@ export function renderServicesStatus(services) {
     if (badgeNgx) {
         if (!ngx.installed) {
             badgeNgx.className = "stat-badge badge-fail";
-            badgeNgx.textContent = "NOT INSTALLED";
+            badgeNgx.textContent = t("status.not_installed_caps", {}, "NOT INSTALLED");
         } else if (ngx.active) {
             badgeNgx.className = "stat-badge badge-active";
-            badgeNgx.textContent = "RUNNING";
+            badgeNgx.textContent = t("status.running", {}, "RUNNING");
         } else {
             badgeNgx.className = "stat-badge badge-warn";
-            badgeNgx.textContent = "STANDBY";
+            badgeNgx.textContent = t("status.standby", {}, "STANDBY");
         }
     }
     if (svcNginxInstalled) {
-        svcNginxInstalled.textContent = ngx.installed ? "Installed" : "Not Installed";
-        svcNginxInstalled.className = ngx.installed ? "info-value text-emerald font-mono" : "info-value text-rose font-mono";
+        svcNginxInstalled.textContent = ngx.installed ? t("status.installed", {}, "Installed") : t("status.not_installed", {}, "Not Installed");
+        svcNginxInstalled.className = ngx.installed ? "info-value text-emerald" : "info-value text-rose";
     }
     if (svcNginxState) {
         if (!ngx.installed) {
-            svcNginxState.textContent = "Not Installed";
-            svcNginxState.className = "info-value text-muted font-mono";
+            svcNginxState.textContent = t("status.not_installed", {}, "Not Installed");
+            svcNginxState.className = "info-value text-muted";
         } else if (ngx.active) {
-            svcNginxState.textContent = "Active & Running";
-            svcNginxState.className = "info-value text-emerald font-mono";
+            svcNginxState.textContent = t("status.active_running", {}, "Active & Running");
+            svcNginxState.className = "info-value text-emerald";
         } else {
-            svcNginxState.textContent = "Standby (Stopped)";
-            svcNginxState.className = "info-value text-amber font-mono";
+            svcNginxState.textContent = t("status.standby_stopped", {}, "Standby (Stopped)");
+            svcNginxState.className = "info-value text-amber";
         }
     }
     if (svcNginxVersion) {
@@ -523,10 +523,10 @@ export function renderServicesStatus(services) {
     if (ovEnginesSummaryBadge) {
         if (missing.length === 0) {
             ovEnginesSummaryBadge.className = "stat-badge badge-active";
-            ovEnginesSummaryBadge.innerText = "READY";
+            ovEnginesSummaryBadge.textContent = t("status.ready_caps", {}, "READY");
         } else {
             ovEnginesSummaryBadge.className = "stat-badge badge-warn";
-            ovEnginesSummaryBadge.innerText = `${3 - missing.length}/3 READY`;
+            ovEnginesSummaryBadge.textContent = `${3 - missing.length}/3 ${t("status.ready_caps", {}, "READY")}`;
         }
     }
 }

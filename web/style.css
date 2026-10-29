@@ -89,6 +89,14 @@
     box-sizing: border-box;
 }
 
+button,
+input,
+optgroup,
+select,
+textarea {
+    font-family: inherit;
+}
+
 body {
     background-color: var(--bg-base);
     color: var(--text-primary);
@@ -7604,7 +7612,9 @@ input#formCategory::-webkit-list-button {
    Typography (Vazirmatn), BiDi Text Handling, & Directional Overrides
    ========================================================================== */
 
-[dir="rtl"], [lang="fa"] {
+/* 1. Global RTL Typography & Font Definitions */
+[dir="rtl"],
+[lang="fa"] {
     --font-sans: 'Vazirmatn', -apple-system, BlinkMacSystemFont, 'Segoe UI', Tahoma, Arial, sans-serif;
     --font-display: 'Vazirmatn', 'Space Grotesk', -apple-system, BlinkMacSystemFont, sans-serif;
 }
@@ -7615,7 +7625,79 @@ input#formCategory::-webkit-list-button {
     text-align: right;
 }
 
-/* Latin & Monospace BiDi Preservation (Avoid Reversed IPs, Ports, Ping ms, CIDRs) */
+/* 2. Universal Form Controls & Button Font Inheritance in RTL */
+[dir="rtl"] button,
+[dir="rtl"] input,
+[dir="rtl"] select,
+[dir="rtl"] textarea,
+[dir="rtl"] optgroup,
+[lang="fa"] button,
+[lang="fa"] input,
+[lang="fa"] select,
+[lang="fa"] textarea,
+[lang="fa"] optgroup {
+    font-family: var(--font-sans) !important;
+}
+
+/* 3. Explicit Vazirmatn application across all UI components and textual elements */
+[dir="rtl"] h1, [dir="rtl"] h2, [dir="rtl"] h3, [dir="rtl"] h4, [dir="rtl"] h5, [dir="rtl"] h6,
+[dir="rtl"] p, [dir="rtl"] a, [dir="rtl"] label,
+[dir="rtl"] .brand-title,
+[dir="rtl"] .section-title,
+[dir="rtl"] .section-desc,
+[dir="rtl"] .nav-item,
+[dir="rtl"] .nav-label,
+[dir="rtl"] .nav-section-label,
+[dir="rtl"] .nav-badge,
+[dir="rtl"] .btn,
+[dir="rtl"] .btn-text,
+[dir="rtl"] .btn-sidebar-logout,
+[dir="rtl"] .topbar-action-btn,
+[dir="rtl"] .breadcrumb,
+[dir="rtl"] .breadcrumb-root,
+[dir="rtl"] .breadcrumb-current,
+[dir="rtl"] .modal-title,
+[dir="rtl"] .modal-subtitle,
+[dir="rtl"] .modal-footer,
+[dir="rtl"] .form-group label,
+[dir="rtl"] .form-control,
+[dir="rtl"] .form-input,
+[dir="rtl"] .status-pill,
+[dir="rtl"] .path-status,
+[dir="rtl"] .stat-badge,
+[dir="rtl"] .badge-relay-pill,
+[dir="rtl"] .ip-pill-loading,
+[dir="rtl"] .ip-pill-empty,
+[dir="rtl"] .svc-pill-val,
+[dir="rtl"] .btn-range-tab,
+[dir="rtl"] .user-name,
+[dir="rtl"] .user-role,
+[dir="rtl"] .category-header-title,
+[dir="rtl"] .category-badge-pill,
+[dir="rtl"] .traffic-pill-badge,
+[dir="rtl"] .badge-pending-switch,
+[dir="rtl"] .badge-cooldown,
+[dir="rtl"] .badge-flapping,
+[dir="rtl"] .prio-sub,
+[dir="rtl"] .dest-toggle-label,
+[dir="rtl"] .empty-title,
+[dir="rtl"] .empty-desc,
+[dir="rtl"] th, [dir="rtl"] td,
+[dir="rtl"] .traffic-table th, [dir="rtl"] .traffic-table td,
+[dir="rtl"] .table-disruptions th, [dir="rtl"] .table-disruptions td {
+    font-family: var(--font-sans) !important;
+}
+
+/* Ensure language toggle button ALWAYS displays "فارسی" in Vazirmatn font regardless of current mode */
+.lang-toggle-btn,
+.lang-toggle-btn span,
+#topbarLangName,
+#sidebarLangLabel,
+#loginLangName {
+    font-family: 'Vazirmatn', -apple-system, BlinkMacSystemFont, 'Segoe UI', Tahoma, Arial, sans-serif !important;
+}
+
+/* 4. Latin & Monospace BiDi Preservation (Avoid Reversed IPs, Ports, Ping ms, CIDRs) */
 [dir="rtl"] .font-mono,
 [dir="rtl"] .mono,
 [dir="rtl"] code,
@@ -7626,6 +7708,7 @@ input#formCategory::-webkit-list-button {
 [dir="rtl"] .latency-pill,
 [dir="rtl"] .loss50-pill,
 [dir="rtl"] .rule-port,
+[dir="rtl"] .port-num,
 [dir="rtl"] .stat-number,
 [dir="rtl"] .traffic-val,
 [dir="rtl"] .kpi-value,
@@ -7633,7 +7716,6 @@ input#formCategory::-webkit-list-button {
 [dir="rtl"] .timeline-ticks,
 [dir="rtl"] .net-meter-val,
 [dir="rtl"] .socket-leg-item,
-[dir="rtl"] .info-value.font-mono,
 [dir="rtl"] .wan-iface-tag,
 [dir="rtl"] .brand-badge,
 [dir="rtl"] .lockout-timer,
@@ -7643,30 +7725,53 @@ input#formCategory::-webkit-list-button {
 [dir="rtl"] #ramText,
 [dir="rtl"] #trafficText,
 [dir="rtl"] #connsText {
+    font-family: var(--font-mono, 'JetBrains Mono', monospace) !important;
     direction: ltr !important;
     unicode-bidi: embed !important;
     display: inline-block;
 }
 
-/* Sidebar in RTL */
+/* 5. Sidebar in RTL */
 [dir="rtl"] .sidebar {
     border-left: 1px solid var(--border-color);
     border-right: none;
 }
 
 [dir="rtl"] .btn-sidebar-close {
-    margin-right: auto;
-    margin-left: 0;
+    margin-right: auto !important;
+    margin-left: 0 !important;
+}
+
+[dir="rtl"] .nav-item {
+    text-align: right !important;
+}
+
+[dir="rtl"] .nav-item.active::before {
+    right: 0 !important;
+    left: auto !important;
+    border-radius: 3px 0 0 3px !important;
 }
 
 [dir="rtl"] .nav-item .nav-badge {
-    margin-right: auto;
-    margin-left: 0;
+    margin-right: auto !important;
+    margin-left: 0 !important;
+}
+
+[dir="rtl"] .nav-section-label {
+    text-align: right !important;
+}
+
+[dir="rtl"] .theme-toggle-btn {
+    text-align: right !important;
 }
 
 [dir="rtl"] .sidebar-user .btn-sidebar-logout {
-    margin-right: auto;
-    margin-left: 0;
+    margin-right: auto !important;
+    margin-left: 0 !important;
+}
+
+[dir="rtl"] .user-meta {
+    text-align: right !important;
 }
 
 /* Mobile Off-canvas Sidebar in RTL */
@@ -7676,20 +7781,21 @@ input#formCategory::-webkit-list-button {
         left: auto;
         transform: translateX(100%);
     }
+
     [dir="rtl"] .sidebar.show,
     [dir="rtl"] .sidebar.active {
         transform: translateX(0);
     }
 }
 
-/* Topbar in RTL */
+/* 6. Topbar in RTL */
 [dir="rtl"] .topbar {
     flex-direction: row;
 }
 
 [dir="rtl"] .topbar-actions {
-    margin-right: auto;
-    margin-left: 0;
+    margin-right: auto !important;
+    margin-left: 0 !important;
 }
 
 [dir="rtl"] .breadcrumb-container {
@@ -7702,126 +7808,272 @@ input#formCategory::-webkit-list-button {
     display: inline-block;
 }
 
-/* Input Fields with Icons in RTL */
+/* 7. Login Screen in RTL */
+[dir="rtl"] .login-card .form-group {
+    text-align: right !important;
+}
+
+[dir="rtl"] .login-card .form-group label {
+    text-align: right !important;
+}
+
 [dir="rtl"] .input-with-icon .input-icon {
-    right: 14px;
-    left: auto;
+    right: 14px !important;
+    left: auto !important;
 }
 
 [dir="rtl"] .input-with-icon input {
-    padding-right: 42px;
-    padding-left: 14px;
-    text-align: right;
+    padding-right: 42px !important;
+    padding-left: 14px !important;
+    text-align: right !important;
 }
 
 [dir="rtl"] .input-with-icon input.font-mono {
-    text-align: left;
-    direction: ltr;
+    text-align: left !important;
+    direction: ltr !important;
 }
 
 [dir="rtl"] .btn-toggle-pwd {
-    left: 10px;
-    right: auto;
+    left: 10px !important;
+    right: auto !important;
 }
 
-/* Search Box in RTL */
+[dir="rtl"] .caps-warning {
+    text-align: right !important;
+}
+
+/* 8. Search Box in RTL */
 [dir="rtl"] .search-box svg {
-    right: 12px;
-    left: auto;
+    right: 12px !important;
+    left: auto !important;
 }
 
 [dir="rtl"] .search-box input {
-    padding-right: 38px;
-    padding-left: 32px;
-    text-align: right;
+    padding-right: 38px !important;
+    padding-left: 32px !important;
+    text-align: right !important;
 }
 
 [dir="rtl"] .search-box .clear-btn {
-    left: 10px;
-    right: auto;
+    left: 10px !important;
+    right: auto !important;
 }
 
-/* Select Control Arrow Spacing in RTL */
+/* 9. Select Control Arrow & Padding in RTL */
 [dir="rtl"] select.form-control,
-[dir="rtl"] select.form-input {
-    padding-left: 40px;
-    padding-right: 14px;
-    background-position: left 14px center;
+[dir="rtl"] select.form-input,
+[dir="rtl"] select {
+    padding-left: 40px !important;
+    padding-right: 14px !important;
+    background-position: left 14px center !important;
+    text-align: right !important;
 }
 
-/* Rule Card Headers & Actions in RTL */
+/* 10. Rule Cards, Headers & Actions in RTL */
+[dir="rtl"] .section-title,
+[dir="rtl"] .section-desc {
+    text-align: right !important;
+}
+
+[dir="rtl"] .rules-header-top {
+    flex-direction: row;
+}
+
 [dir="rtl"] .rule-header-actions,
 [dir="rtl"] .rule-actions {
-    margin-right: auto;
-    margin-left: 0;
+    margin-right: auto !important;
+    margin-left: 0 !important;
 }
 
 [dir="rtl"] .category-actions {
-    margin-right: auto;
-    margin-left: 0;
+    margin-right: auto !important;
+    margin-left: 0 !important;
+}
+
+[dir="rtl"] .category-divider {
+    flex-direction: row;
+}
+
+[dir="rtl"] .category-header-title {
+    text-align: right !important;
 }
 
 [dir="rtl"] .path-meta-group {
-    margin-right: auto;
-    margin-left: 0;
+    margin-right: auto !important;
+    margin-left: 0 !important;
+}
+
+[dir="rtl"] .path-meta {
+    text-align: right !important;
+}
+
+[dir="rtl"] .path-meta-badges {
+    margin-right: auto !important;
+    margin-left: 0 !important;
+}
+
+[dir="rtl"] .path-header {
+    flex-direction: row;
+}
+
+[dir="rtl"] .path-header-right {
+    margin-right: auto !important;
+    margin-left: 0 !important;
+}
+
+[dir="rtl"] .rule-list-right {
+    margin-right: auto !important;
+    margin-left: 0 !important;
 }
 
 /* Drag Handles in RTL */
 [dir="rtl"] .drag-handle {
-    margin-left: 8px;
-    margin-right: 0;
+    margin-left: 8px !important;
+    margin-right: 0 !important;
 }
 
-/* Switch Slider Animation in RTL */
-[dir="rtl"] .switch input:checked + .slider:before,
-[dir="rtl"] .dest-switch-control input:checked + .dest-switch-slider:before {
-    transform: translateX(-18px);
+/* Switch Slider Animations in RTL (Leftward translation) */
+[dir="rtl"] .switch input:checked+.slider:before,
+[dir="rtl"] .dest-switch-control input:checked+.dest-switch-slider:before {
+    transform: translateX(-18px) !important;
 }
 
-/* Modals in RTL */
+[dir="rtl"] .btn-dest-toggle.is-enabled .dest-toggle-slider {
+    transform: translateX(-14px) !important;
+}
+
+/* 11. Modals in RTL */
+[dir="rtl"] .modal-header {
+    text-align: right !important;
+}
+
+[dir="rtl"] .modal-title,
+[dir="rtl"] .modal-subtitle {
+    text-align: right !important;
+}
+
 [dir="rtl"] .modal-close {
-    left: 20px;
-    right: auto;
-    margin-right: auto;
-    margin-left: 0;
+    left: 20px !important;
+    right: auto !important;
+    margin-right: auto !important;
+    margin-left: 0 !important;
+}
+
+[dir="rtl"] .form-group {
+    text-align: right !important;
+}
+
+[dir="rtl"] .form-group label {
+    text-align: right !important;
+}
+
+[dir="rtl"] .form-control {
+    text-align: right !important;
+}
+
+[dir="rtl"] .form-control.font-mono,
+[dir="rtl"] .dest-target {
+    text-align: left !important;
+    direction: ltr !important;
+}
+
+[dir="rtl"] .prio-header-actions {
+    margin-right: auto !important;
+    margin-left: 0 !important;
+}
+
+[dir="rtl"] .dest-test-group {
+    margin-right: auto !important;
+    margin-left: 0 !important;
 }
 
 [dir="rtl"] .modal-footer {
-    flex-direction: row-reverse;
+    flex-direction: row-reverse !important;
 }
 
 [dir="rtl"] .modal-footer.confirm-footer {
-    flex-direction: row;
-    justify-content: center;
+    flex-direction: row !important;
+    justify-content: center !important;
 }
 
 [dir="rtl"] .traffic-modal-footer {
-    flex-direction: row;
-    justify-content: space-between;
+    flex-direction: row !important;
+    justify-content: space-between !important;
 }
 
 [dir="rtl"] .traffic-footer-left {
-    margin-left: auto;
-    margin-right: 0;
+    margin-left: auto !important;
+    margin-right: 0 !important;
 }
 
 [dir="rtl"] .traffic-footer-right {
-    margin-right: auto;
-    margin-left: 0;
+    margin-right: auto !important;
+    margin-left: 0 !important;
 }
 
-/* Toast Container in RTL */
+/* 12. Tables & Disruption Logs in RTL */
+[dir="rtl"] table,
+[dir="rtl"] th,
+[dir="rtl"] td,
+[dir="rtl"] .traffic-table,
+[dir="rtl"] .traffic-table th,
+[dir="rtl"] .traffic-table td,
+[dir="rtl"] .table-disruptions,
+[dir="rtl"] .table-disruptions th,
+[dir="rtl"] .table-disruptions td {
+    text-align: right !important;
+}
+
+[dir="rtl"] .table-records-count {
+    text-align: right !important;
+}
+
+/* 13. Service & Overview Cards in RTL */
+[dir="rtl"] .overview-card-title,
+[dir="rtl"] .overview-card-sub,
+[dir="rtl"] .service-card-title,
+[dir="rtl"] .service-card-desc,
+[dir="rtl"] .service-card-sub {
+    text-align: right !important;
+}
+
+[dir="rtl"] .engine-row .engine-status,
+[dir="rtl"] .service-card .stat-badge,
+[dir="rtl"] .ov-engines-header .stat-badge {
+    margin-right: auto !important;
+    margin-left: 0 !important;
+}
+
+[dir="rtl"] .info-row {
+    flex-direction: row;
+}
+
+[dir="rtl"] .info-label {
+    text-align: right !important;
+}
+
+[dir="rtl"] .info-value:not(.font-mono) {
+    text-align: right !important;
+}
+
+[dir="rtl"] .ip-pill-loading,
+[dir="rtl"] .ip-pill-empty {
+    text-align: right !important;
+    direction: rtl !important;
+}
+
+/* 14. Toast Container in RTL */
 [dir="rtl"] .toast-container {
-    left: 24px;
-    right: auto;
+    left: 24px !important;
+    right: auto !important;
 }
 
 [dir="rtl"] .toast-close {
-    margin-right: auto;
-    margin-left: 0;
+    margin-right: auto !important;
+    margin-left: 0 !important;
 }
 
-/* Language Toggle Button Styling */
+/* 15. Language Toggle Button Styling */
 .lang-toggle-btn {
     display: inline-flex;
     align-items: center;
@@ -7864,8 +8116,8 @@ input#formCategory::-webkit-list-button {
 }
 
 [dir="rtl"] .login-lang-toggle {
-    margin-left: 0;
-    margin-right: 8px;
+    margin-left: 0 !important;
+    margin-right: 8px !important;
 }
 
 /* Topbar Language Button */

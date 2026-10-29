@@ -247,7 +247,46 @@ class TestI18nAndRTL(unittest.TestCase):
                 f"{rel_path} must import from i18n.js"
             )
 
+    def test_comprehensive_button_and_input_font_inheritance(self):
+        """Verify button, input, select, textarea inherit font-family and receive Vazirmatn in RTL."""
+        with open(os.path.join(REPO_ROOT, "web", "css", "base.css"), "r", encoding="utf-8") as f:
+            base_css = f.read()
+        self.assertIn("button,", base_css)
+        self.assertIn("input,", base_css)
+        self.assertIn("font-family: inherit;", base_css)
+
+        # Check RTL rules in rtl.css
+        self.assertIn('[dir="rtl"] button,', self.rtl_css_content)
+        self.assertIn('[dir="rtl"] input,', self.rtl_css_content)
+        self.assertIn('[dir="rtl"] select,', self.rtl_css_content)
+        self.assertIn('[dir="rtl"] textarea,', self.rtl_css_content)
+
+        # Language toggle button must always display Vazirmatn for "فارسی"
+        self.assertIn('.lang-toggle-btn,', self.rtl_css_content)
+        self.assertIn('#topbarLangName,', self.rtl_css_content)
+        self.assertIn('#sidebarLangLabel,', self.rtl_css_content)
+
+    def test_rtl_alignment_rules_and_navigation(self):
+        """Verify complete RTL directional alignment across sidebar menus, modals, selects, and tables."""
+        # Sidebar nav item right alignment and active indicator
+        self.assertIn('[dir="rtl"] .nav-item {', self.rtl_css_content)
+        self.assertIn('text-align: right !important;', self.rtl_css_content)
+        self.assertIn('[dir="rtl"] .nav-item.active::before {', self.rtl_css_content)
+        self.assertIn('right: 0 !important;', self.rtl_css_content)
+
+        # Modal close button on the left edge
+        self.assertIn('[dir="rtl"] .modal-close {', self.rtl_css_content)
+        self.assertIn('left: 20px !important;', self.rtl_css_content)
+
+        # Select dropdown padding & arrow position
+        self.assertIn('[dir="rtl"] select.form-control,', self.rtl_css_content)
+        self.assertIn('padding-left: 40px !important;', self.rtl_css_content)
+        self.assertIn('background-position: left 14px center !important;', self.rtl_css_content)
+
+        # Tables right alignment
+        self.assertIn('[dir="rtl"] .traffic-table th,', self.rtl_css_content)
+        self.assertIn('[dir="rtl"] .table-disruptions th,', self.rtl_css_content)
+
 
 if __name__ == "__main__":
     unittest.main()
-
