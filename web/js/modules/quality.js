@@ -183,7 +183,7 @@ let isMetricsLoading = false;
 
 export function initNetworkQualityMonitor() {
     const targetSelect = document.getElementById("metricsTargetSelect");
-    const rangeTabs = document.querySelectorAll(".btn-range-tab");
+    const rangeTabs = document.querySelectorAll("#metricsRangeTabs .btn-range-tab");
     const btnTrigger = document.getElementById("btnTriggerMetricsRound");
 
     if (targetSelect) {

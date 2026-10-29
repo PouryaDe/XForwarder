@@ -715,8 +715,9 @@ input:-webkit-autofill:active {
     width: 28px;
     height: 28px;
     border-radius: 50%;
-    background: linear-gradient(135deg, var(--accent-mint), var(--accent-violet));
-    color: #0B0E14;
+    background: linear-gradient(135deg, #7C3AED, #6366F1);
+    box-shadow: 0 2px 8px rgba(124, 58, 237, 0.35);
+    color: #FFFFFF;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -724,7 +725,7 @@ input:-webkit-autofill:active {
 }
 
 .user-avatar svg {
-    stroke: #0B0E14;
+    stroke: #FFFFFF;
 }
 
 [data-theme="light"] .user-avatar {
@@ -3798,10 +3799,20 @@ select option {
     margin-bottom: 12px;
     background: var(--bg-surface);
     position: relative;
-    transition: background 0.2s ease;
 }
 
-.priority-box:hover { background: var(--bg-card-hover); }
+/* Hide native datalist arrow on category input */
+#formCategory::-webkit-calendar-picker-indicator,
+#formCategory::-webkit-list-button,
+input#formCategory::-webkit-calendar-picker-indicator,
+input#formCategory::-webkit-list-button {
+    display: none !important;
+    -webkit-appearance: none !important;
+    opacity: 0 !important;
+    width: 0 !important;
+    height: 0 !important;
+    pointer-events: none !important;
+}
 
 .dest-extra-row {
     display: flex;
@@ -5253,24 +5264,68 @@ select option {
     text-align: right;
 }
 
-/* ── Daily Traffic 24h Hourly Chart ── */
+/* ── Daily Traffic 24h Hourly Chart (Upgraded Modern Interactive Chart) ── */
 .ov-traffic-bars-container {
     display: flex;
     align-items: flex-end;
-    gap: 4px;
-    height: 146px;
-    padding: 34px 10px 4px;
-    background: var(--bg-surface);
+    gap: 3px;
+    height: 160px;
+    padding: 24px 12px 6px;
+    background: rgba(18, 21, 31, 0.65);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
     border: 1px solid var(--border-color);
-    border-radius: 10px;
-    overflow-x: auto;
-    overflow-y: hidden;
+    border-radius: 12px;
+    overflow: visible;
+    position: relative;
+    scrollbar-width: none;
+}
+
+.ov-traffic-bars-container::-webkit-scrollbar {
+    display: none;
+}
+
+/* Background Grid & Quantitative Reference Lines */
+.ov-traffic-grid {
+    position: absolute;
+    top: 24px;
+    left: 12px;
+    right: 12px;
+    bottom: 6px;
+    pointer-events: none;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    z-index: 1;
+}
+
+.ov-grid-line {
+    width: 100%;
+    border-bottom: 1px dashed rgba(255, 255, 255, 0.07);
+    display: flex;
+    justify-content: flex-end;
+    align-items: flex-end;
     position: relative;
 }
 
+.ov-grid-line.line-zero {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.ov-grid-val {
+    font-size: 0.63rem;
+    font-family: var(--font-mono);
+    color: var(--text-muted);
+    opacity: 0.75;
+    margin-bottom: 2px;
+    padding-right: 2px;
+    user-select: none;
+}
+
+/* Fluid responsive columns - Zero horizontal scrollbar! */
 .ov-traffic-bars-container .traffic-bar-col {
-    flex: 1;
-    min-width: 16px;
+    flex: 1 1 0;
+    min-width: 0;
     height: 100%;
     display: flex;
     flex-direction: column;
@@ -5278,66 +5333,89 @@ select option {
     align-items: center;
     position: relative;
     cursor: pointer;
+    border-radius: 6px;
+    transition: background 0.15s ease;
+    z-index: 2;
 }
 
+.ov-traffic-bars-container .traffic-bar-col:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+/* Modern Gradient Stacks */
 .ov-traffic-bars-container .traffic-bar-stack {
     width: 100%;
     max-width: 16px;
-    min-height: 3px;
+    min-height: 4px;
     display: flex;
     flex-direction: column-reverse;
-    border-radius: 3px 3px 0 0;
+    border-radius: 4px 4px 0 0;
     overflow: hidden;
-    transition: all 0.25s ease;
+    transition: filter 0.2s ease, box-shadow 0.2s ease;
     background: rgba(255, 255, 255, 0.04);
 }
 
 .ov-traffic-bars-container .traffic-bar-col:hover .traffic-bar-stack {
     filter: brightness(1.28);
-    box-shadow: 0 0 8px rgba(110, 231, 183, 0.4);
+    box-shadow: 0 0 12px rgba(56, 189, 248, 0.45);
 }
 
 .ov-traffic-bars-container .segment-tx {
-    background: var(--accent-mint);
+    background: linear-gradient(180deg, #34D399 0%, #059669 100%);
     width: 100%;
 }
 
 .ov-traffic-bars-container .segment-rx {
-    background: var(--accent-cyan);
+    background: linear-gradient(180deg, #38BDF8 0%, #2563EB 100%);
     width: 100%;
 }
 
 .ov-traffic-bars-container .traffic-bar-label {
-    margin-top: 4px;
-    font-size: 0.65rem;
-    font-family: var(--font-mono);
-    color: var(--text-muted);
-    white-space: nowrap;
+    display: none;
 }
 
+/* Enhanced Glassmorphic Tooltip - Never clipped, smart boundary alignment */
 .ov-traffic-bars-container .traffic-tooltip {
     position: absolute;
-    bottom: calc(100% + 4px);
+    bottom: calc(100% + 8px);
     left: 50%;
     transform: translateX(-50%);
-    background: #0f141f;
-    border: 1px solid var(--border-strong);
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.65);
-    border-radius: 6px;
-    padding: 4px 8px;
-    font-size: 0.69rem;
+    background: rgba(15, 20, 31, 0.96);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.75), 0 0 15px rgba(56, 189, 248, 0.15);
+    border-radius: 8px;
+    padding: 8px 12px;
+    font-size: 0.72rem;
     color: #fff;
     white-space: nowrap;
     pointer-events: none;
-    z-index: 25;
+    z-index: 100;
     display: none;
     flex-direction: column;
-    gap: 2px;
+    gap: 3px;
     font-family: var(--font-mono);
 }
 
 .ov-traffic-bars-container .traffic-bar-col:hover .traffic-tooltip {
     display: flex;
+}
+
+.ov-traffic-bars-container .traffic-bar-col.pos-right .traffic-tooltip {
+    left: auto;
+    right: 0;
+    transform: none;
+}
+
+.ov-traffic-bars-container .traffic-bar-col.pos-left .traffic-tooltip {
+    left: 0;
+    transform: none;
+}
+
+.ov-traffic-bars-container .traffic-bar-col.pos-center .traffic-tooltip {
+    left: 50%;
+    transform: translateX(-50%);
 }
 
 .btn-range-tab.spinning svg,
@@ -5358,8 +5436,27 @@ select option {
 [data-theme="light"] .net-meter-track {
     background: rgba(0, 0, 0, 0.07);
 }
+[data-theme="light"] .ov-traffic-bars-container {
+    background: #ffffff;
+    border-color: rgba(0, 0, 0, 0.1);
+}
+[data-theme="light"] .ov-traffic-grid .ov-grid-line {
+    border-bottom-color: rgba(0, 0, 0, 0.06);
+}
+[data-theme="light"] .ov-traffic-grid .ov-grid-line.line-zero {
+    border-bottom-color: rgba(0, 0, 0, 0.12);
+}
+[data-theme="light"] .ov-traffic-bars-container .traffic-bar-col:hover {
+    background: rgba(0, 0, 0, 0.04);
+}
 [data-theme="light"] .ov-traffic-bars-container .traffic-bar-stack {
     background: rgba(0, 0, 0, 0.05);
+}
+[data-theme="light"] .ov-traffic-bars-container .traffic-tooltip {
+    background: rgba(255, 255, 255, 0.98);
+    color: #0f172a;
+    border-color: rgba(0, 0, 0, 0.14);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.12);
 }
 [data-theme="light"] .ov-method-track {
     background: rgba(0, 0, 0, 0.07) !important;
@@ -6458,30 +6555,79 @@ select option {
     color: var(--text-muted);
 }
 
-.btn-range-tab {
-    background: transparent;
-    border: none;
-    color: var(--text-muted);
-    padding: 4px 10px;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 0.75rem;
-    font-weight: 600;
-    transition: all 0.2s ease;
+/* ── Metrics & Traffic Segmented Range Control Tabs (Nova Aesthetic) ── */
+.metrics-range-tabs {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    padding: 3px;
+    background: rgba(15, 20, 31, 0.75);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.35);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    box-sizing: border-box;
+    height: 34px;
 }
 
-.btn-range-tab:hover {
+[data-theme="light"] .metrics-range-tabs {
+    background: rgba(0, 0, 0, 0.04);
+    border-color: rgba(0, 0, 0, 0.1);
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.btn-range-tab {
+    height: 26px;
+    min-height: 26px;
+    line-height: 26px;
+    padding: 0 12px;
+    font-size: 0.76rem;
+    font-weight: 500;
+    font-family: var(--font-body);
+    color: var(--text-secondary);
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 7px;
+    cursor: pointer;
+    user-select: none;
+    white-space: nowrap;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: none;
+    box-sizing: border-box;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn-range-tab:hover:not(.active) {
     color: var(--text-primary);
     background: rgba(255, 255, 255, 0.06);
 }
 
-[data-theme="light"] .btn-range-tab:hover {
-    background: rgba(0, 0, 0, 0.06);
+[data-theme="light"] .btn-range-tab {
+    color: #64748B;
+}
+
+[data-theme="light"] .btn-range-tab:hover:not(.active) {
+    color: #0F172A;
+    background: rgba(0, 0, 0, 0.05);
 }
 
 .btn-range-tab.active {
-    background: var(--accent-indigo);
-    color: #ffffff !important;
+    background: linear-gradient(135deg, rgba(124, 58, 237, 0.24), rgba(99, 102, 241, 0.32));
+    color: #FFFFFF !important;
+    font-weight: 600;
+    border: 1px solid rgba(167, 139, 250, 0.45);
+    box-shadow: 0 2px 8px rgba(124, 58, 237, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+}
+
+[data-theme="light"] .btn-range-tab.active {
+    background: #FFFFFF;
+    color: #4F46E5 !important;
+    border: 1px solid rgba(99, 102, 241, 0.35);
+    box-shadow: 0 1px 4px rgba(15, 23, 42, 0.1);
+    font-weight: 600;
 }
 
 .metrics-timeline-bar {

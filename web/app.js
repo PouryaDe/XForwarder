@@ -45,7 +45,8 @@ import {
     deleteRule,
     initRulesViewControls,
     openSwitchLogsModal,
-    closeSwitchLogsModal
+    closeSwitchLogsModal,
+    copySwitchLogsToClipboard
 } from "./js/modules/rules.js";
 import {
     openAddRuleModal,
@@ -125,6 +126,7 @@ window.openTrafficModal = openTrafficModal;
 window.closeTrafficModal = closeTrafficModal;
 window.openSwitchLogsModal = openSwitchLogsModal;
 window.closeSwitchLogsModal = closeSwitchLogsModal;
+window.copySwitchLogsToClipboard = copySwitchLogsToClipboard;
 window.loadOverviewTrafficChart = loadOverviewTrafficChart;
 window.promptResetTraffic = (type, id) => promptResetTraffic(type, id, fetchStatus);
 window.triggerTrafficResetFromModal = () => triggerTrafficResetFromModal(fetchStatus);

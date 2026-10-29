@@ -181,8 +181,9 @@ export function renderTrafficBarsChart(rows) {
     }
 
     const maxVal = Math.max(...rows.map(r => r.total_bytes || 0), 1);
+    const totalBars = rows.length;
 
-    container.innerHTML = rows.map(r => {
+    container.innerHTML = rows.map((r, idx) => {
         const total = r.total_bytes || 0;
         const tx = r.tx_bytes || 0;
         const rx = r.rx_bytes || 0;
@@ -200,14 +201,24 @@ export function renderTrafficBarsChart(rows) {
         }
 
         const fullTime = r.period || r.label || "";
+        const isPeak = total === maxVal && total > 0;
+
+        let posClass = "pos-center";
+        if (idx < 3) posClass = "pos-left";
+        else if (idx >= totalBars - 3) posClass = "pos-right";
 
         return `
-            <div class="traffic-bar-col">
+            <div class="traffic-bar-col ${posClass}">
                 <div class="traffic-tooltip">
-                    <strong>${escapeHtml(fullTime)}</strong>
-                    <div style="margin-top:4px;">Total: <b>${formatBytes(total)}</b></div>
-                    <div style="color:var(--accent-mint);">Upload (TX): ${formatBytes(tx)}</div>
-                    <div style="color:var(--accent-cyan);">Download (RX): ${formatBytes(rx)}</div>
+                    <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:3px; margin-bottom:2px;">
+                        <strong style="color:var(--text-primary); font-size:0.75rem;">${escapeHtml(fullTime)}</strong>
+                        ${isPeak ? `<span style="font-size:0.6rem; font-weight:800; background:rgba(251,191,36,0.18); color:var(--accent-amber); border:1px solid rgba(251,191,36,0.4); padding:1px 4px; border-radius:4px;">PEAK</span>` : ""}
+                    </div>
+                    <div style="font-weight:700; color:#fff;">Total: <span style="color:var(--accent-cyan); font-weight:800;">${formatBytes(total)}</span></div>
+                    <div style="display:flex; flex-direction:column; gap:2px; font-size:0.68rem; margin-top:2px;">
+                        <span style="color:var(--accent-mint); display:inline-flex; align-items:center; gap:4px;"><span style="width:6px;height:6px;border-radius:1px;background:var(--accent-mint);display:inline-block;"></span>↑ TX: <b>${formatBytes(tx)}</b> (${txPct}%)</span>
+                        <span style="color:var(--accent-cyan); display:inline-flex; align-items:center; gap:4px;"><span style="width:6px;height:6px;border-radius:1px;background:var(--accent-cyan);display:inline-block;"></span>↓ RX: <b>${formatBytes(rx)}</b> (${rxPct}%)</span>
+                    </div>
                 </div>
                 <div class="traffic-bar-stack" style="height:${stackHeightPct}%;">
                     <div class="traffic-bar-segment segment-tx" style="height:${txPct}%;"></div>
@@ -642,8 +653,19 @@ export function renderOverviewTrafficBars(rows, period) {
     }
 
     const maxVal = Math.max(...rows.map(r => r.total_bytes || 0), 1);
+    const midVal = maxVal / 2;
 
-    container.innerHTML = rows.map(r => {
+    const gridHtml = `
+        <div class="ov-traffic-grid" aria-hidden="true">
+            <div class="ov-grid-line line-peak"><span class="ov-grid-val">${maxVal > 1 ? formatBytes(maxVal) : "Peak"}</span></div>
+            <div class="ov-grid-line line-mid"><span class="ov-grid-val">${maxVal > 1 ? formatBytes(midVal) : ""}</span></div>
+            <div class="ov-grid-line line-zero"><span class="ov-grid-val">0 B</span></div>
+        </div>
+    `;
+
+    const totalBars = rows.length;
+
+    const barsHtml = rows.map((r, idx) => {
         const total = r.total_bytes || 0;
         const tx = r.tx_bytes || 0;
         const rx = r.rx_bytes || 0;
@@ -661,14 +683,25 @@ export function renderOverviewTrafficBars(rows, period) {
         }
 
         const fullTime = r.period || r.label || "";
+        const isPeak = total === maxVal && total > 0;
+
+        // Smart position alignment to keep tooltip cleanly within viewport bounds
+        let posClass = "pos-center";
+        if (idx < 3) posClass = "pos-left";
+        else if (idx >= totalBars - 3) posClass = "pos-right";
 
         return `
-            <div class="traffic-bar-col">
+            <div class="traffic-bar-col ${posClass}">
                 <div class="traffic-tooltip">
-                    <strong style="color:var(--text-primary);">${escapeHtml(fullTime)}</strong>
-                    <div style="margin-top:4px; font-weight:700;">Total: ${formatBytes(total)}</div>
-                    <div style="color:var(--accent-mint);">↑ TX: ${formatBytes(tx)}</div>
-                    <div style="color:var(--accent-cyan);">↓ RX: ${formatBytes(rx)}</div>
+                    <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:3px; margin-bottom:2px;">
+                        <strong style="color:var(--text-primary); font-size:0.75rem;">${escapeHtml(fullTime)}</strong>
+                        ${isPeak ? `<span style="font-size:0.6rem; font-weight:800; background:rgba(251,191,36,0.18); color:var(--accent-amber); border:1px solid rgba(251,191,36,0.4); padding:1px 4px; border-radius:4px;">PEAK</span>` : ""}
+                    </div>
+                    <div style="font-weight:700; color:#fff;">Total: <span style="color:var(--accent-cyan); font-weight:800;">${formatBytes(total)}</span></div>
+                    <div style="display:flex; flex-direction:column; gap:2px; font-size:0.68rem; margin-top:2px;">
+                        <span style="color:var(--accent-mint); display:inline-flex; align-items:center; gap:4px;"><span style="width:6px;height:6px;border-radius:1px;background:var(--accent-mint);display:inline-block;"></span>↑ TX: <b>${formatBytes(tx)}</b> (${txPct}%)</span>
+                        <span style="color:var(--accent-cyan); display:inline-flex; align-items:center; gap:4px;"><span style="width:6px;height:6px;border-radius:1px;background:var(--accent-cyan);display:inline-block;"></span>↓ RX: <b>${formatBytes(rx)}</b> (${rxPct}%)</span>
+                    </div>
                 </div>
                 <div class="traffic-bar-stack" style="height:${stackHeightPct}%;">
                     <div class="traffic-bar-segment segment-tx" style="height:${txPct}%;"></div>
@@ -678,6 +711,8 @@ export function renderOverviewTrafficBars(rows, period) {
             </div>
         `;
     }).join("");
+
+    container.innerHTML = gridHtml + barsHtml;
 }
 
 export function renderOverviewMethods(summary) {

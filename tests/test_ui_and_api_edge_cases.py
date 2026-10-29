@@ -883,8 +883,8 @@ class TestUIAndAPIEdgeCases(unittest.TestCase):
         self.assertIn("--bg-surface: #FFFFFF;", css)
         self.assertIn("--blob-1: #c9dcfb;", css)
 
-        # 4. Primary Button & Brand Logo Mint-to-Violet Gradients
-        self.assertIn("linear-gradient(135deg, var(--accent-mint), var(--accent-violet))", css)
+        # 4. Primary Button & Brand Logo Gradients
+        self.assertIn("linear-gradient(135deg, #7C3AED, #6366F1)", css)
         self.assertIn(".btn-primary svg {", css)
 
         # 5. Absence of Login Security Badge (Eliminates Tech Stack Disclosure)

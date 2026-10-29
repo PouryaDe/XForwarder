@@ -5,6 +5,7 @@
 import { API_BASE } from "./api.js";
 import { escapeHtml, showToast } from "./utils.js";
 import { currentRules } from "./state.js";
+import { updateCategoryDatalist } from "./rules.js";
 
 let currentModalDestinations = [];
 let draggedModalPrioIndex = null;
@@ -26,6 +27,7 @@ export function openAddRuleModal() {
 
     if (form) form.reset();
     if (title) title.innerText = "Add Forwarding Port";
+    updateCategoryDatalist(currentRules);
 
     const ruleIdInput = document.getElementById("editRuleId") || document.getElementById("ruleId");
     if (ruleIdInput) ruleIdInput.value = "";
@@ -67,6 +69,7 @@ export function openEditRuleModal(ruleId) {
 
     if (form) form.reset();
     if (title) title.innerText = `Edit Port :${rule.port}`;
+    updateCategoryDatalist(currentRules);
 
     const ruleIdInput = document.getElementById("editRuleId") || document.getElementById("ruleId");
     if (ruleIdInput) ruleIdInput.value = rule.id || `rule-${rule.port}`;
@@ -439,13 +442,21 @@ export function initRuleModal(fetchStatusCallback) {
     if (btnAddDestination) {
         btnAddDestination.addEventListener("click", () => {
             syncDestinationsFromDom();
+            const mainPortInput = document.getElementById("formPort");
+            let defaultPort = "";
+            if (mainPortInput && mainPortInput.value) {
+                const parsed = parseInt(mainPortInput.value.trim(), 10);
+                if (!isNaN(parsed) && parsed >= 1 && parsed <= 65535) {
+                    defaultPort = parsed;
+                }
+            }
             const nextPrio = currentModalDestinations.length + 1;
             const nextType = nextPrio === 1 ? "haproxy" : "nftables";
             currentModalDestinations.push({
                 priority: nextPrio,
                 type: nextType,
                 target: "",
-                port: "",
+                port: defaultPort,
                 comment: "",
                 proxy_protocol: false,
                 is_relay: nextPrio > 1,
@@ -453,6 +464,34 @@ export function initRuleModal(fetchStatusCallback) {
             });
             renderDestinationsList();
         });
+    }
+
+    const formPortInput = document.getElementById("formPort");
+    if (formPortInput) {
+        formPortInput.addEventListener("input", () => {
+            if (!currentEditingRuleId) {
+                const parsed = parseInt(formPortInput.value.trim(), 10);
+                if (!isNaN(parsed) && parsed >= 1 && parsed <= 65535) {
+                    const portInputs = document.querySelectorAll("#destinationsContainer .dest-port");
+                    portInputs.forEach(input => {
+                        if (!input.value) {
+                            input.value = parsed;
+                        }
+                    });
+                }
+            }
+        });
+    }
+
+    const catInput = document.getElementById("formCategory");
+    if (catInput) {
+        const triggerPicker = () => {
+            if (catInput.hasAttribute("list") && !catInput.value && typeof catInput.showPicker === "function") {
+                try { catInput.showPicker(); } catch (_) {}
+            }
+        };
+        catInput.addEventListener("focus", triggerPicker);
+        catInput.addEventListener("click", triggerPicker);
     }
 
     if (ruleForm) {

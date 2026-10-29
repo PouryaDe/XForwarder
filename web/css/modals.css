@@ -112,10 +112,20 @@ select option {
     margin-bottom: 12px;
     background: var(--bg-surface);
     position: relative;
-    transition: background 0.2s ease;
 }
 
-.priority-box:hover { background: var(--bg-card-hover); }
+/* Hide native datalist arrow on category input */
+#formCategory::-webkit-calendar-picker-indicator,
+#formCategory::-webkit-list-button,
+input#formCategory::-webkit-calendar-picker-indicator,
+input#formCategory::-webkit-list-button {
+    display: none !important;
+    -webkit-appearance: none !important;
+    opacity: 0 !important;
+    width: 0 !important;
+    height: 0 !important;
+    pointer-events: none !important;
+}
 
 .dest-extra-row {
     display: flex;

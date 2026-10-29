@@ -363,8 +363,9 @@
     width: 28px;
     height: 28px;
     border-radius: 50%;
-    background: linear-gradient(135deg, var(--accent-mint), var(--accent-violet));
-    color: #0B0E14;
+    background: linear-gradient(135deg, #7C3AED, #6366F1);
+    box-shadow: 0 2px 8px rgba(124, 58, 237, 0.35);
+    color: #FFFFFF;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -372,7 +373,7 @@
 }
 
 .user-avatar svg {
-    stroke: #0B0E14;
+    stroke: #FFFFFF;
 }
 
 [data-theme="light"] .user-avatar {

@@ -72,6 +72,7 @@ export function sortRulesList(rulesList, sortMode, rulesState) {
 
 export function updateCategoryDatalist(rules) {
     const datalist = document.getElementById("categoryDatalist");
+    const catInput = document.getElementById("formCategory");
     if (!datalist || !Array.isArray(rules)) return;
     const categories = new Set();
     rules.forEach(r => {
@@ -80,10 +81,20 @@ export function updateCategoryDatalist(rules) {
         }
     });
 
-    datalist.innerHTML = Array.from(categories)
-        .sort((a, b) => a.localeCompare(b))
-        .map(cat => `<option value="${escapeHtml(cat)}"></option>`)
-        .join("");
+    if (categories.size === 0) {
+        datalist.innerHTML = "";
+        if (catInput) {
+            catInput.removeAttribute("list");
+        }
+    } else {
+        datalist.innerHTML = Array.from(categories)
+            .sort((a, b) => a.localeCompare(b))
+            .map(cat => `<option value="${escapeHtml(cat)}"></option>`)
+            .join("");
+        if (catInput) {
+            catInput.setAttribute("list", "categoryDatalist");
+        }
+    }
 }
 
 export function computeRulesFingerprint(filteredRules, rulesState) {
@@ -387,20 +398,6 @@ export function renderRuleCard(rule, rulesState) {
             <div class="paths-grid">
                 ${pathsHtml}
             </div>
-            ${rState.last_switch_explanation ? `
-                <div class="rule-switch-banner" onclick="openSwitchLogsModal(decodeURIComponent('${encodedId}'), '${escapeHtml(portKey)}')" title="Click to view switch decision history">
-                    <div class="switch-banner-content">
-                        <span class="switch-banner-icon" aria-hidden="true">
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-                        </span>
-                        <span class="switch-banner-text">${escapeHtml(rState.last_switch_explanation)}</span>
-                    </div>
-                    <span class="switch-banner-link">
-                        <span>Logs</span>
-                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
-                    </span>
-                </div>
-            ` : ''}
         </div>
     `;
 }
@@ -843,6 +840,11 @@ export function initRulesViewControls(fetchStatusCallback) {
         btnCloseSwitchLogsFooter.addEventListener("click", closeSwitchLogsModal);
     }
 
+    const btnCopySwitchLogs = document.getElementById("btnCopySwitchLogs");
+    if (btnCopySwitchLogs) {
+        btnCopySwitchLogs.addEventListener("click", copySwitchLogsToClipboard);
+    }
+
     const selectFilter = document.getElementById("switchLogsRuleFilter");
     if (selectFilter) {
         selectFilter.addEventListener("change", (e) => {
@@ -999,5 +1001,88 @@ export function renderSwitchLogsContent(filterRuleId = "all") {
     }).join("");
 
     timeline.innerHTML = html;
+}
+
+export function copySwitchLogsToClipboard() {
+    const select = document.getElementById("switchLogsRuleFilter");
+    const filterRuleId = select ? select.value : "all";
+    let events = [];
+    const rulesState = (lastRuntime && lastRuntime.rules_state) ? lastRuntime.rules_state : {};
+
+    if (filterRuleId === "all") {
+        if (lastRuntime && Array.isArray(lastRuntime.recent_switches) && lastRuntime.recent_switches.length > 0) {
+            events = [...lastRuntime.recent_switches];
+        } else {
+            Object.values(rulesState).forEach(rs => {
+                if (Array.isArray(rs.switch_events)) {
+                    events.push(...rs.switch_events);
+                }
+            });
+        }
+    } else {
+        const rs = rulesState[filterRuleId] || {};
+        if (Array.isArray(rs.switch_events)) {
+            events = [...rs.switch_events];
+        }
+    }
+
+    events.sort((a, b) => (parseFloat(b.timestamp) || 0) - (parseFloat(a.timestamp) || 0));
+
+    if (events.length === 0) {
+        showToast("No switch decision logs available to copy", "warn");
+        return;
+    }
+
+    const lines = [
+        `=== XForwarder Switch Decision Logs (${filterRuleId === 'all' ? 'All Port Rules' : 'Rule: ' + filterRuleId}) ===`,
+        `Exported at: ${new Date().toLocaleString()}`,
+        `Total switch events: ${events.length}`,
+        ""
+    ];
+
+    events.forEach((ev, idx) => {
+        const timeStr = ev.time_str || (ev.timestamp ? new Date(ev.timestamp * 1000).toLocaleString() : 'N/A');
+        const portStr = ev.port ? `Port :${ev.port}` : (ev.rule_id || 'Global');
+        const fromP = ev.from_priority || 1;
+        const toP = ev.to_priority || 1;
+        const reason = ev.reason || 'switch';
+        const explanation = ev.explanation || `Switched Priority #${fromP} -> #${toP}`;
+        const fromLoss = ev.from_loss !== undefined ? `${parseFloat(ev.from_loss).toFixed(1)}%` : 'N/A';
+        const toLoss = ev.to_loss !== undefined ? `${parseFloat(ev.to_loss).toFixed(1)}%` : '0.0%';
+        const fromLat = (ev.from_latency !== undefined && ev.from_latency !== null) ? `${parseFloat(ev.from_latency).toFixed(1)}ms` : 'Down';
+        const toLat = (ev.to_latency !== undefined && ev.to_latency !== null) ? `${parseFloat(ev.to_latency).toFixed(1)}ms` : 'N/A';
+
+        lines.push(`[${idx + 1}] ${timeStr} | ${portStr} | Switch: #${fromP} -> #${toP} | Reason: ${reason}`);
+        lines.push(`    Explanation: ${explanation}`);
+        lines.push(`    Metrics: From [${ev.from_status || 'down'} | Loss: ${fromLoss} | Lat: ${fromLat}] -> To [${ev.to_status || 'healthy'} | Loss: ${toLoss} | Lat: ${toLat}]`);
+        lines.push("");
+    });
+
+    const fullText = lines.join("\n");
+    const doToast = () => showToast(`Copied ${events.length} switch log events to clipboard!`);
+
+    if (navigator.clipboard && typeof navigator.clipboard.writeText === "function") {
+        navigator.clipboard.writeText(fullText).then(doToast).catch(() => {
+            fallbackCopy(fullText, doToast);
+        });
+    } else {
+        fallbackCopy(fullText, doToast);
+    }
+}
+
+function fallbackCopy(text, onSuccess) {
+    const ta = document.createElement("textarea");
+    ta.value = text;
+    ta.style.position = "fixed";
+    ta.style.left = "-9999px";
+    document.body.appendChild(ta);
+    ta.select();
+    try {
+        document.execCommand("copy");
+        if (typeof onSuccess === "function") onSuccess();
+    } catch (_) {
+        showToast("Unable to copy logs to clipboard", "error");
+    }
+    document.body.removeChild(ta);
 }
 

@@ -2,7 +2,7 @@
 // XForwarder Web UI - Logs Module (Native ES Module)
 // ============================================================================
 
-import { escapeHtml } from "./utils.js";
+import { escapeHtml, showToast } from "./utils.js";
 
 let logFeedActive = true;
 
@@ -39,10 +39,41 @@ export function appendLogEntry(type, message) {
 
 export function initLogs() {
     const btnClearLogs = document.getElementById("btnClearLogs");
+    const btnCopyConsoleLogs = document.getElementById("btnCopyConsoleLogs");
     const btnToggleLogFeed = document.getElementById("btnToggleLogFeed");
     const logFeedText = document.getElementById("logFeedText");
     const logSearchInput = document.getElementById("logSearchInput");
     const logConsole = document.getElementById("logConsole");
+
+    if (btnCopyConsoleLogs) {
+        btnCopyConsoleLogs.addEventListener("click", () => {
+            if (!logConsole) return;
+            const entries = logConsole.querySelectorAll(".log-entry");
+            if (entries.length === 0) {
+                showToast("No console logs to copy", "warn");
+                return;
+            }
+            const lines = [
+                `=== XForwarder Real-time Failover & Probe Logs ===`,
+                `Exported at: ${new Date().toLocaleString()}`,
+                `Total entries: ${entries.length}`,
+                ""
+            ];
+            entries.forEach(entry => {
+                lines.push(entry.innerText.replace(/\s+/g, " ").trim());
+            });
+            const fullText = lines.join("\n");
+            const doToast = () => showToast(`Copied ${entries.length} log entries to clipboard!`);
+
+            if (navigator.clipboard && typeof navigator.clipboard.writeText === "function") {
+                navigator.clipboard.writeText(fullText).then(doToast).catch(() => {
+                    fallbackCopyLogs(fullText, doToast);
+                });
+            } else {
+                fallbackCopyLogs(fullText, doToast);
+            }
+        });
+    }
 
     if (btnClearLogs) {
         btnClearLogs.addEventListener("click", () => {
@@ -79,4 +110,20 @@ export function initLogs() {
             });
         });
     }
+}
+
+function fallbackCopyLogs(text, onSuccess) {
+    const ta = document.createElement("textarea");
+    ta.value = text;
+    ta.style.position = "fixed";
+    ta.style.left = "-9999px";
+    document.body.appendChild(ta);
+    ta.select();
+    try {
+        document.execCommand("copy");
+        if (typeof onSuccess === "function") onSuccess();
+    } catch (_) {
+        showToast("Unable to copy logs to clipboard", "error");
+    }
+    document.body.removeChild(ta);
 }
