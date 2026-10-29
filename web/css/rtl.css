@@ -1,0 +1,291 @@
+/* ==========================================================================
+   XForwarder - Persian (Farsi) & RTL Layout Styles
+   Typography (Vazirmatn), BiDi Text Handling, & Directional Overrides
+   ========================================================================== */
+
+[dir="rtl"],
+[lang="fa"] {
+    --font-sans: 'Vazirmatn', -apple-system, BlinkMacSystemFont, 'Segoe UI', Tahoma, Arial, sans-serif;
+    --font-display: 'Vazirmatn', 'Space Grotesk', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+[dir="rtl"] body {
+    font-family: var(--font-sans);
+    direction: rtl;
+    text-align: right;
+}
+
+/* Latin & Monospace BiDi Preservation (Avoid Reversed IPs, Ports, Ping ms, CIDRs) */
+[dir="rtl"] .font-mono,
+[dir="rtl"] .mono,
+[dir="rtl"] code,
+[dir="rtl"] pre,
+[dir="rtl"] .dest-ip,
+[dir="rtl"] .dest-port,
+[dir="rtl"] .path-dest,
+[dir="rtl"] .latency-pill,
+[dir="rtl"] .loss50-pill,
+[dir="rtl"] .rule-port,
+[dir="rtl"] .stat-number,
+[dir="rtl"] .traffic-val,
+[dir="rtl"] .kpi-value,
+[dir="rtl"] .terminal-cmd-hint,
+[dir="rtl"] .timeline-ticks,
+[dir="rtl"] .net-meter-val,
+[dir="rtl"] .socket-leg-item,
+[dir="rtl"] .info-value.font-mono,
+[dir="rtl"] .wan-iface-tag,
+[dir="rtl"] .brand-badge,
+[dir="rtl"] .lockout-timer,
+[dir="rtl"] .paste-json-textarea,
+[dir="rtl"] .log-console,
+[dir="rtl"] #cpuText,
+[dir="rtl"] #ramText,
+[dir="rtl"] #trafficText,
+[dir="rtl"] #connsText {
+    direction: ltr !important;
+    unicode-bidi: embed !important;
+    display: inline-block;
+}
+
+/* Sidebar in RTL */
+[dir="rtl"] .sidebar {
+    border-left: 1px solid var(--border-color);
+    border-right: none;
+}
+
+[dir="rtl"] .btn-sidebar-close {
+    margin-right: auto;
+    margin-left: 0;
+}
+
+[dir="rtl"] .nav-item .nav-badge {
+    margin-right: auto;
+    margin-left: 0;
+}
+
+[dir="rtl"] .sidebar-user .btn-sidebar-logout {
+    margin-right: auto;
+    margin-left: 0;
+}
+
+/* Mobile Off-canvas Sidebar in RTL */
+@media (max-width: 960px) {
+    [dir="rtl"] .sidebar {
+        right: 0;
+        left: auto;
+        transform: translateX(100%);
+    }
+
+    [dir="rtl"] .sidebar.show,
+    [dir="rtl"] .sidebar.active {
+        transform: translateX(0);
+    }
+}
+
+/* Topbar in RTL */
+[dir="rtl"] .topbar {
+    flex-direction: row;
+}
+
+[dir="rtl"] .topbar-actions {
+    margin-right: auto;
+    margin-left: 0;
+}
+
+[dir="rtl"] .breadcrumb-container {
+    margin-right: 12px;
+    margin-left: 0;
+}
+
+[dir="rtl"] .breadcrumb-sep {
+    transform: scaleX(-1);
+    display: inline-block;
+}
+
+/* Input Fields with Icons in RTL */
+[dir="rtl"] .input-with-icon .input-icon {
+    right: 14px;
+    left: auto;
+}
+
+[dir="rtl"] .input-with-icon input {
+    padding-right: 42px;
+    padding-left: 14px;
+    text-align: right;
+}
+
+[dir="rtl"] .input-with-icon input.font-mono {
+    text-align: left;
+    direction: ltr;
+}
+
+[dir="rtl"] .btn-toggle-pwd {
+    left: 10px;
+    right: auto;
+}
+
+/* Search Box in RTL */
+[dir="rtl"] .search-box svg {
+    right: 12px;
+    left: auto;
+}
+
+[dir="rtl"] .search-box input {
+    padding-right: 38px;
+    padding-left: 32px;
+    text-align: right;
+}
+
+[dir="rtl"] .search-box .clear-btn {
+    left: 10px;
+    right: auto;
+}
+
+/* Select Control Arrow Spacing in RTL */
+[dir="rtl"] select.form-control,
+[dir="rtl"] select.form-input {
+    padding-left: 40px;
+    padding-right: 14px;
+    background-position: left 14px center;
+}
+
+/* Rule Card Headers & Actions in RTL */
+[dir="rtl"] .rule-header-actions,
+[dir="rtl"] .rule-actions {
+    margin-right: auto;
+    margin-left: 0;
+}
+
+[dir="rtl"] .category-actions {
+    margin-right: auto;
+    margin-left: 0;
+}
+
+[dir="rtl"] .path-meta-group {
+    margin-right: auto;
+    margin-left: 0;
+}
+
+/* Drag Handles in RTL */
+[dir="rtl"] .drag-handle {
+    margin-left: 8px;
+    margin-right: 0;
+}
+
+/* Switch Slider Animation in RTL */
+[dir="rtl"] .switch input:checked+.slider:before,
+[dir="rtl"] .dest-switch-control input:checked+.dest-switch-slider:before {
+    transform: translateX(-18px);
+}
+
+/* Modals in RTL */
+[dir="rtl"] .modal-close {
+    left: 20px;
+    right: auto;
+    margin-right: auto;
+    margin-left: 0;
+}
+
+[dir="rtl"] .modal-footer {
+    flex-direction: row-reverse;
+}
+
+[dir="rtl"] .modal-footer.confirm-footer {
+    flex-direction: row;
+    justify-content: center;
+}
+
+[dir="rtl"] .traffic-modal-footer {
+    flex-direction: row;
+    justify-content: space-between;
+}
+
+[dir="rtl"] .traffic-footer-left {
+    margin-left: auto;
+    margin-right: 0;
+}
+
+[dir="rtl"] .traffic-footer-right {
+    margin-right: auto;
+    margin-left: 0;
+}
+
+/* Toast Container in RTL */
+[dir="rtl"] .toast-container {
+    left: 24px;
+    right: auto;
+}
+
+[dir="rtl"] .toast-close {
+    margin-right: auto;
+    margin-left: 0;
+}
+
+/* Language Toggle Button Styling */
+.lang-toggle-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    border-radius: var(--radius-sm);
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    color: var(--text-secondary);
+    font-size: 0.82rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    user-select: none;
+    line-height: 1;
+}
+
+.lang-toggle-btn:hover {
+    background: var(--bg-card-hover);
+    color: var(--text-primary);
+}
+
+.lang-icon,
+.lang-toggle-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--accent-cyan);
+}
+
+.sidebar-lang-toggle {
+    width: 100%;
+    justify-content: flex-start;
+    margin-top: 8px;
+    padding: 8px 12px;
+}
+
+.login-lang-toggle {
+    margin-left: 8px;
+}
+
+[dir="rtl"] .login-lang-toggle {
+    margin-left: 0;
+    margin-right: 8px;
+}
+
+/* Topbar Language Button */
+.btn-lang-topbar {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-weight: 600;
+    font-size: 0.8rem;
+}
+
+/* Vazirmatn fine-tuning */
+[dir="rtl"] .section-desc,
+[dir="rtl"] .modal-subtitle,
+[dir="rtl"] .overview-card-sub {
+    line-height: 1.65;
+}
+
+[dir="rtl"] .rules-header-card .section-desc {
+    font-size: 0.84rem;
+    line-height: 1.6;
+}

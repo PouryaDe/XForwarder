@@ -8,13 +8,13 @@ description: Web dashboard UI aesthetics, Vanilla stack constraints, session aut
 ## 1. Frontend Technology Stack
 - **Pure Vanilla Stack**: HTML5, CSS3, and modern Vanilla ES6+ JavaScript.
 - **No Node.js / NPM Build Step**: The web dashboard is served directly from `web/` as static assets without any Webpack/Vite/Babel compilation step on the target Linux server.
-- **Typography**: Google Fonts Space Grotesk (display/headings), Inter (interface body), and JetBrains Mono (monospaced IPs, ports, and latency readouts).
+- **Typography**: Google Fonts Space Grotesk (display/headings), Inter (interface body), JetBrains Mono (monospaced IPs, ports, and latency readouts), and Vazirmatn (Persian RTL typography).
 
 ## 2. Aesthetics & Design Guidelines
 - **Theme**: Nova Admin aesthetic with deep slate dark base (`#0B0E14`), floating Aurora ambient lighting (`.aurora`), sleek glassmorphism panels (`backdrop-filter: blur(20px)`), subtle borders (`rgba(255, 255, 255, 0.08)`), signature mint-to-violet gradients (`linear-gradient(135deg, #6EE7B7, #A78BFA)`), and restrained highlights (rose `#FB7185` for outages, amber `#FBBF6B` for warnings, mint `#6EE7B7` for healthy states).
 - **Rules Organization**: Default card view with optional compact list view toggle; multi-metric sorting (port, registration date, health, category); optional custom port categories with illuminated divider lines and autocomplete datalist suggestions.
 - **Responsiveness**: Fully usable on mobile viewports as well as ultra-wide monitors.
-- **Language**: English interface for universal usability.
+- **Bilingual & RTL Architecture**: Comprehensive English (`en`) and Persian (`fa`) dual-language support with instant toggle. Persian mode activates `[dir="rtl"]`, right-to-left layout alignment, Vazirmatn font, and zero-flicker pre-hydration script in `<head>`. Latin numerals, IP addresses (`.dest-ip`, `.font-mono`), port badges, latency/packet-loss pills, and traffic values strictly enforce `direction: ltr !important` and `unicode-bidi: embed !important` to prevent text reversal.
 
 ## 3. Authentication & Security Model
 - **Password Protection**: Admin password is encrypted via PBKDF2-HMAC-SHA256 (100,000 iterations + 16-byte cryptographic salt) with backward-compatible auto-upgrade for legacy SHA-256 hashes.

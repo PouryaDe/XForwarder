@@ -69,8 +69,10 @@
     "Fixed Traffic (24h) stat card integration in web/js/modules/stats.js with real-time data from /api/status and robust 0 B fallback",
     "Implemented Daily Traffic Analytics & 24h/7d Hourly Stacked Bar Chart in Overview: pure Vanilla CSS/SVG (<2KB), peak throughput calculation, interactive tooltips with clipping prevention, forwarding methods distribution bar, and full dual-theme Light Mode support",
     "Completed logical, structural, and security audit: fixed balanced load badge color to emerald, enforced listener idempotency, defended against non-string period arguments, verified zero untracked files, and expanded unit tests to 254 tests with 100% pass rate",
-    "Enhanced route quality failover engine: implemented total outage deadlock prevention (<100% loss candidate selection), multi-priority degraded backup escape, anti-reset streak guard, intermediate relay hop-1 ping neutrality, and full Switch Decision Logs modal (#switchLogsModal) & timeline UI with 100% pass rate across all 256 unit tests"
+    "Enhanced route quality failover engine: implemented total outage deadlock prevention (<100% loss candidate selection), multi-priority degraded backup escape, anti-reset streak guard, intermediate relay hop-1 ping neutrality, and full Switch Decision Logs modal (#switchLogsModal) & timeline UI with 100% pass rate across all 256 unit tests",
+    "Added complete Persian (Farsi) language internationalization, RTL layout switching, and Vazirmatn typography across 100% of views, pages, cards, tables, and modals with zero-flicker pre-hydration, BiDi safety, and 100% test pass rate across 278 unit tests",
+    "Completed 8-point architectural, security, and edge-case audit for i18n & RTL subsystem: removed unused innerHTML binding in applyI18nToDOM, standardized JSDoc comments, updated AGENTS.md and .agents/AGENTS.md with Rule 19/24, added dedicated test suite tests/test_i18n_and_rtl.py with 100% pass rate across 290 total unit tests"
   ],
   "next_steps": [],
-  "notes": "Route quality failover engine enhancements, anti-reset streak guard, and Switch Decision Logs modal fully implemented, audited, tested, documented, and pushed to git."
+  "notes": "Persian (Farsi) translation, RTL layout, Vazirmatn font, and BiDi isolation fully verified with 100% test pass rate across 290 unit tests."
 }

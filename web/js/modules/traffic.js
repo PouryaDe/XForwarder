@@ -5,6 +5,7 @@
 import { API_BASE } from "./api.js";
 import { formatBytes, showToast, escapeHtml, askConfirm } from "./utils.js";
 import { currentRules, lastRuntime, lastTrafficData } from "./state.js";
+import { t } from "./i18n.js";
 
 let currentTrafficEntity = "all:all";
 let currentTrafficPeriod = "24h";

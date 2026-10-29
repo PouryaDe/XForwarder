@@ -5,6 +5,7 @@
 import { API_BASE } from "./api.js";
 import { escapeHtml, safeInlineArg, formatLatencyBadge, formatLoss50Badge, formatLoss50Inline, formatConciseReason, formatProtoBadge, formatBytes, showToast, askConfirm } from "./utils.js";
 import { currentRules, lastRuntime, lastTrafficData, lastLatestLoss } from "./state.js";
+import { t } from "./i18n.js";
 
 let currentViewMode = localStorage.getItem("xfwd_rules_view") || "cards";
 let currentSort = localStorage.getItem("xfwd_rules_sort") || "port_asc";
@@ -219,9 +220,9 @@ export function renderRuleCard(rule, rulesState) {
     const copyPortSvg = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>`;
 
     const modeButtonsHtml = [
-        `<button type="button" class="btn-mode-pill ${forceOverride === 0 ? 'is-active auto' : ''}" onclick="handleOverrideChange(decodeURIComponent('${encodedId}'), 0)" title="Automatic Multi-Path Failover (Routes in order of healthy priorities)">
+        `<button type="button" class="btn-mode-pill ${forceOverride === 0 ? 'is-active auto' : ''}" onclick="handleOverrideChange(decodeURIComponent('${encodedId}'), 0)" title="${t("rules.auto_failover", {}, "Auto Failover")}">
             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-            <span>Auto Failover</span>
+            <span>${t("rules.auto_failover", {}, "Auto Failover")}</span>
         </button>`
     ];
 
@@ -230,9 +231,9 @@ export function renderRuleCard(rule, rulesState) {
         const isForcedThis = (forceOverride === p);
         const dType = escapeHtml(String(d.type || 'haproxy').toUpperCase());
         modeButtonsHtml.push(`
-            <button type="button" class="btn-mode-pill ${isForcedThis ? 'is-active forced' : ''}" onclick="handleOverrideChange(decodeURIComponent('${encodedId}'), ${p})" title="Manually force #${p} (${dType}) for testing">
+            <button type="button" class="btn-mode-pill ${isForcedThis ? 'is-active forced' : ''}" onclick="handleOverrideChange(decodeURIComponent('${encodedId}'), ${p})" title="${t("rules.force_prio", { prio: p }, `Force #${p}`)}">
                 <span class="pill-dot"></span>
-                <span>Force #${p}</span>
+                <span>${t("rules.force_prio", { prio: p }, `Force #${p}`)}</span>
             </button>
         `);
     });
@@ -248,22 +249,22 @@ export function renderRuleCard(rule, rulesState) {
         const isHealthy = (stat.status === 'healthy');
         const isDown = (stat.status === 'failed' || stat.status === 'down' || (stat.packet_loss !== undefined && parseInt(stat.packet_loss) >= 100));
 
-        let statusLabel = 'STANDBY';
+        let statusLabel = t("status.standby", {}, 'STANDBY');
         let statusClass = 'status-standby';
         if (!isEnabled) {
-            statusLabel = 'OFF';
+            statusLabel = t("status.off", {}, 'OFF');
             statusClass = 'status-disabled';
         } else if (isHealthy) {
-            statusLabel = 'HEALTHY';
+            statusLabel = t("status.healthy", {}, 'HEALTHY');
             statusClass = 'status-healthy';
         } else if (isDown) {
-            statusLabel = 'DOWN';
+            statusLabel = t("status.down", {}, 'DOWN');
             statusClass = 'status-failed';
         } else if (stat.status === 'degraded') {
-            statusLabel = 'DEGRADED';
+            statusLabel = t("status.degraded", {}, 'DEGRADED');
             statusClass = 'status-degraded';
         } else if (stat.status === 'critical') {
-            statusLabel = 'CRITICAL';
+            statusLabel = t("status.critical", {}, 'CRITICAL');
             statusClass = 'status-failed';
         } else if (stat.status) {
             statusLabel = String(stat.status).toUpperCase();
@@ -311,11 +312,11 @@ export function renderRuleCard(rule, rulesState) {
                  ondragend="handlePathDragEnd(event)">
                 <div class="path-header">
                     <div class="path-header-left">
-                        <span class="drag-handle" title="Drag to reorder priority">
+                        <span class="drag-handle" title="${escapeHtml(t("modal.drag_hint", {}, "Drag to reorder priority"))}">
                             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="9" cy="6" r="1.5"/><circle cx="15" cy="6" r="1.5"/><circle cx="9" cy="12" r="1.5"/><circle cx="15" cy="12" r="1.5"/><circle cx="9" cy="18" r="1.5"/><circle cx="15" cy="18" r="1.5"/></svg>
                         </span>
                         <span class="path-tag ${tagClass}">#${prio}</span>
-                        ${dest.is_relay ? `<span class="badge-relay-pill" title="Mid Server: The engine anchors on Priority 1 and only fails over here on outage, packet loss, or latency > 150ms.">Mid Server</span>` : ''}
+                        ${dest.is_relay ? `<span class="badge-relay-pill" title="Mid Server: The engine anchors on Priority 1 and only fails over here on outage, packet loss, or latency > 150ms.">${escapeHtml(t("rules.relay", {}, "Mid Server"))}</span>` : ''}
                         <span class="path-status ${statusClass}" title="${escapeHtml(stat.reason || statusLabel)}">
                             <span class="status-indicator"></span>
                             ${statusLabel}
@@ -362,8 +363,8 @@ export function renderRuleCard(rule, rulesState) {
                     <span class="port-num">:${escapeHtml(rule.port)}</span>
                     <button class="btn-copy" onclick="copyText(decodeURIComponent('${encodeURIComponent(rule.port)}'))" title="Copy Port Number">${copyPortSvg}</button>
                     ${trafficPillHtml}
-                    ${rState.switch_pending_seconds > 0 ? `<span class="badge-pending-switch" title="Candidate P${rState.candidate_priority || ''} sustained quality advantage. Switching after streak confirmation."><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>Switch in ${rState.switch_pending_seconds}s</span>` : ''}
-                    ${rState.hold_remaining > 0 ? `<span class="badge-cooldown" title="Route held stable to prevent disruption (Min Hold: 10m)"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 14 14"/></svg>Hold ${rState.hold_remaining}s</span>` : (rState.cooldown_remaining > 0 ? `<span class="badge-cooldown" title="Post-Critical Cooldown active"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 14 14"/></svg>Cooldown ${rState.cooldown_remaining}s</span>` : '')}
+                    ${rState.switch_pending_seconds > 0 ? `<span class="badge-pending-switch" title="Candidate P${rState.candidate_priority || ''} sustained quality advantage. Switching after streak confirmation."><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>${escapeHtml(t("rules.switch_in", { sec: rState.switch_pending_seconds }, `Switch in ${rState.switch_pending_seconds}s`))}</span>` : ''}
+                    ${rState.hold_remaining > 0 ? `<span class="badge-cooldown" title="Route held stable to prevent disruption (Min Hold: 10m)"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 14 14"/></svg>${escapeHtml(t("rules.hold", { sec: rState.hold_remaining }, `Hold ${rState.hold_remaining}s`))}</span>` : (rState.cooldown_remaining > 0 ? `<span class="badge-cooldown" title="Post-Critical Cooldown active"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 14 14"/></svg>Cooldown ${rState.cooldown_remaining}s</span>` : '')}
                     ${rState.is_flapping ? `<span class="badge-flapping" title="Repeated route flapping detected. Cooldown extended."><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>Flap Guard</span>` : ''}
                 </div>
                 <div class="rule-actions">
@@ -485,8 +486,8 @@ export function renderRuleListRow(rule, rulesState) {
                 <span class="rule-list-port">:${escapeHtml(rule.port)}</span>
                 <button class="btn-copy" onclick="copyText(decodeURIComponent('${encodeURIComponent(rule.port)}'))" title="Copy Port">${copyPortSvg}</button>
                 ${trafficPillHtml}
-                ${rState.switch_pending_seconds > 0 ? `<span class="badge-pending-switch" style="font-size:0.68rem; padding:2px 6px;" title="Switching to P${rState.candidate_priority || ''} in ${rState.switch_pending_seconds}s">Switch in ${rState.switch_pending_seconds}s</span>` : ''}
-                ${rState.hold_remaining > 0 ? `<span class="badge-cooldown" style="font-size:0.68rem; padding:2px 6px;" title="Min Hold 10m">Hold ${rState.hold_remaining}s</span>` : (rState.cooldown_remaining > 0 ? `<span class="badge-cooldown" style="font-size:0.68rem; padding:2px 6px;">Cooldown ${rState.cooldown_remaining}s</span>` : '')}
+                ${rState.switch_pending_seconds > 0 ? `<span class="badge-pending-switch" style="font-size:0.68rem; padding:2px 6px;" title="Switching to P${rState.candidate_priority || ''} in ${rState.switch_pending_seconds}s">${escapeHtml(t("rules.switch_in", { sec: rState.switch_pending_seconds }, `Switch in ${rState.switch_pending_seconds}s`))}</span>` : ''}
+                ${rState.hold_remaining > 0 ? `<span class="badge-cooldown" style="font-size:0.68rem; padding:2px 6px;" title="Min Hold 10m">${escapeHtml(t("rules.hold", { sec: rState.hold_remaining }, `Hold ${rState.hold_remaining}s`))}</span>` : (rState.cooldown_remaining > 0 ? `<span class="badge-cooldown" style="font-size:0.68rem; padding:2px 6px;">Cooldown ${rState.cooldown_remaining}s</span>` : '')}
                 ${rState.is_flapping ? `<span class="badge-flapping" style="font-size:0.68rem; padding:2px 6px;">Flap</span>` : ''}
             </div>
 
@@ -530,8 +531,8 @@ export function renderRules(rules, runtime) {
         rulesContainer.className = "rules-container";
         rulesContainer.innerHTML = `
             <div style="text-align:center;padding:48px 20px;color:var(--text-secondary);border:1px dashed var(--border-color);border-radius:18px;width:100%;grid-column:1/-1;background:var(--bg-card);backdrop-filter:blur(16px);box-shadow:var(--panel-shadow);">
-                <p style="font-size:1.1rem;margin-bottom:8px;font-weight:600;color:var(--text-primary);">No port forwarding rules configured yet.</p>
-                <p style="font-size:0.85rem;color:var(--text-muted);">Click "Add Port Rule" above to specify your ports and priority uplinks.</p>
+                <p style="font-size:1.1rem;margin-bottom:8px;font-weight:600;color:var(--text-primary);">${t("rules.empty_title", {}, "No port forwarding rules configured yet.")}</p>
+                <p style="font-size:0.85rem;color:var(--text-muted);">${t("rules.empty_desc", {}, "Click \"Add Port Rule\" above to specify your ports and priority uplinks.")}</p>
             </div>
         `;
         return;
@@ -615,7 +616,7 @@ export function renderRules(rules, runtime) {
         rulesContainer.innerHTML = sortedKeys.map(catKey => {
             const groupRules = groups.get(catKey);
             const isUncat = catKey === "__uncategorized__";
-            const catTitle = isUncat ? "General / Uncategorized" : escapeHtml(catKey);
+            const catTitle = isUncat ? t("rules.uncategorized", {}, "General / Uncategorized") : escapeHtml(catKey);
             const itemsHtml = groupRules.map(r => currentViewMode === "list" ? renderRuleListRow(r, rulesState) : renderRuleCard(r, rulesState)).join("");
 
             return `

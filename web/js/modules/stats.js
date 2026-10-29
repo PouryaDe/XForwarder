@@ -4,6 +4,7 @@
 
 import { formatBytes, formatTrafficMB, formatEngineVersion, escapeHtml, showToast } from "./utils.js";
 import { lastTrafficData } from "./state.js";
+import { t } from "./i18n.js";
 
 export let _trafficModeRate = true;
 if (typeof window !== "undefined") {

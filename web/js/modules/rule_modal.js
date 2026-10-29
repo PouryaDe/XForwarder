@@ -6,6 +6,7 @@ import { API_BASE } from "./api.js";
 import { escapeHtml, showToast } from "./utils.js";
 import { currentRules } from "./state.js";
 import { updateCategoryDatalist } from "./rules.js";
+import { t } from "./i18n.js";
 
 let currentModalDestinations = [];
 let draggedModalPrioIndex = null;
@@ -26,7 +27,7 @@ export function openAddRuleModal() {
     if (!modal) return;
 
     if (form) form.reset();
-    if (title) title.innerText = "Add Forwarding Port";
+    if (title) title.innerText = t("modal.rule_title_add");
     updateCategoryDatalist(currentRules);
 
     const ruleIdInput = document.getElementById("editRuleId") || document.getElementById("ruleId");
@@ -68,7 +69,7 @@ export function openEditRuleModal(ruleId) {
     if (!modal) return;
 
     if (form) form.reset();
-    if (title) title.innerText = `Edit Port :${rule.port}`;
+    if (title) title.innerText = `${t("modal.rule_title_configure")} :${rule.port}`;
     updateCategoryDatalist(currentRules);
 
     const ruleIdInput = document.getElementById("editRuleId") || document.getElementById("ruleId");
@@ -165,11 +166,11 @@ export function renderDestinationRow(dest, index, totalCount) {
     div.innerHTML = `
         <div class="priority-header">
             <div class="prio-title-group">
-                <span class="drag-handle" title="Drag to reorder priority">
+                <span class="drag-handle" title="${escapeHtml(t('modal.drag_hint'))}">
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="9" cy="6" r="1.5"/><circle cx="15" cy="6" r="1.5"/><circle cx="9" cy="12" r="1.5"/><circle cx="15" cy="12" r="1.5"/><circle cx="9" cy="18" r="1.5"/><circle cx="15" cy="18" r="1.5"/></svg>
                 </span>
                 <span class="prio-tag ${getPrioTagClass(prio)}">#${prio}</span>
-                <span class="prio-sub">${isPrimary ? "Primary Path" : "Backup Path"}</span>
+                <span class="prio-sub">${isPrimary ? escapeHtml(t("modal.primary_path")) : escapeHtml(t("modal.backup_path"))}</span>
             </div>
             <div class="prio-header-actions">
                 <label class="dest-switch-control" title="Enable or disable this priority path">
@@ -190,7 +191,7 @@ export function renderDestinationRow(dest, index, totalCount) {
         </div>
         <div class="dest-form-row">
             <div class="form-group dest-col-type">
-                <label>Engine Type</label>
+                <label>${escapeHtml(t("modal.dest_type"))}</label>
                 <select class="form-control dest-type" onchange="handleDestTypeChange(this)">
                     <option value="haproxy" ${type === "haproxy" ? "selected" : ""}>HAProxy (IPv6)</option>
                     <option value="nginx" ${type === "nginx" ? "selected" : ""}>Nginx (Stream)</option>
@@ -198,31 +199,31 @@ export function renderDestinationRow(dest, index, totalCount) {
                 </select>
             </div>
             <div class="form-group dest-col-target">
-                <label>Destination Target IP / Host</label>
+                <label>${escapeHtml(t("modal.dest_target"))}</label>
                 <input type="text" class="form-control dest-target" placeholder="${targetPlaceholder}" value="${escapeHtml(target)}" required>
             </div>
             <div class="form-group dest-col-port">
-                <label>Target Port</label>
+                <label>${escapeHtml(t("modal.dest_port"))}</label>
                 <input type="number" class="form-control dest-port" placeholder="Default" min="1" max="65535" value="${escapeHtml(port)}">
             </div>
         </div>
         <div class="form-group" style="margin-bottom:10px;">
-            <label>Comment / Label</label>
+            <label>${escapeHtml(t("modal.comment_label"))}</label>
             <input type="text" class="form-control dest-comment" placeholder="e.g. ${isPrimary ? 'Foreign Server 1 - Primary IPv6' : 'Backup Tunnel Node ' + prio}" value="${escapeHtml(comment)}">
         </div>
         <div class="dest-extra-row" style="flex-wrap: wrap; gap: 10px;">
             <label class="dest-toggle-label" title="Enable only if remote destination (e.g. Xray/V2Ray with acceptProxyProtocol) is configured to receive PROXY Protocol headers.">
                 <input type="checkbox" class="dest-proxy-proto" ${dest.proxy_protocol ? "checked" : ""}>
-                <span>Send PROXY Protocol v2 (Advanced)</span>
+                <span>${escapeHtml(t("modal.send_proxy_v2"))}</span>
             </label>
             <label class="dest-toggle-label" title="Mid Server: Ping to this node is a partial hop. The engine strictly anchors on Priority 1 unless Priority 1 fails, has packet loss, or exceeds 150ms.">
                 <input type="checkbox" class="dest-is-relay" ${dest.is_relay ? "checked" : ""}>
-                <span>Mid Server</span>
+                <span>${escapeHtml(t("modal.mid_server"))}</span>
             </label>
             <div class="dest-test-group">
                 <button type="button" class="btn btn-secondary btn-xs btn-test-dest" onclick="testModalDestination(${index})">
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
-                    <span>Test Target</span>
+                    <span>${escapeHtml(t("modal.test_target"))}</span>
                 </button>
                 <span class="test-dest-result" id="testDestResult_${index}"></span>
             </div>

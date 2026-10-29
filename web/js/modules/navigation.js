@@ -2,6 +2,8 @@
  * XForwarder - Dashboard Navigation & Section Switcher
  */
 
+import { t } from "./i18n.js";
+
 export const SECTIONS = ["rules", "overview", "services", "security", "logs"];
 
 export function initNavigation() {
@@ -86,7 +88,7 @@ export function switchSection(sectionId) {
             security: "Security & Access",
             logs: "Logs & Probes"
         };
-        breadcrumb.innerText = titles[sec] || "Dashboard";
+        breadcrumb.innerText = t(`nav.${sec}`, {}, titles[sec] || "Dashboard");
     }
 
     // Sync URL hash

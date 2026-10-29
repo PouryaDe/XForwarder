@@ -26,6 +26,7 @@ import {
     setLastLatestLoss
 } from "./js/modules/state.js";
 import { initTheme, toggleTheme } from "./js/modules/theme.js";
+import { initI18n, toggleLanguage, setLanguage, t, getCurrentLang } from "./js/modules/i18n.js";
 import { initNavigation, switchSection, openMobileSidebar, closeMobileSidebar } from "./js/modules/navigation.js";
 import { showLogin, showDashboard, checkSession, handleLogin, handleLogout, initAuth } from "./js/modules/auth.js";
 import { renderStats, renderSystemStats, renderServicesStatus, renderNetworkTopology, copyIpToClipboard } from "./js/modules/stats.js";
@@ -165,6 +166,10 @@ window.handleDestTypeChange = handleDestTypeChange;
 window.handleTrafficEntityChange = handleTrafficEntityChange;
 window.handleTrafficPeriodChange = handleTrafficPeriodChange;
 window.toggleTheme = toggleTheme;
+window.toggleLanguage = toggleLanguage;
+window.setLanguage = setLanguage;
+window.t = t;
+window.getCurrentLang = getCurrentLang;
 window.handleLogout = handleLogout;
 window.closeSyncErrorModal = () => {
     const m = document.getElementById("syncErrorModal");
@@ -358,6 +363,9 @@ function stopAuthenticatedSession() {
 // Master Initialization
 async function initApp() {
     initTheme();
+    initI18n(() => {
+        fetchStatus();
+    });
     initNavigation();
     initRulesViewControls(fetchStatus);
     initRuleModal(fetchStatus);

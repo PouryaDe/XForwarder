@@ -43,7 +43,8 @@ XForwarder/
 │   ├── test_nftables_parser.py# Native Python unittest suite (NFTables/iptables parser, backup & deconfliction)
 │   ├── test_export_import.py  # Native Python unittest suite (sanitized config export & merge/replace restore)
 │   ├── test_metrics_subsystem.py # Native Python unittest suite (50-probe ping, deduplication & SQLite retention)
-│   └── test_ui_and_api_edge_cases.py # Native Python unittest suite (UI, API edge cases & static asset integrity)
+│   ├── test_ui_and_api_edge_cases.py # Native Python unittest suite (UI, API edge cases & static asset integrity)
+│   └── test_i18n_and_rtl.py   # Native Python unittest suite (i18n dictionaries, Vazirmatn font, RTL BiDi & DOM)
 ├── .agents/               # Antigravity agent configuration (constitution, rules, workflows, skills, scripts)
 │   ├── AGENTS.md          # Master architecture constitution
 │   ├── hooks.json         # Antigravity lifecycle hooks (pre-invocation and stop syntax checks)
@@ -159,6 +160,13 @@ XForwarder/
     - The engine enforces the Primary Anchor pattern: Priority 1 is protected as the authoritative destination as long as it has no packet loss and latency <= 150ms.
     - Low hop ping on an intermediate relay never supersedes healthy Priority 1.
     - When active on an intermediate relay, the engine triggers failback to Priority 1 as soon as Priority 1 recovers.
+
+19. **Persian Localization (i18n), RTL Layout & Typography Architecture (Mandatory)**:
+    - Comprehensive bilingual English (`en`) and Persian (`fa`) support with zero build tooling or npm dependencies.
+    - Vazirmatn font loaded via Google Fonts with elegant fallback stack applied to `[dir="rtl"]` and `[lang="fa"]`.
+    - BiDi Direction & Number Protection: Monospace tags, IP destinations (`.dest-ip`), port badges, CIDR blocks, ping latency pills (`ms`), and traffic meters strictly enforce `direction: ltr !important` and `unicode-bidi: embed !important` preventing inverted IP octets or distorted network readings.
+    - Zero-Flicker Pre-Hydration: In-head inline script checks `localStorage.getItem("xfwd_lang")` before DOM rendering to eliminate layout flash.
+    - Secure Translation Binding: `TRANSLATIONS` engine (`web/js/modules/i18n.js`) strictly verifies key parity between dictionaries, prevents regex group replacement injection using functional replacers (`() => String(param)`), and binds values safely via `textContent` preventing DOM XSS.
 
 
 

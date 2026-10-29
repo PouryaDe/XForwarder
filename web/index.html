@@ -13,6 +13,10 @@
         html.pre-auth #dashboardScreen {
             display: flex !important;
         }
+        html[dir="rtl"] body {
+            direction: rtl;
+            text-align: right;
+        }
     </style>
     <script>
         (function () {
@@ -26,6 +30,15 @@
 
                 if (localStorage.getItem("xfwd_authenticated") === "1") {
                     document.documentElement.classList.add("pre-auth");
+                }
+
+                var savedLang = localStorage.getItem("xfwd_lang");
+                if (savedLang === "fa") {
+                    document.documentElement.setAttribute("lang", "fa");
+                    document.documentElement.setAttribute("dir", "rtl");
+                } else {
+                    document.documentElement.setAttribute("lang", "en");
+                    document.documentElement.setAttribute("dir", "ltr");
                 }
             } catch (e) { }
 
@@ -60,7 +73,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link
-        href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap"
+        href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Vazirmatn:wght@300;400;500;600;700;800;900&display=swap"
         rel="stylesheet">
     <link rel="stylesheet" href="style.css?v=3.2.20">
 </head>
@@ -73,6 +86,17 @@
     <div class="login-wrapper" id="loginScreen">
         <!-- Top Theme Toggle for Login Screen -->
         <div class="login-top-bar">
+            <button type="button" class="lang-toggle-btn login-lang-toggle" id="btnLoginLangToggle"
+                onclick="toggleLanguage(event)" title="تغییر زبان / Switch Language">
+                <span class="lang-icon">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10" />
+                        <line x1="2" y1="12" x2="22" y2="12" />
+                        <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+                    </svg>
+                </span>
+                <span class="lang-name" id="loginLangName">فارسی</span>
+            </button>
             <button type="button" class="theme-toggle-btn login-theme-toggle" id="btnLoginThemeToggle"
                 onclick="toggleTheme()" title="Toggle Light / Dark Theme">
                 <span class="theme-toggle-icon">
@@ -107,10 +131,10 @@
                     </svg>
                 </div>
                 <div class="login-brand-meta">
-                    <h2>XForwarder</h2>
-                    <span class="brand-badge">SHIELD</span>
+                    <h2 data-i18n="brand.title">XForwarder</h2>
+                    <span class="brand-badge" data-i18n="brand.shield">SHIELD</span>
                 </div>
-                <p class="login-subtitle">Multi-Path Priority Relay & Failover Engine</p>
+                <p class="login-subtitle" data-i18n="login.subtitle">Multi-Path Priority Relay & Failover Engine</p>
             </div>
 
             <!-- Lockout Alert Banner -->
@@ -120,35 +144,35 @@
                         <circle cx="12" cy="12" r="10" />
                         <polyline points="12 6 12 12 16 14" />
                     </svg>
-                    <span>Security Lockout Active</span>
+                    <span data-i18n="login.lockout_title">Security Lockout Active</span>
                 </div>
-                <p id="lockoutText">Too many failed login attempts.</p>
+                <p id="lockoutText" data-i18n="login.lockout_desc">Too many failed login attempts.</p>
                 <div class="lockout-timer" id="lockoutTimer">15:00</div>
             </div>
 
             <form id="loginForm" onsubmit="event.preventDefault(); return false;">
                 <div class="form-group">
-                    <label for="loginUsername">Username</label>
+                    <label for="loginUsername" data-i18n="login.username">Username</label>
                     <div class="input-with-icon">
                         <svg class="input-icon" width="16" height="16" viewBox="0 0 24 24" fill="none"
                             stroke="currentColor" stroke-width="2">
                             <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
                             <circle cx="12" cy="7" r="4" />
                         </svg>
-                        <input type="text" id="loginUsername" class="form-control" placeholder="admin" required
+                        <input type="text" id="loginUsername" class="form-control" placeholder="admin" data-i18n-placeholder="login.username_placeholder" required
                             autocomplete="username">
                     </div>
                 </div>
 
                 <div class="form-group">
-                    <label for="loginPassword">Password</label>
+                    <label for="loginPassword" data-i18n="login.password">Password</label>
                     <div class="input-with-icon">
                         <svg class="input-icon" width="16" height="16" viewBox="0 0 24 24" fill="none"
                             stroke="currentColor" stroke-width="2">
                             <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
                             <path d="M7 11V7a5 5 0 0 1 10 0v4" />
                         </svg>
-                        <input type="password" id="loginPassword" class="form-control" placeholder="••••••••" required
+                        <input type="password" id="loginPassword" class="form-control" placeholder="••••••••" data-i18n-placeholder="login.password_placeholder" required
                             autocomplete="current-password">
                         <button type="button" class="btn-toggle-pwd" id="btnToggleLoginPwd" title="Show/Hide Password"
                             tabindex="-1">
@@ -167,7 +191,7 @@
                             <line x1="12" y1="9" x2="12" y2="13" />
                             <line x1="12" y1="17" x2="12.01" y2="17" />
                         </svg>
-                        Caps Lock is ON
+                        <span data-i18n="login.caps_lock">Caps Lock is ON</span>
                     </div>
                 </div>
 
@@ -179,7 +203,7 @@
                         <polyline points="10 17 15 12 10 7" />
                         <line x1="15" y1="12" x2="3" y2="12" />
                     </svg>
-                    <span>Sign In to Dashboard</span>
+                    <span data-i18n="login.submit">Sign In to Dashboard</span>
                 </button>
             </form>
         </div>
@@ -202,7 +226,7 @@
                         </svg>
                     </div>
                     <div class="brand-text">
-                        <span class="brand-title">XForwarder</span>
+                        <span class="brand-title" data-i18n="brand.title">XForwarder</span>
                         <span class="brand-badge" id="brandVersionBadge">v1.5.0</span>
                     </div>
                 </div>
@@ -216,7 +240,7 @@
 
             <!-- Navigation Menu -->
             <nav class="sidebar-nav">
-                <div class="nav-section-label">MAIN NAVIGATION</div>
+                <div class="nav-section-label" data-i18n="nav.main">MAIN NAVIGATION</div>
 
                 <button class="nav-item active" data-section="rules" id="navItemRules">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -225,7 +249,7 @@
                         <line x1="6" y1="6" x2="6.01" y2="6" />
                         <line x1="6" y1="18" x2="6.01" y2="18" />
                     </svg>
-                    <span class="nav-label">Port Matrix</span>
+                    <span class="nav-label" data-i18n="nav.rules">Port Matrix</span>
                     <span class="nav-badge" id="navRulesCount">0</span>
                 </button>
 
@@ -236,21 +260,21 @@
                         <rect x="14" y="14" width="7" height="7" />
                         <rect x="3" y="14" width="7" height="7" />
                     </svg>
-                    <span class="nav-label">Overview & Health</span>
+                    <span class="nav-label" data-i18n="nav.overview">Overview & Health</span>
                 </button>
 
                 <button class="nav-item" data-section="services" id="navItemServices">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
                     </svg>
-                    <span class="nav-label">Relay Services</span>
+                    <span class="nav-label" data-i18n="nav.services">Relay Services</span>
                 </button>
 
                 <button class="nav-item" data-section="security" id="navItemSecurity">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
                     </svg>
-                    <span class="nav-label">Security & Access</span>
+                    <span class="nav-label" data-i18n="nav.security">Security & Access</span>
                 </button>
 
                 <button class="nav-item" data-section="logs" id="navItemLogs">
@@ -261,7 +285,7 @@
                         <line x1="16" y1="17" x2="8" y2="17" />
                         <polyline points="10 9 9 9 8 9" />
                     </svg>
-                    <span class="nav-label">Logs & Probes</span>
+                    <span class="nav-label" data-i18n="nav.logs">Logs & Probes</span>
                 </button>
             </nav>
 
@@ -290,6 +314,18 @@
                     <span class="theme-toggle-label" id="themeToggleLabel">Light Mode</span>
                 </button>
 
+                <!-- Language Toggle Button -->
+                <button type="button" class="lang-toggle-btn sidebar-lang-toggle" id="btnSidebarLangToggle" onclick="toggleLanguage(event)" title="تغییر زبان / Switch Language">
+                    <div class="lang-toggle-icon">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10" />
+                            <line x1="2" y1="12" x2="22" y2="12" />
+                            <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+                        </svg>
+                    </div>
+                    <span class="lang-toggle-label" id="sidebarLangLabel">فارسی</span>
+                </button>
+
                 <!-- Sidebar User Card -->
                 <div class="sidebar-user">
                     <div class="user-avatar">
@@ -301,7 +337,7 @@
                     </div>
                     <div class="user-meta">
                         <span class="user-name" id="sidebarUsername">admin</span>
-                        <span class="user-role">Administrator</span>
+                        <span class="user-role" data-i18n="user.role">Administrator</span>
                     </div>
                     <button type="button" class="btn-sidebar-logout" id="btnSidebarLogout" onclick="handleLogout()" title="Sign out">
                         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -329,13 +365,21 @@
                         </svg>
                     </button>
                     <div class="breadcrumb-container">
-                        <span class="breadcrumb-root">Dashboard</span>
+                        <span class="breadcrumb-root" data-i18n="nav.breadcrumb_root">Dashboard</span>
                         <span class="breadcrumb-sep">/</span>
                         <span class="breadcrumb-current" id="breadcrumbSection">Port Matrix</span>
                     </div>
                 </div>
 
                 <div class="topbar-actions" id="topbarActions">
+                    <button type="button" class="btn btn-secondary btn-sm btn-lang-topbar" id="btnLangToggle" onclick="toggleLanguage(event)" title="تغییر زبان / Switch Language">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10" />
+                            <line x1="2" y1="12" x2="22" y2="12" />
+                            <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+                        </svg>
+                        <span class="btn-text" id="topbarLangName">فارسی</span>
+                    </button>
                     <button type="button" class="btn btn-secondary btn-sm" id="btnLogout" onclick="handleLogout()" title="Sign out">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                             stroke-width="2">
@@ -343,7 +387,7 @@
                             <polyline points="16 17 21 12 16 7" />
                             <line x1="21" y1="12" x2="9" y2="12" />
                         </svg>
-                        <span class="btn-text">Logout</span>
+                        <span data-i18n="topbar.logout" class="btn-text">Logout</span>
                     </button>
                 </div>
             </header>
@@ -362,8 +406,8 @@
                         </svg>
                     </div>
                     <div class="warning-banner-text">
-                        <span class="warning-banner-title">Core Relay Packages Missing</span>
-                        <p id="servicesWarningText">One or more core forwarding services are not installed on this
+                        <span class="warning-banner-title" data-i18n="services_warning.title">Core Relay Packages Missing</span>
+                        <p id="servicesWarningText" data-i18n="services_warning.desc">One or more core forwarding services are not installed on this
                             server.</p>
                     </div>
                 </div>
@@ -371,7 +415,7 @@
                     <span class="terminal-cmd-hint"
                         title="Command to install dependencies in Linux terminal">xfwd</span>
                     <button type="button" class="btn btn-secondary btn-sm"
-                        id="btnDismissServicesWarning" onclick="sessionStorage.setItem('xfwd_dismiss_services_warning', '1'); const b=document.getElementById('servicesWarningBanner'); if(b) b.style.display='none';">Dismiss</button>
+                        id="btnDismissServicesWarning" data-i18n="services_warning.dismiss" onclick="sessionStorage.setItem('xfwd_dismiss_services_warning', '1'); const b=document.getElementById('servicesWarningBanner'); if(b) b.style.display='none';">Dismiss</button>
                 </div>
             </div>
 
@@ -380,8 +424,8 @@
                 <div class="main-panel rules-header-card">
                     <div class="panel-header">
                         <div>
-                            <h2>Port Routing & Multi-Path Matrix</h2>
-                            <p class="section-desc">Each port routes user traffic through Priority 1 and automatically
+                            <h2 data-i18n="rules.title">Port Routing & Multi-Path Matrix</h2>
+                            <p class="section-desc" data-i18n="rules.desc">Each port routes user traffic through Priority 1 and automatically
                                 cascades to backup priorities on packet loss.</p>
                         </div>
                         <div class="panel-actions-group">
@@ -393,7 +437,7 @@
                                     <polyline points="7 10 12 15 17 10" />
                                     <line x1="12" y1="15" x2="12" y2="3" />
                                 </svg>
-                                <span class="btn-text">Export</span>
+                                <span class="btn-text" data-i18n="rules.export">Export</span>
                             </button>
                             <button class="btn btn-secondary btn-sm" id="btnOpenImportModal"
                                 title="Import Configuration (JSON)">
@@ -403,7 +447,7 @@
                                     <polyline points="17 8 12 3 7 8" />
                                     <line x1="12" y1="3" x2="12" y2="15" />
                                 </svg>
-                                <span class="btn-text">Import</span>
+                                <span class="btn-text" data-i18n="rules.import">Import</span>
                             </button>
                             <button class="btn btn-secondary btn-sm" id="btnOpenTrafficModal"
                                 title="Traffic & Bandwidth Analytics (Hourly, Daily, Monthly, Reset)">
@@ -413,7 +457,7 @@
                                     <line x1="12" y1="20" x2="12" y2="4" />
                                     <line x1="6" y1="20" x2="6" y2="14" />
                                 </svg>
-                                <span class="btn-text">Traffic</span>
+                                <span class="btn-text" data-i18n="rules.traffic">Traffic</span>
                             </button>
                             <button class="btn btn-secondary btn-sm" id="btnOpenSwitchLogsModal"
                                 title="Switch Decision Logs & History (Inspect why and when priorities changed)">
@@ -421,7 +465,7 @@
                                     stroke-width="2">
                                     <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
                                 </svg>
-                                <span class="btn-text">Switch Logs</span>
+                                <span class="btn-text" data-i18n="rules.switch_logs">Switch Logs</span>
                             </button>
                             <button class="btn btn-primary" id="btnOpenAddModal">
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -429,7 +473,7 @@
                                     <line x1="12" y1="5" x2="12" y2="19" />
                                     <line x1="5" y1="12" x2="19" y2="12" />
                                 </svg>
-                                <span>Add Port Rule</span>
+                                <span data-i18n="rules.add_rule">Add Port Rule</span>
                             </button>
                         </div>
                     </div>
@@ -447,8 +491,8 @@
                                 </svg>
                             </div>
                             <div>
-                                <span class="import-title">Pre-existing Relay Rules Detected</span>
-                                <p id="importBannerText" class="import-desc">Discovered existing port forwarding rules
+                                <span class="import-title" data-i18n="rules.import_banner_title">Pre-existing Relay Rules Detected</span>
+                                <p id="importBannerText" class="import-desc" data-i18n="rules.import_banner_desc">Discovered existing port forwarding rules
                                     on this server.</p>
                             </div>
                         </div>
@@ -458,9 +502,9 @@
                                     stroke-width="2">
                                     <polyline points="20 6 9 17 4 12" />
                                 </svg>
-                                <span>Import All Rules</span>
+                                <span data-i18n="rules.import_all">Import All Rules</span>
                             </button>
-                            <button type="button" class="btn btn-secondary btn-sm" id="btnDismissImportBanner" onclick="const b=document.getElementById('importBanner'); if(b) b.style.display='none';">Dismiss</button>
+                            <button type="button" class="btn btn-secondary btn-sm" id="btnDismissImportBanner" data-i18n="rules.dismiss" onclick="const b=document.getElementById('importBanner'); if(b) b.style.display='none';">Dismiss</button>
                         </div>
                     </div>
 
@@ -474,6 +518,7 @@
                             </svg>
                             <input type="text" id="searchInput"
                                 placeholder="Search ports, IPs, categories, or comments..."
+                                data-i18n-placeholder="rules.search_placeholder"
                                 autocomplete="off">
                             <button class="clear-btn" id="btnClearSearch" style="display:none;"
                                 title="Clear search">&times;</button>
@@ -482,12 +527,12 @@
                         <!-- Sort Order Selector -->
                         <div class="sort-actions">
                             <select id="selectSortRules" class="form-control sort-select" title="Sort Rules Order">
-                                <option value="port_asc" selected>Sort: Port (Low → High)</option>
-                                <option value="port_desc">Sort: Port (High → Low)</option>
-                                <option value="date_desc">Sort: Newest Added</option>
-                                <option value="date_asc">Sort: Oldest Added</option>
-                                <option value="status">Sort: Status / Health</option>
-                                <option value="category">Sort: Category (A → Z)</option>
+                                <option value="port_asc" data-i18n="rules.sort_port_asc" selected>Sort: Port (Low → High)</option>
+                                <option value="port_desc" data-i18n="rules.sort_port_desc">Sort: Port (High → Low)</option>
+                                <option value="date_desc" data-i18n="rules.sort_date_desc">Sort: Newest Added</option>
+                                <option value="date_asc" data-i18n="rules.sort_date_asc">Sort: Oldest Added</option>
+                                <option value="status" data-i18n="rules.sort_status">Sort: Status / Health</option>
+                                <option value="category" data-i18n="rules.sort_category">Sort: Category (A → Z)</option>
                             </select>
                         </div>
 
@@ -500,7 +545,7 @@
                                     <rect x="14" y="14" width="7" height="7" rx="1.5"></rect>
                                     <rect x="3" y="14" width="7" height="7" rx="1.5"></rect>
                                 </svg>
-                                <span>Cards</span>
+                                <span data-i18n="rules.view_cards">Cards</span>
                             </button>
                             <button type="button" class="view-toggle-btn" id="btnViewList" title="Compact List View">
                                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -511,7 +556,7 @@
                                     <line x1="3" y1="12" x2="3.01" y2="12"></line>
                                     <line x1="3" y1="18" x2="3.01" y2="18"></line>
                                 </svg>
-                                <span>List</span>
+                                <span data-i18n="rules.view_list">List</span>
                             </button>
                         </div>
                     </div>
@@ -540,7 +585,7 @@
                                     <line x1="1" y1="9" x2="4" y2="9" /><line x1="1" y1="14" x2="4" y2="14" />
                                 </svg>
                             </div>
-                            <span class="telemetry-label">CPU &amp; Load</span>
+                            <span class="telemetry-label" data-i18n="overview.cpu">CPU &amp; Load</span>
                             <span class="telemetry-badge text-cyan" id="ovCpuBadge">Normal</span>
                         </div>
                         <div class="telemetry-card-body">
@@ -566,7 +611,7 @@
                                 </div>
                                 <div style="display:flex; justify-content:space-between; align-items:center; gap:6px;">
                                     <span class="telemetry-subtext font-mono" id="ovLoadText" style="font-size:0.71rem;">0.00 (1m), 0.00 (5m), 0.00 (15m)</span>
-                                    <span class="telemetry-subtext font-mono text-cyan" id="ovCpuText" style="font-size:0.71rem; opacity:0.85;">Processor Load</span>
+                                    <span class="telemetry-subtext font-mono text-cyan" id="ovCpuText" data-i18n="overview.cpu_load" style="font-size:0.71rem; opacity:0.85;">Processor Load</span>
                                     <span id="ovLoadBadge" style="display:none;">Balanced</span>
                                 </div>
                                 <div class="telemetry-load-bars" style="display:none;" aria-hidden="true">
@@ -587,7 +632,7 @@
                                     <rect x="2" y="5" width="20" height="11" rx="2" />
                                 </svg>
                             </div>
-                            <span class="telemetry-label">Memory</span>
+                            <span class="telemetry-label" data-i18n="overview.memory">Memory</span>
                             <span class="telemetry-badge text-emerald" id="ovRamBadge">Optimal</span>
                         </div>
                         <div class="telemetry-card-body">
@@ -619,7 +664,7 @@
                                     <line x1="12" y1="20" x2="12.01" y2="20" />
                                 </svg>
                             </div>
-                            <span class="telemetry-label">Active Sockets</span>
+                            <span class="telemetry-label" data-i18n="overview.active_sockets">Active Sockets</span>
                             <span class="telemetry-badge text-violet" id="ovConnsBadge">Online</span>
                         </div>
                         <div class="telemetry-card-body">
@@ -651,7 +696,7 @@
                                     <polyline points="17 6 23 6 23 12" />
                                 </svg>
                             </div>
-                            <span class="telemetry-label">Live Bandwidth</span>
+                            <span class="telemetry-label" data-i18n="overview.live_bandwidth">Live Bandwidth</span>
                             <span class="telemetry-badge text-mint" id="ovTrafficRateBadge">Live MB/s</span>
                         </div>
                         <div class="telemetry-card-body">
@@ -672,7 +717,7 @@
                                         <span class="net-meter-val font-mono text-mint" id="ovNetTxSpeed">0.00 MB/s</span>
                                     </div>
                                 </div>
-                                <span class="telemetry-subtext" id="ovTrafficSub">Real-time throughput &middot; Click to toggle</span>
+                                <span class="telemetry-subtext" id="ovTrafficSub" data-i18n="overview.traffic_sub">Real-time throughput &middot; Click to toggle</span>
                             </div>
                         </div>
                     </div>
@@ -690,11 +735,11 @@
                         </div>
                         <div class="stat-content">
                             <div class="stat-header-row">
-                                <span class="stat-title">Forwarded Ports</span>
+                                <span class="stat-title" data-i18n="overview.stat_forwarded">Forwarded Ports</span>
                                 <span class="stat-badge badge-active font-mono" id="engineStatusBadge">SYNCED</span>
                             </div>
                             <span class="stat-number font-mono" id="statTotalRules">0</span>
-                            <span class="stat-subtext">Active Inbound Mappings</span>
+                            <span class="stat-subtext" data-i18n="overview.stat_forwarded_sub">Active Inbound Mappings</span>
                         </div>
                     </div>
 
@@ -706,9 +751,9 @@
                             </svg>
                         </div>
                         <div class="stat-content">
-                            <span class="stat-title">Active Proxy (L4)</span>
+                            <span class="stat-title" data-i18n="overview.stat_proxy">Active Proxy (L4)</span>
                             <span class="stat-number font-mono text-emerald" id="statActiveHaproxy">0</span>
-                            <span class="stat-subtext" id="statActiveProxyDetail">Layer-4 Direct Relay</span>
+                            <span class="stat-subtext" id="statActiveProxyDetail" data-i18n="overview.stat_proxy_sub">Layer-4 Direct Relay</span>
                         </div>
                     </div>
 
@@ -723,9 +768,9 @@
                             </svg>
                         </div>
                         <div class="stat-content">
-                            <span class="stat-title">Active NFTables (L3)</span>
+                            <span class="stat-title" data-i18n="overview.stat_nftables">Active NFTables (L3)</span>
                             <span class="stat-number font-mono text-amber" id="statActiveNftables">0</span>
-                            <span class="stat-subtext">Kernel Tunnel Routing</span>
+                            <span class="stat-subtext" data-i18n="overview.stat_nftables_sub">Kernel Tunnel Routing</span>
                         </div>
                     </div>
 
@@ -736,9 +781,9 @@
                             </svg>
                         </div>
                         <div class="stat-content">
-                            <span class="stat-title">Network Quality (24h)</span>
+                            <span class="stat-title" data-i18n="overview.stat_quality">Network Quality (24h)</span>
                             <span class="stat-number font-mono text-emerald" id="statNetworkQuality">100%</span>
-                            <span class="stat-subtext" id="statLossSubtext">0% Loss &middot; 15m Engine</span>
+                            <span class="stat-subtext" id="statLossSubtext" data-i18n="overview.stat_quality_sub">0% Loss &middot; 15m Engine</span>
                         </div>
                     </div>
                 </div>
@@ -762,23 +807,23 @@
                             </div>
                             <div>
                                 <div style="display:flex; align-items:center; gap:8px;">
-                                    <h3>Daily Traffic &amp; Bandwidth Usage</h3>
-                                    <span class="net-pill-badge" id="ovTrafficRangeBadge">Past 24 Hours</span>
+                                    <h3 data-i18n="overview.daily_traffic_title">Daily Traffic &amp; Bandwidth Usage</h3>
+                                    <span class="net-pill-badge" id="ovTrafficRangeBadge" data-i18n="overview.past_24h">Past 24 Hours</span>
                                 </div>
-                                <span class="overview-card-sub">Hourly traffic accounting across all forwarded ports and kernel tunnels &middot; SQLite WAL</span>
+                                <span class="overview-card-sub" data-i18n="overview.daily_traffic_sub">Hourly traffic accounting across all forwarded ports and kernel tunnels &middot; SQLite WAL</span>
                             </div>
                         </div>
                         <div class="metrics-header-controls" style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
                             <div class="metrics-range-tabs" id="ovTrafficRangeTabs">
-                                <button type="button" class="btn-range-tab active" id="btnOvTraffic24h" data-range="24h">24 Hours</button>
-                                <button type="button" class="btn-range-tab" id="btnOvTraffic7d" data-range="7d">7 Days</button>
+                                <button type="button" class="btn-range-tab active" id="btnOvTraffic24h" data-range="24h" data-i18n="overview.24h">24 Hours</button>
+                                <button type="button" class="btn-range-tab" id="btnOvTraffic7d" data-range="7d" data-i18n="overview.7d">7 Days</button>
                             </div>
                             <button type="button" class="btn btn-secondary btn-sm" onclick="openTrafficModal('all', 'all')" title="Open detailed granular traffic modal with breakdown & resets">
                                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                     <circle cx="11" cy="11" r="8"></circle>
                                     <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
                                 </svg>
-                                <span>Full Analytics</span>
+                                <span data-i18n="overview.full_analytics">Full Analytics</span>
                             </button>
                             <button type="button" class="btn btn-secondary btn-sm" id="btnRefreshOvTraffic" title="Refresh traffic data now" style="padding: 0 10px;">
                                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -793,34 +838,34 @@
                         <!-- KPI Summary Cards Row -->
                         <div class="metrics-kpi-grid">
                             <div class="metrics-kpi-card">
-                                <span class="kpi-label">24h Total Traffic</span>
+                                <span class="kpi-label" data-i18n="overview.traffic_total">24h Total Traffic</span>
                                 <span class="kpi-value text-cyan font-mono" id="ovTrafficCardTotal">0 B</span>
-                                <span class="kpi-sub" id="ovTrafficCardSub">All active ports &amp; tunnels</span>
+                                <span class="kpi-sub" id="ovTrafficCardSub" data-i18n="overview.traffic_total_sub">All active ports &amp; tunnels</span>
                             </div>
                             <div class="metrics-kpi-card">
-                                <span class="kpi-label">Download (RX)</span>
+                                <span class="kpi-label" data-i18n="overview.download_rx">Download (RX)</span>
                                 <span class="kpi-value text-cyan font-mono" id="ovTrafficCardRx">↓ 0 B</span>
-                                <span class="kpi-sub">Client inbound stream</span>
+                                <span class="kpi-sub" data-i18n="overview.download_rx_sub">Client inbound stream</span>
                             </div>
                             <div class="metrics-kpi-card">
-                                <span class="kpi-label">Upload (TX)</span>
+                                <span class="kpi-label" data-i18n="overview.upload_tx">Upload (TX)</span>
                                 <span class="kpi-value text-mint font-mono" id="ovTrafficCardTx">↑ 0 B</span>
-                                <span class="kpi-sub">Exit server response stream</span>
+                                <span class="kpi-sub" data-i18n="overview.upload_tx_sub">Exit server response stream</span>
                             </div>
                             <div class="metrics-kpi-card">
-                                <span class="kpi-label">Peak Hourly Usage</span>
+                                <span class="kpi-label" data-i18n="overview.peak_hourly">Peak Hourly Usage</span>
                                 <span class="kpi-value font-mono" id="ovTrafficCardPeak">0 B/h</span>
-                                <span class="kpi-sub" id="ovTrafficCardPeakTime">Peak throughput window</span>
+                                <span class="kpi-sub" id="ovTrafficCardPeakTime" data-i18n="overview.peak_hourly_sub">Peak throughput window</span>
                             </div>
                         </div>
 
                         <!-- Hourly Interactive Stacked Bar Chart -->
                         <div class="ov-traffic-chart-section" style="margin-top: 18px;">
                             <div class="ov-traffic-chart-header" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:8px;">
-                                <span class="timeline-title" style="font-size:0.82rem; font-weight:600; color:var(--text-primary);">Hourly Bandwidth Distribution (<span id="ovTrafficChartRangeTitle">Past 24 Hours</span>)</span>
+                                <span class="timeline-title" style="font-size:0.82rem; font-weight:600; color:var(--text-primary);"><span data-i18n="overview.chart_title">Hourly Bandwidth Distribution</span> (<span id="ovTrafficChartRangeTitle">Past 24 Hours</span>)</span>
                                 <div class="timeline-legend" style="display:flex; gap:12px; font-size:0.75rem; color:var(--text-muted);">
-                                    <span class="legend-item" style="display:inline-flex; align-items:center; gap:4px;"><span class="legend-dot" style="width:8px; height:8px; border-radius:2px; background:var(--accent-mint); display:inline-block;"></span> Upload (TX)</span>
-                                    <span class="legend-item" style="display:inline-flex; align-items:center; gap:4px;"><span class="legend-dot" style="width:8px; height:8px; border-radius:2px; background:var(--accent-cyan); display:inline-block;"></span> Download (RX)</span>
+                                    <span class="legend-item" style="display:inline-flex; align-items:center; gap:4px;"><span class="legend-dot" style="width:8px; height:8px; border-radius:2px; background:var(--accent-mint); display:inline-block;"></span> <span data-i18n="overview.legend_tx">Upload (TX)</span></span>
+                                    <span class="legend-item" style="display:inline-flex; align-items:center; gap:4px;"><span class="legend-dot" style="width:8px; height:8px; border-radius:2px; background:var(--accent-cyan); display:inline-block;"></span> <span data-i18n="overview.legend_rx">Download (RX)</span></span>
                                 </div>
                             </div>
                             <div class="ov-traffic-bars-container" id="ovTrafficBarsContainer">
@@ -830,11 +875,11 @@
                                 </div>
                             </div>
                             <div class="timeline-ticks" id="ovTrafficTimelineTicks" style="display:flex; justify-content:space-between; font-size:0.72rem; color:var(--text-muted); margin-top:8px; padding:0 8px; font-family:var(--font-mono); user-select:none;">
-                                <span>24h ago</span>
-                                <span>18h ago</span>
-                                <span>12h ago</span>
-                                <span>6h ago</span>
-                                <span>Now</span>
+                                <span data-i18n="overview.ticks_24h">24h ago</span>
+                                <span data-i18n="overview.ticks_18h">18h ago</span>
+                                <span data-i18n="overview.ticks_12h">12h ago</span>
+                                <span data-i18n="overview.ticks_6h">6h ago</span>
+                                <span data-i18n="overview.ticks_now">Now</span>
                             </div>
                         </div>
                     </div>
@@ -852,15 +897,15 @@
                                         <circle cx="12" cy="12" r="10" />
                                         <line x1="2" y1="12" x2="22" y2="12" />
                                         <path
-                                            d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+                                             d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
                                     </svg>
                                 </div>
                                 <div>
                                     <div class="net-header-title">
-                                        <h3>Server Network & Tunnel Topology</h3>
+                                        <h3 data-i18n="overview.net_title">Server Network & Tunnel Topology</h3>
                                         <span class="net-pill-badge" id="netActiveTunnelsBadge">0 Tunnels</span>
                                     </div>
-                                    <span class="net-subtitle">Server WAN public addresses, active tunnel interfaces, and latency</span>
+                                    <span class="net-subtitle" data-i18n="overview.net_sub">Server WAN public addresses, active tunnel interfaces, and latency</span>
                                 </div>
                             </div>
                         </div>
@@ -876,12 +921,12 @@
                                         <line x1="6" y1="6" x2="6.01" y2="6" />
                                         <line x1="6" y1="18" x2="6.01" y2="18" />
                                     </svg>
-                                    <span>Server Host IP(s):</span>
+                                    <span data-i18n="overview.server_ips">Server Host IP(s):</span>
                                     <span class="wan-iface-tag" id="wanIfaceTag">eth0</span>
                                 </div>
                             </div>
                             <div class="server-ips-list" id="serverIpsList">
-                                <span class="ip-pill-loading">Detecting...</span>
+                                <span class="ip-pill-loading" data-i18n="overview.detecting">Detecting...</span>
                             </div>
                         </div>
 
@@ -902,10 +947,10 @@
                                 </div>
                                 <div>
                                     <div class="engines-header-title">
-                                        <h3>Relay Engines</h3>
-                                        <span class="stat-badge badge-active" id="topRelayActiveBadge">ALL ACTIVE</span>
+                                        <h3 data-i18n="overview.engines_title">Relay Engines</h3>
+                                        <span class="stat-badge badge-active" id="topRelayActiveBadge" data-i18n="overview.all_active">ALL ACTIVE</span>
                                     </div>
-                                    <span class="engines-subtitle">Kernel NAT & user-space stream proxies</span>
+                                    <span class="engines-subtitle" data-i18n="overview.engines_sub">Kernel NAT & user-space stream proxies</span>
                                 </div>
                             </div>
                         </div>
@@ -918,13 +963,13 @@
                                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
                                     </div>
                                     <div class="engine-info">
-                                        <span class="engine-name">NFTables DNAT</span>
-                                        <span class="engine-desc">Kernel Layer-3 Tunnel Forwarding</span>
+                                        <span class="engine-name" data-i18n="overview.nft_name">NFTables DNAT</span>
+                                        <span class="engine-desc" data-i18n="overview.nft_desc">Kernel Layer-3 Tunnel Forwarding</span>
                                     </div>
                                 </div>
                                 <div class="svc-status-pill">
                                     <span class="svc-pill-dot dot-checking" id="svcDotNft"></span>
-                                    <span class="svc-pill-val" id="svcValNft">Checking...</span>
+                                    <span class="svc-pill-val" id="svcValNft" data-i18n="status.checking">Checking...</span>
                                 </div>
                             </div>
 
@@ -935,13 +980,13 @@
                                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
                                     </div>
                                     <div class="engine-info">
-                                        <span class="engine-name">HAProxy Relay</span>
-                                        <span class="engine-desc">Layer-4 Direct TCP/UDP Stream</span>
+                                        <span class="engine-name" data-i18n="overview.haproxy_name">HAProxy Relay</span>
+                                        <span class="engine-desc" data-i18n="overview.haproxy_desc">Layer-4 Direct TCP/UDP Stream</span>
                                     </div>
                                 </div>
                                 <div class="svc-status-pill">
                                     <span class="svc-pill-dot dot-checking" id="svcDotHaproxy"></span>
-                                    <span class="svc-pill-val" id="svcValHaproxy">Checking...</span>
+                                    <span class="svc-pill-val" id="svcValHaproxy" data-i18n="status.checking">Checking...</span>
                                 </div>
                             </div>
 
@@ -952,13 +997,13 @@
                                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"/><rect x="2" y="14" width="20" height="8" rx="2" ry="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg>
                                     </div>
                                     <div class="engine-info">
-                                        <span class="engine-name">Nginx Stream</span>
-                                        <span class="engine-desc">High-Concurrency TCP/UDP Proxy</span>
+                                        <span class="engine-name" data-i18n="overview.nginx_name">Nginx Stream</span>
+                                        <span class="engine-desc" data-i18n="overview.nginx_desc">High-Concurrency TCP/UDP Proxy</span>
                                     </div>
                                 </div>
                                 <div class="svc-status-pill">
                                     <span class="svc-pill-dot dot-checking" id="svcDotNginx"></span>
-                                    <span class="svc-pill-val" id="svcValNginx">Checking...</span>
+                                    <span class="svc-pill-val" id="svcValNginx" data-i18n="status.checking">Checking...</span>
                                 </div>
                             </div>
                         </div>
@@ -968,7 +1013,7 @@
                             <span class="engines-footer-icon">
                                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
                             </span>
-                            <span class="engines-footer-text">Zero-Collision Isolation Active</span>
+                            <span class="engines-footer-text" data-i18n="overview.zero_collision">Zero-Collision Isolation Active</span>
                         </div>
                     </div>
                 </div>
@@ -983,27 +1028,27 @@
                                     </svg>
                                 </div>
                                 <div>
-                                    <h3>Network Quality &amp; Packet Loss Timeline</h3>
-                                    <span class="overview-card-sub">Automated 15-minute 50-probe test (<code class="font-mono">ping [ip] -c 50 -i 0.2</code>) &middot; 30-Day Retention</span>
+                                    <h3 data-i18n="overview.quality_title">Network Quality &amp; Packet Loss Timeline</h3>
+                                    <span class="overview-card-sub" data-i18n="overview.quality_sub">Automated 15-minute 50-probe test (<code class="font-mono">ping [ip] -c 50 -i 0.2</code>) &middot; 30-Day Retention</span>
                                 </div>
                             </div>
                             <div class="metrics-header-controls" style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
                                 <div class="metrics-filter-group" style="display:flex; align-items:center; gap:6px;">
-                                    <label for="metricsTargetSelect" style="font-size:0.75rem; color:var(--text-muted); margin:0;">Target IP:</label>
+                                    <label for="metricsTargetSelect" style="font-size:0.75rem; color:var(--text-muted); margin:0;" data-i18n="overview.target_ip">Target IP:</label>
                                     <select id="metricsTargetSelect" class="form-control" style="height:34px; font-size:0.8rem; padding:2px 10px; width:auto; min-width:140px; border-radius:8px;">
-                                        <option value="all">All Tracked Targets</option>
+                                        <option value="all" data-i18n="overview.all_targets">All Tracked Targets</option>
                                     </select>
                                 </div>
                                 <div class="metrics-range-tabs" id="metricsRangeTabs">
-                                    <button type="button" class="btn-range-tab active" data-range="24h">24 Hours</button>
-                                    <button type="button" class="btn-range-tab" data-range="7d">7 Days</button>
-                                    <button type="button" class="btn-range-tab" data-range="30d">30 Days</button>
+                                    <button type="button" class="btn-range-tab active" data-range="24h" data-i18n="overview.24h">24 Hours</button>
+                                    <button type="button" class="btn-range-tab" data-range="7d" data-i18n="overview.7d">7 Days</button>
+                                    <button type="button" class="btn-range-tab" data-range="30d" data-i18n="overview.30d">30 Days</button>
                                 </div>
                                 <button type="button" class="btn btn-secondary btn-sm" id="btnTriggerMetricsRound" title="Run 50-probe test round across all unique targets now">
                                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                         <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
                                     </svg>
-                                    <span>Run Round</span>
+                                    <span data-i18n="overview.run_round">Run Round</span>
                                 </button>
                             </div>
                         </div>
@@ -1011,22 +1056,22 @@
                             <!-- KPI Summary Stats Row -->
                             <div class="metrics-kpi-grid">
                                 <div class="metrics-kpi-card">
-                                    <span class="kpi-label">Network Quality</span>
+                                    <span class="kpi-label" data-i18n="overview.quality_label">Network Quality</span>
                                     <span class="kpi-value text-emerald font-mono" id="metricKpiQuality">--%</span>
                                     <span class="kpi-sub" id="metricKpiProbes">0 probes analyzed</span>
                                 </div>
                                 <div class="metrics-kpi-card">
-                                    <span class="kpi-label">Average Latency</span>
+                                    <span class="kpi-label" data-i18n="overview.avg_latency">Average Latency</span>
                                     <span class="kpi-value text-cyan font-mono" id="metricKpiLatency">-- ms</span>
                                     <span class="kpi-sub">Round-trip ICMP time</span>
                                 </div>
                                 <div class="metrics-kpi-card">
-                                    <span class="kpi-label">Avg / Peak Loss</span>
+                                    <span class="kpi-label" data-i18n="overview.avg_loss">Avg / Peak Loss</span>
                                     <span class="kpi-value font-mono" id="metricKpiLoss">--%</span>
                                     <span class="kpi-sub" id="metricKpiPeak">Peak: 0%</span>
                                 </div>
                                 <div class="metrics-kpi-card">
-                                    <span class="kpi-label">Disruption Incidents</span>
+                                    <span class="kpi-label" data-i18n="overview.disruptions">Disruption Incidents</span>
                                     <span class="kpi-value font-mono" id="metricKpiDisruptions">0</span>
                                     <span class="kpi-sub" id="metricKpiDisruptionSub">0 anomalies detected</span>
                                 </div>
@@ -1035,41 +1080,41 @@
                             <!-- Timeline Heat Bar Section -->
                             <div class="metrics-timeline-section" style="margin-top:18px;">
                                 <div class="metrics-timeline-header" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:8px;">
-                                    <span class="timeline-title" style="font-size:0.82rem; font-weight:600; color:var(--text-primary);">Network Health Timeline (<span id="timelineRangeLabel">Past 24 Hours</span>)</span>
+                                    <span class="timeline-title" style="font-size:0.82rem; font-weight:600; color:var(--text-primary);"><span data-i18n="overview.timeline_title">Network Health Timeline</span> (<span id="timelineRangeLabel">Past 24 Hours</span>)</span>
                                     <div class="timeline-legend" style="display:flex; gap:12px; font-size:0.75rem; color:var(--text-muted);">
-                                        <span class="legend-item" style="display:inline-flex; align-items:center; gap:4px;"><span class="legend-dot dot-emerald" style="width:8px; height:8px; border-radius:50%; background:#10b981; display:inline-block;"></span> Clean (0% Loss)</span>
-                                        <span class="legend-item" style="display:inline-flex; align-items:center; gap:4px;"><span class="legend-dot dot-amber" style="width:8px; height:8px; border-radius:50%; background:#f59e0b; display:inline-block;"></span> Degraded (1-20%)</span>
-                                        <span class="legend-item" style="display:inline-flex; align-items:center; gap:4px;"><span class="legend-dot dot-rose" style="width:8px; height:8px; border-radius:50%; background:#f43f5e; display:inline-block;"></span> Disrupted (&gt;20%)</span>
+                                        <span class="legend-item" style="display:inline-flex; align-items:center; gap:4px;"><span class="legend-dot dot-emerald" style="width:8px; height:8px; border-radius:50%; background:#10b981; display:inline-block;"></span> <span data-i18n="overview.clean">Clean (0% Loss)</span></span>
+                                        <span class="legend-item" style="display:inline-flex; align-items:center; gap:4px;"><span class="legend-dot dot-amber" style="width:8px; height:8px; border-radius:50%; background:#f59e0b; display:inline-block;"></span> <span data-i18n="overview.degraded">Degraded (1-20%)</span></span>
+                                        <span class="legend-item" style="display:inline-flex; align-items:center; gap:4px;"><span class="legend-dot dot-rose" style="width:8px; height:8px; border-radius:50%; background:#f43f5e; display:inline-block;"></span> <span data-i18n="overview.disrupted">Disrupted (&gt;20%)</span></span>
                                     </div>
                                 </div>
                                 <div class="metrics-timeline-bar" id="metricsTimelineBar">
                                     <!-- Populated dynamically with time slots -->
                                 </div>
                                 <div class="timeline-ticks" id="timelineTicks" style="display:flex; justify-content:space-between; font-size:0.72rem; color:var(--text-muted); margin-top:4px; font-family:var(--font-mono);">
-                                    <span>24h ago</span>
-                                    <span>18h ago</span>
-                                    <span>12h ago</span>
-                                    <span>6h ago</span>
-                                    <span>Now</span>
+                                    <span data-i18n="overview.ticks_24h">24h ago</span>
+                                    <span data-i18n="overview.ticks_18h">18h ago</span>
+                                    <span data-i18n="overview.ticks_12h">12h ago</span>
+                                    <span data-i18n="overview.ticks_6h">6h ago</span>
+                                    <span data-i18n="overview.ticks_now">Now</span>
                                 </div>
                             </div>
 
                             <!-- Disruption Incidents Log Table -->
                             <div class="metrics-disruptions-section" style="margin-top:20px;">
                                 <div class="metrics-disruptions-header" style="margin-bottom:8px;">
-                                    <h4 style="font-size:0.88rem; font-weight:600; margin:0 0 2px 0;">Network Disruption Incidents Log</h4>
-                                    <span class="disruptions-sub" style="font-size:0.75rem; color:var(--text-muted);">Timestamps where packet loss &gt; 0% or connection failures occurred</span>
+                                    <h4 style="font-size:0.88rem; font-weight:600; margin:0 0 2px 0;" data-i18n="overview.disruptions_log">Network Disruption Incidents Log</h4>
+                                    <span class="disruptions-sub" style="font-size:0.75rem; color:var(--text-muted);" data-i18n="overview.disruptions_sub">Timestamps where packet loss &gt; 0% or connection failures occurred</span>
                                 </div>
                                 <div class="table-responsive" style="overflow-x:auto;">
                                     <table class="table-disruptions" id="tableDisruptions" style="width:100%; border-collapse:collapse; font-size:0.8rem;">
                                         <thead>
                                             <tr style="border-bottom:1px solid var(--border-color); text-align:left; color:var(--text-muted);">
-                                                <th style="padding:8px;">Timestamp</th>
-                                                <th style="padding:8px;">Target Host</th>
-                                                <th style="padding:8px;">Packet Loss</th>
-                                                <th style="padding:8px;">Round-Trip Latency</th>
-                                                <th style="padding:8px;">Probes</th>
-                                                <th style="padding:8px;">Severity / Status</th>
+                                                <th style="padding:8px;" data-i18n="overview.col_time">Timestamp</th>
+                                                <th style="padding:8px;" data-i18n="overview.col_target">Target Host</th>
+                                                <th style="padding:8px;" data-i18n="overview.col_loss">Packet Loss</th>
+                                                <th style="padding:8px;" data-i18n="overview.col_latency">Round-Trip Latency</th>
+                                                <th style="padding:8px;" data-i18n="overview.col_probes">Probes</th>
+                                                <th style="padding:8px;" data-i18n="overview.col_status">Severity / Status</th>
                                             </tr>
                                         </thead>
                                         <tbody id="disruptionsTableBody">
@@ -1084,11 +1129,11 @@
                                     <div class="pagination-controls">
                                         <button type="button" class="btn btn-secondary btn-xs" id="btnDisruptionsPrev" disabled title="Previous Page">
                                             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
-                                            <span>Prev</span>
+                                            <span data-i18n="overview.prev">Prev</span>
                                         </button>
                                         <span class="font-mono text-cyan" id="disruptionsPageNumber">1 / 1</span>
                                         <button type="button" class="btn btn-secondary btn-xs" id="btnDisruptionsNext" disabled title="Next Page">
-                                            <span>Next</span>
+                                            <span data-i18n="overview.next">Next</span>
                                             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
                                         </button>
                                     </div>
@@ -1102,8 +1147,8 @@
             <section class="dashboard-section" id="sectionServices" style="display:none;">
                 <div class="panel-header" style="margin-bottom:18px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
                     <div>
-                        <h2>Relay Services &amp; Forwarding Engines</h2>
-                        <p class="section-desc">Manage, reload, and re-synchronize active proxy engines and kernel packet tables.</p>
+                        <h2 data-i18n="services.title">Relay Services &amp; Forwarding Engines</h2>
+                        <p class="section-desc" data-i18n="services.desc">Manage, reload, and re-synchronize active proxy engines and kernel packet tables.</p>
                     </div>
                     <div style="display:flex; gap:8px;">
                         <button type="button" class="btn btn-secondary btn-sm" id="btnRestartCoreEngine" title="Restart XForwarder core failover engine">
@@ -1111,14 +1156,14 @@
                                 <path d="M23 4v6h-6" />
                                 <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
                             </svg>
-                            <span>Restart Engine</span>
+                            <span data-i18n="services.restart_engine">Restart Engine</span>
                         </button>
                         <button type="button" class="btn btn-primary btn-sm" id="btnRestartAllServices" title="Gracefully reload proxies and restart services">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <path d="M1 4v6h6" />
                                 <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
                             </svg>
-                            <span>Restart All Services</span>
+                            <span data-i18n="services.restart_all">Restart All Services</span>
                         </button>
                     </div>
                 </div>
@@ -1134,46 +1179,46 @@
                                     </svg>
                                 </div>
                                 <div>
-                                    <h3>HAProxy Zero-Tunnel Engine</h3>
-                                    <span class="overview-card-sub">User-space Layer-4 TCP/UDP IPv6 Relay</span>
+                                    <h3 data-i18n="services.haproxy_title">HAProxy Zero-Tunnel Engine</h3>
+                                    <span class="overview-card-sub" data-i18n="services.haproxy_sub">User-space Layer-4 TCP/UDP IPv6 Relay</span>
                                 </div>
                             </div>
-                            <span class="stat-badge badge-active" id="badgeHaproxyStatus">CHECKING</span>
+                            <span class="stat-badge badge-active" id="badgeHaproxyStatus" data-i18n="status.checking">CHECKING</span>
                         </div>
                         <div class="overview-card-body">
-                            <p class="section-desc" style="margin-bottom:14px;">Direct IPv6 user-space relay without any
+                            <p class="section-desc" style="margin-bottom:14px;" data-i18n="services.haproxy_desc">Direct IPv6 user-space relay without any
                                 encapsulation overhead. Non-disruptive reload on priority change.</p>
                             <div class="overview-info-list">
                                 <div class="info-item">
-                                    <span class="info-label">Config Location</span>
+                                    <span class="info-label" data-i18n="services.config_location">Config Location</span>
                                     <span class="info-value font-mono">/etc/haproxy/haproxy.cfg</span>
                                 </div>
                                 <div class="info-item">
-                                    <span class="info-label">Installation</span>
-                                    <span class="info-value font-mono" id="svcHaproxyInstalled">Checking...</span>
+                                    <span class="info-label" data-i18n="services.installation">Installation</span>
+                                    <span class="info-value font-mono" id="svcHaproxyInstalled" data-i18n="status.checking">Checking...</span>
                                 </div>
                                 <div class="info-item">
-                                    <span class="info-label">Service Status</span>
+                                    <span class="info-label" data-i18n="services.service_status">Service Status</span>
                                     <span class="info-value text-emerald font-mono"
-                                        id="svcHaproxyState">Checking...</span>
+                                        id="svcHaproxyState" data-i18n="status.checking">Checking...</span>
                                 </div>
                                 <div class="info-item">
-                                    <span class="info-label">Binary Version</span>
+                                    <span class="info-label" data-i18n="services.binary_version">Binary Version</span>
                                     <span class="info-value font-mono" id="svcHaproxyVersion">--</span>
                                 </div>
                                 <div class="info-item">
-                                    <span class="info-label">Reload Mechanism</span>
+                                    <span class="info-label" data-i18n="services.reload_mechanism">Reload Mechanism</span>
                                     <span class="info-value font-mono">systemctl reload haproxy</span>
                                 </div>
                                 <div class="info-item">
-                                    <span class="info-label">Active Bindings</span>
+                                    <span class="info-label" data-i18n="services.active_bindings">Active Bindings</span>
                                     <span class="info-value text-emerald" id="svcHaproxyBinds">0 ports</span>
                                 </div>
                             </div>
                             <div style="margin-top:14px; display:flex; justify-content:flex-end;">
                                 <button type="button" class="btn btn-secondary btn-xs" id="btnReloadHaproxy">
                                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
-                                    <span>Reload HAProxy</span>
+                                    <span data-i18n="services.reload_haproxy">Reload HAProxy</span>
                                 </button>
                             </div>
                         </div>
@@ -1193,46 +1238,46 @@
                                     </svg>
                                 </div>
                                 <div>
-                                    <h3>NFTables Kernel DNAT</h3>
-                                    <span class="overview-card-sub">Layer-3 Kernel Tunnel Forwarding</span>
+                                    <h3 data-i18n="services.nftables_title">NFTables Kernel DNAT</h3>
+                                    <span class="overview-card-sub" data-i18n="services.nftables_sub">Layer-3 Kernel Tunnel Forwarding</span>
                                 </div>
                             </div>
-                            <span class="stat-badge badge-active" id="badgeNftablesStatus">CHECKING</span>
+                            <span class="stat-badge badge-active" id="badgeNftablesStatus" data-i18n="status.checking">CHECKING</span>
                         </div>
                         <div class="overview-card-body">
-                            <p class="section-desc" style="margin-bottom:14px;">High-speed kernel DNAT over GRE, IPIP,
+                            <p class="section-desc" style="margin-bottom:14px;" data-i18n="services.nftables_desc">High-speed kernel DNAT over GRE, IPIP,
                                 FakeTCP, or AmneziaWG tunnels. Zero interference with system firewall.</p>
                             <div class="overview-info-list">
                                 <div class="info-item">
-                                    <span class="info-label">Isolated Tables</span>
+                                    <span class="info-label" data-i18n="services.isolated_tables">Isolated Tables</span>
                                     <span class="info-value font-mono">table ip/ip6 xfwd_orchestrator</span>
                                 </div>
                                 <div class="info-item">
-                                    <span class="info-label">Installation</span>
-                                    <span class="info-value font-mono" id="svcNftablesInstalled">Checking...</span>
+                                    <span class="info-label" data-i18n="services.installation">Installation</span>
+                                    <span class="info-value font-mono" id="svcNftablesInstalled" data-i18n="status.checking">Checking...</span>
                                 </div>
                                 <div class="info-item">
-                                    <span class="info-label">Kernel Status</span>
+                                    <span class="info-label" data-i18n="services.kernel_status">Kernel Status</span>
                                     <span class="info-value text-emerald font-mono"
-                                        id="svcNftablesKernel">Checking...</span>
+                                        id="svcNftablesKernel" data-i18n="status.checking">Checking...</span>
                                 </div>
                                 <div class="info-item">
-                                    <span class="info-label">Binary Version</span>
+                                    <span class="info-label" data-i18n="services.binary_version">Binary Version</span>
                                     <span class="info-value font-mono" id="svcNftablesVersion">--</span>
                                 </div>
                                 <div class="info-item">
-                                    <span class="info-label">Flush Safety</span>
-                                    <span class="info-value text-emerald">Never executes flush ruleset</span>
+                                    <span class="info-label" data-i18n="services.flush_safety">Flush Safety</span>
+                                    <span class="info-value text-emerald" data-i18n="services.flush_safety_val">Never executes flush ruleset</span>
                                 </div>
                                 <div class="info-item">
-                                    <span class="info-label">Active Forwardings</span>
+                                    <span class="info-label" data-i18n="services.active_bindings">Active Forwardings</span>
                                     <span class="info-value text-amber" id="svcNftablesBinds">0 ports</span>
                                 </div>
                             </div>
                             <div style="margin-top:14px; display:flex; justify-content:flex-end;">
                                 <button type="button" class="btn btn-secondary btn-xs" id="btnResyncNftables">
                                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
-                                    <span>Sync NFTables Table</span>
+                                    <span data-i18n="services.sync_nftables">Sync NFTables Table</span>
                                 </button>
                             </div>
                         </div>
@@ -1251,41 +1296,41 @@
                                     </svg>
                                 </div>
                                 <div>
-                                    <h3>Nginx Stream Proxy Engine</h3>
-                                    <span class="overview-card-sub">Layer-4 High-Throughput Stream Forwarder</span>
+                                    <h3 data-i18n="services.nginx_title">Nginx Stream Proxy Engine</h3>
+                                    <span class="overview-card-sub" data-i18n="services.nginx_sub">Layer-4 High-Throughput Stream Forwarder</span>
                                 </div>
                             </div>
-                            <span class="stat-badge badge-active" id="badgeNginxStatus">CHECKING</span>
+                            <span class="stat-badge badge-active" id="badgeNginxStatus" data-i18n="status.checking">CHECKING</span>
                         </div>
                         <div class="overview-card-body">
-                            <p class="section-desc" style="margin-bottom:14px;">High-concurrency stream TCP/UDP proxy
+                            <p class="section-desc" style="margin-bottom:14px;" data-i18n="services.nginx_desc">High-concurrency stream TCP/UDP proxy
                                 with epoll multi-accept architecture. Managed dynamically by XForwarder.</p>
                             <div class="overview-info-list">
                                 <div class="info-item">
-                                    <span class="info-label">Config Location</span>
+                                    <span class="info-label" data-i18n="services.config_location">Config Location</span>
                                     <span class="info-value font-mono">/etc/nginx/nginx.conf</span>
                                 </div>
                                 <div class="info-item">
-                                    <span class="info-label">Installation</span>
-                                    <span class="info-value font-mono" id="svcNginxInstalled">Checking...</span>
+                                    <span class="info-label" data-i18n="services.installation">Installation</span>
+                                    <span class="info-value font-mono" id="svcNginxInstalled" data-i18n="status.checking">Checking...</span>
                                 </div>
                                 <div class="info-item">
-                                    <span class="info-label">Service Status</span>
-                                    <span class="info-value font-mono" id="svcNginxState">Checking...</span>
+                                    <span class="info-label" data-i18n="services.service_status">Service Status</span>
+                                    <span class="info-value font-mono" id="svcNginxState" data-i18n="status.checking">Checking...</span>
                                 </div>
                                 <div class="info-item">
-                                    <span class="info-label">Binary Version</span>
+                                    <span class="info-label" data-i18n="services.binary_version">Binary Version</span>
                                     <span class="info-value font-mono" id="svcNginxVersion">--</span>
                                 </div>
                                 <div class="info-item">
-                                    <span class="info-label">Active Bindings</span>
+                                    <span class="info-label" data-i18n="services.active_bindings">Active Bindings</span>
                                     <span class="info-value text-cyan" id="svcNginxBinds">0 ports</span>
                                 </div>
                             </div>
                             <div style="margin-top:14px; display:flex; justify-content:flex-end;">
                                 <button type="button" class="btn btn-secondary btn-xs" id="btnReloadNginx">
                                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
-                                    <span>Reload Nginx</span>
+                                    <span data-i18n="services.reload_nginx">Reload Nginx</span>
                                 </button>
                             </div>
                         </div>
@@ -1305,16 +1350,16 @@
                                     </svg>
                                 </div>
                                 <div>
-                                    <h3>Pre-existing Relay Rules Discovery</h3>
-                                    <span class="overview-card-sub">Auto-discover and import active HAProxy & NFTables rules into XForwarder</span>
+                                    <h3 data-i18n="services.discovery_title">Pre-existing Relay Rules Discovery</h3>
+                                    <span class="overview-card-sub" data-i18n="services.discovery_sub">Auto-discover and import active HAProxy & NFTables rules into XForwarder</span>
                                 </div>
                             </div>
-                            <button class="btn btn-secondary btn-sm" id="btnScanHaproxy">Scan Server</button>
+                            <button class="btn btn-secondary btn-sm" id="btnScanHaproxy" data-i18n="services.scan_server">Scan Server</button>
                         </div>
                         <div class="overview-card-body">
-                            <p class="section-desc">If this server was previously configured with HAProxy or active NFTables/iptables DNAT forwarding rules, XForwarder can automatically detect them, extract inbound ports, backends, and protocols, backup legacy tables, and import them with zero port collisions.</p>
+                            <p class="section-desc" data-i18n="services.discovery_desc">If this server was previously configured with HAProxy or active NFTables/iptables DNAT forwarding rules, XForwarder can automatically detect them, extract inbound ports, backends, and protocols, backup legacy tables, and import them with zero port collisions.</p>
                             <div id="serviceDiscoveryResult"
-                                style="margin-top:14px; font-size: 0.88rem; color: var(--text-secondary);">
+                                style="margin-top:14px; font-size: 0.88rem; color: var(--text-secondary);" data-i18n="services.scan_prompt">
                                 Click "Scan Server" to check for unmanaged HAProxy and NFTables forwarding rules.
                             </div>
                         </div>
@@ -1338,14 +1383,14 @@
                                     </svg>
                                 </div>
                                 <div>
-                                    <h3>Backup &amp; Migration</h3>
-                                    <span class="overview-card-sub">Export or import routing rules and server
+                                    <h3 data-i18n="security.backup_title">Backup &amp; Migration</h3>
+                                    <span class="overview-card-sub" data-i18n="security.backup_sub">Export or import routing rules and server
                                         parameters</span>
                                 </div>
                             </div>
                         </div>
                         <div class="overview-card-body">
-                            <p class="section-desc" style="margin-bottom:14px;">Safely backup or restore your forwarding
+                            <p class="section-desc" style="margin-bottom:14px;" data-i18n="security.backup_desc">Safely backup or restore your forwarding
                                 rules and operational parameters. Exported files are cryptographically sanitized to
                                 exclude administrative passwords.</p>
                             <div class="settings-btn-grid" style="max-width: 480px;">
@@ -1356,7 +1401,7 @@
                                         <polyline points="7 10 12 15 17 10" />
                                         <line x1="12" y1="15" x2="12" y2="3" />
                                     </svg>
-                                    <span>Export Backup JSON</span>
+                                    <span data-i18n="security.export_btn">Export Backup JSON</span>
                                 </button>
                                 <button type="button" class="btn btn-primary" id="btnOpenImportModalSec">
                                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -1365,7 +1410,7 @@
                                         <polyline points="17 8 12 3 7 8" />
                                         <line x1="12" y1="3" x2="12" y2="15" />
                                     </svg>
-                                    <span>Import Config</span>
+                                    <span data-i18n="security.import_btn">Import Config</span>
                                 </button>
                             </div>
                         </div>
@@ -1383,8 +1428,8 @@
                                     </svg>
                                 </div>
                                 <div>
-                                    <h3>Admin Credentials</h3>
-                                    <span class="overview-card-sub">Change web dashboard administrator username and
+                                    <h3 data-i18n="security.admin_title">Admin Credentials</h3>
+                                    <span class="overview-card-sub" data-i18n="security.admin_sub">Change web dashboard administrator username and
                                         password</span>
                                 </div>
                             </div>
@@ -1392,28 +1437,28 @@
                         <div class="overview-card-body">
                             <form id="inlineSecurityForm">
                                 <div class="form-group">
-                                    <label for="secInlineCurrentPwd">Current Admin Password <span
+                                    <label for="secInlineCurrentPwd" data-i18n="security.current_pwd">Current Admin Password <span
                                             class="required">*</span></label>
                                     <input type="password" id="secInlineCurrentPwd" class="form-control"
-                                        placeholder="Current password" required autocomplete="current-password">
+                                        placeholder="Current password" data-i18n-placeholder="security.current_pwd_placeholder" required autocomplete="current-password">
                                 </div>
                                 <div class="form-group">
-                                    <label for="secInlineNewUser">New Username (optional)</label>
+                                    <label for="secInlineNewUser" data-i18n="security.new_user">New Username (optional)</label>
                                     <input type="text" id="secInlineNewUser" class="form-control"
-                                        placeholder="Leave empty to keep current" autocomplete="off">
+                                        placeholder="Leave empty to keep current" data-i18n-placeholder="security.new_user_placeholder" autocomplete="off">
                                 </div>
                                 <div class="form-group">
-                                    <label for="secInlineNewPwd">New Password (optional)</label>
+                                    <label for="secInlineNewPwd" data-i18n="security.new_pwd">New Password (optional)</label>
                                     <input type="password" id="secInlineNewPwd" class="form-control"
-                                        placeholder="Minimum 8 characters" autocomplete="new-password">
+                                        placeholder="Minimum 8 characters" data-i18n-placeholder="security.new_pwd_placeholder" autocomplete="new-password">
                                 </div>
                                 <div class="form-group">
-                                    <label for="secInlineConfirmPwd">Confirm New Password</label>
+                                    <label for="secInlineConfirmPwd" data-i18n="security.confirm_pwd">Confirm New Password</label>
                                     <input type="password" id="secInlineConfirmPwd" class="form-control"
-                                        placeholder="Repeat new password" autocomplete="new-password">
+                                        placeholder="Repeat new password" data-i18n-placeholder="security.confirm_pwd_placeholder" autocomplete="new-password">
                                 </div>
                                 <div id="secInlineError" class="login-error" style="display:none;"></div>
-                                <button type="submit" class="btn btn-primary" id="btnSaveSecurityInline">Update
+                                <button type="submit" class="btn btn-primary" id="btnSaveSecurityInline" data-i18n="security.update_btn">Update
                                     Credentials</button>
                             </form>
                         </div>
@@ -1432,29 +1477,29 @@
                                     </svg>
                                 </div>
                                 <div>
-                                    <h3>System &amp; Software Updates</h3>
-                                    <span class="overview-card-sub">Check GitHub releases, auto-migrate schema &amp; upgrade services</span>
+                                    <h3 data-i18n="security.updates_title">System &amp; Software Updates</h3>
+                                    <span class="overview-card-sub" data-i18n="security.updates_sub">Check GitHub releases, auto-migrate schema &amp; upgrade services</span>
                                 </div>
                             </div>
-                            <span class="stat-badge badge-active" id="badgeUpdateStatus">CHECKING</span>
+                            <span class="stat-badge badge-active" id="badgeUpdateStatus" data-i18n="status.checking">CHECKING</span>
                         </div>
                         <div class="overview-card-body">
                             <div class="overview-info-list" style="margin-bottom:16px;">
                                 <div class="info-item">
-                                    <span class="info-label">Installed Version</span>
+                                    <span class="info-label" data-i18n="security.installed_version">Installed Version</span>
                                     <span class="info-value font-mono text-emerald" id="valInstalledVersion">v1.5.0</span>
                                 </div>
                                 <div class="info-item">
-                                    <span class="info-label">Local Git Commit</span>
-                                    <span class="info-value font-mono" id="valLocalCommit">Checking...</span>
+                                    <span class="info-label" data-i18n="security.local_commit">Local Git Commit</span>
+                                    <span class="info-value font-mono" id="valLocalCommit" data-i18n="status.checking">Checking...</span>
                                 </div>
                                 <div class="info-item">
-                                    <span class="info-label">Latest GitHub Commit</span>
-                                    <span class="info-value font-mono" id="valRemoteCommit">Checking...</span>
+                                    <span class="info-label" data-i18n="security.remote_commit">Latest GitHub Commit</span>
+                                    <span class="info-value font-mono" id="valRemoteCommit" data-i18n="status.checking">Checking...</span>
                                 </div>
                                 <div class="info-item">
-                                    <span class="info-label">Last Checked</span>
-                                    <span class="info-value" id="valLastChecked">Never</span>
+                                    <span class="info-label" data-i18n="security.last_checked">Last Checked</span>
+                                    <span class="info-value" id="valLastChecked" data-i18n="security.never">Never</span>
                                 </div>
                             </div>
 
@@ -1467,7 +1512,7 @@
                                         <path d="M1 20v-6h6" />
                                         <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
                                     </svg>
-                                    <span>Check for Updates</span>
+                                    <span data-i18n="security.check_updates">Check for Updates</span>
                                 </button>
                                 <button type="button" class="btn btn-primary" id="btnTriggerUpdate" disabled="disabled" title="Check for updates first">
                                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -1475,10 +1520,10 @@
                                         <line x1="12" y1="12" x2="12" y2="21" />
                                         <path d="M20.88 18.09A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.29" />
                                     </svg>
-                                    <span id="btnTriggerUpdateText">Update to Latest</span>
+                                    <span id="btnTriggerUpdateText" data-i18n="security.update_latest">Update to Latest</span>
                                 </button>
                             </div>
-                            <p class="section-desc" style="margin-top:12px; margin-bottom:0; font-size:0.75rem;">
+                            <p class="section-desc" style="margin-top:12px; margin-bottom:0; font-size:0.75rem;" data-i18n="security.update_note">
                                 Updates automatically backup active configuration (<code class="font-mono">config.json.bak</code>), migrate schema structures, and preserve all custom ports and credentials with zero data loss.
                             </p>
                         </div>
@@ -1491,8 +1536,8 @@
                 <main class="main-panel">
                     <div class="panel-header">
                         <div>
-                            <h2>Real-time Failover & Probe Logs</h2>
-                            <p class="section-desc">Live timeline of socket health checks, priority transitions, and
+                            <h2 data-i18n="logs.title">Real-time Failover & Probe Logs</h2>
+                            <p class="section-desc" data-i18n="logs.desc">Live timeline of socket health checks, priority transitions, and
                                 failover triggers.</p>
                         </div>
                         <div style="display:flex; gap:10px;">
@@ -1501,12 +1546,12 @@
                                     <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
                                     <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
                                 </svg>
-                                <span>Copy Logs</span>
+                                <span data-i18n="logs.copy">Copy Logs</span>
                             </button>
-                            <button class="btn btn-secondary btn-sm" id="btnClearLogs">Clear Log</button>
+                            <button class="btn btn-secondary btn-sm" id="btnClearLogs" data-i18n="logs.clear">Clear Log</button>
                             <button class="btn btn-primary btn-sm" id="btnToggleLogFeed">
                                 <span class="pulse-dot" style="display:inline-block;"></span>
-                                <span id="logFeedText">Live Feed Active</span>
+                                <span id="logFeedText" data-i18n="logs.live_active">Live Feed Active</span>
                             </button>
                         </div>
                     </div>
@@ -1520,7 +1565,7 @@
                                 <line x1="21" y1="21" x2="16.65" y2="16.65" />
                             </svg>
                             <input type="text" id="logSearchInput" placeholder="Filter logs by port, IP, or event..."
-                                autocomplete="off">
+                                data-i18n-placeholder="logs.filter_placeholder" autocomplete="off">
                         </div>
                     </div>
 
@@ -1542,7 +1587,7 @@
     <div class="modal-backdrop" id="ruleModal">
         <div class="modal-card">
             <div class="modal-header">
-                <h3 id="modalTitle">Configure Port Rule</h3>
+                <h3 id="modalTitle" data-i18n="modal.rule_title_configure">Configure Port Rule</h3>
                 <button class="modal-close" id="btnCloseModal">&times;</button>
             </div>
             <form id="ruleForm">
@@ -1550,27 +1595,27 @@
 
                 <div class="form-row">
                     <div class="form-group flex-1">
-                        <label for="formPort">Inbound Listening Port</label>
-                        <input type="number" id="formPort" class="form-control" placeholder="e.g. 2023" required min="1"
+                        <label for="formPort" data-i18n="modal.inbound_port">Inbound Listening Port</label>
+                        <input type="number" id="formPort" class="form-control" placeholder="e.g. 2023" data-i18n-placeholder="modal.port_placeholder" required min="1"
                             max="65535">
                     </div>
                     <div class="form-group flex-1">
-                        <label for="formProto">Transport Protocol</label>
+                        <label for="formProto" data-i18n="modal.proto">Transport Protocol</label>
                         <select id="formProto" class="form-control">
-                            <option value="both">TCP + UDP (Recommended)</option>
-                            <option value="tcp">TCP Only</option>
-                            <option value="udp">UDP Only</option>
+                            <option data-i18n="modal.proto_both" value="both">TCP + UDP (Recommended)</option>
+                            <option value="tcp" data-i18n="modal.proto_tcp">TCP Only</option>
+                            <option value="udp" data-i18n="modal.proto_udp">UDP Only</option>
                         </select>
                     </div>
                 </div>
 
                 <div class="form-group" style="margin-bottom: 16px;">
-                    <label for="formCategory">Category / Group <span style="font-size:0.75rem; color:var(--text-muted); font-weight:normal;">(Optional - for grouping ports with divider lines)</span></label>
+                    <label for="formCategory"><span data-i18n="modal.category">Category / Group</span> <span style="font-size:0.75rem; color:var(--text-muted); font-weight:normal;" data-i18n="modal.category_opt">(Optional - for grouping ports with divider lines)</span></label>
                     <div class="input-with-icon">
                         <svg class="input-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
                         </svg>
-                        <input type="text" id="formCategory" class="form-control" placeholder="e.g. Tehran Tunnels, VIP Users, Games (leave empty for none)" maxlength="48" autocomplete="off">
+                        <input type="text" id="formCategory" class="form-control" placeholder="e.g. Tehran Tunnels, VIP Users, Games (leave empty for none)" data-i18n-placeholder="modal.category_placeholder" maxlength="48" autocomplete="off">
                         <datalist id="categoryDatalist"></datalist>
                     </div>
                 </div>
@@ -1578,8 +1623,8 @@
                 <div class="destinations-section">
                     <div class="destinations-section-header">
                         <div>
-                            <span class="destinations-label">Failover Priority Chain</span>
-                            <span class="destinations-sub">Traffic cascades in order from Priority 1 to 2, 3, etc. on
+                            <span class="destinations-label" data-i18n="modal.failover_chain">Failover Priority Chain</span>
+                            <span class="destinations-sub" data-i18n="modal.failover_chain_sub">Traffic cascades in order from Priority 1 to 2, 3, etc. on
                                 failure</span>
                         </div>
                     </div>
@@ -1595,13 +1640,13 @@
                             <line x1="12" y1="5" x2="12" y2="19" />
                             <line x1="5" y1="12" x2="19" y2="12" />
                         </svg>
-                        <span>+ Add Another Failover Priority</span>
+                        <span data-i18n="modal.add_priority">+ Add Another Failover Priority</span>
                     </button>
                 </div>
 
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" id="btnCancelModal">Cancel</button>
-                    <button type="submit" class="btn btn-primary" id="btnSaveRule">Save & Apply Changes</button>
+                    <button type="button" class="btn btn-secondary" id="btnCancelModal" data-i18n="modal.cancel">Cancel</button>
+                    <button type="submit" class="btn btn-primary" id="btnSaveRule" data-i18n="modal.save_rule">Save & Apply Changes</button>
                 </div>
             </form>
         </div>
@@ -1612,27 +1657,27 @@
         <div class="modal-card">
             <div class="modal-header">
                 <div>
-                    <h3>Security & Credentials</h3>
-                    <p class="modal-subtitle">Update administrator username and cryptographic password</p>
+                    <h3 data-i18n="security.admin_title">Security & Credentials</h3>
+                    <p class="modal-subtitle" data-i18n="security.admin_sub">Update administrator username and cryptographic password</p>
                 </div>
                 <button type="button" class="modal-close" id="btnCloseSecurityModal">&times;</button>
             </div>
             <form id="securityForm">
                 <div class="form-group">
-                    <label for="secCurrentPwd">Current Admin Password <span class="required">*</span></label>
+                    <label for="secCurrentPwd" data-i18n="security.current_pwd">Current Admin Password <span class="required">*</span></label>
                     <div class="input-with-icon">
                         <svg class="input-icon" width="16" height="16" viewBox="0 0 24 24" fill="none"
                             stroke="currentColor" stroke-width="2">
                             <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
                             <path d="M7 11V7a5 5 0 0 1 10 0v4" />
                         </svg>
-                        <input type="password" id="secCurrentPwd" class="form-control" placeholder="Current password"
+                        <input type="password" id="secCurrentPwd" class="form-control" placeholder="Current password" data-i18n-placeholder="security.current_pwd_placeholder"
                             required autocomplete="current-password">
                     </div>
                 </div>
 
                 <div class="form-group">
-                    <label for="secNewUser">New Username (optional)</label>
+                    <label for="secNewUser" data-i18n="security.new_user">New Username (optional)</label>
                     <div class="input-with-icon">
                         <svg class="input-icon" width="16" height="16" viewBox="0 0 24 24" fill="none"
                             stroke="currentColor" stroke-width="2">
@@ -1640,12 +1685,12 @@
                             <circle cx="12" cy="7" r="4" />
                         </svg>
                         <input type="text" id="secNewUser" class="form-control"
-                            placeholder="Leave empty to keep current" autocomplete="off">
+                            placeholder="Leave empty to keep current" data-i18n-placeholder="security.new_user_placeholder" autocomplete="off">
                     </div>
                 </div>
 
                 <div class="form-group">
-                    <label for="secNewPwd">New Password (optional)</label>
+                    <label for="secNewPwd" data-i18n="security.new_pwd">New Password (optional)</label>
                     <div class="input-with-icon">
                         <svg class="input-icon" width="16" height="16" viewBox="0 0 24 24" fill="none"
                             stroke="currentColor" stroke-width="2">
@@ -1653,7 +1698,7 @@
                                 d="M21 2l-2 2m-1.5 1.5L16 7l-4 4-2-2-4 4 2 2-4 4 2 2 4-4 2 2 4-4 1.5-1.5L22 4l-1-2z" />
                         </svg>
                         <input type="password" id="secNewPwd" class="form-control"
-                            placeholder="Leave empty to keep current (min 8 chars)" autocomplete="new-password">
+                            placeholder="Leave empty to keep current (min 8 chars)" data-i18n-placeholder="security.new_pwd_placeholder" autocomplete="new-password">
                         <button type="button" class="btn-toggle-pwd" id="btnToggleSecPwd" title="Show/Hide Password"
                             tabindex="-1">
                             <svg id="eyeIconSec" width="16" height="16" viewBox="0 0 24 24" fill="none"
@@ -1673,13 +1718,13 @@
                 </div>
 
                 <div class="form-group">
-                    <label for="secConfirmPwd">Confirm New Password</label>
+                    <label for="secConfirmPwd" data-i18n="security.confirm_pwd">Confirm New Password</label>
                     <div class="input-with-icon">
                         <svg class="input-icon" width="16" height="16" viewBox="0 0 24 24" fill="none"
                             stroke="currentColor" stroke-width="2">
                             <polyline points="20 6 9 17 4 12" />
                         </svg>
-                        <input type="password" id="secConfirmPwd" class="form-control" placeholder="Repeat new password"
+                        <input type="password" id="secConfirmPwd" class="form-control" placeholder="Repeat new password" data-i18n-placeholder="security.confirm_pwd_placeholder"
                             autocomplete="new-password">
                     </div>
                 </div>
@@ -1687,8 +1732,8 @@
                 <div id="securityError" class="login-error" style="display:none;"></div>
 
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" id="btnCancelSecurity">Cancel</button>
-                    <button type="submit" class="btn btn-primary" id="btnSaveSecurity">Update Credentials</button>
+                    <button type="button" class="btn btn-secondary" id="btnCancelSecurity" data-i18n="modal.cancel">Cancel</button>
+                    <button type="submit" class="btn btn-primary" id="btnSaveSecurity" data-i18n="security.update_btn">Update Credentials</button>
                 </div>
             </form>
         </div>
@@ -1705,12 +1750,12 @@
                     <line x1="12" y1="17" x2="12.01" y2="17" />
                 </svg>
             </div>
-            <h3 id="confirmTitle">Delete Port Forwarding Rule?</h3>
-            <p id="confirmMessage">Are you sure you want to delete this forwarding rule? Traffic routing on this port
+            <h3 id="confirmTitle" data-i18n="confirm.delete_title">Delete Port Forwarding Rule?</h3>
+            <p id="confirmMessage" data-i18n="confirm.delete_msg">Are you sure you want to delete this forwarding rule? Traffic routing on this port
                 will stop immediately.</p>
             <div class="modal-footer confirm-footer">
-                <button type="button" class="btn btn-secondary" id="btnCancelConfirm">Cancel</button>
-                <button type="button" class="btn btn-danger" id="btnProceedConfirm">Delete Rule</button>
+                <button type="button" class="btn btn-secondary" id="btnCancelConfirm" data-i18n="confirm.cancel">Cancel</button>
+                <button type="button" class="btn btn-danger" id="btnProceedConfirm" data-i18n="confirm.delete_btn">Delete Rule</button>
             </div>
         </div>
     </div>
@@ -1726,20 +1771,20 @@
                     <line x1="12" y1="17" x2="12.01" y2="17" />
                 </svg>
             </div>
-            <h3>Server Synchronization Notice</h3>
-            <p id="syncErrorMessage" style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:12px;">
+            <h3 data-i18n="sync_error.title">Server Synchronization Notice</h3>
+            <p id="syncErrorMessage" style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:12px;" data-i18n="sync_error.msg">
                 Configuration was saved, but one or more server commands reported an issue:</p>
             <div id="syncErrorList" class="font-mono"
                 style="text-align:left; max-height:180px; overflow-y:auto; background:var(--bg-card); border:1px solid var(--border-color); border-radius:8px; padding:10px 12px; font-size:0.78rem; color:var(--accent-rose); line-height:1.45; margin-bottom:16px;">
             </div>
             <div class="modal-footer confirm-footer">
-                <button type="button" class="btn btn-secondary" id="btnDismissSyncError" onclick="closeSyncErrorModal()">Dismiss</button>
+                <button type="button" class="btn btn-secondary" id="btnDismissSyncError" onclick="closeSyncErrorModal()" data-i18n="sync_error.dismiss">Dismiss</button>
                 <button type="button" class="btn btn-primary" id="btnRetrySyncModal">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <polyline points="23 4 23 10 17 10" />
                         <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
                     </svg>
-                    <span>Retry Server Sync</span>
+                    <span data-i18n="sync_error.retry">Retry Server Sync</span>
                 </button>
             </div>
         </div>
@@ -1750,29 +1795,29 @@
         <div class="modal-card">
             <div class="modal-header">
                 <div>
-                    <h3>Import Configuration</h3>
-                    <p class="modal-subtitle">Upload or paste an XForwarder backup configuration JSON</p>
+                    <h3 data-i18n="import.title">Import Configuration</h3>
+                    <p class="modal-subtitle" data-i18n="import.sub">Upload or paste an XForwarder backup configuration JSON</p>
                 </div>
                 <button type="button" class="modal-close" id="btnCloseImportModal">&times;</button>
             </div>
             <form id="importConfigForm">
                 <!-- Import Mode Selection -->
                 <div class="form-group">
-                    <label>Import Mode</label>
+                    <label data-i18n="import.mode">Import Mode</label>
                     <div class="import-mode-selector">
                         <label class="import-mode-option">
                             <input type="radio" name="importMode" value="merge" checked>
                             <div class="import-mode-card">
-                                <span class="import-mode-title">Merge (Recommended)</span>
-                                <span class="import-mode-desc">Appends and updates port rules. Preserves existing
+                                <span class="import-mode-title" data-i18n="import.merge_title">Merge (Recommended)</span>
+                                <span class="import-mode-desc" data-i18n="import.merge_desc">Appends and updates port rules. Preserves existing
                                     non-conflicting rules.</span>
                             </div>
                         </label>
                         <label class="import-mode-option">
                             <input type="radio" name="importMode" value="replace">
                             <div class="import-mode-card">
-                                <span class="import-mode-title">Replace All Rules</span>
-                                <span class="import-mode-desc">Replaces all port rules with the imported set. Admin
+                                <span class="import-mode-title" data-i18n="import.replace_title">Replace All Rules</span>
+                                <span class="import-mode-desc" data-i18n="import.replace_desc">Replaces all port rules with the imported set. Admin
                                     credentials and panel port remain safe.</span>
                             </div>
                         </label>
@@ -1786,28 +1831,28 @@
                 <div class="form-group" style="margin-top: 12px;">
                     <div id="pasteJsonContainer" class="paste-json-container">
                         <div class="paste-json-toolbar">
-                            <label class="paste-json-label" for="importJsonTextarea">Configuration JSON</label>
+                            <label class="paste-json-label" for="importJsonTextarea" data-i18n="import.paste_label">Configuration JSON</label>
                             <div class="paste-json-actions">
                                 <button type="button" class="btn-paste-tool" id="btnPasteFromClipboard" title="Paste from clipboard">
                                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                         <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>
                                         <rect x="8" y="2" width="8" height="4" rx="1" ry="1"/>
                                     </svg>
-                                    <span>Paste</span>
+                                    <span data-i18n="import.btn_paste">Paste</span>
                                 </button>
                                 <button type="button" class="btn-paste-tool" id="btnFormatJson" title="Format JSON">
                                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                         <polyline points="16 18 22 12 16 6"/>
                                         <polyline points="8 6 2 12 8 18"/>
                                     </svg>
-                                    <span>Format</span>
+                                    <span data-i18n="import.btn_format">Format</span>
                                 </button>
                                 <button type="button" class="btn-paste-tool" id="btnClearJsonText" title="Clear text">
                                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                         <line x1="18" y1="6" x2="6" y2="18"/>
                                         <line x1="6" y1="6" x2="18" y2="18"/>
                                     </svg>
-                                    <span>Clear</span>
+                                    <span data-i18n="import.btn_clear">Clear</span>
                                 </button>
                             </div>
                         </div>
@@ -1828,7 +1873,7 @@
                 <!-- Optional File Dropzone Option (Bottom) -->
                 <div class="form-group import-file-option-group" style="margin-top: 12px;">
                     <div class="import-divider-or">
-                        <span>or import from file</span>
+                        <span data-i18n="import.or_file">or import from file</span>
                     </div>
                     <div class="file-dropzone file-dropzone-compact" id="importDropzone">
                         <input type="file" id="importFileInput" accept=".json,application/json" style="display:none;">
@@ -1839,7 +1884,7 @@
                                 <polyline points="17 8 12 3 7 8" />
                                 <line x1="12" y1="3" x2="12" y2="15" />
                             </svg>
-                            <span class="dropzone-text">Click or drag &amp; drop backup JSON file here</span>
+                            <span class="dropzone-text" data-i18n="import.drop_text">Click or drag &amp; drop backup JSON file here</span>
                         </div>
                     </div>
                 </div>
@@ -1847,13 +1892,13 @@
                 <div id="importError" class="login-error" style="display:none;"></div>
 
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" id="btnCancelImportModal">Cancel</button>
+                    <button type="button" class="btn btn-secondary" id="btnCancelImportModal" data-i18n="modal.cancel">Cancel</button>
                     <button type="submit" class="btn btn-primary" id="btnConfirmImport" disabled>
                         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                             stroke-width="2">
                             <polyline points="20 6 9 17 4 12" />
                         </svg>
-                        <span>Import & Apply</span>
+                        <span data-i18n="import.apply">Import & Apply</span>
                     </button>
                 </div>
             </form>
@@ -1865,8 +1910,8 @@
         <div class="modal" style="max-width: 680px; width: 95%;">
             <div class="modal-header">
                 <div class="modal-title-wrap">
-                    <h3 id="updateModalTitle">XForwarder System Update</h3>
-                    <p class="modal-subtitle" id="updateModalSubtitle">Pull latest release from GitHub, execute schema migrations, and reload daemons</p>
+                    <h3 id="updateModalTitle" data-i18n="update_modal.title">XForwarder System Update</h3>
+                    <p class="modal-subtitle" id="updateModalSubtitle" data-i18n="update_modal.sub">Pull latest release from GitHub, execute schema migrations, and reload daemons</p>
                 </div>
                 <button type="button" class="modal-close" id="btnCloseUpdateModal" title="Close dialog">&times;</button>
             </div>
@@ -1883,16 +1928,16 @@
                                 </svg>
                             </div>
                             <div>
-                                <h4 style="margin:0 0 2px 0; font-size:0.92rem;">Ready to Update</h4>
-                                <span class="text-muted" style="font-size:0.78rem;">The update will run in an isolated systemd job.</span>
+                                <h4 style="margin:0 0 2px 0; font-size:0.92rem;" data-i18n="update_modal.ready_title">Ready to Update</h4>
+                                <span class="text-muted" style="font-size:0.78rem;" data-i18n="update_modal.ready_sub">The update will run in an isolated systemd job.</span>
                             </div>
                         </div>
                         <ul style="font-size:0.82rem; color:var(--text-secondary); padding-left:18px; margin:0; line-height:1.6;">
-                            <li>Fetches latest commits from <code class="font-mono text-cyan">PouryaDe/XForwarder</code></li>
-                            <li>Automated backup of <code class="font-mono">config.json</code> before applying changes</li>
-                            <li>Executes idempotent schema normalization (<code class="font-mono">migrate_and_normalize_config</code>)</li>
-                            <li>Non-disruptively restarts core failover engine and web dashboard</li>
-                            <li>Dashboard will automatically reconnect and refresh when complete</li>
+                            <li data-i18n="update_modal.step1">Fetches latest commits from <code class="font-mono text-cyan">PouryaDe/XForwarder</code></li>
+                            <li data-i18n="update_modal.step2">Automated backup of <code class="font-mono">config.json</code> before applying changes</li>
+                            <li data-i18n="update_modal.step3">Executes idempotent schema normalization (<code class="font-mono">migrate_and_normalize_config</code>)</li>
+                            <li data-i18n="update_modal.step4">Non-disruptively restarts core failover engine and web dashboard</li>
+                            <li data-i18n="update_modal.step5">Dashboard will automatically reconnect and refresh when complete</li>
                         </ul>
                     </div>
                 </div>
@@ -1909,7 +1954,7 @@
                 </div>
             </div>
             <div class="modal-footer" style="display:flex; justify-content:space-between; align-items:center;">
-                <button type="button" class="btn btn-secondary" id="btnCancelUpdateModal">Cancel</button>
+                <button type="button" class="btn btn-secondary" id="btnCancelUpdateModal" data-i18n="update_modal.cancel">Cancel</button>
                 <div style="display:flex; gap:10px;">
                     <button type="button" class="btn btn-primary" id="btnConfirmStartUpdate">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -1917,7 +1962,7 @@
                             <line x1="12" y1="12" x2="12" y2="21" />
                             <path d="M20.88 18.09A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.29" />
                         </svg>
-                        <span>Start Update Now</span>
+                        <span data-i18n="update_modal.start_btn">Start Update Now</span>
                     </button>
                 </div>
             </div>
@@ -1938,8 +1983,8 @@
                             </svg>
                         </div>
                         <div>
-                            <h3 id="trafficModalTitle">Traffic & Bandwidth Analytics</h3>
-                            <p class="modal-subtitle" id="trafficModalSubtitle">Real-time bandwidth accounting across ports and tunnels</p>
+                            <h3 id="trafficModalTitle" data-i18n="traffic_modal.title">Traffic &amp; Bandwidth Analytics</h3>
+                            <p class="modal-subtitle" id="trafficModalSubtitle" data-i18n="traffic_modal.sub">Real-time bandwidth accounting across ports and tunnels</p>
                         </div>
                     </div>
                 </div>
@@ -1950,18 +1995,18 @@
                 <!-- Filter & Entity Selector Bar -->
                 <div class="traffic-filter-bar">
                     <div class="traffic-filter-group">
-                        <label for="trafficEntitySelect" class="form-label-inline">Target:</label>
+                        <label for="trafficEntitySelect" class="form-label-inline" data-i18n="traffic_modal.target">Target:</label>
                         <select id="trafficEntitySelect" class="form-control form-control-sm select-styled" onchange="handleTrafficEntityChange()">
-                            <option value="all:all">All Ports & Tunnels</option>
-                            <optgroup label="Forwarded Ports" id="trafficPortOptgroup"></optgroup>
-                            <optgroup label="Forwarding Methods & Tunnel Types" id="trafficTypeOptgroup"></optgroup>
-                            <optgroup label="Tunnel Interfaces" id="trafficTunnelOptgroup"></optgroup>
+                            <option value="all:all" data-i18n="traffic_modal.all_ports_tunnels">All Ports &amp; Tunnels</option>
+                            <optgroup label="Forwarded Ports" id="trafficPortOptgroup" data-i18n-label="traffic_modal.forwarded_ports"></optgroup>
+                            <optgroup label="Forwarding Methods & Tunnel Types" id="trafficTypeOptgroup" data-i18n-label="traffic_modal.methods_tunnels"></optgroup>
+                            <optgroup label="Tunnel Interfaces" id="trafficTunnelOptgroup" data-i18n-label="traffic_modal.tunnel_ifaces"></optgroup>
                         </select>
                     </div>
                     <div class="traffic-period-pills" id="trafficPeriodPills">
                         <button type="button" class="period-pill active" data-period="24h" onclick="handleTrafficPeriodChange('24h')">24h (Hourly)</button>
-                        <button type="button" class="period-pill" data-period="7d" onclick="handleTrafficPeriodChange('7d')">7 Days</button>
-                        <button type="button" class="period-pill" data-period="30d" onclick="handleTrafficPeriodChange('30d')">30 Days</button>
+                        <button type="button" class="period-pill" data-period="7d" onclick="handleTrafficPeriodChange('7d')" data-i18n="overview.7d">7 Days</button>
+                        <button type="button" class="period-pill" data-period="30d" onclick="handleTrafficPeriodChange('30d')" data-i18n="overview.30d">30 Days</button>
                         <button type="button" class="period-pill" data-period="12m" onclick="handleTrafficPeriodChange('12m')">12 Months</button>
                     </div>
                 </div>
@@ -1970,41 +2015,41 @@
                 <div class="traffic-kpi-grid">
                     <div class="traffic-kpi-card card-cycle-highlight">
                         <div class="kpi-top">
-                            <span class="kpi-title">Billing Cycle</span>
+                            <span class="kpi-title" data-i18n="traffic_modal.billing_cycle">Billing Cycle</span>
                             <button type="button" class="btn btn-secondary btn-xs btn-cycle-reset" onclick="triggerTrafficResetFromModal()" title="Reset current billing cycle counter">
                                 <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M23 4v6h-6"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
-                                <span>Reset</span>
+                                <span data-i18n="traffic_modal.reset">Reset</span>
                             </button>
                         </div>
                         <div class="kpi-value kpi-val-mint" id="kpiCycleTotal">0 B</div>
-                        <div class="kpi-meta" id="kpiCycleMeta">Active since: -</div>
+                        <div class="kpi-meta" id="kpiCycleMeta" data-i18n="traffic_modal.active_since">Active since: -</div>
                     </div>
 
                     <div class="traffic-kpi-card">
                         <div class="kpi-top">
-                            <span class="kpi-title">Download (TX)</span>
-                            <span class="kpi-badge badge-mint">↓ Outbound</span>
+                            <span class="kpi-title" data-i18n="traffic_modal.outbound_tx">Download (TX)</span>
+                            <span class="kpi-badge badge-mint" data-i18n="traffic_modal.outbound_badge">↓ Outbound</span>
                         </div>
                         <div class="kpi-value text-mint" id="kpiTotalTx">0 B</div>
-                        <div class="kpi-meta" id="kpiTxMeta">Sent to clients / targets</div>
+                        <div class="kpi-meta" id="kpiTxMeta" data-i18n="traffic_modal.outbound_meta">Sent to clients / targets</div>
                     </div>
 
                     <div class="traffic-kpi-card">
                         <div class="kpi-top">
-                            <span class="kpi-title">Upload (RX)</span>
-                            <span class="kpi-badge badge-cyan">↑ Inbound</span>
+                            <span class="kpi-title" data-i18n="traffic_modal.inbound_rx">Upload (RX)</span>
+                            <span class="kpi-badge badge-cyan" data-i18n="traffic_modal.inbound_badge">↑ Inbound</span>
                         </div>
                         <div class="kpi-value text-cyan" id="kpiTotalRx">0 B</div>
-                        <div class="kpi-meta" id="kpiRxMeta">Received from clients</div>
+                        <div class="kpi-meta" id="kpiRxMeta" data-i18n="traffic_modal.inbound_meta">Received from clients</div>
                     </div>
 
                     <div class="traffic-kpi-card">
                         <div class="kpi-top">
-                            <span class="kpi-title">Total Bandwidth</span>
-                            <span class="kpi-badge badge-violet">Combined</span>
+                            <span class="kpi-title" data-i18n="traffic_modal.total_bandwidth">Total Bandwidth</span>
+                            <span class="kpi-badge badge-violet" data-i18n="traffic_modal.combined_badge">Combined</span>
                         </div>
                         <div class="kpi-value text-violet" id="kpiTotalBytes">0 B</div>
-                        <div class="kpi-meta" id="kpiPeriodMeta">Across selected period</div>
+                        <div class="kpi-meta" id="kpiPeriodMeta" data-i18n="traffic_modal.period_meta">Across selected period</div>
                     </div>
                 </div>
 
@@ -2018,9 +2063,9 @@
                                 <line x1="6" y1="6" x2="6.01" y2="6"></line>
                                 <line x1="6" y1="18" x2="6.01" y2="18"></line>
                             </svg>
-                            <span id="trafficBreakdownTitle">Forwarding Path & Tunnel Breakdown</span>
+                            <span id="trafficBreakdownTitle" data-i18n="traffic_modal.breakdown_title">Forwarding Path &amp; Tunnel Breakdown</span>
                         </div>
-                        <span class="breakdown-subtitle" id="trafficBreakdownSubtitle">Distribution by relay method</span>
+                        <span class="breakdown-subtitle" id="trafficBreakdownSubtitle" data-i18n="traffic_modal.breakdown_sub">Distribution by relay method</span>
                     </div>
                     <div class="traffic-breakdown-grid" id="trafficBreakdownGrid">
                         <!-- Dynamically populated path/tunnel distribution cards -->
@@ -2030,10 +2075,10 @@
                 <!-- Interactive Visual Bar Chart -->
                 <div class="traffic-chart-section">
                     <div class="traffic-chart-header">
-                        <span class="chart-title" id="trafficChartTitle">Bandwidth Consumption Timeline</span>
+                        <span class="chart-title" id="trafficChartTitle" data-i18n="traffic_modal.chart_title">Bandwidth Consumption Timeline</span>
                         <div class="chart-legend">
-                            <span class="legend-item"><span class="legend-dot dot-mint"></span> Download (TX)</span>
-                            <span class="legend-item"><span class="legend-dot dot-cyan"></span> Upload (RX)</span>
+                            <span class="legend-item"><span class="legend-dot dot-mint"></span> <span data-i18n="overview.legend_tx">Download (TX)</span></span>
+                            <span class="legend-item"><span class="legend-dot dot-cyan"></span> <span data-i18n="overview.legend_rx">Upload (RX)</span></span>
                         </div>
                     </div>
                     <div class="traffic-chart-canvas-wrap" id="trafficChartWrap">
@@ -2044,18 +2089,18 @@
                 <!-- Detailed Tabular Breakdown -->
                 <div class="traffic-table-section">
                     <div class="traffic-table-header">
-                        <h4>Detailed Records</h4>
+                        <h4 data-i18n="traffic_modal.table_title">Detailed Records</h4>
                         <span class="table-records-count" id="trafficRecordsCount">0 records</span>
                     </div>
                     <div class="traffic-table-wrap">
                         <table class="traffic-table">
                             <thead>
                                 <tr>
-                                    <th>Period / Time</th>
-                                    <th>Upload (RX)</th>
-                                    <th>Download (TX)</th>
-                                    <th>Total Usage</th>
-                                    <th>Share</th>
+                                    <th data-i18n="traffic_modal.col_period">Period / Time</th>
+                                    <th data-i18n="traffic_modal.col_rx">Upload (RX)</th>
+                                    <th data-i18n="traffic_modal.col_tx">Download (TX)</th>
+                                    <th data-i18n="traffic_modal.col_total">Total Usage</th>
+                                    <th data-i18n="traffic_modal.col_share">Share</th>
                                 </tr>
                             </thead>
                             <tbody id="trafficTableBody">
@@ -2070,11 +2115,11 @@
                 <div class="traffic-footer-left">
                     <button type="button" class="btn btn-danger-ghost btn-sm" onclick="triggerWipeHistoryFromModal()" title="Permanently delete recorded history for this entity">
                         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-                        <span>Wipe History</span>
+                        <span data-i18n="traffic_modal.wipe_history">Wipe History</span>
                     </button>
                 </div>
                 <div class="traffic-footer-right">
-                    <button type="button" class="btn btn-secondary" id="btnCloseTrafficModalFooter">Close</button>
+                    <button type="button" class="btn btn-secondary" id="btnCloseTrafficModalFooter" data-i18n="traffic_modal.close">Close</button>
                 </div>
             </div>
         </div>
@@ -2092,8 +2137,8 @@
                             </svg>
                         </div>
                         <div>
-                            <h3 id="switchLogsModalTitle">Switch Decision Logs</h3>
-                            <p class="modal-subtitle" id="switchLogsModalSubtitle">Real-time audit log of multi-path failovers and automated decision reasons</p>
+                            <h3 id="switchLogsModalTitle" data-i18n="switch_logs.title">Switch Decision Logs</h3>
+                            <p class="modal-subtitle" id="switchLogsModalSubtitle" data-i18n="switch_logs.sub">Real-time audit log of multi-path failovers and automated decision reasons</p>
                         </div>
                     </div>
                 </div>
@@ -2103,12 +2148,12 @@
             <div class="modal-body switch-modal-body">
                 <div class="switch-logs-controls">
                     <div class="switch-filter-group">
-                        <span class="switch-filter-label">Filter Rule:</span>
+                        <span class="switch-filter-label" data-i18n="switch_logs.filter">Filter Rule:</span>
                         <select id="switchLogsRuleFilter" class="form-input switch-rule-select">
-                            <option value="all">All Port Rules</option>
+                            <option value="all" data-i18n="switch_logs.all_rules">All Port Rules</option>
                         </select>
                     </div>
-                    <div id="switchLogsSummary" class="switch-logs-summary">
+                    <div id="switchLogsSummary" class="switch-logs-summary" data-i18n="switch_logs.showing_recent">
                         Showing recent switch events
                     </div>
                 </div>
@@ -2124,9 +2169,9 @@
                         <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
                         <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
                     </svg>
-                    <span>Copy Logs</span>
+                    <span data-i18n="switch_logs.copy">Copy Logs</span>
                 </button>
-                <button type="button" class="btn btn-secondary" id="btnCloseSwitchLogsModalFooter">Close</button>
+                <button type="button" class="btn btn-secondary" id="btnCloseSwitchLogsModalFooter" data-i18n="switch_logs.close">Close</button>
             </div>
         </div>
     </div>

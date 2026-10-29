@@ -1,5 +1,5 @@
 /*
- * XForwarder - Modern English Web Dashboard Master Stylesheet
+ * XForwarder - Modern English & Persian Web Dashboard Master Stylesheet
  * Modular ES CSS Design Architecture
  */
 
@@ -8,3 +8,4 @@
 @import "layout.css";
 @import "components.css";
 @import "modals.css";
+@import "rtl.css";
