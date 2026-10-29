@@ -994,6 +994,21 @@ export function updateLangToggleUI() {
 
     const btnLoginLang = document.getElementById("btnLoginLangToggle");
     if (btnLoginLang) btnLoginLang.title = nextTitle;
+
+    // Update Theme Toggle button labels based on current active language & theme
+    const isDark = (document.documentElement.getAttribute("data-theme") === "dark");
+    const themeLabels = document.querySelectorAll(".theme-toggle-label");
+    const themeLabelText = isFa
+        ? (isDark ? "حالت روشن" : "حالت تاریک")
+        : (isDark ? "Light Mode" : "Dark Mode");
+    themeLabels.forEach(el => { el.textContent = themeLabelText; });
+
+    const btnTheme = document.getElementById("btnThemeToggle");
+    if (btnTheme) {
+        btnTheme.title = isFa
+            ? (isDark ? "تغییر به حالت روشن" : "تغییر به حالت تاریک")
+            : (isDark ? "Switch to Light Mode" : "Switch to Dark Mode");
+    }
 }
 
 /**

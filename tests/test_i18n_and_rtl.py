@@ -432,6 +432,30 @@ class TestI18nAndRTL(unittest.TestCase):
             self.assertIn(f'[dir="rtl"] {elem}', rtl_css, f"{elem} must be included in RTL ligature preservation")
             self.assertIn(f'[dir="rtl"] {elem}', flat_style, f"{elem} must be in flat style.css ligature preservation")
 
+    def test_sidebar_footer_theme_and_lang_toggles_single_row(self):
+        """Verify theme and language toggle buttons in the sidebar footer are grouped in a single horizontal row."""
+        with open(self.index_html_path, "r", encoding="utf-8") as f:
+            html = f.read()
+        with open(self.rtl_css_path, "r", encoding="utf-8") as f:
+            rtl_css = f.read()
+        with open(self.flat_style_css_path, "r", encoding="utf-8") as f:
+            flat_style = f.read()
+
+        # 1. HTML structure: sidebar-footer-toggles wraps both buttons
+        self.assertIn('class="sidebar-footer-toggles"', html)
+        self.assertIn('id="btnThemeToggle"', html)
+        self.assertIn('id="btnSidebarLangToggle"', html)
+
+        # 2. CSS flex row definition
+        self.assertIn('.sidebar-footer-toggles {', flat_style)
+        self.assertIn('gap: 8px;', flat_style)
+
+        # 3. RTL row alignment
+        self.assertIn('[dir="rtl"] .sidebar-footer-toggles {', rtl_css)
+        self.assertIn('flex-direction: row !important;', rtl_css)
+        self.assertIn('[dir="rtl"] .sidebar-footer-toggles {', flat_style)
+        self.assertIn('flex-direction: row !important;', flat_style)
+
 
 if __name__ == "__main__":
     unittest.main()
