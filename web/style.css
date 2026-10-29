@@ -7895,7 +7895,7 @@ input#formCategory::-webkit-list-button {
     text-align: right !important;
 }
 
-/* 10. Rule Cards, Headers & Actions in RTL */
+/* 10. Technical LTR Layout Preservation for Routing Matrix (Rule Cards & Categories) */
 [dir="rtl"] .section-title,
 [dir="rtl"] .section-desc {
     text-align: right !important;
@@ -7905,67 +7905,219 @@ input#formCategory::-webkit-list-button {
     flex-direction: row;
 }
 
-[dir="rtl"] .rule-header-actions,
-[dir="rtl"] .rule-actions {
-    margin-right: auto !important;
-    margin-left: 0 !important;
-}
-
-[dir="rtl"] .category-actions {
-    margin-right: auto !important;
-    margin-left: 0 !important;
-}
-
+/* Category Sections & Dividers: Technical LTR alignment with Persian text */
+[dir="rtl"] .rule-category-section,
+[dir="rtl"] .rule-category-header,
 [dir="rtl"] .category-divider {
-    flex-direction: row;
+    direction: ltr !important;
+    text-align: left !important;
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
 }
 
-[dir="rtl"] .category-header-title {
-    text-align: right !important;
-}
-
-[dir="rtl"] .path-meta-group {
-    margin-right: auto !important;
+[dir="rtl"] .rule-category-title-group {
+    display: inline-flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
     margin-left: 0 !important;
+    margin-right: 0 !important;
+    text-align: left !important;
 }
 
-[dir="rtl"] .path-meta {
-    text-align: right !important;
+[dir="rtl"] .rule-category-name {
+    font-family: var(--font-sans) !important;
+    text-align: left !important;
 }
 
-[dir="rtl"] .path-meta-badges {
-    margin-right: auto !important;
+[dir="rtl"] .rule-category-count {
+    font-family: var(--font-sans) !important;
+    direction: ltr !important;
     margin-left: 0 !important;
-}
-
-[dir="rtl"] .path-header {
-    flex-direction: row;
-}
-
-[dir="rtl"] .path-header-right {
-    margin-right: auto !important;
-    margin-left: 0 !important;
-}
-
-[dir="rtl"] .rule-list-right {
-    margin-right: auto !important;
-    margin-left: 0 !important;
-}
-
-/* Drag Handles in RTL */
-[dir="rtl"] .drag-handle {
-    margin-left: 8px !important;
     margin-right: 0 !important;
 }
 
-/* Switch Slider Animations in RTL (Leftward translation) */
-[dir="rtl"] .switch input:checked+.slider:before,
-[dir="rtl"] .dest-switch-control input:checked+.dest-switch-slider:before {
-    transform: translateX(-18px) !important;
+[dir="rtl"] .rule-category-line {
+    flex: 1 !important;
+    margin: 0 !important;
 }
 
-[dir="rtl"] .btn-dest-toggle.is-enabled .dest-toggle-slider {
-    transform: translateX(-14px) !important;
+[dir="rtl"] .btn-category-copy {
+    margin-left: auto !important;
+    margin-right: 0 !important;
+    font-family: var(--font-sans) !important;
+}
+
+/* Port Rule Cards & List Rows: Technical LTR layout preserving networking convention */
+[dir="rtl"] .rule-card,
+[dir="rtl"] .rule-list-row,
+[dir="rtl"] .paths-grid,
+[dir="rtl"] .path-box,
+[dir="rtl"] .rule-test-bar,
+[dir="rtl"] .rule-top {
+    direction: ltr !important;
+    text-align: left !important;
+}
+
+/* Top bar: Port badge & metrics on Left, actions on Right */
+[dir="rtl"] .rule-card .rule-top {
+    display: flex !important;
+    flex-direction: row !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+}
+
+[dir="rtl"] .rule-card .port-badge {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+}
+
+[dir="rtl"] .rule-card .rule-actions {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    margin-left: auto !important;
+    margin-right: 0 !important;
+}
+
+/* Forwarding mode bar: Label on Left, mode buttons on Right */
+[dir="rtl"] .rule-card .rule-test-bar {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+}
+
+[dir="rtl"] .rule-card .test-bar-label {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    font-family: var(--font-sans) !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    text-align: left !important;
+}
+
+[dir="rtl"] .rule-card .mode-btn-group {
+    display: inline-flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    margin-left: auto !important;
+    margin-right: 0 !important;
+}
+
+/* Priority path box: Drag/Prio/Status on Left, Toggle Switch on Right */
+[dir="rtl"] .rule-card .path-box {
+    direction: ltr !important;
+    text-align: left !important;
+}
+
+[dir="rtl"] .rule-card .path-header {
+    display: flex !important;
+    flex-direction: row !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+}
+
+[dir="rtl"] .rule-card .path-header-left {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+}
+
+[dir="rtl"] .rule-card .drag-handle {
+    margin-right: 8px !important;
+    margin-left: 0 !important;
+}
+
+[dir="rtl"] .rule-card .path-header-right {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    margin-left: auto !important;
+    margin-right: 0 !important;
+}
+
+[dir="rtl"] .rule-card .path-dest {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+    text-align: left !important;
+    direction: ltr !important;
+}
+
+[dir="rtl"] .rule-card .path-meta {
+    display: flex !important;
+    flex-direction: row !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    text-align: left !important;
+}
+
+[dir="rtl"] .rule-card .path-meta-badges {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    margin-left: auto !important;
+    margin-right: 0 !important;
+}
+
+/* Toggle Switch Sliders inside LTR Cards slide right (+16px / +12px) */
+[dir="rtl"] .rule-card .btn-dest-toggle.is-enabled .dest-toggle-slider,
+[dir="rtl"] .rule-list-row .btn-dest-toggle.is-enabled .dest-toggle-slider {
+    transform: translateX(16px) !important;
+}
+
+[dir="rtl"] .rule-card .btn-dest-toggle.is-disabled .dest-toggle-slider,
+[dir="rtl"] .rule-list-row .btn-dest-toggle.is-disabled .dest-toggle-slider {
+    transform: translateX(0) !important;
+}
+
+[dir="rtl"] .rule-list-row .btn-list-dest-toggle.is-enabled .dest-toggle-slider {
+    transform: translateX(12px) !important;
+}
+
+[dir="rtl"] .rule-list-row .btn-list-dest-toggle.is-disabled .dest-toggle-slider {
+    transform: translateX(0) !important;
+}
+
+/* Compact List View: LTR alignment */
+[dir="rtl"] .rule-list-row {
+    direction: ltr !important;
+    text-align: left !important;
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+}
+
+[dir="rtl"] .rule-list-row .rule-list-left {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+}
+
+[dir="rtl"] .rule-list-row .rule-list-mid {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+}
+
+[dir="rtl"] .rule-list-row .rule-list-right {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    margin-left: auto !important;
+    margin-right: 0 !important;
 }
 
 /* 11. Modals in RTL */

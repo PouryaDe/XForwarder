@@ -316,7 +316,7 @@ export function renderRuleCard(rule, rulesState) {
                             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="9" cy="6" r="1.5"/><circle cx="15" cy="6" r="1.5"/><circle cx="9" cy="12" r="1.5"/><circle cx="15" cy="12" r="1.5"/><circle cx="9" cy="18" r="1.5"/><circle cx="15" cy="18" r="1.5"/></svg>
                         </span>
                         <span class="path-tag ${tagClass}">#${prio}</span>
-                        ${dest.is_relay ? `<span class="badge-relay-pill" title="Mid Server: The engine anchors on Priority 1 and only fails over here on outage, packet loss, or latency > 150ms.">${escapeHtml(t("rules.relay", {}, "Mid Server"))}</span>` : ''}
+                        ${dest.is_relay ? `<span class="badge-relay-pill" title="${escapeHtml(t("rules.relay_tooltip", {}, "Mid Server: The engine anchors on Priority 1 and only fails over here on outage, packet loss, or latency > 150ms.")) }">${escapeHtml(t("rules.relay", {}, "Mid Server"))}</span>` : ''}
                         <span class="path-status ${statusClass}" title="${escapeHtml(stat.reason || statusLabel)}">
                             <span class="status-indicator"></span>
                             ${statusLabel}
@@ -326,7 +326,7 @@ export function renderRuleCard(rule, rulesState) {
                         <button type="button" 
                                 class="btn-dest-toggle ${isEnabled ? 'is-enabled' : 'is-disabled'}" 
                                 onclick="toggleDestinationEnabled(event, decodeURIComponent('${encodedId}'), ${prio})"
-                                title="${isEnabled ? 'Priority #' + prio + ' is ON (Click to turn OFF)' : 'Priority #' + prio + ' is OFF (Click to turn ON)'}"
+                                title="${isEnabled ? escapeHtml(t("rules.priority_on_tooltip", { prio }, `Priority #${prio} is ON (Click to turn OFF)`)) : escapeHtml(t("rules.priority_off_tooltip", { prio }, `Priority #${prio} is OFF (Click to turn ON)`))}"
                                 aria-label="Toggle Priority #${prio}">
                             <span class="dest-toggle-slider"></span>
                         </button>
@@ -334,7 +334,7 @@ export function renderRuleCard(rule, rulesState) {
                 </div>
                 <div class="path-dest">
                     <span>${escapeHtml(String(dest.type || 'haproxy').toUpperCase())}: ${targetDisplay}:${escapeHtml(dest.port || rule.port)}</span>
-                    <button class="btn-copy" onclick="copyText(decodeURIComponent('${encodeURIComponent(rawTarget)}'))" title="Copy Destination IP">${copyPortSvg}</button>
+                    <button class="btn-copy" onclick="copyText(decodeURIComponent('${encodeURIComponent(rawTarget)}'))" title="${escapeHtml(t("rules.copy_dest_ip", {}, "Copy Destination IP"))}">${copyPortSvg}</button>
                 </div>
                 <div class="path-meta">
                     <span>${metaText}</span>
@@ -350,7 +350,7 @@ export function renderRuleCard(rule, rulesState) {
     const portKey = String(rule.port || "");
     const pTraffic = (lastTrafficData && lastTrafficData.ports) ? lastTrafficData.ports[portKey] : null;
     const trafficPillHtml = pTraffic ? `
-        <span class="traffic-pill-badge" onclick="openTrafficModal('port', '${escapeHtml(portKey)}')" title="Billing Cycle Traffic: ↑ ${formatBytes(pTraffic.cycle_tx)} · ↓ ${formatBytes(pTraffic.cycle_rx)} (Click for details & reset)">
+        <span class="traffic-pill-badge" onclick="openTrafficModal('port', '${escapeHtml(portKey)}')" title="${escapeHtml(t("rules.traffic_cycle_tooltip", { tx: formatBytes(pTraffic.cycle_tx), rx: formatBytes(pTraffic.cycle_rx) }, `Billing Cycle Traffic: ↑ ${formatBytes(pTraffic.cycle_tx)} · ↓ ${formatBytes(pTraffic.cycle_rx)} (Click for details & reset)`))}">
             <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
             <span>${formatBytes(pTraffic.cycle_total)}</span>
         </span>
@@ -361,26 +361,26 @@ export function renderRuleCard(rule, rulesState) {
             <div class="rule-top">
                 <div class="port-badge">
                     <span class="port-num">:${escapeHtml(rule.port)}</span>
-                    <button class="btn-copy" onclick="copyText(decodeURIComponent('${encodeURIComponent(rule.port)}'))" title="Copy Port Number">${copyPortSvg}</button>
+                    <button class="btn-copy" onclick="copyText(decodeURIComponent('${encodeURIComponent(rule.port)}'))" title="${escapeHtml(t("rules.copy_port_num", {}, "Copy Port Number"))}">${copyPortSvg}</button>
                     ${trafficPillHtml}
-                    ${rState.switch_pending_seconds > 0 ? `<span class="badge-pending-switch" title="Candidate P${rState.candidate_priority || ''} sustained quality advantage. Switching after streak confirmation."><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>${escapeHtml(t("rules.switch_in", { sec: rState.switch_pending_seconds }, `Switch in ${rState.switch_pending_seconds}s`))}</span>` : ''}
-                    ${rState.hold_remaining > 0 ? `<span class="badge-cooldown" title="Route held stable to prevent disruption (Min Hold: 10m)"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 14 14"/></svg>${escapeHtml(t("rules.hold", { sec: rState.hold_remaining }, `Hold ${rState.hold_remaining}s`))}</span>` : (rState.cooldown_remaining > 0 ? `<span class="badge-cooldown" title="Post-Critical Cooldown active"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 14 14"/></svg>Cooldown ${rState.cooldown_remaining}s</span>` : '')}
-                    ${rState.is_flapping ? `<span class="badge-flapping" title="Repeated route flapping detected. Cooldown extended."><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>Flap Guard</span>` : ''}
+                    ${rState.switch_pending_seconds > 0 ? `<span class="badge-pending-switch" title="${escapeHtml(t("rules.switch_pending_tooltip", { prio: rState.candidate_priority || '' }, `Candidate P${rState.candidate_priority || ''} sustained quality advantage. Switching after streak confirmation.`))}"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>${escapeHtml(t("rules.switch_in", { sec: rState.switch_pending_seconds }, `Switch in ${rState.switch_pending_seconds}s`))}</span>` : ''}
+                    ${rState.hold_remaining > 0 ? `<span class="badge-cooldown" title="${escapeHtml(t("rules.min_hold_tooltip", {}, "Route held stable to prevent disruption (Min Hold: 10m)"))}"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 14 14"/></svg>${escapeHtml(t("rules.hold", { sec: rState.hold_remaining }, `Hold ${rState.hold_remaining}s`))}</span>` : (rState.cooldown_remaining > 0 ? `<span class="badge-cooldown" title="${escapeHtml(t("rules.cooldown_tooltip", {}, "Post-Critical Cooldown active"))}"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 14 14"/></svg>${escapeHtml(t("rules.cooldown", { sec: rState.cooldown_remaining }, `Cooldown ${rState.cooldown_remaining}s`))}</span>` : '')}
+                    ${rState.is_flapping ? `<span class="badge-flapping" title="${escapeHtml(t("rules.flapping_tooltip", {}, "Repeated route flapping detected. Cooldown extended."))}"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>${escapeHtml(t("rules.flap_guard", {}, "Flap Guard"))}</span>` : ''}
                 </div>
                 <div class="rule-actions">
-                    <button class="btn btn-secondary btn-sm" onclick="openSwitchLogsModal(decodeURIComponent('${encodedId}'), '${escapeHtml(portKey)}')" title="Switch Decision Logs & History">
+                    <button class="btn btn-secondary btn-sm" onclick="openSwitchLogsModal(decodeURIComponent('${encodedId}'), '${escapeHtml(portKey)}')" title="${escapeHtml(t("rules.switch_logs_tooltip", {}, "Switch Decision Logs & History"))}">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
                     </button>
-                    <button class="btn btn-secondary btn-sm" onclick="openTrafficModal('port', '${escapeHtml(portKey)}')" title="Traffic & Bandwidth Analytics">
+                    <button class="btn btn-secondary btn-sm" onclick="openTrafficModal('port', '${escapeHtml(portKey)}')" title="${escapeHtml(t("rules.traffic_analytics_tooltip", {}, "Traffic & Bandwidth Analytics"))}">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
                     </button>
-                    <button class="btn btn-secondary btn-sm btn-rule-copy" onclick="copyRuleJson(decodeURIComponent('${encodedId}'))" title="Copy Port Configuration (JSON)">
+                    <button class="btn btn-secondary btn-sm btn-rule-copy" onclick="copyRuleJson(decodeURIComponent('${encodedId}'))" title="${escapeHtml(t("rules.copy_rule_json", {}, "Copy Port Configuration (JSON)"))}">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
                     </button>
-                    <button class="btn btn-secondary btn-sm" onclick="openEditRuleModal(decodeURIComponent('${encodedId}'))" title="Edit Rule">
+                    <button class="btn btn-secondary btn-sm" onclick="openEditRuleModal(decodeURIComponent('${encodedId}'))" title="${escapeHtml(t("rules.edit_rule", {}, "Edit Rule"))}">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
                     </button>
-                    <button class="btn btn-secondary btn-sm" onclick="deleteRule(decodeURIComponent('${encodedId}'))" title="Delete Rule">
+                    <button class="btn btn-secondary btn-sm" onclick="deleteRule(decodeURIComponent('${encodedId}'))" title="${escapeHtml(t("rules.delete_rule", {}, "Delete Rule"))}">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
                     </button>
                 </div>
@@ -389,7 +389,7 @@ export function renderRuleCard(rule, rulesState) {
             <div class="rule-test-bar">
                 <div class="test-bar-label">
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
-                    <span>Forwarding:</span>
+                    <span>${escapeHtml(t("rules.forwarding_label", {}, "Forwarding:"))}</span>
                 </div>
                 <div class="mode-btn-group">
                     ${modeButtonsHtml.join('')}
@@ -455,15 +455,15 @@ export function renderRuleListRow(rule, rulesState) {
             <div class="${pillClass}" title="Priority #${prio}: ${escapeHtml(String(dest.type || 'haproxy').toUpperCase())} ${targetDisplay}:${escapeHtml(dest.port || rule.port)}${latText}${escapeHtml(statusDetail)}">
                 <span style="width:7px; height:7px; border-radius:50%; background:${dotColor}; display:inline-block;"></span>
                 <span style="font-weight:700; color:var(--text-primary); font-family:var(--font-mono);">#${prio}</span>
-                ${dest.is_relay ? `<span class="badge-relay-pill" style="font-size:0.62rem; padding:1px 4px;" title="Mid Server">Mid Server</span>` : ''}
+                ${dest.is_relay ? `<span class="badge-relay-pill" style="font-size:0.62rem; padding:1px 4px;" title="${escapeHtml(t("rules.relay_tooltip", {}, "Mid Server"))}">${escapeHtml(t("rules.relay", {}, "Mid Server"))}</span>` : ''}
                 <span class="font-mono" style="color:var(--text-secondary); font-size:0.75rem;">${targetDisplay}:${escapeHtml(dest.port || rule.port)}</span>
                 ${latText && isEnabled ? `<span class="font-mono" style="color:var(--accent-mint); font-size:0.72rem;">${latText}</span>` : ''}
                 ${isEnabled ? loss50Inline : ''}
-                ${isActive && isEnabled ? `<span style="font-size:0.68rem; font-weight:700; color:${isFailover ? 'var(--accent-amber)' : 'var(--accent-mint)'}; text-transform:uppercase;">${isFailover ? 'FAILOVER' : 'ACTIVE'}</span>` : ''}
+                ${isActive && isEnabled ? `<span style="font-size:0.68rem; font-weight:700; color:${isFailover ? 'var(--accent-amber)' : 'var(--accent-mint)'}; text-transform:uppercase;">${isFailover ? escapeHtml(t("status.failover", {}, "FAILOVER")) : escapeHtml(t("status.active", {}, "ACTIVE"))}</span>` : ''}
                 <button type="button" 
                         class="btn-list-dest-toggle ${isEnabled ? 'is-enabled' : 'is-disabled'}" 
                         onclick="toggleDestinationEnabled(event, decodeURIComponent('${encodedId}'), ${prio})"
-                        title="${isEnabled ? 'Priority #' + prio + ' is ON (Click to turn OFF)' : 'Priority #' + prio + ' is OFF (Click to turn ON)'}"
+                        title="${isEnabled ? escapeHtml(t("rules.priority_on_tooltip", { prio }, `Priority #${prio} is ON (Click to turn OFF)`)) : escapeHtml(t("rules.priority_off_tooltip", { prio }, `Priority #${prio} is OFF (Click to turn ON)`))}"
                         aria-label="Toggle Priority #${prio}">
                     <span class="dest-toggle-slider"></span>
                 </button>
@@ -474,7 +474,7 @@ export function renderRuleListRow(rule, rulesState) {
     const portKey = String(rule.port || "");
     const pTraffic = (lastTrafficData && lastTrafficData.ports) ? lastTrafficData.ports[portKey] : null;
     const trafficPillHtml = pTraffic ? `
-        <span class="traffic-pill-badge" onclick="openTrafficModal('port', '${escapeHtml(portKey)}')" title="Billing Cycle Traffic: ↑ ${formatBytes(pTraffic.cycle_tx)} · ↓ ${formatBytes(pTraffic.cycle_rx)} (Click for details & reset)">
+        <span class="traffic-pill-badge" onclick="openTrafficModal('port', '${escapeHtml(portKey)}')" title="${escapeHtml(t("rules.traffic_cycle_tooltip", { tx: formatBytes(pTraffic.cycle_tx), rx: formatBytes(pTraffic.cycle_rx) }, `Billing Cycle Traffic: ↑ ${formatBytes(pTraffic.cycle_tx)} · ↓ ${formatBytes(pTraffic.cycle_rx)} (Click for details & reset)`))}">
             <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
             <span>${formatBytes(pTraffic.cycle_total)}</span>
         </span>
@@ -484,11 +484,11 @@ export function renderRuleListRow(rule, rulesState) {
         <div class="rule-list-row" id="rule-card-${encodedId}">
             <div class="rule-list-left">
                 <span class="rule-list-port">:${escapeHtml(rule.port)}</span>
-                <button class="btn-copy" onclick="copyText(decodeURIComponent('${encodeURIComponent(rule.port)}'))" title="Copy Port">${copyPortSvg}</button>
+                <button class="btn-copy" onclick="copyText(decodeURIComponent('${encodeURIComponent(rule.port)}'))" title="${escapeHtml(t("rules.copy_port_num", {}, "Copy Port"))}">${copyPortSvg}</button>
                 ${trafficPillHtml}
-                ${rState.switch_pending_seconds > 0 ? `<span class="badge-pending-switch" style="font-size:0.68rem; padding:2px 6px;" title="Switching to P${rState.candidate_priority || ''} in ${rState.switch_pending_seconds}s">${escapeHtml(t("rules.switch_in", { sec: rState.switch_pending_seconds }, `Switch in ${rState.switch_pending_seconds}s`))}</span>` : ''}
-                ${rState.hold_remaining > 0 ? `<span class="badge-cooldown" style="font-size:0.68rem; padding:2px 6px;" title="Min Hold 10m">${escapeHtml(t("rules.hold", { sec: rState.hold_remaining }, `Hold ${rState.hold_remaining}s`))}</span>` : (rState.cooldown_remaining > 0 ? `<span class="badge-cooldown" style="font-size:0.68rem; padding:2px 6px;">Cooldown ${rState.cooldown_remaining}s</span>` : '')}
-                ${rState.is_flapping ? `<span class="badge-flapping" style="font-size:0.68rem; padding:2px 6px;">Flap</span>` : ''}
+                ${rState.switch_pending_seconds > 0 ? `<span class="badge-pending-switch" style="font-size:0.68rem; padding:2px 6px;" title="${escapeHtml(t("rules.switch_pending_tooltip", { prio: rState.candidate_priority || '' }, `Switching to P${rState.candidate_priority || ''} in ${rState.switch_pending_seconds}s`))}">${escapeHtml(t("rules.switch_in", { sec: rState.switch_pending_seconds }, `Switch in ${rState.switch_pending_seconds}s`))}</span>` : ''}
+                ${rState.hold_remaining > 0 ? `<span class="badge-cooldown" style="font-size:0.68rem; padding:2px 6px;" title="${escapeHtml(t("rules.min_hold_tooltip", {}, "Min Hold 10m"))}">${escapeHtml(t("rules.hold", { sec: rState.hold_remaining }, `Hold ${rState.hold_remaining}s`))}</span>` : (rState.cooldown_remaining > 0 ? `<span class="badge-cooldown" style="font-size:0.68rem; padding:2px 6px;" title="${escapeHtml(t("rules.cooldown_tooltip", {}, "Post-Critical Cooldown active"))}">${escapeHtml(t("rules.cooldown", { sec: rState.cooldown_remaining }, `Cooldown ${rState.cooldown_remaining}s`))}</span>` : '')}
+                ${rState.is_flapping ? `<span class="badge-flapping" style="font-size:0.68rem; padding:2px 6px;" title="${escapeHtml(t("rules.flapping_tooltip", {}, "Repeated route flapping detected. Cooldown extended."))}">${escapeHtml(t("rules.flap_guard", {}, "Flap"))}</span>` : ''}
             </div>
 
             <div class="rule-list-mid">
@@ -498,19 +498,22 @@ export function renderRuleListRow(rule, rulesState) {
             </div>
 
             <div class="rule-list-right">
-                <button class="btn btn-secondary btn-sm" onclick="openSwitchLogsModal(decodeURIComponent('${encodedId}'), '${escapeHtml(portKey)}')" title="Switch Decision Logs & History">
+                <button class="btn btn-secondary btn-sm" onclick="openSwitchLogsModal(decodeURIComponent('${encodedId}'), '${escapeHtml(portKey)}')" title="${escapeHtml(t("rules.switch_logs_tooltip", {}, "Switch Decision Logs & History"))}">
                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
                 </button>
-                <button class="btn btn-secondary btn-sm" onclick="openTrafficModal('port', '${escapeHtml(portKey)}')" title="Traffic & Bandwidth Analytics">
+                <button class="btn btn-secondary btn-sm" onclick="openTrafficModal('port', '${escapeHtml(portKey)}')" title="${escapeHtml(t("rules.traffic_analytics_tooltip", {}, "Traffic & Bandwidth Analytics"))}">
                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
                 </button>
-                <button class="btn btn-secondary btn-sm btn-rule-copy" onclick="copyRuleJson(decodeURIComponent('${encodedId}'))" title="Copy Port Configuration (JSON)">
+                <button class="btn btn-secondary btn-sm btn-rule-copy" onclick="copyRuleJson(decodeURIComponent('${encodedId}'))" title="${escapeHtml(t("rules.copy_rule_json", {}, "Copy Port Configuration (JSON)"))}">
                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
                 </button>
-                <button class="btn btn-secondary btn-sm" onclick="openEditRuleModal(decodeURIComponent('${encodedId}'))" title="Edit Rule">
+                <button class="btn btn-secondary btn-sm" onclick="openEditRuleModal(decodeURIComponent('${encodedId}'))" title="${escapeHtml(t("rules.edit_rule", {}, "Edit Rule"))}">
                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
                 </button>
-                <button class="btn btn-secondary btn-sm" onclick="deleteRule(decodeURIComponent('${encodedId}'))" title="Delete Rule">
+                <button class="btn btn-secondary btn-sm" onclick="deleteRule(decodeURIComponent('${encodedId}'))" title="${escapeHtml(t("rules.delete_rule", {}, "Delete Rule"))}">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                </button>
+            </div>
                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
                 </button>
             </div>
@@ -629,15 +632,15 @@ export function renderRules(rules, runtime) {
                                 </svg>
                             </span>
                             <span class="rule-category-name">${catTitle}</span>
-                            <span class="rule-category-count">${groupRules.length} Port${groupRules.length === 1 ? '' : 's'}</span>
+                            <span class="rule-category-count">${t("rules.ports_count", { count: groupRules.length }, `${groupRules.length} Port${groupRules.length === 1 ? '' : 's'}`)}</span>
                         </div>
                         <div class="rule-category-line"></div>
-                        <button type="button" class="btn-category-copy" onclick="copyCategoryJson(decodeURIComponent('${encodeURIComponent(catKey)}'))" title="Copy all ports in category '${catTitle}' as JSON">
+                        <button type="button" class="btn-category-copy" onclick="copyCategoryJson(decodeURIComponent('${encodeURIComponent(catKey)}'))" title="${escapeHtml(t("rules.copy_category_json_tooltip", { cat: catTitle }, `Copy all ports in category '${catTitle}' as JSON`))}">
                             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
                                 <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
                             </svg>
-                            <span>Copy Category JSON</span>
+                            <span>${escapeHtml(t("rules.copy_category_json", {}, "Copy Category JSON"))}</span>
                         </button>
                     </div>
                     <div class="${currentViewMode === 'list' ? 'rules-list-container' : 'rules-container'}">

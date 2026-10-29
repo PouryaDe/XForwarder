@@ -644,6 +644,7 @@ class TestFastFailoverAndAntiFlap(unittest.TestCase):
         }
         # Simulate 25 switches back and forth
         with patch.object(self.engine, "_hot_toggle_rule_priority"), \
+             patch.object(self.engine, "_fast_confirm_burst", return_value={"all_failed": True, "successes": 0}), \
              patch.object(self.engine, "_validate_probe_route", return_value=(True, "eth0", None)):
             for i in range(25):
                 curr = 1 if (i % 2 == 0) else 2

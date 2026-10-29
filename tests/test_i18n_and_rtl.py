@@ -306,6 +306,52 @@ class TestI18nAndRTL(unittest.TestCase):
         self.assertIn('left: 24px !important;', self.rtl_css_content)
         self.assertIn('right: auto !important;', self.rtl_css_content)
 
+    def test_technical_ltr_layout_preservation_for_rule_cards_and_categories(self):
+        """Verify rule cards, category headers, and list rows maintain technical LTR layout in RTL mode."""
+        # Check rule cards and category headers are explicitly LTR
+        self.assertIn('[dir="rtl"] .rule-category-section,', self.rtl_css_content)
+        self.assertIn('[dir="rtl"] .rule-category-header,', self.rtl_css_content)
+        self.assertIn('[dir="rtl"] .rule-card,', self.rtl_css_content)
+        self.assertIn('[dir="rtl"] .rule-list-row,', self.rtl_css_content)
+        self.assertIn('[dir="rtl"] .path-box,', self.rtl_css_content)
+
+        # Check toggle slider knob translates to the right (+16px and +12px)
+        self.assertIn('translateX(16px) !important;', self.rtl_css_content)
+        self.assertIn('translateX(12px) !important;', self.rtl_css_content)
+
+        # Check rule actions align to the right edge (margin-left: auto)
+        self.assertIn('[dir="rtl"] .rule-card .rule-actions {', self.rtl_css_content)
+        self.assertIn('margin-left: auto !important;', self.rtl_css_content)
+
+    def test_rule_card_and_category_i18n_keys_completeness(self):
+        """Verify all new i18n keys for rule cards and category divider exist in both EN and FA."""
+        required_keys = [
+            "rules.ports_count",
+            "rules.copy_category_json",
+            "rules.copy_category_json_tooltip",
+            "rules.forwarding_label",
+            "rules.copy_port_num",
+            "rules.copy_dest_ip",
+            "rules.edit_rule",
+            "rules.delete_rule",
+            "rules.switch_logs_tooltip",
+            "rules.traffic_analytics_tooltip",
+            "rules.copy_rule_json",
+            "rules.priority_on_tooltip",
+            "rules.priority_off_tooltip",
+            "rules.relay_tooltip",
+            "rules.switch_pending_tooltip",
+            "rules.min_hold_tooltip",
+            "rules.cooldown_tooltip",
+            "rules.flapping_tooltip",
+            "rules.flap_guard",
+            "rules.traffic_cycle_tooltip",
+            "status.failover"
+        ]
+        for k in required_keys:
+            self.assertIn(k, self.en_keys, f"Key '{k}' must exist in English dictionary")
+            self.assertIn(k, self.fa_keys, f"Key '{k}' must exist in Persian dictionary")
+
 
 if __name__ == "__main__":
     unittest.main()
