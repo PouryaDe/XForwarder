@@ -331,21 +331,30 @@
 }
 
 /* Category Sections & Dividers: Technical LTR alignment with Persian text */
-[dir="rtl"] .rule-category-section,
-[dir="rtl"] .rule-category-header,
-[dir="rtl"] .category-divider {
+[dir="rtl"] .rule-category-section {
+    display: block !important;
+    width: 100% !important;
+    margin-bottom: 32px !important;
     direction: ltr !important;
-    text-align: left !important;
+}
+
+[dir="rtl"] .rule-category-header {
     display: flex !important;
     flex-direction: row !important;
     align-items: center !important;
-    justify-content: flex-start !important;
+    gap: 14px !important;
+    width: 100% !important;
+    margin-bottom: 16px !important;
+    padding: 6px 0 !important;
+    direction: ltr !important;
 }
 
 [dir="rtl"] .rule-category-title-group {
     display: inline-flex !important;
     flex-direction: row !important;
     align-items: center !important;
+    gap: 8px !important;
+    flex-shrink: 0 !important;
     margin-left: 0 !important;
     margin-right: 0 !important;
     text-align: left !important;
@@ -359,19 +368,41 @@
 [dir="rtl"] .rule-category-count {
     font-family: var(--font-sans) !important;
     direction: ltr !important;
+    display: inline-flex !important;
+    align-items: center !important;
     margin-left: 0 !important;
     margin-right: 0 !important;
 }
 
 [dir="rtl"] .rule-category-line {
     flex: 1 !important;
+    height: 1px !important;
     margin: 0 !important;
 }
 
 [dir="rtl"] .btn-category-copy {
-    margin-left: auto !important;
-    margin-right: 0 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 6px !important;
+    flex-shrink: 0 !important;
     font-family: var(--font-sans) !important;
+}
+
+/* Rules Grid Container: Always below header, 2 columns in LTR */
+[dir="rtl"] .rules-container {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 20px !important;
+    align-items: start !important;
+    width: 100% !important;
+    direction: ltr !important;
+}
+
+@media (max-width: 960px) {
+    [dir="rtl"] .rules-container {
+        grid-template-columns: 1fr !important;
+    }
 }
 
 /* Port Rule Cards & List Rows: Technical LTR layout preserving networking convention */
@@ -391,12 +422,16 @@
     flex-direction: row !important;
     justify-content: space-between !important;
     align-items: center !important;
+    width: 100% !important;
+    direction: ltr !important;
 }
 
 [dir="rtl"] .rule-card .port-badge {
     display: flex !important;
     flex-direction: row !important;
     align-items: center !important;
+    gap: 8px !important;
+    direction: ltr !important;
     margin-left: 0 !important;
     margin-right: 0 !important;
 }
@@ -405,8 +440,8 @@
     display: flex !important;
     flex-direction: row !important;
     align-items: center !important;
-    margin-left: auto !important;
-    margin-right: 0 !important;
+    gap: 6px !important;
+    direction: ltr !important;
 }
 
 /* Forwarding mode bar: Label on Left, mode buttons on Right */
@@ -415,24 +450,35 @@
     flex-direction: row !important;
     align-items: center !important;
     justify-content: space-between !important;
+    gap: 8px !important;
+    width: 100% !important;
+    direction: ltr !important;
 }
 
 [dir="rtl"] .rule-card .test-bar-label {
     display: flex !important;
     flex-direction: row !important;
     align-items: center !important;
+    gap: 5px !important;
     font-family: var(--font-sans) !important;
+    direction: ltr !important;
     margin-left: 0 !important;
     margin-right: 0 !important;
     text-align: left !important;
+}
+
+[dir="rtl"] .rule-card .test-bar-label span {
+    direction: rtl !important;
+    unicode-bidi: isolate !important;
+    display: inline-block;
 }
 
 [dir="rtl"] .rule-card .mode-btn-group {
     display: inline-flex !important;
     flex-direction: row !important;
     align-items: center !important;
-    margin-left: auto !important;
-    margin-right: 0 !important;
+    gap: 4px !important;
+    direction: ltr !important;
 }
 
 /* Priority path box: Drag/Prio/Status on Left, Toggle Switch on Right */
@@ -446,18 +492,22 @@
     flex-direction: row !important;
     justify-content: space-between !important;
     align-items: center !important;
+    width: 100% !important;
+    direction: ltr !important;
 }
 
 [dir="rtl"] .rule-card .path-header-left {
     display: flex !important;
     flex-direction: row !important;
     align-items: center !important;
+    gap: 8px !important;
+    direction: ltr !important;
     margin-left: 0 !important;
     margin-right: 0 !important;
 }
 
 [dir="rtl"] .rule-card .drag-handle {
-    margin-right: 8px !important;
+    margin-right: 0 !important;
     margin-left: 0 !important;
 }
 
@@ -465,8 +515,7 @@
     display: flex !important;
     flex-direction: row !important;
     align-items: center !important;
-    margin-left: auto !important;
-    margin-right: 0 !important;
+    direction: ltr !important;
 }
 
 [dir="rtl"] .rule-card .path-dest {
@@ -476,6 +525,7 @@
     justify-content: flex-start !important;
     text-align: left !important;
     direction: ltr !important;
+    gap: 8px !important;
 }
 
 [dir="rtl"] .rule-card .path-meta {
@@ -483,6 +533,8 @@
     flex-direction: row !important;
     justify-content: space-between !important;
     align-items: center !important;
+    width: 100% !important;
+    direction: ltr !important;
     text-align: left !important;
 }
 
@@ -490,26 +542,48 @@
     display: flex !important;
     flex-direction: row !important;
     align-items: center !important;
-    margin-left: auto !important;
-    margin-right: 0 !important;
+    gap: 6px !important;
+    direction: ltr !important;
 }
 
-/* Toggle Switch Sliders inside LTR Cards slide right (+16px / +12px) */
-[dir="rtl"] .rule-card .btn-dest-toggle.is-enabled .dest-toggle-slider,
-[dir="rtl"] .rule-list-row .btn-dest-toggle.is-enabled .dest-toggle-slider {
+/* Toggle Switches: Force LTR coordinates and physical positioning */
+[dir="rtl"] .btn-dest-toggle {
+    direction: ltr !important;
+}
+
+[dir="rtl"] .btn-dest-toggle .dest-toggle-slider {
+    position: absolute !important;
+    top: 2px !important;
+    left: 2px !important;
+    right: auto !important;
+    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+[dir="rtl"] .btn-dest-toggle.is-enabled .dest-toggle-slider {
     transform: translateX(16px) !important;
 }
 
-[dir="rtl"] .rule-card .btn-dest-toggle.is-disabled .dest-toggle-slider,
-[dir="rtl"] .rule-list-row .btn-dest-toggle.is-disabled .dest-toggle-slider {
+[dir="rtl"] .btn-dest-toggle.is-disabled .dest-toggle-slider {
     transform: translateX(0) !important;
 }
 
-[dir="rtl"] .rule-list-row .btn-list-dest-toggle.is-enabled .dest-toggle-slider {
+[dir="rtl"] .btn-list-dest-toggle {
+    direction: ltr !important;
+}
+
+[dir="rtl"] .btn-list-dest-toggle .dest-toggle-slider {
+    position: absolute !important;
+    top: 2px !important;
+    left: 2px !important;
+    right: auto !important;
+    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+[dir="rtl"] .btn-list-dest-toggle.is-enabled .dest-toggle-slider {
     transform: translateX(12px) !important;
 }
 
-[dir="rtl"] .rule-list-row .btn-list-dest-toggle.is-disabled .dest-toggle-slider {
+[dir="rtl"] .btn-list-dest-toggle.is-disabled .dest-toggle-slider {
     transform: translateX(0) !important;
 }
 
@@ -527,6 +601,7 @@
     display: flex !important;
     flex-direction: row !important;
     align-items: center !important;
+    direction: ltr !important;
     margin-left: 0 !important;
     margin-right: 0 !important;
 }
@@ -535,14 +610,14 @@
     display: flex !important;
     flex-direction: row !important;
     align-items: center !important;
+    direction: ltr !important;
 }
 
 [dir="rtl"] .rule-list-row .rule-list-right {
     display: flex !important;
     flex-direction: row !important;
     align-items: center !important;
-    margin-left: auto !important;
-    margin-right: 0 !important;
+    direction: ltr !important;
 }
 
 /* 11. Modals in RTL */

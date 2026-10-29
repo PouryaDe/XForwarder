@@ -308,20 +308,25 @@ class TestI18nAndRTL(unittest.TestCase):
 
     def test_technical_ltr_layout_preservation_for_rule_cards_and_categories(self):
         """Verify rule cards, category headers, and list rows maintain technical LTR layout in RTL mode."""
-        # Check rule cards and category headers are explicitly LTR
-        self.assertIn('[dir="rtl"] .rule-category-section,', self.rtl_css_content)
-        self.assertIn('[dir="rtl"] .rule-category-header,', self.rtl_css_content)
-        self.assertIn('[dir="rtl"] .rule-card,', self.rtl_css_content)
-        self.assertIn('[dir="rtl"] .rule-list-row,', self.rtl_css_content)
-        self.assertIn('[dir="rtl"] .path-box,', self.rtl_css_content)
+        with open(self.rtl_css_path, "r", encoding="utf-8") as f:
+            rtl_css = f.read()
+
+        # Check rule category section is block and LTR
+        self.assertIn('[dir="rtl"] .rule-category-section {', rtl_css)
+        self.assertIn('display: block !important;', rtl_css)
+        self.assertIn('[dir="rtl"] .rule-category-header {', rtl_css)
+        self.assertIn('[dir="rtl"] .rules-container {', rtl_css)
+        self.assertIn('[dir="rtl"] .rule-card,', rtl_css)
+        self.assertIn('[dir="rtl"] .rule-list-row,', rtl_css)
+        self.assertIn('[dir="rtl"] .path-box,', rtl_css)
 
         # Check toggle slider knob translates to the right (+16px and +12px)
-        self.assertIn('translateX(16px) !important;', self.rtl_css_content)
-        self.assertIn('translateX(12px) !important;', self.rtl_css_content)
+        self.assertIn('translateX(16px) !important;', rtl_css)
+        self.assertIn('translateX(12px) !important;', rtl_css)
 
-        # Check rule actions align to the right edge (margin-left: auto)
-        self.assertIn('[dir="rtl"] .rule-card .rule-actions {', self.rtl_css_content)
-        self.assertIn('margin-left: auto !important;', self.rtl_css_content)
+        # Check rule actions align in LTR flex row
+        self.assertIn('[dir="rtl"] .rule-card .rule-actions {', rtl_css)
+        self.assertIn('[dir="rtl"] .rule-card .rule-top {', rtl_css)
 
     def test_rule_card_and_category_i18n_keys_completeness(self):
         """Verify all new i18n keys for rule cards and category divider exist in both EN and FA."""
