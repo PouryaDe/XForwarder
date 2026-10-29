@@ -379,6 +379,54 @@ class TestI18nAndRTL(unittest.TestCase):
         self.assertIn('id="updateProgressView" style="display:none; direction:ltr; text-align:left;"', index_html)
         self.assertIn('id="updateStatusBanner" style="display:flex; align-items:center; justify-content:flex-start; gap:10px;', index_html)
 
+    def test_brand_badge_and_ligature_preservation(self):
+        """Verify brand-badge and all textual badges receive Vazirmatn font with normal letter-spacing in RTL."""
+        with open(self.rtl_css_path, "r", encoding="utf-8") as f:
+            rtl_css = f.read()
+        with open(self.flat_style_css_path, "r", encoding="utf-8") as f:
+            flat_style = f.read()
+
+        # 1. brand-badge must be included in Section 3 for Vazirmatn font
+        self.assertIn('[dir="rtl"] .brand-badge,', rtl_css)
+        self.assertIn('[dir="rtl"] .brand-badge,', flat_style)
+
+        # 2. Specific brand-badge rule in RTL must enforce font-sans, normal letter-spacing, and bold weight
+        self.assertIn('[dir="rtl"] .brand-badge {', rtl_css)
+        self.assertIn('letter-spacing: normal !important;', rtl_css)
+        self.assertIn('[dir="rtl"] .brand-badge {', flat_style)
+        self.assertIn('letter-spacing: normal !important;', flat_style)
+
+        # 3. Section 4 (Monospace) must NOT include .brand-badge (which broke cursive ligatures)
+        mono_block_match = re.search(r'/\* 4\. Latin & Monospace BiDi Preservation[^*]+\*/(.*?)\{[^}]*font-family:\s*var\(--font-mono', rtl_css, re.DOTALL)
+        self.assertIsNotNone(mono_block_match, "Section 4 monospace block must exist in rtl.css")
+        mono_selectors = mono_block_match.group(1)
+        self.assertNotIn('[dir="rtl"] .brand-badge,', mono_selectors, ".brand-badge must not be in the monospace selector list")
+        self.assertIn('[dir="rtl"] #brandVersionBadge,', mono_selectors, "#brandVersionBadge must remain in monospace for version numbering")
+
+        # 4. Badges and labels must have letter-spacing: normal !important to preserve Persian cursive ligatures
+        ligature_preservation_elements = [
+            '.brand-badge',
+            '.nav-section-label',
+            '.stat-badge',
+            '.badge-relay-pill',
+            '.test-bar-label',
+            '.presets-label',
+            '.kpi-label',
+            '.kpi-title',
+            '.switch-reason-tag',
+            '.switch-metrics-label',
+            '.preview-badge',
+            '.tab-badge',
+            '.telemetry-badge',
+            '.net-pill-badge',
+            '.kpi-badge',
+            '.log-badge',
+            '.import-divider-or'
+        ]
+        for elem in ligature_preservation_elements:
+            self.assertIn(f'[dir="rtl"] {elem}', rtl_css, f"{elem} must be included in RTL ligature preservation")
+            self.assertIn(f'[dir="rtl"] {elem}', flat_style, f"{elem} must be in flat style.css ligature preservation")
+
 
 if __name__ == "__main__":
     unittest.main()

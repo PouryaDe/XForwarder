@@ -34,6 +34,7 @@
 [dir="rtl"] h1, [dir="rtl"] h2, [dir="rtl"] h3, [dir="rtl"] h4, [dir="rtl"] h5, [dir="rtl"] h6,
 [dir="rtl"] p, [dir="rtl"] a, [dir="rtl"] label,
 [dir="rtl"] .brand-title,
+[dir="rtl"] .brand-badge,
 [dir="rtl"] .section-title,
 [dir="rtl"] .section-desc,
 [dir="rtl"] .nav-item,
@@ -75,8 +76,56 @@
 [dir="rtl"] .empty-desc,
 [dir="rtl"] th, [dir="rtl"] td,
 [dir="rtl"] .traffic-table th, [dir="rtl"] .traffic-table td,
-[dir="rtl"] .table-disruptions th, [dir="rtl"] .table-disruptions td {
+[dir="rtl"] .table-disruptions th, [dir="rtl"] .table-disruptions td,
+[dir="rtl"] .tab-badge,
+[dir="rtl"] .preview-badge,
+[dir="rtl"] .telemetry-badge,
+[dir="rtl"] .net-pill-badge,
+[dir="rtl"] .kpi-badge,
+[dir="rtl"] .log-badge,
+[dir="rtl"] .switch-reason-tag,
+[dir="rtl"] .switch-metrics-label,
+[dir="rtl"] .test-bar-label,
+[dir="rtl"] .presets-label,
+[dir="rtl"] .kpi-label,
+[dir="rtl"] .kpi-title,
+[dir="rtl"] .badge-good,
+[dir="rtl"] .badge-bad,
+[dir="rtl"] .badge-warn,
+[dir="rtl"] .badge-active,
+[dir="rtl"] .badge-fail,
+[dir="rtl"] .badge-amber,
+[dir="rtl"] .badge-probe,
+[dir="rtl"] .badge-info {
     font-family: var(--font-sans) !important;
+}
+
+/* 3.1 RTL Ligature Preservation: Reset positive letter-spacing to prevent broken Persian cursive glyphs */
+[dir="rtl"] .brand-badge,
+[dir="rtl"] .nav-section-label,
+[dir="rtl"] .stat-badge,
+[dir="rtl"] .badge-relay-pill,
+[dir="rtl"] .test-bar-label,
+[dir="rtl"] .presets-label,
+[dir="rtl"] .kpi-label,
+[dir="rtl"] .kpi-title,
+[dir="rtl"] .switch-reason-tag,
+[dir="rtl"] .switch-metrics-label,
+[dir="rtl"] .preview-badge,
+[dir="rtl"] .tab-badge,
+[dir="rtl"] .telemetry-badge,
+[dir="rtl"] .net-pill-badge,
+[dir="rtl"] .kpi-badge,
+[dir="rtl"] .log-badge,
+[dir="rtl"] .import-divider-or {
+    letter-spacing: normal !important;
+}
+
+/* Specific brand-badge styling in RTL to ensure beautiful, bold Vazirmatn */
+[dir="rtl"] .brand-badge {
+    font-family: var(--font-sans) !important;
+    letter-spacing: normal !important;
+    font-weight: 700 !important;
 }
 
 /* Ensure language toggle button ALWAYS displays "فارسی" in Vazirmatn font regardless of current mode */
@@ -108,7 +157,7 @@
 [dir="rtl"] .net-meter-val,
 [dir="rtl"] .socket-leg-item,
 [dir="rtl"] .wan-iface-tag,
-[dir="rtl"] .brand-badge,
+[dir="rtl"] #brandVersionBadge,
 [dir="rtl"] .lockout-timer,
 [dir="rtl"] .paste-json-textarea,
 [dir="rtl"] #cpuText,
