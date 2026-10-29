@@ -544,18 +544,17 @@
                             <span class="telemetry-badge text-cyan" id="ovCpuBadge">Normal</span>
                         </div>
                         <div class="telemetry-card-body">
-                            <div class="telemetry-radial-gauge">
+                            <!-- Preserved for dynamic binding and unit tests -->
+                            <div class="telemetry-radial-gauge" style="display:none;" aria-hidden="true">
                                 <svg class="radial-svg" viewBox="0 0 44 44">
                                     <circle class="radial-bg" cx="22" cy="22" r="18" />
                                     <circle class="radial-fill" id="ovCpuRing" cx="22" cy="22" r="18" stroke-dasharray="113.1" stroke-dashoffset="113.1" />
                                 </svg>
-                                <div class="radial-center-val">
-                                    <span id="ovCpuVal">0%</span>
-                                </div>
+                                <div class="radial-center-val"><span id="ovCpuVal">0%</span></div>
                             </div>
-                            <div class="telemetry-details">
+                            <div class="telemetry-details" style="width:100%;">
                                 <div class="telemetry-val-row" style="display:flex; justify-content:space-between; align-items:center;">
-                                    <span class="telemetry-main-text" id="cpuText">CPU: 0%</span>
+                                    <span class="telemetry-main-text font-mono" id="cpuText">CPU: 0%</span>
                                     <span id="loadPill" class="telemetry-load-chip" title="System Load Average (1m · 5m · 15m)">
                                         <span class="font-mono text-amber" id="loadText" style="font-size:0.75rem; font-weight:700;">Load: 0.00</span>
                                     </span>
@@ -566,11 +565,11 @@
                                     </div>
                                 </div>
                                 <div style="display:flex; justify-content:space-between; align-items:center; gap:6px;">
-                                    <span class="telemetry-subtext font-mono" id="ovLoadText" style="font-size:0.72rem;">0.00 (1m), 0.00 (5m), 0.00 (15m)</span>
-                                    <span id="ovCpuText" style="display:none;">Processor Load</span>
+                                    <span class="telemetry-subtext font-mono" id="ovLoadText" style="font-size:0.71rem;">0.00 (1m), 0.00 (5m), 0.00 (15m)</span>
+                                    <span class="telemetry-subtext font-mono text-cyan" id="ovCpuText" style="font-size:0.71rem; opacity:0.85;">Processor Load</span>
                                     <span id="ovLoadBadge" style="display:none;">Balanced</span>
                                 </div>
-                                <div class="telemetry-load-bars" style="display:none;">
+                                <div class="telemetry-load-bars" style="display:none;" aria-hidden="true">
                                     <div class="load-bar-item"><div class="load-bar-track"><div class="load-bar-fill" id="ovLoadBar1m"></div></div></div>
                                     <div class="load-bar-item"><div class="load-bar-track"><div class="load-bar-fill" id="ovLoadBar5m"></div></div></div>
                                     <div class="load-bar-item"><div class="load-bar-track"><div class="load-bar-fill" id="ovLoadBar15m"></div></div></div>
@@ -593,16 +592,18 @@
                         </div>
                         <div class="telemetry-card-body">
                             <div class="telemetry-details" style="width:100%;">
-                                <div class="telemetry-val-row">
-                                    <span class="telemetry-main-text" id="ramText"><span class="ram-full">RAM: 0%</span><span class="ram-short">0%</span></span>
-                                    <span class="telemetry-val-chip text-emerald" id="ovRamPctChip">0%</span>
+                                <div class="telemetry-val-row" style="display:flex; justify-content:space-between; align-items:center;">
+                                    <span class="telemetry-main-text font-mono text-emerald" id="ramText"><span class="ram-full">RAM: 0%</span><span class="ram-short">0%</span></span>
+                                    <span class="telemetry-val-chip text-emerald" id="ovRamPctChip" style="display:none;">0%</span>
                                 </div>
                                 <div class="telemetry-bar-wrap">
                                     <div class="telemetry-bar-track">
                                         <div class="telemetry-bar-fill fill-emerald" id="ovRamBar" style="width: 0%;"></div>
                                     </div>
                                 </div>
-                                <span class="telemetry-subtext font-mono" id="ovRamText">0 / 0 MB (0%)</span>
+                                <div style="display:flex; justify-content:space-between; align-items:center;">
+                                    <span class="telemetry-subtext font-mono" id="ovRamText">0 / 0 MB (0%)</span>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -631,12 +632,12 @@
                                         <div class="socket-segment segment-tcp" id="ovSocketTcpSeg" style="width: 70%;" title="TCP Connections"></div>
                                         <div class="socket-segment segment-udp" id="ovSocketUdpSeg" style="width: 30%;" title="UDP Streams"></div>
                                     </div>
-                                    <div class="socket-legend-row">
+                                    <div class="socket-legend-row" style="display:flex; justify-content:space-between; align-items:center;">
                                         <span class="socket-leg-item"><span class="socket-dot dot-tcp"></span> <span id="ovTcpCount">--</span> TCP</span>
                                         <span class="socket-leg-item"><span class="socket-dot dot-udp"></span> <span id="ovUdpCount">--</span> UDP</span>
+                                        <span class="telemetry-subtext" id="ovConnsText" style="display:none;"></span>
                                     </div>
                                 </div>
-                                <span class="telemetry-subtext" id="ovConnsText">Established TCP & UDP sessions</span>
                             </div>
                         </div>
                     </div>
@@ -663,12 +664,12 @@
                                     <div class="net-meter-row">
                                         <span class="net-meter-label text-cyan"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="7 10 12 15 17 10"/><line x1="12" y1="3" x2="12" y2="15"/></svg> RX</span>
                                         <div class="net-meter-track"><div class="net-meter-fill fill-cyan" id="ovNetRxFill" style="width: 15%;"></div></div>
-                                        <span class="net-meter-val font-mono" id="ovNetRxSpeed">0.00 MB/s</span>
+                                        <span class="net-meter-val font-mono text-cyan" id="ovNetRxSpeed">0.00 MB/s</span>
                                     </div>
                                     <div class="net-meter-row">
                                         <span class="net-meter-label text-mint"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="17 14 12 9 7 14"/><line x1="12" y1="21" x2="12" y2="9"/></svg> TX</span>
                                         <div class="net-meter-track"><div class="net-meter-fill fill-mint" id="ovNetTxFill" style="width: 12%;"></div></div>
-                                        <span class="net-meter-val font-mono" id="ovNetTxSpeed">0.00 MB/s</span>
+                                        <span class="net-meter-val font-mono text-mint" id="ovNetTxSpeed">0.00 MB/s</span>
                                     </div>
                                 </div>
                                 <span class="telemetry-subtext" id="ovTrafficSub">Real-time throughput &middot; Click to toggle</span>

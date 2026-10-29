@@ -4920,24 +4920,24 @@ input#formCategory::-webkit-list-button {
 
 .telemetry-card {
     background: var(--bg-card);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
     border: 1px solid var(--border-color);
     border-radius: 16px;
-    padding: 16px 18px;
-    box-shadow: var(--card-shadow);
+    padding: 16px 18px 14px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.06);
     transition: background 0.22s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.22s cubic-bezier(0.4, 0, 0.2, 1);
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    min-height: 120px;
+    min-height: 124px;
     position: relative;
     overflow: hidden;
 }
 
 .telemetry-card:hover {
     background: var(--bg-card-hover);
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.28);
+    box-shadow: 0 8px 26px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.1);
 }
 
 .telemetry-card-header {
@@ -4945,7 +4945,7 @@ input#formCategory::-webkit-list-button {
     align-items: center;
     justify-content: space-between;
     gap: 8px;
-    margin-bottom: 10px;
+    margin-bottom: 12px;
 }
 
 .telemetry-icon-box {
@@ -5065,11 +5065,12 @@ input#formCategory::-webkit-list-button {
 }
 
 .telemetry-main-text {
-    font-size: 0.88rem;
+    font-size: 0.95rem;
     font-weight: 700;
     font-family: var(--font-mono);
     color: var(--text-primary);
     white-space: nowrap;
+    letter-spacing: -0.01em;
 }
 
 .telemetry-val-chip {
@@ -5080,12 +5081,12 @@ input#formCategory::-webkit-list-button {
 
 .telemetry-bar-wrap {
     width: 100%;
-    margin: 2px 0;
+    margin: 4px 0;
 }
 
 .telemetry-bar-track {
     width: 100%;
-    height: 5px;
+    height: 6px;
     border-radius: 3px;
     background: rgba(255, 255, 255, 0.08);
     overflow: hidden;
@@ -5108,8 +5109,9 @@ input#formCategory::-webkit-list-button {
 }
 
 .telemetry-subtext {
-    font-size: 0.69rem;
+    font-size: 0.71rem;
     color: var(--text-muted);
+    font-family: var(--font-mono);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
