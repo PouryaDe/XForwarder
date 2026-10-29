@@ -352,6 +352,33 @@ class TestI18nAndRTL(unittest.TestCase):
             self.assertIn(k, self.en_keys, f"Key '{k}' must exist in English dictionary")
             self.assertIn(k, self.fa_keys, f"Key '{k}' must exist in Persian dictionary")
 
+    def test_terminal_consoles_and_update_modal_ltr_alignment(self):
+        """Verify terminal consoles, log streams, and update modal status banner maintain strict LTR alignment."""
+        # Reload content from updated files
+        with open(self.rtl_css_path, "r", encoding="utf-8") as f:
+            rtl_css = f.read()
+        with open(self.index_html_path, "r", encoding="utf-8") as f:
+            index_html = f.read()
+
+        # Log consoles must be flex column, LTR, and left-aligned
+        self.assertIn('[dir="rtl"] .log-console,', rtl_css)
+        self.assertIn('[dir="rtl"] #updateConsole {', rtl_css)
+        self.assertIn('[dir="rtl"] #logConsole,', rtl_css)
+
+        # Log entries and messages must be LTR and left-aligned
+        self.assertIn('[dir="rtl"] .log-entry {', rtl_css)
+        self.assertIn('[dir="rtl"] .log-msg {', rtl_css)
+
+        # Update modal progress view and status banner must be LTR
+        self.assertIn('[dir="rtl"] #updateProgressView {', rtl_css)
+        self.assertIn('[dir="rtl"] .update-status-banner,', rtl_css)
+        self.assertIn('[dir="rtl"] #updateStatusBanner {', rtl_css)
+        self.assertIn('[dir="rtl"] #updateStatusText {', rtl_css)
+
+        # Check inline LTR safeguards in index.html for update modal
+        self.assertIn('id="updateProgressView" style="display:none; direction:ltr; text-align:left;"', index_html)
+        self.assertIn('id="updateStatusBanner" style="display:flex; align-items:center; justify-content:flex-start; gap:10px;', index_html)
+
 
 if __name__ == "__main__":
     unittest.main()

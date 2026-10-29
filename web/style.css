@@ -7734,7 +7734,6 @@ input#formCategory::-webkit-list-button {
 [dir="rtl"] .brand-badge,
 [dir="rtl"] .lockout-timer,
 [dir="rtl"] .paste-json-textarea,
-[dir="rtl"] .log-console,
 [dir="rtl"] #cpuText,
 [dir="rtl"] #ramText,
 [dir="rtl"] #trafficText,
@@ -8187,6 +8186,77 @@ input#formCategory::-webkit-list-button {
 [dir="rtl"] .traffic-footer-right {
     margin-right: auto !important;
     margin-left: 0 !important;
+}
+
+/* Terminal Consoles & Real-time Log Streams in RTL: Strictly LTR, Monospace & Left-Aligned */
+[dir="rtl"] .log-console,
+[dir="rtl"] #logConsole,
+[dir="rtl"] #updateConsole {
+    display: flex !important;
+    flex-direction: column !important;
+    direction: ltr !important;
+    text-align: left !important;
+    unicode-bidi: embed !important;
+    font-family: var(--font-mono, 'JetBrains Mono', monospace) !important;
+}
+
+[dir="rtl"] .log-console *,
+[dir="rtl"] #updateConsole * {
+    direction: ltr !important;
+    text-align: left !important;
+}
+
+[dir="rtl"] .log-entry {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: flex-start !important;
+    justify-content: flex-start !important;
+    direction: ltr !important;
+    text-align: left !important;
+    gap: 10px !important;
+}
+
+[dir="rtl"] .log-time,
+[dir="rtl"] .log-badge,
+[dir="rtl"] .log-msg {
+    direction: ltr !important;
+    text-align: left !important;
+    unicode-bidi: embed !important;
+    font-family: var(--font-mono, 'JetBrains Mono', monospace) !important;
+}
+
+/* System Update Modal: Terminal View & In-Progress Status Banner LTR Alignment */
+[dir="rtl"] #updateProgressView {
+    direction: ltr !important;
+    text-align: left !important;
+}
+
+[dir="rtl"] .update-status-banner,
+[dir="rtl"] #updateStatusBanner {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+    direction: ltr !important;
+    text-align: left !important;
+    gap: 10px !important;
+}
+
+[dir="rtl"] #updateSpinner {
+    margin-right: 0 !important;
+    margin-left: 0 !important;
+    flex-shrink: 0 !important;
+}
+
+[dir="rtl"] #updateStatusText {
+    direction: ltr !important;
+    text-align: left !important;
+    font-family: var(--font-sans) !important;
+}
+
+[dir="rtl"] #updateConfirmView ul {
+    padding-right: 22px !important;
+    padding-left: 0 !important;
 }
 
 /* 12. Tables & Disruption Logs in RTL */

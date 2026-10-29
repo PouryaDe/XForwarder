@@ -1943,13 +1943,13 @@
                 </div>
 
                 <!-- In-progress live view -->
-                <div id="updateProgressView" style="display:none;">
-                    <div class="update-status-banner" id="updateStatusBanner" style="display:flex; align-items:center; gap:10px; padding:12px 16px; border-radius:8px; margin-bottom:14px; font-size:0.85rem; background:rgba(56, 189, 248, 0.12); border:1px solid rgba(56, 189, 248, 0.3); color:var(--accent-cyan);">
-                        <div class="spinner-sm" id="updateSpinner" style="width:18px; height:18px; border:2px solid var(--accent-cyan); border-top-color:transparent; border-radius:50%; animation:spin 0.8s linear infinite;"></div>
-                        <span id="updateStatusText">Starting update procedure...</span>
+                <div id="updateProgressView" style="display:none; direction:ltr; text-align:left;">
+                    <div class="update-status-banner" id="updateStatusBanner" style="display:flex; align-items:center; justify-content:flex-start; gap:10px; padding:12px 16px; border-radius:8px; margin-bottom:14px; font-size:0.85rem; background:rgba(56, 189, 248, 0.12); border:1px solid rgba(56, 189, 248, 0.3); color:var(--accent-cyan); direction:ltr; text-align:left;">
+                        <div class="spinner-sm" id="updateSpinner" style="width:18px; height:18px; border:2px solid var(--accent-cyan); border-top-color:transparent; border-radius:50%; animation:spin 0.8s linear infinite; flex-shrink:0;"></div>
+                        <span id="updateStatusText" style="direction:ltr; text-align:left;">Starting update procedure...</span>
                     </div>
-                    <div class="log-console" id="updateConsole" style="height:260px; font-size:0.78rem; background:#070a10; overflow-y:auto; scroll-behavior:smooth;">
-                        <div class="log-entry"><span class="log-msg text-muted">Ready to receive update process stream...</span></div>
+                    <div class="log-console" id="updateConsole" style="height:260px; font-size:0.78rem; background:#070a10; overflow-y:auto; scroll-behavior:smooth; direction:ltr; text-align:left;">
+                        <div class="log-entry" style="direction:ltr; text-align:left;"><span class="log-msg text-muted" style="direction:ltr; text-align:left;">Ready to receive update process stream...</span></div>
                     </div>
                 </div>
             </div>
