@@ -113,9 +113,15 @@ html.pre-auth #dashboardScreen {
     top: 24px;
     right: 24px;
     z-index: 10;
+    display: flex;
+    align-items: center;
+    gap: 10px;
 }
 
 .login-theme-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
     width: auto;
     height: 38px;
     padding: 0 14px;
@@ -123,6 +129,14 @@ html.pre-auth #dashboardScreen {
     background: var(--bg-card);
     border: 1px solid var(--border-color);
     box-shadow: var(--card-shadow);
+}
+
+.login-lang-toggle {
+    height: 38px;
+    padding: 0 14px;
+    border-radius: 10px;
+    box-shadow: var(--card-shadow);
+    font-size: 0.84rem;
 }
 
 .login-card {

@@ -193,9 +193,15 @@ html.pre-auth #dashboardScreen {
     top: 24px;
     right: 24px;
     z-index: 10;
+    display: flex;
+    align-items: center;
+    gap: 10px;
 }
 
 .login-theme-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
     width: auto;
     height: 38px;
     padding: 0 14px;
@@ -203,6 +209,14 @@ html.pre-auth #dashboardScreen {
     background: var(--bg-card);
     border: 1px solid var(--border-color);
     box-shadow: var(--card-shadow);
+}
+
+.login-lang-toggle {
+    height: 38px;
+    padding: 0 14px;
+    border-radius: 10px;
+    box-shadow: var(--card-shadow);
+    font-size: 0.84rem;
 }
 
 .login-card {
@@ -7809,6 +7823,18 @@ input#formCategory::-webkit-list-button {
 }
 
 /* 7. Login Screen in RTL */
+[dir="rtl"] .login-top-bar {
+    right: auto !important;
+    left: 24px !important;
+}
+
+@media (max-width: 860px) {
+    [dir="rtl"] .login-top-bar {
+        left: 16px !important;
+        right: auto !important;
+    }
+}
+
 [dir="rtl"] .login-card .form-group {
     text-align: right !important;
 }
@@ -8112,12 +8138,11 @@ input#formCategory::-webkit-list-button {
 }
 
 .login-lang-toggle {
-    margin-left: 8px;
-}
-
-[dir="rtl"] .login-lang-toggle {
-    margin-left: 0 !important;
-    margin-right: 8px !important;
+    height: 38px;
+    padding: 0 14px;
+    border-radius: 10px;
+    box-shadow: var(--card-shadow);
+    font-size: 0.84rem;
 }
 
 /* Topbar Language Button */

@@ -200,6 +200,18 @@
 }
 
 /* 7. Login Screen in RTL */
+[dir="rtl"] .login-top-bar {
+    right: auto !important;
+    left: 24px !important;
+}
+
+@media (max-width: 860px) {
+    [dir="rtl"] .login-top-bar {
+        left: 16px !important;
+        right: auto !important;
+    }
+}
+
 [dir="rtl"] .login-card .form-group {
     text-align: right !important;
 }
@@ -503,12 +515,11 @@
 }
 
 .login-lang-toggle {
-    margin-left: 8px;
-}
-
-[dir="rtl"] .login-lang-toggle {
-    margin-left: 0 !important;
-    margin-right: 8px !important;
+    height: 38px;
+    padding: 0 14px;
+    border-radius: 10px;
+    box-shadow: var(--card-shadow);
+    font-size: 0.84rem;
 }
 
 /* Topbar Language Button */

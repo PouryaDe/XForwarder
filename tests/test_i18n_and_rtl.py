@@ -287,6 +287,25 @@ class TestI18nAndRTL(unittest.TestCase):
         self.assertIn('[dir="rtl"] .traffic-table th,', self.rtl_css_content)
         self.assertIn('[dir="rtl"] .table-disruptions th,', self.rtl_css_content)
 
+    def test_login_top_bar_layout_and_rtl_alignment(self):
+        """Verify login screen theme and language toggle buttons are side-by-side with gap and mirrored in RTL."""
+        with open(os.path.join(REPO_ROOT, "web", "css", "base.css"), "r", encoding="utf-8") as f:
+            base_css = f.read()
+
+        # Check horizontal flex container with gap
+        self.assertIn(".login-top-bar {", base_css)
+        self.assertIn("display: flex;", base_css)
+        self.assertIn("gap: 10px;", base_css)
+
+        # Check height and border-radius consistency
+        self.assertIn(".login-lang-toggle {", base_css)
+        self.assertIn(".login-theme-toggle {", base_css)
+
+        # Check RTL positioning mirrors to top-left
+        self.assertIn('[dir="rtl"] .login-top-bar {', self.rtl_css_content)
+        self.assertIn('left: 24px !important;', self.rtl_css_content)
+        self.assertIn('right: auto !important;', self.rtl_css_content)
+
 
 if __name__ == "__main__":
     unittest.main()
