@@ -7685,7 +7685,7 @@
       "file_type": "code",
       "norm_label": "closeimportmodal()",
       "source_file": "web/js/modules/import_export.js",
-      "source_location": "L167"
+      "source_location": "L170"
     },
     {
       "id": "web_js_modules_import_export_copycategoryjson",
@@ -7745,7 +7745,7 @@
       "file_type": "code",
       "norm_label": "initimportexport()",
       "source_file": "web/js/modules/import_export.js",
-      "source_location": "L245"
+      "source_location": "L248"
     },
     {
       "id": "web_js_modules_import_export_openimportmodal",
@@ -7769,7 +7769,7 @@
       "file_type": "code",
       "norm_label": "parseandvalidateimportjson()",
       "source_file": "web/js/modules/import_export.js",
-      "source_location": "L172"
+      "source_location": "L175"
     },
     {
       "id": "web_js_modules_logs_fallbackcopylogs",
@@ -25502,7 +25502,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/js/modules/import_export.js",
-      "source_location": "L287",
+      "source_location": "L290",
       "weight": 1.0
     },
     {
@@ -25514,7 +25514,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/js/modules/import_export.js",
-      "source_location": "L288",
+      "source_location": "L291",
       "weight": 1.0
     },
     {
@@ -25526,7 +25526,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "web/js/modules/import_export.js",
-      "source_location": "L228",
+      "source_location": "L231",
       "weight": 1.0
     },
     {
@@ -43103,7 +43103,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "web/js/modules/import_export.js",
-      "source_location": "L167",
+      "source_location": "L170",
       "weight": 1.0
     },
     {
@@ -43114,7 +43114,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "web/js/modules/import_export.js",
-      "source_location": "L172",
+      "source_location": "L175",
       "weight": 1.0
     },
     {
@@ -43125,7 +43125,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "web/js/modules/import_export.js",
-      "source_location": "L245",
+      "source_location": "L248",
       "weight": 1.0
     },
     {
@@ -53621,7 +53621,7 @@
       "confidence_score": 0.85,
       "context": "argument",
       "source_file": "web/js/modules/import_export.js",
-      "source_location": "L247",
+      "source_location": "L250",
       "weight": 1.0
     },
     {
@@ -53633,7 +53633,7 @@
       "confidence_score": 0.85,
       "context": "argument",
       "source_file": "web/js/modules/import_export.js",
-      "source_location": "L257",
+      "source_location": "L260",
       "weight": 1.0
     },
     {
@@ -53645,7 +53645,7 @@
       "confidence_score": 0.85,
       "context": "argument",
       "source_file": "web/js/modules/import_export.js",
-      "source_location": "L259",
+      "source_location": "L262",
       "weight": 1.0
     },
     {
@@ -55790,5 +55790,5 @@
     }
   ],
   "hyperedges": [],
-  "built_at_commit": "40c1ddc8a283a4d2d3d32f9d4bfa75c590df136d"
+  "built_at_commit": "edd87d1962a333ca115d51166eb85761d08a488c"
 }

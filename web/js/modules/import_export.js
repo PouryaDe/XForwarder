@@ -154,7 +154,7 @@ export function openImportModal() {
     if (importConfigForm) importConfigForm.reset();
     if (importFileInput) importFileInput.value = "";
     if (importJsonTextarea) importJsonTextarea.value = "";
-    if (pasteJsonContainer) pasteJsonContainer.style.display = "none";
+    if (pasteJsonContainer) pasteJsonContainer.style.display = "flex";
     if (importPreviewBox) importPreviewBox.style.display = "none";
     if (importError) {
         importError.innerText = "";
@@ -162,6 +162,9 @@ export function openImportModal() {
     }
     if (btnConfirmImport) btnConfirmImport.disabled = true;
     importConfigModal.classList.add("show");
+    if (importJsonTextarea) {
+        setTimeout(() => importJsonTextarea.focus(), 60);
+    }
 }
 
 export function closeImportModal() {
@@ -342,7 +345,11 @@ export function initImportExport(fetchStatusCallback) {
             if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length > 0) {
                 const file = e.dataTransfer.files[0];
                 const reader = new FileReader();
-                reader.onload = (event) => parseAndValidateImportJson(event.target.result, file.name);
+                reader.onload = (event) => {
+                    const content = event.target.result;
+                    if (importJsonTextarea) importJsonTextarea.value = content;
+                    parseAndValidateImportJson(content, file.name);
+                };
                 reader.readAsText(file);
             }
         });
@@ -351,7 +358,11 @@ export function initImportExport(fetchStatusCallback) {
             if (this.files && this.files.length > 0) {
                 const file = this.files[0];
                 const reader = new FileReader();
-                reader.onload = (event) => parseAndValidateImportJson(event.target.result, file.name);
+                reader.onload = (event) => {
+                    const content = event.target.result;
+                    if (importJsonTextarea) importJsonTextarea.value = content;
+                    parseAndValidateImportJson(content, file.name);
+                };
                 reader.readAsText(file);
             }
         });

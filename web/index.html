@@ -1779,45 +1779,14 @@
                     </div>
                 </div>
 
-                <!-- Dropzone / File Picker -->
-                <div class="form-group">
-                    <label>Configuration JSON File</label>
-                    <div class="file-dropzone" id="importDropzone">
-                        <input type="file" id="importFileInput" accept=".json,application/json" style="display:none;">
-                        <div class="dropzone-inner">
-                            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2">
-                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                                <polyline points="17 8 12 3 7 8" />
-                                <line x1="12" y1="3" x2="12" y2="15" />
-                            </svg>
-                            <span class="dropzone-text">Click or drag & drop backup JSON file here</span>
-                            <span class="dropzone-sub">Supports .json files exported from XForwarder</span>
-                        </div>
-                    </div>
-                </div>
+                <!-- Preserved hidden toggle button for legacy script compatibility -->
+                <button type="button" id="btnTogglePasteJson" style="display:none;" aria-hidden="true"></button>
 
-                <!-- Live Preview / Status Box -->
-                <div id="importPreviewBox" class="import-preview-box" style="display:none;">
-                    <div class="preview-header">
-                        <span class="preview-badge" id="importPreviewBadge">Valid Config</span>
-                        <span class="preview-filename font-mono" id="importPreviewFilename">backup.json</span>
-                    </div>
-                    <div class="preview-details" id="importPreviewDetails"></div>
-                </div>
-
-                <!-- Paste Raw JSON toggle -->
-                <div class="form-group" style="margin-top: 10px;">
-                    <button type="button" class="btn-text-toggle" id="btnTogglePasteJson">
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="2">
-                            <polyline points="6 9 12 15 18 9" />
-                        </svg>
-                        <span>Or paste raw JSON directly</span>
-                    </button>
-                    <div id="pasteJsonContainer" class="paste-json-container" style="display:none;">
+                <!-- Configuration JSON (Primary Textarea) -->
+                <div class="form-group" style="margin-top: 12px;">
+                    <div id="pasteJsonContainer" class="paste-json-container">
                         <div class="paste-json-toolbar">
-                            <span class="paste-json-hint">Paste backup JSON, category rules, or single port JSON</span>
+                            <label class="paste-json-label" for="importJsonTextarea">Configuration JSON</label>
                             <div class="paste-json-actions">
                                 <button type="button" class="btn-paste-tool" id="btnPasteFromClipboard" title="Paste from clipboard">
                                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -1842,8 +1811,36 @@
                                 </button>
                             </div>
                         </div>
-                        <textarea id="importJsonTextarea" class="paste-json-textarea font-mono" rows="12"
+                        <textarea id="importJsonTextarea" class="paste-json-textarea font-mono" rows="10"
                             placeholder='{"rules": [ ... ]} or {"port": 443, ...}' spellcheck="false"></textarea>
+                    </div>
+                </div>
+
+                <!-- Live Preview / Status Box -->
+                <div id="importPreviewBox" class="import-preview-box" style="display:none;">
+                    <div class="preview-header">
+                        <span class="preview-badge" id="importPreviewBadge">Valid Config</span>
+                        <span class="preview-filename font-mono" id="importPreviewFilename">backup.json</span>
+                    </div>
+                    <div class="preview-details" id="importPreviewDetails"></div>
+                </div>
+
+                <!-- Optional File Dropzone Option (Bottom) -->
+                <div class="form-group import-file-option-group" style="margin-top: 12px;">
+                    <div class="import-divider-or">
+                        <span>or import from file</span>
+                    </div>
+                    <div class="file-dropzone file-dropzone-compact" id="importDropzone">
+                        <input type="file" id="importFileInput" accept=".json,application/json" style="display:none;">
+                        <div class="dropzone-inner">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                                <polyline points="17 8 12 3 7 8" />
+                                <line x1="12" y1="3" x2="12" y2="15" />
+                            </svg>
+                            <span class="dropzone-text">Click or drag &amp; drop backup JSON file here</span>
+                        </div>
                     </div>
                 </div>
 
