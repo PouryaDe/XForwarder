@@ -2,6 +2,8 @@
  * XForwarder - Formatting, Sanitization & Toast Notification Utilities
  */
 
+import { t } from "./i18n.js";
+
 export function formatBytes(bytes, decimals = 2) {
     if (bytes === undefined || bytes === null || isNaN(bytes)) return "0 B";
     const b = Number(bytes);
@@ -312,13 +314,82 @@ function fallbackCopy(text) {
 
 let confirmResolve = null;
 
-export function askConfirm(title, message) {
+const CONFIRM_ICON_DANGER_SVG = `<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>`;
+const CONFIRM_ICON_PRIMARY_SVG = `<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>`;
+
+/**
+ * Displays a styled confirmation modal and returns a Promise resolving to true/false.
+ * Dynamically configures button labels, button variants ('primary' vs 'danger'),
+ * and modal icons based on the action context.
+ *
+ * @param {string} title - The modal dialog title.
+ * @param {string} message - The explanatory message describing consequences.
+ * @param {Object|string} [options={}] - Options object ({ confirmText, cancelText, variant }) or confirmText string.
+ * @returns {Promise<boolean>} Resolves to true if confirmed, false if cancelled or dismissed.
+ */
+export function askConfirm(title, message, options = {}) {
     const titleEl = document.getElementById("confirmTitle");
     const msgEl = document.getElementById("confirmMessage");
     const modalEl = document.getElementById("confirmModal");
+    const btnConfirm = document.getElementById("btnProceedConfirm") || document.getElementById("btnConfirmAction");
+    const btnCancel = document.getElementById("btnCancelConfirm");
+    const iconEl = modalEl ? modalEl.querySelector(".confirm-icon") : null;
+
     if (titleEl) titleEl.innerText = title;
     if (msgEl) msgEl.innerText = message;
+
+    const opts = typeof options === "string" ? { confirmText: options } : (options || {});
+    const titleLower = String(title || "").toLowerCase();
+
+    let confirmText = opts.confirmText;
+    let variant = opts.variant;
+
+    if (!confirmText) {
+        if (titleLower.includes("restart") || titleLower.includes("راه‌اندازی")) {
+            confirmText = t("confirm.restart_btn", {}, "Restart Service");
+        } else if (titleLower.includes("reload") || titleLower.includes("بارگذاری")) {
+            confirmText = t("confirm.reload_btn", {}, "Reload Service");
+        } else if (titleLower.includes("sync") || titleLower.includes("همگام")) {
+            confirmText = t("confirm.sync_btn", {}, "Sync Table");
+        } else if (titleLower.includes("reset") || titleLower.includes("ریست")) {
+            confirmText = t("confirm.reset_btn", {}, "Reset Counter");
+        } else if (titleLower.includes("wipe") || titleLower.includes("حذف کامل")) {
+            confirmText = t("confirm.wipe_btn", {}, "Wipe History");
+        } else if (titleLower.includes("delete") || titleLower.includes("حذف")) {
+            confirmText = t("confirm.delete_btn", {}, "Delete Rule");
+        } else {
+            confirmText = t("confirm.confirm_btn", {}, "Confirm");
+        }
+    }
+
+    if (!variant) {
+        const isDestructive = titleLower.includes("delete") || titleLower.includes("wipe") || titleLower.includes("حذف");
+        variant = isDestructive ? "danger" : "primary";
+    }
+
+    if (btnConfirm) {
+        btnConfirm.textContent = confirmText;
+        btnConfirm.removeAttribute("data-i18n");
+        btnConfirm.classList.remove("btn-danger", "btn-primary");
+        btnConfirm.classList.add(variant === "primary" ? "btn-primary" : "btn-danger");
+    }
+
+    if (btnCancel) {
+        btnCancel.textContent = opts.cancelText || t("confirm.cancel", {}, "Cancel");
+    }
+
+    if (iconEl) {
+        iconEl.classList.toggle("confirm-icon-primary", variant === "primary");
+        iconEl.innerHTML = variant === "primary" ? CONFIRM_ICON_PRIMARY_SVG : CONFIRM_ICON_DANGER_SVG;
+    }
+
     if (modalEl) modalEl.classList.add("show");
+
+    // Clean up any previously pending confirmation dialog before creating a new one
+    if (confirmResolve) {
+        confirmResolve(false);
+        confirmResolve = null;
+    }
 
     return new Promise((resolve) => {
         confirmResolve = resolve;
@@ -331,25 +402,49 @@ if (typeof document !== "undefined") {
         const btnConfirm = document.getElementById("btnProceedConfirm") || document.getElementById("btnConfirmAction");
         const modalEl = document.getElementById("confirmModal");
 
+        const resetConfirmState = () => {
+            if (btnConfirm) {
+                btnConfirm.setAttribute("data-i18n", "confirm.confirm_btn");
+            }
+        };
+
+        const closeWithCancel = () => {
+            if (modalEl) modalEl.classList.remove("show");
+            resetConfirmState();
+            if (confirmResolve) {
+                confirmResolve(false);
+                confirmResolve = null;
+            }
+        };
+
         if (btnCancel) {
-            btnCancel.onclick = () => {
-                if (modalEl) modalEl.classList.remove("show");
-                if (confirmResolve) {
-                    confirmResolve(false);
-                    confirmResolve = null;
-                }
-            };
+            btnCancel.onclick = closeWithCancel;
         }
 
         if (btnConfirm) {
             btnConfirm.onclick = () => {
                 if (modalEl) modalEl.classList.remove("show");
+                resetConfirmState();
                 if (confirmResolve) {
                     confirmResolve(true);
                     confirmResolve = null;
                 }
             };
         }
+
+        if (modalEl) {
+            modalEl.addEventListener("click", (e) => {
+                if (e.target === modalEl) {
+                    closeWithCancel();
+                }
+            });
+        }
+
+        document.addEventListener("keydown", (e) => {
+            if (e.key === "Escape" && modalEl && modalEl.classList.contains("show")) {
+                closeWithCancel();
+            }
+        });
     };
 
     if (document.readyState === "loading") {

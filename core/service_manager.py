@@ -412,10 +412,16 @@ def get_update_status(log_path_fn: Optional[Any] = None) -> dict:
 def restart_services_action(service: str, sync_rules_func=None, notify_func=None) -> Tuple[bool, str, bool]:
     """
     Executes controlled service restart or reload.
-    Supports: 'all', 'engine', 'web', 'haproxy', 'nginx', 'nftables'.
+    Supports: 'all', 'engine', 'web', 'haproxy', 'haproxy_restart',
+              'nginx', 'nginx_restart', 'nftables', 'nftables_restart'.
     Returns: (success: bool, message: str, is_reconnecting: bool)
     """
-    valid_services = {"all", "engine", "web", "haproxy", "nginx", "nftables"}
+    valid_services = {
+        "all", "engine", "web",
+        "haproxy", "haproxy_restart",
+        "nginx", "nginx_restart",
+        "nftables", "nftables_restart"
+    }
     svc = str(service or "all").lower().strip()
     if svc not in valid_services:
         return False, f"Invalid service identifier '{service}'. Allowed: {', '.join(sorted(valid_services))}", False
@@ -424,10 +430,13 @@ def restart_services_action(service: str, sync_rules_func=None, notify_func=None
     if sys.platform == "win32" or not has_systemctl:
         if svc in ("all", "web"):
             return True, f"Service '{svc}' restarted (mock)", True
-        elif svc == "nftables":
+        elif svc in ("nftables", "nftables_restart"):
             if sync_rules_func:
                 sync_rules_func()
-            return True, "NFTables ruleset synchronized (mock)", False
+            msg = "NFTables table restarted and synchronized (mock)" if svc == "nftables_restart" else "NFTables ruleset synchronized (mock)"
+            return True, msg, False
+        elif svc in ("haproxy_restart", "nginx_restart", "engine"):
+            return True, f"Service '{svc}' restarted successfully (mock)", False
         return True, f"Service '{svc}' reloaded successfully (mock)", False
 
     if svc == "nftables":
@@ -438,6 +447,17 @@ def restart_services_action(service: str, sync_rules_func=None, notify_func=None
             return False, f"Failed to synchronize NFTables: {', '.join(errs)}", False
         return True, "NFTables reload requested", False
 
+    if svc == "nftables_restart":
+        if shutil.which("nft"):
+            subprocess.run(["nft", "delete", "table", "ip", "xfwd_orchestrator"], capture_output=True, text=True, timeout=5.0)
+            subprocess.run(["nft", "delete", "table", "ip6", "xfwd_orchestrator"], capture_output=True, text=True, timeout=5.0)
+        if sync_rules_func:
+            ok, errs = sync_rules_func()
+            if ok:
+                return True, "NFTables table 'xfwd_orchestrator' restarted and re-synchronized successfully", False
+            return False, f"Failed to restart NFTables table: {', '.join(errs)}", False
+        return True, "NFTables table 'xfwd_orchestrator' restarted successfully", False
+
     if svc == "haproxy":
         res = subprocess.run(["systemctl", "reload", "haproxy"], capture_output=True, text=True, timeout=8.0)
         if res.returncode != 0:
@@ -446,6 +466,14 @@ def restart_services_action(service: str, sync_rules_func=None, notify_func=None
             return True, "HAProxy relay service reloaded successfully", False
         return False, f"HAProxy reload failed: {res.stderr.strip() or res.stdout.strip()}", False
 
+    if svc == "haproxy_restart":
+        if sync_rules_func:
+            sync_rules_func()
+        res = subprocess.run(["systemctl", "restart", "haproxy"], capture_output=True, text=True, timeout=8.0)
+        if res.returncode == 0:
+            return True, "HAProxy relay service restarted successfully", False
+        return False, f"HAProxy restart failed: {res.stderr.strip() or res.stdout.strip()}", False
+
     if svc == "nginx":
         res = subprocess.run(["systemctl", "reload", "nginx"], capture_output=True, text=True, timeout=8.0)
         if res.returncode != 0:
@@ -453,6 +481,14 @@ def restart_services_action(service: str, sync_rules_func=None, notify_func=None
         if res.returncode == 0:
             return True, "Nginx stream proxy engine reloaded successfully", False
         return False, f"Nginx reload failed: {res.stderr.strip() or res.stdout.strip()}", False
+
+    if svc == "nginx_restart":
+        if sync_rules_func:
+            sync_rules_func()
+        res = subprocess.run(["systemctl", "restart", "nginx"], capture_output=True, text=True, timeout=8.0)
+        if res.returncode == 0:
+            return True, "Nginx stream proxy engine restarted successfully", False
+        return False, f"Nginx restart failed: {res.stderr.strip() or res.stdout.strip()}", False
 
     if svc == "engine":
         svc_name = "xforwarder.service"

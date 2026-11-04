@@ -43,6 +43,7 @@ from core.web_server import (
     get_local_version_info,
     get_full_version_status
 )
+from core.system_info import _SERVICES_CACHE, _SERVICES_LOCK
 from core.engine import XForwarderEngine
 
 
@@ -1138,7 +1139,7 @@ class TestUIAndAPIEdgeCases(unittest.TestCase):
         self.assertTrue(recon)
 
         # 3. Individual services in mock/fallback mode
-        for svc in ("engine", "haproxy", "nginx", "nftables"):
+        for svc in ("engine", "haproxy", "haproxy_restart", "nginx", "nginx_restart", "nftables", "nftables_restart"):
             ok, msg, recon = restart_services_action(svc)
             self.assertTrue(ok, f"Failed for {svc}: {msg}")
             self.assertFalse(recon)
@@ -1154,11 +1155,35 @@ class TestUIAndAPIEdgeCases(unittest.TestCase):
              patch("subprocess.run") as mock_sub:
             mock_sub.return_value = MagicMock(returncode=0, stdout="success", stderr="")
 
-            # Test HAProxy
+            # Test HAProxy Reload
             ok, msg, recon = restart_services_action("haproxy")
             self.assertTrue(ok)
             self.assertFalse(recon)
             mock_sub.assert_called_with(["systemctl", "reload", "haproxy"], capture_output=True, text=True, timeout=8.0)
+
+            # Test HAProxy Restart
+            mock_sub.reset_mock()
+            ok, msg, recon = restart_services_action("haproxy_restart")
+            self.assertTrue(ok)
+            self.assertFalse(recon)
+            mock_sub.assert_called_with(["systemctl", "restart", "haproxy"], capture_output=True, text=True, timeout=8.0)
+
+            # Test Nginx Restart
+            mock_sub.reset_mock()
+            ok, msg, recon = restart_services_action("nginx_restart")
+            self.assertTrue(ok)
+            self.assertFalse(recon)
+            mock_sub.assert_called_with(["systemctl", "restart", "nginx"], capture_output=True, text=True, timeout=8.0)
+
+            # Test NFTables Restart (isolated table delete + resync)
+            mock_sub.reset_mock()
+            sync_mock = MagicMock(return_value=(True, []))
+            ok, msg, recon = restart_services_action("nftables_restart", sync_rules_func=sync_mock)
+            self.assertTrue(ok)
+            self.assertFalse(recon)
+            sync_mock.assert_called_once()
+            mock_sub.assert_any_call(["nft", "delete", "table", "ip", "xfwd_orchestrator"], capture_output=True, text=True, timeout=5.0)
+            mock_sub.assert_any_call(["nft", "delete", "table", "ip6", "xfwd_orchestrator"], capture_output=True, text=True, timeout=5.0)
 
             # Test Engine
             mock_sub.reset_mock()
@@ -1289,8 +1314,11 @@ class TestUIAndAPIEdgeCases(unittest.TestCase):
             "btnRestartCoreEngine",
             "btnRestartAllServices",
             "btnReloadHaproxy",
+            "btnRestartHaproxy",
             "btnResyncNftables",
+            "btnRestartNftables",
             "btnReloadNginx",
+            "btnRestartNginx",
         ):
             self.assertIn(f'id="{btn_id}"', html, f"Missing restart button: {btn_id}")
 
@@ -1301,6 +1329,97 @@ class TestUIAndAPIEdgeCases(unittest.TestCase):
             "pollDashboardReconnection"
         ):
             self.assertIn(fn_name, js, f"Missing JS function: {fn_name}")
+
+        # Verify system.js wires individual service restart actions and utils.js dynamically sets confirm button label
+        with open(os.path.join(web_dir, "js", "modules", "system.js"), "r", encoding="utf-8") as f:
+            sys_js = f.read()
+        with open(os.path.join(web_dir, "js", "modules", "utils.js"), "r", encoding="utf-8") as f:
+            utils_js = f.read()
+
+        for action_id in ("haproxy_restart", "nftables_restart", "nginx_restart"):
+            self.assertIn(action_id, sys_js, f"Missing service restart action in system.js: {action_id}")
+        self.assertIn("confirm.restart_btn", utils_js)
+        self.assertIn("confirm-icon-primary", utils_js)
+        self.assertIn("closeWithCancel", utils_js)
+
+    def test_service_restart_edge_cases_and_failures(self):
+        """Verifies edge cases and error handling for granular service restarts (HAProxy, Nginx, NFTables)."""
+        # 1. HAProxy restart failure
+        with patch("shutil.which", return_value="/bin/systemctl"), \
+             patch("sys.platform", "linux"), \
+             patch("subprocess.run") as mock_sub:
+            mock_sub.return_value = MagicMock(returncode=1, stdout="", stderr="Job for haproxy.service failed because the control process exited with error code")
+            ok, msg, recon = restart_services_action("haproxy_restart")
+            self.assertFalse(ok)
+            self.assertIn("HAProxy restart failed", msg)
+            self.assertFalse(recon)
+
+        # 2. Nginx restart failure
+        with patch("shutil.which", return_value="/bin/systemctl"), \
+             patch("sys.platform", "linux"), \
+             patch("subprocess.run") as mock_sub:
+            mock_sub.return_value = MagicMock(returncode=2, stdout="", stderr="nginx: configuration file /etc/nginx/nginx.conf test failed")
+            ok, msg, recon = restart_services_action("nginx_restart")
+            self.assertFalse(ok)
+            self.assertIn("Nginx restart failed", msg)
+            self.assertFalse(recon)
+
+        # 3. NFTables restart failure in sync_rules_func
+        with patch("shutil.which", return_value="/bin/nft"), \
+             patch("sys.platform", "linux"), \
+             patch("subprocess.run") as mock_sub:
+            mock_sub.return_value = MagicMock(returncode=0, stdout="", stderr="")
+            mock_sync_fail = MagicMock(return_value=(False, ["Syntax error in chain prerouting"]))
+            ok, msg, recon = restart_services_action("nftables_restart", sync_rules_func=mock_sync_fail)
+            self.assertFalse(ok)
+            self.assertIn("Failed to restart NFTables table", msg)
+            self.assertIn("Syntax error in chain prerouting", msg)
+            self.assertFalse(recon)
+
+        # 4. API endpoint verification for new restart services
+        server = HTTPServer(("127.0.0.1", 0), XForwarderWebHandler)
+        port = server.server_port
+        thread = threading.Thread(target=server.serve_forever, daemon=True)
+        thread.start()
+
+        token = "test_restart_edge_token_123"
+        with SESSION_LOCK:
+            ACTIVE_SESSIONS[token] = {
+                "username": "admin",
+                "created_at": time.time(),
+                "last_active": time.time(),
+                "expires_at": time.time() + 3600,
+                "ip": "127.0.0.1"
+            }
+
+        try:
+            with _SERVICES_LOCK:
+                _SERVICES_CACHE["expires"] = time.time() + 300.0
+
+            req_restart_haproxy = urllib.request.Request(
+                f"http://127.0.0.1:{port}/api/services/restart",
+                data=b'{"service":"haproxy_restart"}',
+                headers={
+                    "Content-Type": "application/json",
+                    "Cookie": f"xfwd_session={token}",
+                    "Origin": f"http://127.0.0.1:{port}"
+                }
+            )
+            with urllib.request.urlopen(req_restart_haproxy, timeout=3.0) as resp:
+                self.assertEqual(resp.status, 200)
+                data = json.loads(resp.read().decode("utf-8"))
+                self.assertTrue(data.get("ok"))
+                self.assertEqual(data.get("service"), "haproxy_restart")
+
+            # Verify services cache expired immediately to allow instant status refresh
+            with _SERVICES_LOCK:
+                self.assertEqual(_SERVICES_CACHE.get("expires"), 0.0)
+
+        finally:
+            with SESSION_LOCK:
+                ACTIVE_SESSIONS.pop(token, None)
+            server.shutdown()
+            server.server_close()
 
     def test_session_and_update_state_disk_persistence(self):
         """Verifies session and update state persistence across daemon reloads."""

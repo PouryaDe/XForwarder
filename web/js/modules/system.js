@@ -4,6 +4,7 @@
 
 import { API_BASE } from "./api.js";
 import { showToast, escapeHtml, askConfirm } from "./utils.js";
+import { t } from "./i18n.js";
 
 let updatePollTimer = null;
 let updatePollingActive = false;
@@ -408,12 +409,20 @@ export function pollUpdateProgress() {
     }, 1200);
 }
 
+/**
+ * Binds UI event listeners to all relay service reload and restart buttons.
+ *
+ * @param {Function} [fetchStatusCallback] - Optional callback to refresh dashboard telemetry.
+ */
 export function initServiceRestartControls(fetchStatusCallback) {
     const btnRestartAllServices = document.getElementById("btnRestartAllServices");
     const btnRestartCoreEngine = document.getElementById("btnRestartCoreEngine");
     const btnReloadHaproxy = document.getElementById("btnReloadHaproxy");
+    const btnRestartHaproxy = document.getElementById("btnRestartHaproxy");
     const btnResyncNftables = document.getElementById("btnResyncNftables");
+    const btnRestartNftables = document.getElementById("btnRestartNftables");
     const btnReloadNginx = document.getElementById("btnReloadNginx");
+    const btnRestartNginx = document.getElementById("btnRestartNginx");
 
     if (btnRestartAllServices) {
         btnRestartAllServices.addEventListener("click", () => handleServiceRestart("all", fetchStatusCallback));
@@ -424,32 +433,74 @@ export function initServiceRestartControls(fetchStatusCallback) {
     if (btnReloadHaproxy) {
         btnReloadHaproxy.addEventListener("click", () => handleServiceRestart("haproxy", fetchStatusCallback));
     }
+    if (btnRestartHaproxy) {
+        btnRestartHaproxy.addEventListener("click", () => handleServiceRestart("haproxy_restart", fetchStatusCallback));
+    }
     if (btnResyncNftables) {
         btnResyncNftables.addEventListener("click", () => handleServiceRestart("nftables", fetchStatusCallback));
+    }
+    if (btnRestartNftables) {
+        btnRestartNftables.addEventListener("click", () => handleServiceRestart("nftables_restart", fetchStatusCallback));
     }
     if (btnReloadNginx) {
         btnReloadNginx.addEventListener("click", () => handleServiceRestart("nginx", fetchStatusCallback));
     }
+    if (btnRestartNginx) {
+        btnRestartNginx.addEventListener("click", () => handleServiceRestart("nginx_restart", fetchStatusCallback));
+    }
 }
 
+/**
+ * Orchestrates user confirmation, API dispatch, and toast notifications for service lifecycle actions.
+ *
+ * @param {string} service - Service identifier (e.g., 'all', 'engine', 'haproxy', 'haproxy_restart', etc.).
+ * @param {Function} [fetchStatusCallback] - Optional callback to refresh status after action completes.
+ */
 export async function handleServiceRestart(service, fetchStatusCallback) {
     const serviceNames = {
-        all: "All Relay Services & Daemons",
-        engine: "XForwarder Core Failover Engine",
-        haproxy: "HAProxy Relay Service",
-        nginx: "Nginx Stream Proxy",
-        nftables: "NFTables Table 'xfwd_orchestrator'"
+        all: t("services.name_all", {}, "All Relay Services & Daemons"),
+        engine: t("services.name_engine", {}, "XForwarder Core Failover Engine"),
+        haproxy: t("services.name_haproxy", {}, "HAProxy Relay Service"),
+        haproxy_restart: t("services.name_haproxy", {}, "HAProxy Relay Service"),
+        nginx: t("services.name_nginx", {}, "Nginx Stream Proxy"),
+        nginx_restart: t("services.name_nginx", {}, "Nginx Stream Proxy"),
+        nftables: t("services.name_nftables", {}, "NFTables Table 'xfwd_orchestrator'"),
+        nftables_restart: t("services.name_nftables", {}, "NFTables Table 'xfwd_orchestrator'")
     };
     const friendlyName = serviceNames[service] || service;
     const isFullRestart = service === "all" || service === "web";
-    const warnMsg = isFullRestart
-        ? `Are you sure you want to restart ${friendlyName}? The web dashboard will temporarily disconnect and reconnect automatically in ~2 seconds.`
-        : `Are you sure you want to reload/restart ${friendlyName}? Active client connections will be preserved.`;
+    const isExplicitRestart = isFullRestart || service === "engine" || String(service).endsWith("_restart");
+    const isSyncOnly = service === "nftables";
 
-    const confirmed = await askConfirm(`Restart ${friendlyName}?`, warnMsg);
+    let modalTitle;
+    let warnMsg;
+    let confirmBtnText;
+
+    if (isFullRestart) {
+        modalTitle = t("confirm.restart_svc_title", { service: friendlyName }, `Restart ${friendlyName}?`);
+        warnMsg = t("confirm.restart_all_msg", { service: friendlyName }, `Are you sure you want to restart ${friendlyName}? The web dashboard will temporarily disconnect and reconnect automatically in ~2 seconds.`);
+        confirmBtnText = t("confirm.restart_btn", {}, "Restart Service");
+    } else if (isExplicitRestart) {
+        modalTitle = t("confirm.restart_svc_title", { service: friendlyName }, `Restart ${friendlyName}?`);
+        warnMsg = t("confirm.restart_svc_msg", { service: friendlyName }, `Are you sure you want to restart ${friendlyName}? Configuration will be re-synchronized and the service will restart cleanly.`);
+        confirmBtnText = t("confirm.restart_btn", {}, "Restart Service");
+    } else if (isSyncOnly) {
+        modalTitle = t("confirm.sync_svc_title", { service: friendlyName }, `Synchronize ${friendlyName}?`);
+        warnMsg = t("confirm.reload_svc_msg", { service: friendlyName }, `Are you sure you want to reload/restart ${friendlyName}? Active client connections will be preserved.`);
+        confirmBtnText = t("confirm.sync_btn", {}, "Sync Table");
+    } else {
+        modalTitle = t("confirm.reload_svc_title", { service: friendlyName }, `Reload ${friendlyName}?`);
+        warnMsg = t("confirm.reload_svc_msg", { service: friendlyName }, `Are you sure you want to reload/restart ${friendlyName}? Active client connections will be preserved.`);
+        confirmBtnText = t("confirm.reload_btn", {}, "Reload Service");
+    }
+
+    const confirmed = await askConfirm(modalTitle, warnMsg, {
+        confirmText: confirmBtnText,
+        variant: "primary"
+    });
     if (!confirmed) return;
 
-    showToast(`Restarting ${friendlyName}...`, "info");
+    showToast(t("services.restarting_toast", { service: friendlyName }, `Restarting ${friendlyName}...`), "info");
 
     try {
         const res = await fetch(`${API_BASE}/services/restart`, {
@@ -470,11 +521,14 @@ export async function handleServiceRestart(service, fetchStatusCallback) {
             showToast(data.message || "Services restarting...", "info");
             pollDashboardReconnection();
         } else {
-            showToast(data.message || `${friendlyName} reloaded successfully!`, "success");
+            const defaultDoneMsg = isExplicitRestart
+                ? t("services.restarted_toast", { service: friendlyName }, `${friendlyName} restarted successfully!`)
+                : t("services.reloaded_toast", { service: friendlyName }, `${friendlyName} reloaded successfully!`);
+            showToast(data.message || defaultDoneMsg, "success");
             if (typeof fetchStatusCallback === "function") fetchStatusCallback();
         }
     } catch (err) {
-        showToast(`Failed to restart ${friendlyName}: ${err.message}`, "error");
+        showToast(t("services.restart_failed_toast", { service: friendlyName, error: err.message }, `Failed to restart ${friendlyName}: ${err.message}`), "error");
     }
 }
 

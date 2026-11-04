@@ -740,8 +740,9 @@ export async function toggleDestinationEnabled(event, ruleId, prio, fetchStatusC
 
 export async function deleteRule(ruleId, fetchStatusCallback) {
     const confirmed = await askConfirm(
-        "Delete Port Forwarding Rule?",
-        `Are you sure you want to delete forwarding rule '${ruleId}'? Routing on this port will stop immediately.`
+        t("confirm.delete_title", {}, "Delete Port Forwarding Rule?"),
+        t("confirm.delete_rule_msg", { id: ruleId }, `Are you sure you want to delete forwarding rule '${ruleId}'? Routing on this port will stop immediately.`),
+        { confirmText: t("confirm.delete_btn", {}, "Delete Rule"), variant: "danger" }
     );
     if (!confirmed) return;
 

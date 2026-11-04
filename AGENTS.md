@@ -123,7 +123,7 @@ XForwarder/
 
 12. **In-Panel System Updates & Service Control (Mandatory)**:
     - Remote Release & Update Engine: Web dashboard compares local git commit/version against remote GitHub repository (`/api/system/version`) and initiates decoupled update executions via `systemd-run` (`/api/system/update`, `/api/system/update/status`).
-    - Controlled Service Lifecycle: Dashboard provides controlled service restart/reload capabilities (`POST /api/services/restart`) supporting individual targets (`engine`, `haproxy`, `nginx`, `nftables`) and graceful delayed self-restarts for `web` and `all` with UI reconnection polling.
+    - Controlled Service Lifecycle: Dashboard provides controlled service restart/reload capabilities (`POST /api/services/restart`) supporting individual reload and dedicated restart targets (`engine`, `haproxy`, `haproxy_restart`, `nginx`, `nginx_restart`, `nftables`, `nftables_restart`) and graceful delayed self-restarts for `web` and `all` with UI reconnection polling, dynamic action confirmation dialogs (`askConfirm` with context-aware buttons), and immediate telemetry cache invalidation.
 
 13. **Active Rules Auto-Discovery, Import & Deconfliction (Mandatory)**:
     - Pre-existing relay rules on the server (HAProxy listen blocks or active NFTables/iptables DNAT rules in kernel tables or `/etc/nftables.conf`) must be automatically detectable via unified discovery (`discover_all_relay_rules`).

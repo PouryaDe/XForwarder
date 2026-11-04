@@ -494,6 +494,18 @@ input#formCategory::-webkit-list-button {
     margin: 0 auto 16px auto;
 }
 
+.confirm-icon.confirm-icon-primary {
+    background: rgba(167, 139, 250, 0.15);
+    border-color: rgba(167, 139, 250, 0.35);
+    color: var(--accent-violet);
+}
+
+[data-theme="light"] .confirm-icon.confirm-icon-primary {
+    background: rgba(124, 58, 237, 0.12);
+    border-color: rgba(124, 58, 237, 0.28);
+    color: #6D28D9;
+}
+
 .modal-confirm h3 {
     font-size: 1.25rem;
     font-weight: 700;

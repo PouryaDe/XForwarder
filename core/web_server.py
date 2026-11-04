@@ -1241,6 +1241,8 @@ class XForwarderWebHandler(BaseHTTPRequestHandler):
         elif subpath == "/api/services/restart":
             svc = body.get("service", "all")
             ok, msg, is_reconnecting = restart_services_action(svc, sync_rules_func=sync_rules_and_notify, notify_func=notify_engine_wakeup)
+            with _SERVICES_LOCK:
+                _SERVICES_CACHE["expires"] = 0.0
             if ok:
                 self.send_json({"ok": True, "service": svc, "message": msg, "reconnecting": is_reconnecting})
             else:

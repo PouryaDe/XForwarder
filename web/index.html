@@ -1223,10 +1223,14 @@
                                     <span class="info-value text-emerald" id="svcHaproxyBinds">0 ports</span>
                                 </div>
                             </div>
-                            <div style="margin-top:14px; display:flex; justify-content:flex-end;">
+                            <div style="margin-top:14px; display:flex; justify-content:flex-end; gap:8px; flex-wrap:wrap;">
                                 <button type="button" class="btn btn-secondary btn-xs" id="btnReloadHaproxy">
                                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
                                     <span data-i18n="services.reload_haproxy">Reload HAProxy</span>
+                                </button>
+                                <button type="button" class="btn btn-primary btn-xs" id="btnRestartHaproxy">
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 4v6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+                                    <span data-i18n="services.restart_haproxy">Restart HAProxy</span>
                                 </button>
                             </div>
                         </div>
@@ -1282,10 +1286,14 @@
                                     <span class="info-value text-amber" id="svcNftablesBinds">0 ports</span>
                                 </div>
                             </div>
-                            <div style="margin-top:14px; display:flex; justify-content:flex-end;">
+                            <div style="margin-top:14px; display:flex; justify-content:flex-end; gap:8px; flex-wrap:wrap;">
                                 <button type="button" class="btn btn-secondary btn-xs" id="btnResyncNftables">
                                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
                                     <span data-i18n="services.sync_nftables">Sync NFTables Table</span>
+                                </button>
+                                <button type="button" class="btn btn-primary btn-xs" id="btnRestartNftables">
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 4v6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+                                    <span data-i18n="services.restart_nftables">Restart NFTables</span>
                                 </button>
                             </div>
                         </div>
@@ -1335,10 +1343,14 @@
                                     <span class="info-value text-cyan" id="svcNginxBinds">0 ports</span>
                                 </div>
                             </div>
-                            <div style="margin-top:14px; display:flex; justify-content:flex-end;">
+                            <div style="margin-top:14px; display:flex; justify-content:flex-end; gap:8px; flex-wrap:wrap;">
                                 <button type="button" class="btn btn-secondary btn-xs" id="btnReloadNginx">
                                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
                                     <span data-i18n="services.reload_nginx">Reload Nginx</span>
+                                </button>
+                                <button type="button" class="btn btn-primary btn-xs" id="btnRestartNginx">
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 4v6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+                                    <span data-i18n="services.restart_nginx">Restart Nginx</span>
                                 </button>
                             </div>
                         </div>
@@ -1763,7 +1775,7 @@
                 will stop immediately.</p>
             <div class="modal-footer confirm-footer">
                 <button type="button" class="btn btn-secondary" id="btnCancelConfirm" data-i18n="confirm.cancel">Cancel</button>
-                <button type="button" class="btn btn-danger" id="btnProceedConfirm" data-i18n="confirm.delete_btn">Delete Rule</button>
+                <button type="button" class="btn btn-primary" id="btnProceedConfirm" data-i18n="confirm.confirm_btn">Confirm</button>
             </div>
         </div>
     </div>

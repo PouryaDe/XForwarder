@@ -377,7 +377,8 @@ export async function triggerTrafficResetFromModal(fetchStatusCallback) {
 
     const confirmed = await askConfirm(
         `Reset Billing Cycle?`,
-        `Reset current billing cycle counter for ${targetLabel}? Current usage will reset to 0, and historical hourly records will remain intact.`
+        `Reset current billing cycle counter for ${targetLabel}? Current usage will reset to 0, and historical hourly records will remain intact.`,
+        { confirmText: t("confirm.reset_btn", {}, "Reset Counter"), variant: "primary" }
     );
     if (!confirmed) return;
 
@@ -413,7 +414,8 @@ export async function triggerWipeHistoryFromModal(fetchStatusCallback) {
 
     const confirmed = await askConfirm(
         `Wipe All Traffic History?`,
-        `DANGER: Permanently wipe ALL recorded historical traffic data for ${targetLabel}? This cannot be undone.`
+        `DANGER: Permanently wipe ALL recorded historical traffic data for ${targetLabel}? This cannot be undone.`,
+        { confirmText: t("confirm.wipe_btn", {}, "Wipe History"), variant: "danger" }
     );
     if (!confirmed) return;
 
@@ -447,7 +449,8 @@ export async function promptResetTraffic(entityType, entityId, fetchStatusCallba
     const targetLabel = entityType === "port" ? `Port :${entityId}` : `Tunnel ${entityId}`;
     const confirmed = await askConfirm(
         `Reset Traffic for ${targetLabel}?`,
-        `Reset the current billing cycle counter for ${targetLabel} to 0? Historical hourly analytics will be preserved.`
+        `Reset the current billing cycle counter for ${targetLabel} to 0? Historical hourly analytics will be preserved.`,
+        { confirmText: t("confirm.reset_btn", {}, "Reset Counter"), variant: "primary" }
     );
     if (!confirmed) return;
 

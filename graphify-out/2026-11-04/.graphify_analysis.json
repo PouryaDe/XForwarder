@@ -1,0 +1,214 @@
+{
+  "communities": {
+    "0": [
+      "basehttprequesthandler",
+      "core_web_server",
+      "core_web_server_forwardmanagerwebhandler",
+      "core_web_server_forwardmanagerwebhandler_do_delete",
+      "core_web_server_forwardmanagerwebhandler_do_get",
+      "core_web_server_forwardmanagerwebhandler_do_post",
+      "core_web_server_forwardmanagerwebhandler_get_session_token",
+      "core_web_server_forwardmanagerwebhandler_is_authenticated",
+      "core_web_server_forwardmanagerwebhandler_send_file",
+      "core_web_server_forwardmanagerwebhandler_send_json",
+      "core_web_server_get_config_path",
+      "core_web_server_hash_password",
+      "core_web_server_load_config",
+      "core_web_server_load_state",
+      "core_web_server_rationale_2",
+      "core_web_server_save_config",
+      "hashlib",
+      "http_server",
+      "json",
+      "os",
+      "secrets",
+      "urllib_parse"
+    ],
+    "1": [
+      "web_app",
+      "web_app_btncancelmodal",
+      "web_app_btnclosemodal",
+      "web_app_btnlogout",
+      "web_app_btnopenaddmodal",
+      "web_app_closemodal",
+      "web_app_currentrules",
+      "web_app_currentusernameel",
+      "web_app_dashboardscreen",
+      "web_app_editrule",
+      "web_app_enginestatusbadge",
+      "web_app_loginerror",
+      "web_app_loginform",
+      "web_app_loginscreen",
+      "web_app_modaltitle",
+      "web_app_ruleform",
+      "web_app_rulemodal",
+      "web_app_rulescontainer",
+      "web_app_statactivehaproxy",
+      "web_app_statactivenftables",
+      "web_app_stattotalrules"
+    ],
+    "2": [
+      "any",
+      "core_engine_forwardmanagerengine",
+      "core_engine_forwardmanagerengine_apply_haproxy",
+      "core_engine_forwardmanagerengine_apply_nftables",
+      "core_engine_forwardmanagerengine_check_destination",
+      "core_engine_forwardmanagerengine_detect_wan_interface",
+      "core_engine_forwardmanagerengine_evaluate_rule",
+      "core_engine_forwardmanagerengine_init",
+      "core_engine_forwardmanagerengine_load_config",
+      "core_engine_forwardmanagerengine_resolve_config_path",
+      "core_engine_forwardmanagerengine_run_loop",
+      "core_engine_forwardmanagerengine_save_config",
+      "core_engine_forwardmanagerengine_save_state_file",
+      "core_engine_forwardmanagerengine_stop",
+      "core_engine_forwardmanagerengine_sync_firewall_and_proxies",
+      "core_engine_rationale_118"
+    ],
+    "3": [
+      "forward_manager",
+      "forward_manager_change_password",
+      "forward_manager_check_root",
+      "forward_manager_detect_wan_iface",
+      "forward_manager_detect_wan_ip",
+      "forward_manager_ensure_dependencies",
+      "forward_manager_install_forward_manager",
+      "forward_manager_msg_err",
+      "forward_manager_msg_info",
+      "forward_manager_msg_ok",
+      "forward_manager_msg_warn",
+      "forward_manager_sh__entry",
+      "forward_manager_show_menu",
+      "forward_manager_show_status",
+      "forward_manager_show_web_access_info"
+    ],
+    "4": [
+      "core_engine",
+      "core_engine_handle_sig",
+      "core_engine_rationale_2",
+      "signal",
+      "socket",
+      "subprocess",
+      "sys",
+      "threading",
+      "time",
+      "typing"
+    ],
+    "5": [
+      "web_app_deleterule",
+      "web_app_fetchstatus",
+      "web_app_handleoverridechange",
+      "web_app_renderrules",
+      "web_app_renderstats",
+      "web_app_showtoast"
+    ],
+    "6": [
+      "core_web_server_forwardmanagerwebserver",
+      "core_web_server_forwardmanagerwebserver_init",
+      "core_web_server_forwardmanagerwebserver_start",
+      "core_web_server_forwardmanagerwebserver_stop"
+    ],
+    "7": [
+      "web_app_checkauth",
+      "web_app_showdashboard",
+      "web_app_showlogin"
+    ]
+  },
+  "cohesion": {
+    "0": 0.19047619047619047,
+    "1": 0.09523809523809523,
+    "2": 0.24166666666666667,
+    "3": 0.4,
+    "4": 0.2222222222222222,
+    "5": 0.4,
+    "6": 0.6666666666666666,
+    "7": 0.6666666666666666
+  },
+  "gods": [
+    {
+      "id": "core_engine_forwardmanagerengine",
+      "label": "ForwardManagerEngine",
+      "degree": 14
+    },
+    {
+      "id": "forward_manager_install_forward_manager",
+      "label": "install_forward_manager()",
+      "degree": 10
+    },
+    {
+      "id": "core_web_server_forwardmanagerwebhandler",
+      "label": "ForwardManagerWebHandler",
+      "degree": 9
+    },
+    {
+      "id": "forward_manager_show_menu",
+      "label": "show_menu()",
+      "degree": 8
+    },
+    {
+      "id": "core_web_server_load_config",
+      "label": "load_config()",
+      "degree": 7
+    },
+    {
+      "id": "web_app_fetchstatus",
+      "label": "fetchStatus()",
+      "degree": 7
+    },
+    {
+      "id": "forward_manager_sh__entry",
+      "label": "forward-manager.sh script",
+      "degree": 7
+    },
+    {
+      "id": "core_web_server_save_config",
+      "label": "save_config()",
+      "degree": 6
+    },
+    {
+      "id": "forward_manager_change_password",
+      "label": "change_password()",
+      "degree": 6
+    },
+    {
+      "id": "forward_manager_show_web_access_info",
+      "label": "show_web_access_info()",
+      "degree": 6
+    }
+  ],
+  "surprises": [
+    {
+      "source": "fetchStatus()",
+      "target": "showLogin()",
+      "source_files": [
+        "web/app.js",
+        "web/app.js"
+      ],
+      "confidence": "EXTRACTED",
+      "relation": "calls",
+      "note": "Bridges community 5 → community 7"
+    }
+  ],
+  "questions": [
+    {
+      "type": "bridge_node",
+      "question": "Why does `ForwardManagerEngine` connect `ForwardManagerEngine` to `engine.py`?",
+      "why": "High betweenness centrality (0.134) - this node is a cross-community bridge."
+    },
+    {
+      "type": "isolated_nodes",
+      "question": "What connects `btnCancelModal`, `btnCloseModal`, `btnLogout` to the rest of the system?",
+      "why": "18 weakly-connected nodes found - possible documentation gaps or missing edges."
+    },
+    {
+      "type": "low_cohesion",
+      "question": "Should `app.js` be split into smaller, more focused modules?",
+      "why": "Cohesion score 0.09523809523809523 - nodes in this community are weakly interconnected."
+    },
+    {
+      "type": "bridge_node",
+      "question": "Why does `load_config()` connect `web_server.py` to `ForwardManagerWebServer`?",
+      "why": "High betweenness centrality (0.024) - this node is a cross-community bridge."
+    }
+  ]
+}
