@@ -246,6 +246,90 @@ def probe_destination_icmp(
         }
 
 
+def probe_destination_l4_tcp(
+    target: str,
+    port: int,
+    iface: Optional[str] = None,
+    count: int = 1,
+    timeout: float = 1.5,
+    interval_ms: int = 100
+) -> Dict[str, Any]:
+    """
+    Executes precise Layer-4 TCP SYN handshake health check(s) to (target, port).
+    Enforces strict bounded socket timeouts and immediate closure.
+    Never falls back to ICMP ping, preventing L3 ping from masking L4 port blocks.
+    """
+    clean_target = sanitize_target_host(target)
+    try:
+        port_int = int(port)
+    except (TypeError, ValueError):
+        port_int = 0
+
+    if not clean_target or port_int <= 0 or port_int > 65535:
+        return {
+            "healthy": False,
+            "packets_sent": count,
+            "packets_received": 0,
+            "packet_loss": 100.0,
+            "latency_ms": None,
+            "jitter_ms": 0.0,
+            "reason": "Invalid target host or port"
+        }
+
+    safe_count = max(1, min(count, 10))
+    family = socket.AF_INET6 if ":" in clean_target else socket.AF_INET
+    successes = 0
+    latencies = []
+    last_err = ""
+
+    for i in range(safe_count):
+        t0 = time.perf_counter()
+        try:
+            with socket.socket(family, socket.SOCK_STREAM) as sock:
+                sock.settimeout(timeout)
+                if iface and sys.platform != "win32":
+                    clean_if = str(iface).strip()
+                    if re.match(r'^[a-zA-Z0-9_.-]+$', clean_if):
+                        try:
+                            sock.setsockopt(socket.SOL_SOCKET, 25, clean_if.encode())
+                        except Exception:
+                            pass
+                res = sock.connect_ex((clean_target, port_int))
+                if res == 0:
+                    successes += 1
+                    latencies.append((time.perf_counter() - t0) * 1000.0)
+                else:
+                    last_err = os.strerror(res) or f"Error code {res}"
+        except Exception as e:
+            last_err = str(e)
+
+        if i < safe_count - 1 and interval_ms > 0:
+            time.sleep(interval_ms / 1000.0)
+
+    healthy = (successes > 0)
+    loss = round(((safe_count - successes) / safe_count) * 100.0, 1) if safe_count > 0 else 100.0
+    avg_lat = round(sum(latencies) / len(latencies), 1) if latencies else None
+
+    jitter = 0.0
+    if len(latencies) > 1 and avg_lat is not None:
+        variance = sum((x - avg_lat) ** 2 for x in latencies) / len(latencies)
+        jitter = round(variance ** 0.5, 1)
+
+    reason = ""
+    if not healthy:
+        reason = f"TCP port {port_int} connection failed: {last_err}" if last_err else f"TCP port {port_int} connection timed out"
+
+    return {
+        "healthy": healthy,
+        "packets_sent": safe_count,
+        "packets_received": successes,
+        "packet_loss": loss,
+        "latency_ms": avg_lat,
+        "jitter_ms": jitter,
+        "reason": reason
+    }
+
+
 def check_destination(
     dest: Dict[str, Any],
     rule_port: Optional[int] = None,
@@ -258,9 +342,6 @@ def check_destination(
     target = str(dest.get("target", "")).strip().strip("[]")
     port = int(dest.get("port") or rule_port or 0)
     proto = str(dest.get("protocol") or protocol or "both").lower()
-    start_time = time.perf_counter()
-    healthy = False
-    fail_reason = ""
 
     if not target or port <= 0:
         return {"healthy": False, "latency_ms": None, "packet_loss": 100, "reason": "Invalid target/port"}
@@ -282,83 +363,30 @@ def check_destination(
         sent = max(1, min(count, 10))
         return probe_destination_icmp(target, iface=tunnel_iface, count=sent, interval_ms=200)
 
-    # Multi-sample packet loss test when count > 1
-    if count > 1:
+    # For UDP destinations, probe reachability via ICMP
+    if proto == "udp":
         sent = max(1, min(count, 10))
-        successes = 0
-        latencies = []
+        return probe_destination_icmp(target, iface=tunnel_iface, count=sent, interval_ms=200)
 
-        if proto != "udp":
-            for _ in range(sent):
-                t_sample = time.perf_counter()
-                try:
-                    family = socket.AF_INET6 if ":" in target else socket.AF_INET
-                    with socket.socket(family, socket.SOCK_STREAM) as s:
-                        s.settimeout(1.5)
-                        if tunnel_iface and sys.platform != "win32":
-                            try:
-                                s.setsockopt(socket.SOL_SOCKET, 25, tunnel_iface.encode())
-                            except Exception:
-                                pass
-                        if s.connect_ex((target, port)) == 0:
-                            successes += 1
-                            latencies.append(round((time.perf_counter() - t_sample) * 1000, 1))
-                except Exception as e:
-                    if not fail_reason:
-                        fail_reason = str(e)
+    # For TCP/both destinations with a valid port, probe via L4 TCP handshake
+    # HAProxy routes: Never fall back to ICMP ping if TCP handshake fails
+    sent = max(1, min(count, 10))
+    res = probe_destination_l4_tcp(
+        target,
+        port,
+        iface=tunnel_iface,
+        count=sent,
+        timeout=1.5 if sent > 1 else 2.0,
+        interval_ms=100
+    )
 
-        if successes == 0:
-            p_res = probe_destination_icmp(target, iface=tunnel_iface, count=sent, interval_ms=200)
+    # Legacy compatibility: Nginx stream destinations fall back to ICMP if TCP fails
+    if not res.get("healthy") and dest_type == "nginx":
+        p_res = probe_destination_icmp(target, iface=tunnel_iface, count=sent, interval_ms=200)
+        if p_res.get("healthy"):
             return p_res
 
-        loss_pct = round(((sent - successes) / sent) * 100) if sent > 0 else 100
-        avg_lat = round(sum(latencies) / len(latencies), 1) if latencies else None
-        healthy = (successes > 0)
-        res_dict = {
-            "healthy": healthy,
-            "latency_ms": avg_lat,
-            "packet_loss": loss_pct,
-            "packets_sent": sent,
-            "packets_received": successes
-        }
-        if not healthy and fail_reason:
-            res_dict["reason"] = fail_reason
-        return res_dict
-
-    # Single-sample probe
-    if proto != "udp":
-        try:
-            family = socket.AF_INET6 if ":" in target else socket.AF_INET
-            with socket.socket(family, socket.SOCK_STREAM) as s:
-                s.settimeout(2.0)
-                if tunnel_iface and sys.platform != "win32":
-                    try:
-                        s.setsockopt(socket.SOL_SOCKET, 25, tunnel_iface.encode())
-                    except Exception:
-                        pass
-                res = s.connect_ex((target, port))
-                healthy = (res == 0)
-        except Exception as e:
-            healthy = False
-            fail_reason = str(e)
-
-    if not healthy:
-        p_res = probe_destination_icmp(target, iface=tunnel_iface, count=1, interval_ms=200)
-        healthy = p_res.get("healthy", False)
-        if not healthy and not fail_reason:
-            fail_reason = p_res.get("reason", "Ping probe unreachable")
-        elif healthy:
-            fail_reason = ""
-
-    latency_ms = round((time.perf_counter() - start_time) * 1000, 1)
-    res_dict = {
-        "healthy": healthy,
-        "latency_ms": latency_ms if healthy else None,
-        "packet_loss": 0 if healthy else 100
-    }
-    if not healthy and fail_reason:
-        res_dict["reason"] = fail_reason
-    return res_dict
+    return res
 
 
 def fast_confirm_burst(
@@ -374,6 +402,7 @@ def fast_confirm_burst(
     target = str(dest.get("target", "")).strip().strip("[]")
     port = int(dest.get("port") or rule_port or 0)
     proto = str(dest.get("protocol") or protocol or "both").lower()
+    dest_type = str(dest.get("type", "haproxy")).lower()
     if not target or port <= 0:
         return {"all_failed": True, "successes": 0, "packet_loss": 100, "avg_latency_ms": None}
 
@@ -381,7 +410,7 @@ def fast_confirm_burst(
     successes = 0
     latencies = []
 
-    if proto != "udp":
+    if proto != "udp" and dest_type != "nftables":
         for _ in range(burst_count):
             t0 = time.perf_counter()
             try:
@@ -394,7 +423,8 @@ def fast_confirm_burst(
             except Exception:
                 pass
 
-    if successes == 0:
+    # HAProxy TCP routes never fall back to ICMP so L3 ping cannot mask L4 port blocks
+    if successes == 0 and (proto == "udp" or dest_type != "haproxy"):
         iface = dest.get("tunnel_iface")
         p_res = probe_destination_icmp(target, iface=iface, count=burst_count, interval_ms=100)
         recv = p_res.get("packets_received", 0)

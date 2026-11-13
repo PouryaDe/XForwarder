@@ -187,6 +187,74 @@ TUNNEL_TYPE_LABELS: Dict[str, str] = {
 }
 
 
+def parse_haproxy_backend_csv(csv_text: str) -> Dict[int, Dict[str, Any]]:
+    """
+    Parses HAProxy CSV output specifically extracting backend server status and check details for srv_<port>.
+    """
+    results: Dict[int, Dict[str, Any]] = {}
+    lines = csv_text.strip().splitlines()
+    if not lines:
+        return results
+
+    header = []
+    for line in lines:
+        line = line.strip()
+        if not line:
+            continue
+        if line.startswith("#"):
+            header = [h.strip() for h in line.lstrip("#").split(",")]
+            continue
+
+        parts = [p.strip() for p in line.split(",")]
+        if not header or len(parts) < 10:
+            continue
+
+        row = dict(zip(header, parts))
+        pxname = row.get("pxname", "")
+        svname = row.get("svname", "")
+
+        if pxname.startswith("fwd_") and svname.startswith("srv_"):
+            try:
+                port = int(pxname.split("_", 1)[1])
+                status = row.get("status", "UP").upper()
+                check_status = row.get("check_status", "")
+                econ = int(row.get("econ", 0) or 0)
+                stot = int(row.get("stot", 0) or 0)
+                chkfail = int(row.get("chkfail", 0) or 0)
+                results[port] = {
+                    "status": status,
+                    "check_status": check_status,
+                    "econ": econ,
+                    "stot": stot,
+                    "chkfail": chkfail
+                }
+            except (ValueError, IndexError):
+                continue
+
+    return results
+
+
+def read_haproxy_backend_health(sock_path: str = "/run/haproxy/admin.sock") -> Dict[int, Dict[str, Any]]:
+    """Communicates with HAProxy Runtime API socket to read backend server status and health check results."""
+    if sys.platform == "win32" or not os.path.exists(sock_path):
+        return {}
+    try:
+        with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as s:
+            s.settimeout(0.6)
+            s.connect(sock_path)
+            s.sendall(b"show stat\n")
+            chunks = []
+            while True:
+                data = s.recv(8192)
+                if not data:
+                    break
+                chunks.append(data)
+            raw_csv = b"".join(chunks).decode("utf-8", errors="replace")
+            return parse_haproxy_backend_csv(raw_csv)
+    except Exception:
+        return {}
+
+
 def parse_haproxy_stats_csv(csv_text: str) -> Dict[int, Dict[str, int]]:
     """
     Parses HAProxy CSV output from 'show stat' command.
@@ -343,6 +411,10 @@ class TrafficCollector:
         self.lock = threading.Lock()
         self._last_counters: Dict[str, Dict[str, int]] = {}
         self._last_collect_time: float = 0.0
+        self._port_recent_deltas: Dict[int, Dict[str, int]] = {}
+        self._port_blackhole_streaks: Dict[int, int] = {}
+        self._collect_seq: int = 0
+        self._port_last_blackhole_seq: Dict[int, int] = {}
         init_traffic_db(self.db_path)
 
     def collect_cycle(
@@ -443,6 +515,34 @@ class TrafficCollector:
                 _record_delta("tunnel_type", ttype, rx_delta, tx_delta)
 
             self._last_collect_time = now
+            self._collect_seq += 1
+
+            # Record per-port combined delta for traffic anomaly and blackhole detection
+            seen_ports = set()
+            for (etype, eid), d in deltas.items():
+                if etype == "port":
+                    try:
+                        p_int = int(eid)
+                        seen_ports.add(p_int)
+                        self._port_recent_deltas[p_int] = {
+                            "rx": d["rx"],
+                            "tx": d["tx"],
+                            "seq": self._collect_seq,
+                        }
+                    except ValueError:
+                        pass
+
+            # Ensure silent/idle ports are explicitly zeroed so stale deltas never persist
+            tracked_ports = set(self._port_recent_deltas.keys())
+            if ports is not None:
+                tracked_ports.update(ports)
+            for p_int in tracked_ports:
+                if p_int not in seen_ports:
+                    self._port_recent_deltas[p_int] = {
+                        "rx": 0,
+                        "tx": 0,
+                        "seq": self._collect_seq,
+                    }
 
         # Upsert deltas into SQLite
         recorded_count = 0
@@ -478,6 +578,59 @@ class TrafficCollector:
             "entities_updated": recorded_count,
             "deltas": {f"{k[0]}:{k[1]}": v for k, v in deltas.items()}
         }
+
+    def reset_port_blackhole(self, port: int) -> None:
+        """Clears cached traffic delta and blackhole streak for a port after a priority switch."""
+        with self.lock:
+            self._port_recent_deltas.pop(port, None)
+            self._port_blackhole_streaks.pop(port, None)
+            self._port_last_blackhole_seq.pop(port, None)
+
+    def check_traffic_blackhole(
+        self,
+        port: int,
+        min_rx_bytes: int = 20480,
+        max_tx_ratio: float = 0.01,
+        min_consecutive_cycles: int = 2
+    ) -> Tuple[bool, str]:
+        """
+        Detects whether an active port is suffering an asymmetric traffic blackhole:
+        Client data is arriving (RX >= min_rx_bytes), but server is returning 0 or < 1% bytes.
+        Deduplicates repeated checks against the same collection cycle sequence number.
+        Returns (is_blackhole: bool, reason: str).
+        """
+        with self.lock:
+            pdata = self._port_recent_deltas.get(port)
+            if not pdata:
+                return False, ""
+            rx = pdata.get("rx", 0)
+            tx = pdata.get("tx", 0)
+            seq = pdata.get("seq")
+
+            # Prevent rapid engine loops from re-counting the same traffic collection sample
+            if seq is not None and self._port_last_blackhole_seq.get(port) == seq:
+                streak = self._port_blackhole_streaks.get(port, 0)
+                if streak >= min_consecutive_cycles and rx >= min_rx_bytes and (tx == 0 or tx < (rx * max_tx_ratio)):
+                    return True, f"Traffic blackhole on port {port}: {rx} bytes RX, {tx} bytes TX across {streak} cycles"
+                return False, ""
+
+            if seq is not None:
+                self._port_last_blackhole_seq[port] = seq
+
+            # Cold-start / low traffic guard: if RX < min_rx_bytes, not enough traffic to evaluate
+            if rx < min_rx_bytes:
+                self._port_blackhole_streaks[port] = 0
+                return False, ""
+
+            # Check asymmetric condition: RX high but TX <= max_tx_ratio * RX
+            if tx == 0 or tx < (rx * max_tx_ratio):
+                self._port_blackhole_streaks[port] = self._port_blackhole_streaks.get(port, 0) + 1
+                if self._port_blackhole_streaks[port] >= min_consecutive_cycles:
+                    return True, f"Traffic blackhole on port {port}: {rx} bytes RX, {tx} bytes TX across {self._port_blackhole_streaks[port]} cycles"
+            else:
+                self._port_blackhole_streaks[port] = 0
+
+            return False, ""
 
 
 def get_traffic_resets(db_path: Optional[str] = None) -> Dict[str, Dict[str, Any]]:

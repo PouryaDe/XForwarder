@@ -1,7 +1,7 @@
 {
-  "last_updated": "2026-10-27T08:30:00+03:30",
-  "active_task": "Full-Stack Project & Web App Modularization (core/ and web/)",
-  "active_spec": "modularization_architecture_plan.md",
+  "last_updated": "2026-11-13T23:30:00+03:30",
+  "active_task": "Dual-Feedback L4 Port & Traffic Blackhole Detection Failover Engine",
+  "active_spec": "traffic_aware_failover_plan.md",
   "phase": "Completed",
   "completed_milestones": [
     "Rebranded project from Forward-Manager to XForwarder across engine, web server, and CLI",
@@ -73,8 +73,9 @@
     "Added complete Persian (Farsi) language internationalization, RTL layout switching, and Vazirmatn typography across 100% of views, pages, cards, tables, and modals with zero-flicker pre-hydration, BiDi safety, and 100% test pass rate across 278 unit tests",
     "Completed 8-point architectural, security, and edge-case audit for i18n & RTL subsystem: removed unused innerHTML binding in applyI18nToDOM, standardized JSDoc comments, updated AGENTS.md and .agents/AGENTS.md with Rule 19/24, added dedicated test suite tests/test_i18n_and_rtl.py with 100% pass rate across 290 total unit tests",
     "Refined Vazirmatn font inheritance and comprehensive RTL alignment: added universal button/input/select/textarea font inheritance in base.css and rtl.css, bound Vazirmatn font to .lang-toggle-btn in all modes, translated dynamic services telemetry labels, removed font-mono from natural language status spans, aligned nav items, modals, tables, and selects in RTL, expanded tests to 14 in test_i18n_and_rtl.py",
-    "Enhanced Service Controller & Action Confirmation Architecture: fixed #confirmModal button label desynchronization via dynamic action-aware askConfirm (Restart/Reload/Sync/Reset/Delete), added dedicated Restart controls for HAProxy, Nginx, and NFTables in Relay Services (#sectionServices), added backend support for haproxy_restart, nginx_restart, nftables_restart in core/service_manager.py with immediate cache invalidation and 100% test pass rate across 299 unit tests"
+    "Enhanced Service Controller & Action Confirmation Architecture: fixed #confirmModal button label desynchronization via dynamic action-aware askConfirm (Restart/Reload/Sync/Reset/Delete), added dedicated Restart controls for HAProxy, Nginx, and NFTables in Relay Services (#sectionServices), added backend support for haproxy_restart, nginx_restart, nftables_restart in core/service_manager.py with immediate cache invalidation and 100% test pass rate across 299 unit tests",
+    "Implemented Dual-Feedback L4 Port & Traffic Blackhole Failover Engine: eliminated ICMP mask on blocked HAProxy TCP ports via probe_destination_l4_tcp and _check_l4_port_cached, added HAProxy C-native backend health checks (check inter 3s fall 2 rise 2 + admin socket read_haproxy_backend_health), implemented sequence-deduplicated asymmetric TrafficCollector.check_traffic_blackhole with cold-start guard and post-switch cleanup, fixed port-translation keying and host sanitization edge cases, and added 12 comprehensive unit tests in tests/test_traffic_aware_failover.py with 100% pass rate across all 311 unit tests"
   ],
   "next_steps": [],
-  "notes": "Granular service restart controls for HAProxy, Nginx, and NFTables with action-aware dynamic confirmation modals and immediate cache expiry."
+  "notes": "Dual-feedback failover combining Layer-4 TCP port handshakes, HAProxy runtime stats, and per-port RX/TX traffic blackhole detection."
 }

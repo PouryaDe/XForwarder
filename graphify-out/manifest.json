@@ -1,8 +1,8 @@
 {
   "core/engine.py": {
-    "mtime": 1793155584.344468,
-    "seen": 1793156144.8394752,
-    "ast_hash": "f7f4b350adedc7232ab8b97bce5dabb5",
+    "mtime": 1794599613.5942423,
+    "seen": 1794599975.59801,
+    "ast_hash": "6eebb0f46c866f4b70f7ff875a3b6a80",
     "semantic_hash": ""
   },
   "core/web_server.py": {
@@ -18,9 +18,9 @@
     "semantic_hash": ""
   },
   ".agents/rules/01-architecture-and-failover.md": {
-    "mtime": 1793155930.2808964,
-    "seen": 1793156144.839567,
-    "ast_hash": "feebc4a824c4cc2874216dca7a1ccfb9",
+    "mtime": 1794599890.0439627,
+    "seen": 1794599975.5980656,
+    "ast_hash": "718fa25e07d9c3b3710b022daff5288a",
     "semantic_hash": ""
   },
   ".agents/rules/02-python-core-standards.md": {
@@ -72,9 +72,9 @@
     "semantic_hash": ""
   },
   "AGENTS.md": {
-    "mtime": 1793801822.9907858,
-    "seen": 1793801909.1274002,
-    "ast_hash": "da91dae8ac8b721c5dd5b177d2daf2ea",
+    "mtime": 1794599799.4448812,
+    "seen": 1794599975.598083,
+    "ast_hash": "b0a16349d88dbef63de29f2c0df30453",
     "semantic_hash": ""
   },
   "README.md": {
@@ -150,9 +150,9 @@
     "semantic_hash": ""
   },
   ".agents/AGENTS.md": {
-    "mtime": 1793801830.6622508,
-    "seen": 1793801909.1273398,
-    "ast_hash": "6d7bad47ea75048412e7981c6bc23d5b",
+    "mtime": 1794599826.7576346,
+    "seen": 1794599975.5980506,
+    "ast_hash": "45e17c355d9b484e647838977438fa3f",
     "semantic_hash": ""
   },
   ".agents/experiences/001-zero-collision-haproxy-nftables-failover.md": {
@@ -414,9 +414,9 @@
     "semantic_hash": ""
   },
   "core/traffic.py": {
-    "mtime": 1792793280.7302725,
-    "seen": 1792793950.068327,
-    "ast_hash": "6a02b61956ef1dc262b11d9846a00353",
+    "mtime": 1794599502.7687674,
+    "seen": 1794599975.5980196,
+    "ast_hash": "527add5f089c766a17bed43db47263fc",
     "semantic_hash": ""
   },
   "tests/test_traffic.py": {
@@ -450,9 +450,9 @@
     "semantic_hash": ""
   },
   "core/prober.py": {
-    "mtime": 1792973165.0855806,
-    "seen": 1792973997.131302,
-    "ast_hash": "e91b791fa03cbe2829ab2d93b2a0e930",
+    "mtime": 1794599403.9903622,
+    "seen": 1794599975.5980148,
+    "ast_hash": "b10c0eb3c351e2e1b1ce26592ab5a751",
     "semantic_hash": ""
   },
   "core/proxy_gen.py": {
@@ -633,6 +633,12 @@
     "mtime": 1793255739.279399,
     "seen": 1793801909.1272895,
     "ast_hash": "5c4129e5665c5cc8194aad2d4d4097a3",
+    "semantic_hash": ""
+  },
+  "tests/test_traffic_aware_failover.py": {
+    "mtime": 1794599682.6464753,
+    "seen": 1794599975.5980358,
+    "ast_hash": "f75e78a6e188d51635a25d65f7dba9fa",
     "semantic_hash": ""
   }
 }

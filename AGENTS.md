@@ -44,7 +44,8 @@ XForwarder/
 │   ├── test_export_import.py  # Native Python unittest suite (sanitized config export & merge/replace restore)
 │   ├── test_metrics_subsystem.py # Native Python unittest suite (50-probe ping, deduplication & SQLite retention)
 │   ├── test_ui_and_api_edge_cases.py # Native Python unittest suite (UI, API edge cases & static asset integrity)
-│   └── test_i18n_and_rtl.py   # Native Python unittest suite (i18n dictionaries, Vazirmatn font, RTL BiDi & DOM)
+│   ├── test_i18n_and_rtl.py   # Native Python unittest suite (i18n dictionaries, Vazirmatn font, RTL BiDi & DOM)
+│   └── test_traffic_aware_failover.py # Dual-feedback L4 TCP probing, HAProxy DOWN & traffic blackhole tests
 ├── .agents/               # Antigravity agent configuration (constitution, rules, workflows, skills, scripts)
 │   ├── AGENTS.md          # Master architecture constitution
 │   ├── hooks.json         # Antigravity lifecycle hooks (pre-invocation and stop syntax checks)
@@ -167,6 +168,11 @@ XForwarder/
     - BiDi Direction & Number Protection: Monospace tags, IP destinations (`.dest-ip`), port badges, CIDR blocks, ping latency pills (`ms`), and traffic meters strictly enforce `direction: ltr !important` and `unicode-bidi: embed !important` preventing inverted IP octets or distorted network readings.
     - Zero-Flicker Pre-Hydration: In-head inline script checks `localStorage.getItem("xfwd_lang")` before DOM rendering to eliminate layout flash.
     - Secure Translation Binding: `TRANSLATIONS` engine (`web/js/modules/i18n.js`) strictly verifies key parity between dictionaries, prevents regex group replacement injection using functional replacers (`() => String(param)`), and binds values safely via `textContent` preventing DOM XSS.
+
+20. **Dual-Feedback L4 Port & Traffic Blackhole Detection (Mandatory)**:
+    - L4 Protocol-Aware Handshake Probing (`probe_destination_l4_tcp`): HAProxy TCP/both routes verify real L4 TCP SYN-ACK reachability on the target destination port with strict target sanitization (`sanitize_target_host`) and 15s cached verification (`_check_l4_port_cached`), and NEVER fall back to ICMP ping when TCP fails (preventing GFW/ISP L3 ping responses from masking blocked TCP ports). Non-HAProxy routes (`nftables` tunnels, `nginx`) preserve ICMP fallback compatibility.
+    - HAProxy C-Native Backend Health Integration: Generated HAProxy listeners include passive/active backend checking (`check inter 3s fall 2 rise 2`); `read_haproxy_backend_health()` parses `/run/haproxy/admin.sock` `show stat` rows keyed by rule port (`fwd_<port>` / `srv_<port>`) to detect `status == "DOWN"` and trigger Tier 1 failover.
+    - Asymmetric Traffic Blackhole Detection (`TrafficCollector.check_traffic_blackhole`): Tracks per-rule-port byte deltas across collection cycles and detects blackholed active routes when incoming client upload (`RX >= 20480` bytes) yields zero or <1% backend response (`TX == 0` or `TX < 0.01 * RX`) across >= 2 distinct collection cycles (`_collect_seq`), with cold-start idle resets and post-switch streak cleanup (`reset_port_blackhole`).
 
 
 

@@ -77,4 +77,17 @@ A port must **NEVER** be bound by HAProxy and forwarded by NFTables DNAT at the 
 - **In-Panel Display & Tooltip Age:** Web UI renders the latest 50-probe packet loss beside each path's ping readout (`.loss50-pill`) with hover tooltip indicating the test age (e.g. `Tested 4m ago`). Manual 'Test Loss' button is retired.
 - **Parameter Bounds & Injection Shielding:** Target hosts and interface flags must be strictly sanitized against command argument injection.
 
+## 7. Dual-Feedback L4 Port & Traffic Blackhole Detection
+- **L4 Protocol-Aware TCP Probing (`probe_destination_l4_tcp`)**:
+  - Evaluates actual Layer-4 TCP SYN-ACK reachability to `(target, target_port)` with strict `sanitize_target_host()` validation, bounded timeouts (`1.5s`), `SO_BINDTODEVICE` when `iface` is given, and 15-second thread-safe in-memory caching (`_check_l4_port_cached`).
+  - **No ICMP Fallback for HAProxy TCP**: When a HAProxy TCP/both route fails L4 TCP probing (e.g. IPv6 answers ICMP ping but firewall/ISP blocks the TCP port), it is immediately marked `failed` (`packet_loss=100%`, `packets_received=0`) and NEVER falls back to ICMP ping. Non-HAProxy routes (`nftables` tunnel interfaces, `nginx`, and UDP) preserve ICMP fallback compatibility.
+- **HAProxy C-Native Backend Health Integration**:
+  - HAProxy listener entries (`listen fwd_<rule_port>`) attach `check inter 3s fall 2 rise 2` on `server srv_<rule_port>`.
+  - `read_haproxy_backend_health()` parses `show stat` rows from `/run/haproxy/admin.sock`, cached for 3s (`_get_cached_haproxy_backend_health`), keying strictly on `rule_port`. When `status == "DOWN"`, active routes trigger immediate Tier 1 emergency failover.
+- **In-Band Asymmetric Traffic Blackhole Detection (`TrafficCollector.check_traffic_blackhole`)**:
+  - Monitors per-`rule_port` RX/TX byte deltas per collection cycle (`_collect_seq`).
+  - Flags a traffic blackhole only when incoming client traffic is significant (`RX >= 20480` bytes) while server return traffic collapses (`TX == 0` or `TX < 0.01 * RX`) across `>= 2` distinct collection cycles.
+  - Sequence deduplication prevents rapid engine loops (`run_loop`) from double-counting the same delta sample; silent periods (`RX == 0`) reset deltas and streaks; priority transitions invoke `reset_port_blackhole(rule_port)` so newly activated routes start clean.
+
+
 
