@@ -1,14 +1,14 @@
 {
   "core/engine.py": {
-    "mtime": 1794599613.5942423,
-    "seen": 1794599975.59801,
-    "ast_hash": "6eebb0f46c866f4b70f7ff875a3b6a80",
+    "mtime": 1794802949.9222195,
+    "seen": 1794803616.741499,
+    "ast_hash": "b5bcca4fde075baf5b9557b8959c5061",
     "semantic_hash": ""
   },
   "core/web_server.py": {
-    "mtime": 1793800003.8604164,
-    "seen": 1793801909.1272817,
-    "ast_hash": "974acd927c8bf022858097b21569e2b3",
+    "mtime": 1794802980.169024,
+    "seen": 1794803616.7415092,
+    "ast_hash": "0cdb062fc01f23bc59f01196bb8ce37c",
     "semantic_hash": ""
   },
   "web/app.js": {
@@ -18,9 +18,9 @@
     "semantic_hash": ""
   },
   ".agents/rules/01-architecture-and-failover.md": {
-    "mtime": 1794599890.0439627,
-    "seen": 1794599975.5980656,
-    "ast_hash": "718fa25e07d9c3b3710b022daff5288a",
+    "mtime": 1794803279.8569906,
+    "seen": 1794803616.741554,
+    "ast_hash": "59f06b746178f2825e37c9bd9fd82455",
     "semantic_hash": ""
   },
   ".agents/rules/02-python-core-standards.md": {
@@ -90,9 +90,9 @@
     "semantic_hash": ""
   },
   "xforwarder.sh": {
-    "mtime": 1793199532.7553544,
-    "seen": 1793199900.5759957,
-    "ast_hash": "4babc4ed199399cc147451ae2d0044b6",
+    "mtime": 1794761457.8601618,
+    "seen": 1794802497.7860096,
+    "ast_hash": "62a35b69bed25178ef13d6ec950fe25b",
     "semantic_hash": ""
   },
   ".agents/skills/xfwd-ops/SKILL.md": {
@@ -144,15 +144,15 @@
     "semantic_hash": ""
   },
   ".agents/session-state.json": {
-    "mtime": 1793801845.1259954,
-    "seen": 1793801909.127256,
-    "ast_hash": "795a758327daeed6762a077a2852c1af",
+    "mtime": 1794600072.601823,
+    "seen": 1794802497.7859566,
+    "ast_hash": "49fd19728a1ecb44ff21486765074c9a",
     "semantic_hash": ""
   },
   ".agents/AGENTS.md": {
-    "mtime": 1794599826.7576346,
-    "seen": 1794599975.5980506,
-    "ast_hash": "45e17c355d9b484e647838977438fa3f",
+    "mtime": 1794803274.709889,
+    "seen": 1794803616.7415383,
+    "ast_hash": "0a9ace801120cc5b5c347a6f1a2fead8",
     "semantic_hash": ""
   },
   ".agents/experiences/001-zero-collision-haproxy-nftables-failover.md": {
@@ -174,9 +174,9 @@
     "semantic_hash": ""
   },
   ".agents/experiences/README.md": {
-    "mtime": 1793153063.478718,
-    "seen": 1793153094.5198948,
-    "ast_hash": "a7cac4351c82c63e534c761868bb950d",
+    "mtime": 1794803284.1787367,
+    "seen": 1794803616.741553,
+    "ast_hash": "92f18ab29dffff4f59b59b8f66ae4408",
     "semantic_hash": ""
   },
   ".agents/rules/blast-radius-analysis.md": {
@@ -288,9 +288,9 @@
     "semantic_hash": ""
   },
   "tests/test_ui_and_api_edge_cases.py": {
-    "mtime": 1793801761.696966,
-    "seen": 1793801909.1273127,
-    "ast_hash": "d67d5f7e0c523e924ac14bfcd3671db1",
+    "mtime": 1794803089.4260857,
+    "seen": 1794803616.7415247,
+    "ast_hash": "d3e1156c3247f0b10820066e8c5507dd",
     "semantic_hash": ""
   },
   "tests/test_network_interfaces.py": {
@@ -342,9 +342,9 @@
     "semantic_hash": ""
   },
   "tests/test_fast_failover_and_antiflap.py": {
-    "mtime": 1793253778.497025,
-    "seen": 1793801909.1272864,
-    "ast_hash": "69bd11fcfc4f7e15cbaadb4f86184850",
+    "mtime": 1794804855.140714,
+    "seen": 1794804965.8529255,
+    "ast_hash": "2682031e66a2aa4ed5497e5b3487a135",
     "semantic_hash": ""
   },
   ".agents/experiences/009-fast-failover-multi-metric-and-anti-flapping.md": {
@@ -444,9 +444,9 @@
     "semantic_hash": ""
   },
   "core/firewall.py": {
-    "mtime": 1793097812.2090597,
-    "seen": 1793122103.1951494,
-    "ast_hash": "ae54d60c3830cbb700cc5b9c40c28fb2",
+    "mtime": 1794802947.029311,
+    "seen": 1794803616.7415,
+    "ast_hash": "f36d1a21e5fa4ee67472cf6f7407bf6c",
     "semantic_hash": ""
   },
   "core/prober.py": {
@@ -639,6 +639,12 @@
     "mtime": 1794599682.6464753,
     "seen": 1794599975.5980358,
     "ast_hash": "f75e78a6e188d51635a25d65f7dba9fa",
+    "semantic_hash": ""
+  },
+  ".agents/experiences/018-post-sync-udp-conntrack-flushing-and-boundary-cleanup.md": {
+    "mtime": 1794803378.9074824,
+    "seen": 1794803616.7415524,
+    "ast_hash": "47e79b01da63630b0bca1a9c195292fe",
     "semantic_hash": ""
   }
 }

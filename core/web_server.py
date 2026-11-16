@@ -163,6 +163,16 @@ def sync_rules_and_notify(max_retries: int = 2) -> Tuple[bool, List[str]]:
     return res
 
 
+def _safe_flush_port_conntrack(port: Any) -> None:
+    """Safely purges stale conntrack states for a rule port after firewall/proxy synchronization."""
+    try:
+        p_num = int(port or 0)
+        if 0 < p_num <= 65535:
+            flush_conntrack(p_num)
+    except Exception:
+        pass
+
+
 # Backward compatibility aliases for engine imports
 try:
     from engine import XForwarderEngine
@@ -873,14 +883,9 @@ class XForwarderWebHandler(BaseHTTPRequestHandler):
                         "cooldown_remaining": 0
                     }
                 })
-                # Purge stale conntrack states for the modified rule port so established client sessions switch over immediately
-                try:
-                    p_num = int(matched_rule.get("port", 0))
-                    if p_num > 0:
-                        flush_conntrack(p_num)
-                except Exception:
-                    pass
                 sync_ok, sync_errors = sync_rules_and_notify(max_retries=2)
+                # Purge stale conntrack states AFTER applying new rules so active UDP/TCP packets cannot recreate old NAT entries
+                _safe_flush_port_conntrack(matched_rule.get("port", 0))
                 self.send_json({
                     "ok": True,
                     "sync_ok": sync_ok,
@@ -939,14 +944,9 @@ class XForwarderWebHandler(BaseHTTPRequestHandler):
                     } for r in rules if r.get("id")
                 }
                 update_state_rules(batch_updates)
-                for r in rules:
-                    try:
-                        p_num = int(r.get("port", 0))
-                        if p_num > 0:
-                            flush_conntrack(p_num)
-                    except Exception:
-                        pass
                 sync_ok, sync_errors = sync_rules_and_notify(max_retries=2)
+                for r in rules:
+                    _safe_flush_port_conntrack(r.get("port", 0))
                 self.send_json({
                     "ok": True,
                     "count": len(rules),
@@ -1011,15 +1011,10 @@ class XForwarderWebHandler(BaseHTTPRequestHandler):
                         "force_override": found_rule.get("force_override", 0)
                     }
                 })
-                if active_prio_changed:
-                    # Active priority was disabled; flush conntrack for this rule's port so sessions switch immediately to the fallback priority
-                    try:
-                        p_num = int(found_rule.get("port", 0))
-                        if p_num > 0:
-                            flush_conntrack(p_num)
-                    except Exception:
-                        pass
                 sync_ok, sync_errors = sync_rules_and_notify(max_retries=2)
+                if active_prio_changed:
+                    # Active priority was disabled; flush conntrack AFTER syncing rules so sessions switch immediately without re-creating stale NAT
+                    _safe_flush_port_conntrack(found_rule.get("port", 0))
                 self.send_json({
                     "ok": True,
                     "rule_id": matched_rule_id,

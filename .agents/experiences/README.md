@@ -22,3 +22,4 @@ Records of architectural decisions, critical invariants, and lessons learned dur
 | `016` | [Fix Window Expiration Loop and Switch Decision Logging](016-fix-window-expiration-loop-and-switch-decision-logging.md) | `Routing & Quality Engine` | 2026-10-27 |
 | `017` | [--help](017---help.md) | `Architecture` | 2026-10-28 |
 | `017` | [Resilient Failover and Non-Disruptive Failback](017-resilient-failover-and-non-disruptive-failback.md) | `Routing` | 2026-10-28 |
+| `018` | [Post-Sync UDP Conntrack Flushing and Boundary Cleanup](018-post-sync-udp-conntrack-flushing-and-boundary-cleanup.md) | `Networking & Reliability` | 2026-11-16 |

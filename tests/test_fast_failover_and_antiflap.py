@@ -683,7 +683,8 @@ class TestFastFailoverAndAntiFlap(unittest.TestCase):
             ("10.0.2.2", "eth0"): {"healthy": True, "latency_ms": 45.0, "packet_loss": 0.0, "packets_sent": 10, "packets_received": 10}
         }
         with patch("time.time", return_value=now), \
-             patch.object(self.engine, "_validate_probe_route", return_value=(True, "eth0", None)):
+             patch.object(self.engine, "_validate_probe_route", return_value=(True, "eth0", None)), \
+             patch.object(self.engine, "_check_l4_port_cached", return_value={"healthy": True, "latency_ms": 10.0, "packet_loss": 0.0, "reason": ""}):
             self.engine.evaluate_rule(rule, probe_cache=cache)
             dest_stats = self.engine.runtime_state["rules_state"]["rule-window-test"]["dest_stats"]
             # Must remain healthy and NOT become degraded with phantom 100% loss
@@ -708,11 +709,95 @@ class TestFastFailoverAndAntiFlap(unittest.TestCase):
             ("10.0.3.2", "eth0"): {"healthy": True, "latency_ms": 60, "packet_loss": 0}
         }
         with patch.object(self.engine, "_hot_toggle_rule_priority") as mock_toggle, \
-             patch.object(self.engine, "_validate_probe_route", return_value=(True, "eth0", None)):
+             patch.object(self.engine, "_validate_probe_route", return_value=(True, "eth0", None)), \
+             patch.object(self.engine, "_check_l4_port_cached", return_value={"healthy": True, "latency_ms": 10.0, "packet_loss": 0.0, "reason": ""}):
             switched = self.engine.evaluate_rule(rule, probe_cache=mock_cache)
             self.assertTrue(switched)
             self.assertEqual(rule["active_priority"], 2)
             mock_toggle.assert_called_once_with(rule, old_prio=1, new_prio=2, is_critical=True)
+
+    def test_planned_udp_boundary_switch_queues_post_sync_conntrack_flush(self):
+        """Verifies planned switches between nftables and nginx/haproxy queue post-sync UDP conntrack flush without flushing TCP."""
+        rule = {
+            "id": "rule-udp-boundary",
+            "port": 1000,
+            "protocol": "udp",
+            "active_priority": 1,
+            "destinations": [
+                {"priority": 1, "type": "nftables", "target": "10.81.1.2", "enabled": True},
+                {"priority": 2, "type": "nginx", "target": "2001:db8::1", "enabled": True}
+            ]
+        }
+        self.engine._pending_conntrack_flushes = []
+        with patch("core.engine.flush_conntrack") as mock_flush:
+            self.engine._hot_toggle_rule_priority(rule, old_prio=1, new_prio=2, is_critical=False)
+            mock_flush.assert_not_called()
+            self.assertEqual(self.engine._pending_conntrack_flushes, [(1000, "udp")])
+
+            self.engine._flush_pending_conntrack()
+            mock_flush.assert_called_once_with(1000, proto="udp")
+            self.assertEqual(self.engine._pending_conntrack_flushes, [])
+
+    def test_find_conntrack_bin_fallback(self):
+        """Verifies _find_conntrack_bin falls back to /usr/sbin/conntrack when restricted PATH misses it."""
+        from core.firewall import _find_conntrack_bin
+        with patch("core.firewall.shutil.which", return_value=None), \
+             patch("core.firewall.os.path.isfile", side_effect=lambda p: p == "/usr/sbin/conntrack"), \
+             patch("core.firewall.os.access", return_value=True):
+            self.assertEqual(_find_conntrack_bin(), "/usr/sbin/conntrack")
+
+    def test_flush_conntrack_validates_port_and_enforces_timeout(self):
+        """Verifies flush_conntrack rejects invalid/out-of-range ports and runs subprocess with a 5s timeout."""
+        from core.firewall import flush_conntrack
+        with patch("core.firewall._find_conntrack_bin", return_value="/usr/sbin/conntrack"), \
+             patch("core.firewall.subprocess.run") as mock_run:
+            for bad_port in (0, -5, 65536, "not-a-port", None):
+                flush_conntrack(bad_port)
+            mock_run.assert_not_called()
+
+            flush_conntrack(1000, proto="udp")
+            mock_run.assert_called_once()
+            args, kwargs = mock_run.call_args
+            self.assertEqual(args[0], ["/usr/sbin/conntrack", "-D", "-p", "udp", "--dport", "1000"])
+            self.assertEqual(kwargs.get("timeout"), 5.0)
+
+    def test_planned_tcp_switch_skips_conntrack_while_both_flushes_udp_only(self):
+        """Verifies planned TCP switches preserve sockets (no flush) and 'both' nftables<->proxy flushes UDP only."""
+        tcp_rule = {
+            "id": "rule-tcp-only",
+            "port": 443,
+            "protocol": "tcp",
+            "active_priority": 1,
+            "destinations": [
+                {"priority": 1, "type": "nftables", "target": "10.81.1.2", "enabled": True},
+                {"priority": 2, "type": "haproxy", "target": "2001:db8::1", "enabled": True}
+            ]
+        }
+        both_rule = {
+            "id": "rule-both-boundary",
+            "port": 8443,
+            "protocol": "both",
+            "active_priority": 1,
+            "destinations": [
+                {"priority": "1", "type": "nginx", "target": "2001:db8::1", "enabled": True},
+                {"priority": "2", "type": "nftables", "target": "10.81.1.2", "enabled": True}
+            ]
+        }
+        self.engine._pending_conntrack_flushes = []
+        with patch("core.engine.flush_conntrack") as mock_flush:
+            self.engine._hot_toggle_rule_priority(tcp_rule, old_prio=1, new_prio=2, is_critical=False)
+            self.assertEqual(self.engine._pending_conntrack_flushes, [])
+
+            self.engine._hot_toggle_rule_priority(both_rule, old_prio=1, new_prio=2, is_critical=False)
+            self.assertEqual(self.engine._pending_conntrack_flushes, [(8443, "udp")])
+
+            # Critical flush on same port supersedes UDP-only entry
+            self.engine._hot_toggle_rule_priority(both_rule, old_prio=1, new_prio=2, is_critical=True)
+            self.assertEqual(self.engine._pending_conntrack_flushes, [(8443, None)])
+
+            mock_flush.reset_mock()
+            self.engine._flush_pending_conntrack()
+            mock_flush.assert_called_once_with(8443, proto=None)
 
 
 if __name__ == "__main__":

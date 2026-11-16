@@ -2353,6 +2353,28 @@ class TestUIAndAPIEdgeCases(unittest.TestCase):
             XForwarderWebHandler.do_POST(handler)
             mock_flush.assert_called_with(11500)
 
+            # 4. Verify sync_rules_and_notify executes strictly BEFORE flush_conntrack on override, batch, and toggle
+            call_order = []
+            mock_sync.side_effect = lambda **kwargs: (call_order.append("sync"), (True, []))[1]
+            mock_flush.side_effect = lambda p: call_order.append(("flush", p))
+
+            set_request("/api/override", {"rule_id": "rule-11500", "override_priority": 2})
+            XForwarderWebHandler.do_POST(handler)
+            self.assertEqual(call_order, ["sync", ("flush", 11500)])
+
+            call_order.clear()
+            set_request("/api/override/batch", {"override_priority": 1})
+            XForwarderWebHandler.do_POST(handler)
+            self.assertEqual(call_order[0], "sync")
+            self.assertEqual(set(call_order[1:]), {("flush", 11500), ("flush", 11501)})
+
+            call_order.clear()
+            test_cfg["rules"][0]["active_priority"] = 1
+            test_cfg["rules"][0]["destinations"][0]["enabled"] = True
+            set_request("/api/rule/toggle-destination", {"rule_id": "rule-11500", "priority": 1, "enabled": False})
+            XForwarderWebHandler.do_POST(handler)
+            self.assertEqual(call_order, ["sync", ("flush", 11500)])
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -25,17 +25,36 @@ def is_ipv6_supported() -> bool:
         return False
 
 
+def _find_conntrack_bin() -> Optional[str]:
+    """Locate the conntrack binary even when systemd restricts PATH."""
+    found = shutil.which("conntrack")
+    if found:
+        return found
+    for candidate in ("/usr/sbin/conntrack", "/sbin/conntrack", "/usr/bin/conntrack"):
+        if os.path.isfile(candidate) and os.access(candidate, os.X_OK):
+            return candidate
+    return None
+
+
 def flush_conntrack(port: int, proto: Optional[str] = None) -> None:
-    """Flushes stale conntrack states for TCP and UDP on given port."""
-    if not port or not shutil.which("conntrack"):
+    """Flushes stale conntrack states for TCP and UDP on a validated port."""
+    try:
+        port_int = int(port)
+    except (TypeError, ValueError):
+        return
+    if port_int <= 0 or port_int > 65535:
+        return
+    conntrack_bin = _find_conntrack_bin()
+    if not conntrack_bin:
         return
     protos = [proto] if proto in ("tcp", "udp") else ["tcp", "udp"]
     for p in protos:
         try:
             subprocess.run(
-                ["conntrack", "-D", "-p", p, "--dport", str(port)],
+                [conntrack_bin, "-D", "-p", p, "--dport", str(port_int)],
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.DEVNULL,
+                timeout=5.0,
                 check=False
             )
         except Exception:

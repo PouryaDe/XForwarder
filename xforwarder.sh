@@ -69,6 +69,7 @@ ensure_dependencies() {
     command -v haproxy >/dev/null 2>&1 || pkgs+=(haproxy)
     command -v nginx >/dev/null 2>&1 || pkgs+=(nginx)
     command -v nft >/dev/null 2>&1 || pkgs+=(nftables)
+    command -v conntrack >/dev/null 2>&1 || pkgs+=(conntrack)
     command -v curl >/dev/null 2>&1 || pkgs+=(curl)
     command -v git >/dev/null 2>&1 || pkgs+=(git)
 

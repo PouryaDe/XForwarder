@@ -107,6 +107,7 @@ class XForwarderEngine:
         self._l4_port_cache_time: Dict[Tuple[str, int, Optional[str]], float] = {}
         self._haproxy_backend_cache: Dict[int, Dict[str, Any]] = {}
         self._haproxy_backend_cache_time: float = 0.0
+        self._pending_conntrack_flushes: List[Tuple[int, Optional[str]]] = []
         self.load_config()
 
     @property
@@ -285,17 +286,76 @@ class XForwarderEngine:
             self._l4_port_cache_time[key] = now
         return res
 
+    def _queue_post_sync_conntrack_flush(self, port_int: int, proto: Optional[str]) -> None:
+        """Queues a deduplicated conntrack flush to execute after firewall/proxy sync."""
+        if not hasattr(self, "_pending_conntrack_flushes"):
+            self._pending_conntrack_flushes = []
+        if (port_int, None) in self._pending_conntrack_flushes:
+            return
+        if proto is None:
+            self._pending_conntrack_flushes = [
+                item for item in self._pending_conntrack_flushes if item[0] != port_int
+            ]
+        item = (port_int, proto)
+        if item not in self._pending_conntrack_flushes:
+            self._pending_conntrack_flushes.append(item)
+
     def _hot_toggle_rule_priority(self, rule: Dict[str, Any], old_prio: int, new_prio: int, is_critical: bool = False) -> None:
         """
         Performs runtime priority transition.
-        In planned switches: preserves active client sockets and allows connection draining.
-        In critical switches: flushes stale conntrack states for TCP and UDP.
+        In planned switches: preserves active TCP client sockets, but schedules post-sync UDP conntrack
+        cleanup when crossing between kernel DNAT (nftables) and user-space proxies (nginx/haproxy).
+        In critical switches: flushes stale conntrack states for TCP and UDP both immediately and post-sync.
         """
         port = rule.get("port")
         if not port:
             return
+        try:
+            port_int = int(port)
+        except (TypeError, ValueError):
+            return
+        if port_int <= 0 or port_int > 65535:
+            return
         if is_critical:
-            flush_conntrack(port)
+            flush_conntrack(port_int)
+            self._queue_post_sync_conntrack_flush(port_int, None)
+            return
+
+        # Planned switches preserve TCP sockets, but UDP sessions crossing nftables <-> proxy get trapped in kernel NAT
+        rule_proto = str(rule.get("protocol", "both")).lower()
+        if rule_proto in ("udp", "both"):
+            dests: Dict[int, str] = {}
+            for d in rule.get("destinations", []):
+                try:
+                    p_key = int(d.get("priority"))
+                except (TypeError, ValueError):
+                    continue
+                dests[p_key] = str(d.get("type", "haproxy")).lower()
+            try:
+                old_type = dests.get(int(old_prio), "")
+                new_type = dests.get(int(new_prio), "")
+            except (TypeError, ValueError):
+                return
+            if old_type != new_type and "nftables" in (old_type, new_type):
+                self._queue_post_sync_conntrack_flush(port_int, "udp")
+
+    def _flush_pending_conntrack(self) -> None:
+        """Executes deferred conntrack flushes after firewall and proxy rules are synchronized."""
+        pending = getattr(self, "_pending_conntrack_flushes", None)
+        if not pending:
+            return
+        items = list(pending)
+        pending.clear()
+        full_flush_ports = {p for p, pr in items if pr is None}
+        seen = set()
+        for port_int, proto in items:
+            if proto is not None and port_int in full_flush_ports:
+                continue
+            key = (port_int, proto)
+            if key in seen:
+                continue
+            seen.add(key)
+            flush_conntrack(port_int, proto=proto)
 
     def _probe_all_destinations(self, rules: List[Dict[str, Any]], now: Optional[float] = None) -> Dict[Any, Dict[str, Any]]:
         """
@@ -1326,6 +1386,7 @@ class XForwarderEngine:
                         if changed_priorities:
                             self._persist_active_priorities(changed_priorities)
                         self.sync_firewall_and_proxies()
+                        self._flush_pending_conntrack()
                         self._save_state_file()
                         if config_changed and self._loss_scheduler:
                             self._loss_scheduler.trigger_now()
