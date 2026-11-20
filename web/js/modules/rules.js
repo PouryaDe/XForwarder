@@ -444,10 +444,10 @@ export function renderRuleListRow(rule, rulesState) {
         const loss50Inline = formatLoss50Inline(lossInfo, stat.packet_loss);
         const targetDisplay = rawTarget.includes(':') ? `[${escapeHtml(rawTarget)}]` : escapeHtml(rawTarget);
 
-        let dotColor = '#6EE7B7';
+        let dotColor = 'var(--accent-emerald)';
         if (!isEnabled) dotColor = 'var(--text-muted)';
-        else if (isDown) dotColor = '#FB7185';
-        else if (!isHealthy) dotColor = '#FBBF6B';
+        else if (isDown) dotColor = 'var(--accent-rose)';
+        else if (!isHealthy) dotColor = 'var(--accent-amber)';
 
         const statusDetail = stat.reason ? ` · ${stat.reason}` : (stat.status ? ` · ${String(stat.status).toUpperCase()}` : '');
 

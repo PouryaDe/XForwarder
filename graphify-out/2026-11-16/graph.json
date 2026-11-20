@@ -5203,7 +5203,7 @@
       "file_type": "code",
       "norm_label": ".test_find_conntrack_bin_fallback()",
       "source_file": "tests/test_fast_failover_and_antiflap.py",
-      "source_location": "L739"
+      "source_location": "L741"
     },
     {
       "id": "tests_test_fast_failover_and_antiflap_testfastfailoverandantiflap_test_flush_conntrack_validates_port_and_enforces_timeout",
@@ -5215,7 +5215,7 @@
       "file_type": "code",
       "norm_label": ".test_flush_conntrack_validates_port_and_enforces_timeout()",
       "source_file": "tests/test_fast_failover_and_antiflap.py",
-      "source_location": "L747"
+      "source_location": "L749"
     },
     {
       "id": "tests_test_fast_failover_and_antiflap_testfastfailoverandantiflap_test_manual_override_triggers_conntrack_flush",
@@ -5227,7 +5227,7 @@
       "file_type": "code",
       "norm_label": ".test_manual_override_triggers_conntrack_flush()",
       "source_file": "tests/test_fast_failover_and_antiflap.py",
-      "source_location": "L693"
+      "source_location": "L694"
     },
     {
       "id": "tests_test_fast_failover_and_antiflap_testfastfailoverandantiflap_test_nginx_service_lifecycle_management",
@@ -5251,7 +5251,7 @@
       "file_type": "code",
       "norm_label": ".test_planned_tcp_switch_skips_conntrack_while_both_flushes_udp_only()",
       "source_file": "tests/test_fast_failover_and_antiflap.py",
-      "source_location": "L762"
+      "source_location": "L764"
     },
     {
       "id": "tests_test_fast_failover_and_antiflap_testfastfailoverandantiflap_test_switch_events_ring_buffer_capped_at_max",
@@ -6487,7 +6487,7 @@
       "file_type": "code",
       "norm_label": ".test_planned_udp_boundary_switch_queues_post_sync_conntrack_flush()",
       "source_file": "tests/test_fast_failover_and_antiflap.py",
-      "source_location": "L717"
+      "source_location": "L719"
     },
     {
       "id": "tests_test_ui_and_api_edge_cases_testuiandapiedgecases_test_override_endpoint_flushes_conntrack",
@@ -14744,7 +14744,7 @@
       "source_location": "L633"
     },
     {
-      "id": "tests_test_fast_failover_and_antiflap_rationale_694",
+      "id": "tests_test_fast_failover_and_antiflap_rationale_695",
       "label": "Verifies that an administrative override switch invokes\u2026",
       "_origin": "ast",
       "community": 53,
@@ -14752,10 +14752,10 @@
       "file_type": "rationale",
       "norm_label": "verifies that an administrative override switch invokes...",
       "source_file": "tests/test_fast_failover_and_antiflap.py",
-      "source_location": "L694"
+      "source_location": "L695"
     },
     {
-      "id": "tests_test_fast_failover_and_antiflap_rationale_740",
+      "id": "tests_test_fast_failover_and_antiflap_rationale_742",
       "label": "Verifies _find_conntrack_bin falls back to /usr/sbin/conntrack when restricted\u2026",
       "_origin": "ast",
       "community": 53,
@@ -14763,10 +14763,10 @@
       "file_type": "rationale",
       "norm_label": "verifies _find_conntrack_bin falls back to /usr/sbin/conntrack when restricted...",
       "source_file": "tests/test_fast_failover_and_antiflap.py",
-      "source_location": "L740"
+      "source_location": "L742"
     },
     {
-      "id": "tests_test_fast_failover_and_antiflap_rationale_748",
+      "id": "tests_test_fast_failover_and_antiflap_rationale_750",
       "label": "Verifies flush_conntrack rejects invalid/out-of-range ports and runs subprocess\u2026",
       "_origin": "ast",
       "community": 53,
@@ -14774,10 +14774,10 @@
       "file_type": "rationale",
       "norm_label": "verifies flush_conntrack rejects invalid/out-of-range ports and runs subprocess...",
       "source_file": "tests/test_fast_failover_and_antiflap.py",
-      "source_location": "L748"
+      "source_location": "L750"
     },
     {
-      "id": "tests_test_fast_failover_and_antiflap_rationale_763",
+      "id": "tests_test_fast_failover_and_antiflap_rationale_765",
       "label": "Verifies planned TCP switches preserve sockets (no flush) and 'both'\u2026",
       "_origin": "ast",
       "community": 53,
@@ -14785,7 +14785,7 @@
       "file_type": "rationale",
       "norm_label": "verifies planned tcp switches preserve sockets (no flush) and 'both'...",
       "source_file": "tests/test_fast_failover_and_antiflap.py",
-      "source_location": "L763"
+      "source_location": "L765"
     },
     {
       "id": "core_auth_rationale_171",
@@ -15881,7 +15881,7 @@
       "source_location": "L305"
     },
     {
-      "id": "tests_test_fast_failover_and_antiflap_rationale_718",
+      "id": "tests_test_fast_failover_and_antiflap_rationale_720",
       "label": "Verifies planned switches between nftables and nginx/haproxy queue post-sync\u2026",
       "_origin": "ast",
       "community": 61,
@@ -15889,7 +15889,7 @@
       "file_type": "rationale",
       "norm_label": "verifies planned switches between nftables and nginx/haproxy queue post-sync...",
       "source_file": "tests/test_fast_failover_and_antiflap.py",
-      "source_location": "L718"
+      "source_location": "L720"
     },
     {
       "id": "tests_test_ui_and_api_edge_cases_py_patch",
@@ -24150,7 +24150,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "tests/test_fast_failover_and_antiflap.py",
-      "source_location": "L745",
+      "source_location": "L747",
       "weight": 1.0
     },
     {
@@ -24162,7 +24162,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "tests/test_fast_failover_and_antiflap.py",
-      "source_location": "L753",
+      "source_location": "L755",
       "weight": 1.0
     },
     {
@@ -34866,7 +34866,7 @@
       "confidence_score": 1.0,
       "context": "import",
       "source_file": "tests/test_fast_failover_and_antiflap.py",
-      "source_location": "L741",
+      "source_location": "L743",
       "weight": 1.0
     },
     {
@@ -34878,7 +34878,7 @@
       "confidence_score": 1.0,
       "context": "import",
       "source_file": "tests/test_fast_failover_and_antiflap.py",
-      "source_location": "L749",
+      "source_location": "L751",
       "weight": 1.0
     },
     {
@@ -49090,7 +49090,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "tests/test_fast_failover_and_antiflap.py",
-      "source_location": "L693",
+      "source_location": "L694",
       "weight": 1.0
     },
     {
@@ -49101,7 +49101,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "tests/test_fast_failover_and_antiflap.py",
-      "source_location": "L717",
+      "source_location": "L719",
       "weight": 1.0
     },
     {
@@ -49112,7 +49112,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "tests/test_fast_failover_and_antiflap.py",
-      "source_location": "L739",
+      "source_location": "L741",
       "weight": 1.0
     },
     {
@@ -49123,7 +49123,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "tests/test_fast_failover_and_antiflap.py",
-      "source_location": "L747",
+      "source_location": "L749",
       "weight": 1.0
     },
     {
@@ -49134,7 +49134,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "tests/test_fast_failover_and_antiflap.py",
-      "source_location": "L762",
+      "source_location": "L764",
       "weight": 1.0
     },
     {
@@ -54242,58 +54242,58 @@
       "weight": 1.0
     },
     {
-      "source": "tests_test_fast_failover_and_antiflap_rationale_694",
+      "source": "tests_test_fast_failover_and_antiflap_rationale_695",
       "target": "tests_test_fast_failover_and_antiflap_testfastfailoverandantiflap_test_manual_override_triggers_conntrack_flush",
       "relation": "rationale_for",
       "_origin": "ast",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "tests/test_fast_failover_and_antiflap.py",
-      "source_location": "L694",
+      "source_location": "L695",
       "weight": 1.0
     },
     {
-      "source": "tests_test_fast_failover_and_antiflap_rationale_718",
+      "source": "tests_test_fast_failover_and_antiflap_rationale_720",
       "target": "tests_test_fast_failover_and_antiflap_testfastfailoverandantiflap_test_planned_udp_boundary_switch_queues_post_sync_conntrack_flush",
       "relation": "rationale_for",
       "_origin": "ast",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "tests/test_fast_failover_and_antiflap.py",
-      "source_location": "L718",
+      "source_location": "L720",
       "weight": 1.0
     },
     {
-      "source": "tests_test_fast_failover_and_antiflap_rationale_740",
+      "source": "tests_test_fast_failover_and_antiflap_rationale_742",
       "target": "tests_test_fast_failover_and_antiflap_testfastfailoverandantiflap_test_find_conntrack_bin_fallback",
       "relation": "rationale_for",
       "_origin": "ast",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "tests/test_fast_failover_and_antiflap.py",
-      "source_location": "L740",
+      "source_location": "L742",
       "weight": 1.0
     },
     {
-      "source": "tests_test_fast_failover_and_antiflap_rationale_748",
+      "source": "tests_test_fast_failover_and_antiflap_rationale_750",
       "target": "tests_test_fast_failover_and_antiflap_testfastfailoverandantiflap_test_flush_conntrack_validates_port_and_enforces_timeout",
       "relation": "rationale_for",
       "_origin": "ast",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "tests/test_fast_failover_and_antiflap.py",
-      "source_location": "L748",
+      "source_location": "L750",
       "weight": 1.0
     },
     {
-      "source": "tests_test_fast_failover_and_antiflap_rationale_763",
+      "source": "tests_test_fast_failover_and_antiflap_rationale_765",
       "target": "tests_test_fast_failover_and_antiflap_testfastfailoverandantiflap_test_planned_tcp_switch_skips_conntrack_while_both_flushes_udp_only",
       "relation": "rationale_for",
       "_origin": "ast",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "tests/test_fast_failover_and_antiflap.py",
-      "source_location": "L763",
+      "source_location": "L765",
       "weight": 1.0
     },
     {

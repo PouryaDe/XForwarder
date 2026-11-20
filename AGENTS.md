@@ -23,11 +23,11 @@ XForwarder/
 │   ├── haproxy_parser.py  # HAProxy configuration parser, backup locator, and rule importer
 │   └── nftables_parser.py # Active kernel NFTables & iptables DNAT parser, backup creator & handle-based deconfliction
 ├── web/
-│   ├── index.html         # Modern panel dashboard with sidebar navigation, modular sections, and light/dark theme
-│   ├── style.css          # Glassmorphism aesthetic, light & dark theme design system, and responsive layout
+│   ├── index.html         # Split-screen login, floating sidebar dashboard, modular sections, light/dark Ovira Mint theme
+│   ├── style.css          # Ovira Mint glassmorphism aesthetic, cursor spotlight & dual-theme responsive layout
 │   ├── app.js             # Vanilla JS state manager & orchestrator (Native ES module entry point)
-│   ├── css/               # Modular CSS stylesheets (tokens, base, layout, components, modals, style)
-│   └── js/modules/        # Clean Vanilla ES modules (api, state, theme, navigation, auth, stats, rules, etc.)
+│   ├── css/               # Modular CSS stylesheets (tokens, base, layout, components, modals, rtl, style)
+│   └── js/modules/        # Clean Vanilla ES modules (api, state, theme, navigation, auth, effects, stats, rules, etc.)
 ├── config/
 │   └── config.json.example# Reference configuration schema
 ├── systemd/

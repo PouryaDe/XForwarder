@@ -3,6 +3,7 @@
  */
 
 import { t } from "./i18n.js";
+import { updateNavIndicator } from "./effects.js";
 
 export const SECTIONS = ["rules", "overview", "services", "security", "logs"];
 
@@ -43,6 +44,14 @@ export function initNavigation() {
             switchSection(currentHash);
         }
     });
+
+    window.addEventListener("xfwd:langchange", () => {
+        requestAnimationFrame(updateNavIndicator);
+    });
+    if (document.fonts && document.fonts.ready) {
+        document.fonts.ready.then(() => updateNavIndicator()).catch(() => {});
+    }
+    requestAnimationFrame(updateNavIndicator);
 }
 
 export function switchSection(sectionId) {
@@ -62,6 +71,7 @@ export function switchSection(sectionId) {
             item.classList.remove("active");
         }
     });
+    requestAnimationFrame(updateNavIndicator);
 
     // Toggle sections visibility and active class
     SECTIONS.forEach(s => {

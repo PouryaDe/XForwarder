@@ -111,7 +111,7 @@ export function showLogin() {
     const loginScreen = document.getElementById("loginScreen");
     const dashboardScreen = document.getElementById("dashboardScreen");
     if (dashboardScreen) dashboardScreen.style.display = "none";
-    if (loginScreen) loginScreen.style.display = "flex";
+    if (loginScreen) loginScreen.style.display = "grid";
 }
 
 export async function checkSession() {

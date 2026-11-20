@@ -1,9 +1,9 @@
 {
-  "last_updated": "2026-11-20T15:52:00+03:30",
+  "last_updated": "2026-11-20T16:45:00+03:30",
   "active_task": "None",
   "active_spec": null,
   "phase": "Idle",
   "completed_milestones": [],
   "next_steps": [],
-  "notes": "Last completed baseline: Dual-feedback L4 TCP probing, HAProxy backend health, and RX/TX blackhole detection (311 unit tests passing). Historical milestones are archived in git log and .agents/experiences/."
+  "notes": "Last completed baseline: Complete Ovira Mint UI/UX redesign across web/ (dual Obsidian Teal & Warm Stone Mint themes, ambient cursor dot-matrix & card spotlights, split-screen Bore Tunnel login, spring sidebar nav indicator, EN/FA RTL parity, effects.js)."
 }

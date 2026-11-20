@@ -365,20 +365,23 @@ class TestUIAndAPIEdgeCases(unittest.TestCase):
             server.server_close()
 
     def test_frontend_css_no_hover_motion_transforms(self):
-        """Verifies that style.css contains zero hover transform animations (pure subtle color transitions)."""
+        """Verifies that layout container cards do not bounce/scale on hover (allowing only micro button/icon polish)."""
         css_path = os.path.join(REPO_ROOT, "web", "style.css")
         with open(css_path, "r", encoding="utf-8") as f:
             css = f.read()
 
+        card_selectors = (".stat-card", ".network-card", ".engines-card", ".tunnel-card", ".rule-card", ".path-box", ".rules-list-row")
         hover_blocks = re.findall(r'([^{}]*?:hover[^{}]*?\{[^}]*?\})', css, re.DOTALL)
         for block in hover_blocks:
             clean_block = " ".join(block.split())
-            self.assertNotIn("transform", clean_block, f"Hover block must not contain transform motion: {clean_block}")
-            self.assertNotIn("translateY", clean_block, f"Hover block must not jump vertically: {clean_block}")
-            self.assertNotIn("scale", clean_block, f"Hover block must not scale: {clean_block}")
+            selector_part = clean_block.split("{", 1)[0]
+            if any(sel in selector_part for sel in card_selectors):
+                self.assertNotIn("transform", clean_block, f"Container card hover must not transform: {clean_block}")
+                self.assertNotIn("translateY", clean_block, f"Container card hover must not jump vertically: {clean_block}")
+                self.assertNotIn("scale", clean_block, f"Container card hover must not scale: {clean_block}")
 
     def test_frontend_css_no_hover_borders_and_subtle_transitions(self):
-        """Verifies that style.css enforces borderless, subtle hover states across all components."""
+        """Verifies that style.css never sets layout-shifting border widths on :hover."""
         css_path = os.path.join(REPO_ROOT, "web", "style.css")
         with open(css_path, "r", encoding="utf-8") as f:
             css = f.read()
@@ -389,7 +392,6 @@ class TestUIAndAPIEdgeCases(unittest.TestCase):
             body = " ".join(m.group(2).strip().split())
             if "autofill" in selector:
                 continue
-            self.assertNotIn("border-color", body, f"Hover selector '{selector}' must not set border-color: {body}")
             self.assertNotIn("border:", body, f"Hover selector '{selector}' must not set border: {body}")
 
     def test_frontend_js_latency_and_priority_shortening(self):
@@ -788,10 +790,11 @@ class TestUIAndAPIEdgeCases(unittest.TestCase):
         with open(js_path, "r", encoding="utf-8") as f:
             js = f.read()
 
-        # 1. Dark theme tokens in :root, [data-theme="dark"] (Nova Admin Theme)
-        self.assertIn("--bg-base: #0B0E14;", css)
-        self.assertIn("--bg-surface: #12151f;", css)
-        self.assertIn("--accent-rose: #FB7185;", css)
+        # 1. Dark theme tokens in :root, [data-theme="dark"] (Ovira Mint Theme)
+        self.assertIn("--ground: #05090a;", css)
+        self.assertIn("--raise: #0a1112;", css)
+        self.assertIn("--accent: #34e0a1;", css)
+        self.assertIn("--bad: #ff6b57;", css)
 
         # 2. Stats numbers in index.html should not have hardcoded glare classes
         self.assertNotIn('id="statActiveHaproxy" class="stat-number text-emerald"', html)
@@ -848,7 +851,7 @@ class TestUIAndAPIEdgeCases(unittest.TestCase):
         self.assertEqual(classify("degraded", 10, 40.0), "latency-bad")
 
     def test_nova_admin_design_system_and_login_cleanup(self):
-        """Verifies Nova Admin Template v3 design tokens, Aurora lighting layer, and clean login card."""
+        """Verifies Ovira Mint design tokens, Ambient lighting + dot-matrix layer, and split-screen login."""
         html_path = os.path.join(REPO_ROOT, "web", "index.html")
         css_path = os.path.join(REPO_ROOT, "web", "style.css")
 
@@ -857,36 +860,41 @@ class TestUIAndAPIEdgeCases(unittest.TestCase):
         with open(css_path, "r", encoding="utf-8") as f:
             css = f.read()
 
-        # 1. Typography & Google Fonts (Space Grotesk display font)
-        self.assertIn("family=Space+Grotesk", html, "index.html must load Space Grotesk font")
-        self.assertIn("--font-display: 'Space Grotesk'", css, "CSS must define Space Grotesk as display font")
+        # 1. Typography & Google Fonts (Bricolage Grotesque display + Hanken Grotesk sans)
+        self.assertIn("family=Bricolage+Grotesque", html, "index.html must load Bricolage Grotesque font")
+        self.assertIn("family=Hanken+Grotesk", html, "index.html must load Hanken Grotesk font")
+        self.assertIn("--font-display: 'Bricolage Grotesque'", css, "CSS must define Bricolage Grotesque as display font")
         self.assertIn("font-family: var(--font-display);", css, "Headings & stats must bind to font-display")
 
-        # 2. Floating Aurora Ambient Lighting Layer
-        self.assertIn('class="aurora"', html, "index.html must have .aurora background container")
-        self.assertIn(".aurora {", css, "style.css must style .aurora")
-        self.assertIn("pointer-events: none;", css, "Aurora must never intercept pointer events")
-        self.assertIn("@keyframes float1", css, "Aurora must define float1 keyframe animation")
+        # 2. Floating Ambient Lighting + Cursor Dot-Matrix Layer
+        self.assertIn('class="ambient aurora"', html, "index.html must have .ambient.aurora background container")
+        self.assertIn(".ambient,\n.aurora {", css, "style.css must style .ambient / .aurora")
+        self.assertIn("pointer-events: none;", css, "Ambient layer must never intercept pointer events")
+        self.assertIn("@keyframes drift-a", css, "Ambient blobs must define drift-a keyframe animation")
         self.assertIn("@media (prefers-reduced-motion: reduce)", css, "Must honor prefers-reduced-motion")
 
-        # 3. Nova Signature Color Tokens (Dark & Light)
+        # 3. Ovira Mint Signature Color Tokens (Dark & Light)
         # Dark Theme
-        self.assertIn("--bg-base: #0B0E14;", css)
-        self.assertIn("--bg-surface: #12151f;", css)
-        self.assertIn("--mint: #6EE7B7;", css)
-        self.assertIn("--violet: #A78BFA;", css)
-        self.assertIn("--amber: #FBBF6B;", css)
-        self.assertIn("--red: #FB7185;", css)
-        self.assertIn("--blob-1: #22315c;", css)
+        self.assertIn("--ground: #05090a;", css)
+        self.assertIn("--raise: #0a1112;", css)
+        self.assertIn("--accent: #34e0a1;", css)
+        self.assertIn("--accent-2: #46d6e6;", css)
+        self.assertIn("--warn: #ffb648;", css)
+        self.assertIn("--bad: #ff6b57;", css)
+        self.assertIn("--blob-a: rgba(52, 224, 161, 0.12);", css)
 
         # Light Theme
-        self.assertIn("--bg-base: #EEF1F7;", css)
-        self.assertIn("--bg-surface: #FFFFFF;", css)
-        self.assertIn("--blob-1: #c9dcfb;", css)
+        self.assertIn("--ground: #e8e7de;", css)
+        self.assertIn("--raise: #f6f5ee;", css)
+        self.assertIn("--accent: #2fd896;", css)
+        self.assertIn("--accent-text: #006b4a;", css)
+        self.assertIn("--blob-a: rgba(47, 216, 150, 0.22);", css)
 
-        # 4. Primary Button & Brand Logo Gradients
-        self.assertIn("linear-gradient(135deg, #7C3AED, #6366F1)", css)
+        # 4. Glossy Mint Primary Button & Bore Tunnel Split Login
+        self.assertIn("linear-gradient(to bottom, color-mix(in srgb, var(--accent) 86%, white), var(--accent))", css)
         self.assertIn(".btn-primary svg {", css)
+        self.assertIn("login-shell", html, "index.html must use Ovira split-screen login-shell")
+        self.assertIn("bore-gate", html, "index.html must include Ovira bore tunnel SVG illustration")
 
         # 5. Absence of Login Security Badge (Eliminates Tech Stack Disclosure)
         self.assertNotIn("login-security-badge", html, "Login security badge must be removed from HTML")
@@ -902,43 +910,41 @@ class TestUIAndAPIEdgeCases(unittest.TestCase):
         self.assertIn('id="lockoutTimer"', html)
 
     def test_dark_and_light_theme_button_color_harmonization(self):
-        """Verifies that buttons across dark and light themes enforce high contrast, readability, and harmonious styling."""
+        """Verifies that buttons across dark and light themes enforce high contrast, readability, and Ovira Mint styling."""
         css_path = os.path.join(REPO_ROOT, "web", "style.css")
         with open(css_path, "r", encoding="utf-8") as f:
             css = f.read()
 
-        # 1. Dark Mode Primary Button: royal violet gradient with crisp pure white text
-        self.assertIn("linear-gradient(135deg, #7C3AED, #6366F1)", css)
+        # 1. Dark Mode Primary Button: glossy Mint gradient with deep forest ink (#001a0f / --accent-ink)
+        self.assertIn("linear-gradient(to bottom, color-mix(in srgb, var(--accent) 86%, white), var(--accent))", css)
         self.assertIn(".btn-primary svg {", css)
-        self.assertIn(".btn-primary {\n    background: linear-gradient(135deg, #7C3AED, #6366F1);\n    color: #FFFFFF !important;", css)
+        self.assertIn(
+            ".btn-primary {\n    background: linear-gradient(to bottom, color-mix(in srgb, var(--accent) 86%, white), var(--accent));\n    color: var(--accent-ink) !important;",
+            css,
+        )
 
-        # 2. Light Mode Primary Button: royal violet gradient with crisp pure white text
+        # 2. Light Mode Primary Button: Mint glossy gradient with high-contrast forest ink
         self.assertIn('[data-theme="light"] .btn-primary {', css)
-        self.assertIn("background: linear-gradient(135deg, #7C3AED, #6366F1);", css)
+        self.assertIn("background: linear-gradient(to bottom, color-mix(in srgb, var(--accent) 88%, white), var(--accent));", css)
         self.assertIn('[data-theme="light"] .btn-primary svg {', css)
 
-        # 3. Light Mode Secondary Button: solid white tactile card
+        # 3. Light Mode Secondary & Danger Buttons (Tokenized surface/semantic colors)
         self.assertIn('[data-theme="light"] .btn-secondary {', css)
-        self.assertIn("color: #1E293B;", css)
+        self.assertIn(".btn-danger {", css)
+        self.assertIn("color: var(--bad);", css)
 
-        # 4. Light Mode Danger Button: accessible crimson rose
-        self.assertIn('[data-theme="light"] .btn-danger {', css)
-        self.assertIn("color: #E11D48;", css)
-
-        # 5. Light Mode Priority & Chips: deep legible violet
-        self.assertIn('[data-theme="light"] .add-prio-btn {', css)
-        self.assertIn('[data-theme="light"] .preset-chip {', css)
-        self.assertIn('[data-theme="light"] .btn-path-test {', css)
-        self.assertIn('[data-theme="light"] .prio-tag-1 {', css)
-
-        # 6. Light Mode Brand & Avatar Elements: crisp white glyphs on royal violet gradient
-        self.assertIn('[data-theme="light"] .logo-orb {', css)
-        self.assertIn('[data-theme="light"] .logo-orb svg {', css)
-        self.assertIn('[data-theme="light"] .brand-badge {', css)
-        self.assertIn('[data-theme="light"] .user-avatar {', css)
-        self.assertIn('[data-theme="light"] .user-avatar svg {', css)
-        self.assertIn('[data-theme="light"] .sidebar-user {', css)
-        self.assertIn('.user-meta .user-role {', css)
+        # 4. Priority, Brand & Avatar Elements
+        self.assertIn(".add-prio-btn {", css)
+        self.assertIn(".preset-chip {", css)
+        self.assertIn(".btn-path-test {", css)
+        self.assertIn(".prio-tag-1 {", css)
+        self.assertIn(".logo-orb {", css)
+        self.assertIn(".logo-orb svg {", css)
+        self.assertIn(".brand-badge {", css)
+        self.assertIn(".user-avatar {", css)
+        self.assertIn(".user-avatar svg {", css)
+        self.assertIn(".sidebar-user {", css)
+        self.assertIn(".user-meta .user-role {", css)
         self.assertIn("-webkit-font-smoothing: antialiased;", css)
 
     def test_system_version_and_update_apis(self):
@@ -2374,6 +2380,99 @@ class TestUIAndAPIEdgeCases(unittest.TestCase):
             set_request("/api/rule/toggle-destination", {"rule_id": "rule-11500", "priority": 1, "enabled": False})
             XForwarderWebHandler.do_POST(handler)
             self.assertEqual(call_order, ["sync", ("flush", 11500)])
+
+    def test_ovira_effects_module_and_pointer_safety(self):
+        """Verifies Ovira effects.js module invariants, reduced-motion/SSR guards, DRY ResizeObserver, and HTTP serving."""
+        effects_path = os.path.join(REPO_ROOT, "web", "js", "modules", "effects.js")
+        self.assertTrue(os.path.isfile(effects_path), "web/js/modules/effects.js must exist")
+        with open(effects_path, "r", encoding="utf-8") as f:
+            effects_js = f.read()
+
+        # 1. Public ES module exports & SSR / motion / pointer guards
+        self.assertIn("export function initAmbientEffects()", effects_js)
+        self.assertIn("export function updateNavIndicator()", effects_js)
+        self.assertIn('typeof window === "undefined"', effects_js)
+        self.assertIn('typeof document === "undefined"', effects_js)
+        self.assertIn("prefers-reduced-motion: reduce", effects_js)
+        self.assertIn("pointer: fine", effects_js)
+        self.assertIn("if (effectsInitialized", effects_js)
+
+        # 2. rAF throttling, passive pointer listeners, and cleanup on window blur / leave / cancel
+        self.assertIn("requestAnimationFrame(flush)", effects_js)
+        self.assertIn("cancelAnimationFrame(rafId)", effects_js)
+        self.assertIn("{ passive: true }", effects_js)
+        self.assertIn("pointercancel", effects_js)
+        self.assertIn('"blur"', effects_js)
+        self.assertIn('typeof target.closest === "function"', effects_js)
+
+        # 3. Shared helper avoids ResizeObserver duplication and resets indicator when collapsed
+        self.assertIn("function syncNavIndicatorMetrics(nav)", effects_js)
+        self.assertIn("active.offsetHeight > 0", effects_js)
+        self.assertIn('nav.style.setProperty("--ind-o", "0")', effects_js)
+        self.assertIn("new ResizeObserver(() => syncNavIndicatorMetrics(nav))", effects_js)
+
+        # 4. Verify web server dispatches /js/modules/effects.js safely and rejects traversal
+        handler = MagicMock()
+        handler.path = "/js/modules/effects.js"
+        handler.resolve_path.return_value = (True, "/js/modules/effects.js", None)
+        XForwarderWebHandler.do_GET(handler)
+        handler.send_file.assert_called_once_with(
+            os.path.normpath(effects_path),
+            "application/javascript; charset=utf-8",
+        )
+
+        # Path traversal attempt must never expose files outside web/ (safely falls back to SPA index.html)
+        trav_handler = MagicMock()
+        trav_handler.path = "/js/modules/../../core/auth.py"
+        trav_handler.resolve_path.return_value = (True, "/js/modules/../../core/auth.py", None)
+        XForwarderWebHandler.do_GET(trav_handler)
+        trav_handler.send_file.assert_called_once_with(
+            os.path.join(REPO_ROOT, "web", "index.html"),
+            "text/html; charset=utf-8",
+        )
+
+    def test_ovira_login_split_screen_and_controls_integrity(self):
+        """Verifies Ovira Mint split-screen login, icon button clipping fix, grid display, and CSS bundle sync."""
+        web_dir = os.path.join(REPO_ROOT, "web")
+        with open(os.path.join(web_dir, "index.html"), "r", encoding="utf-8") as f:
+            html = f.read()
+        with open(os.path.join(web_dir, "js", "modules", "auth.js"), "r", encoding="utf-8") as f:
+            auth_js = f.read()
+        with open(os.path.join(web_dir, "js", "modules", "rules.js"), "r", encoding="utf-8") as f:
+            rules_js = f.read()
+        with open(os.path.join(web_dir, "css", "base.css"), "r", encoding="utf-8") as f:
+            base_css = f.read()
+        with open(os.path.join(web_dir, "css", "components.css"), "r", encoding="utf-8") as f:
+            comp_css = f.read()
+        with open(os.path.join(web_dir, "style.css"), "r", encoding="utf-8") as f:
+            flat_css = f.read()
+
+        # 1. Split-screen login markup & showLogin grid mode
+        self.assertIn("login-shell", html)
+        self.assertIn("login-art", html)
+        self.assertIn("login-pane-head", html)
+        self.assertIn('loginScreen.style.display = "grid"', auth_js)
+
+        # 2. Prevent overflowing "Theme" text inside 36x36 square icon button
+        self.assertIn(".login-theme-toggle .theme-name {", base_css)
+        self.assertIn("display: none;", base_css)
+
+        # 3. Mobile login wrapper spacing resets cleanly without phantom top padding
+        self.assertIn(".login-wrapper.login-shell {", comp_css)
+
+        # 4. Rules list indicator dots use semantic CSS custom properties instead of hardcoded hex
+        self.assertIn("var(--accent-emerald)", rules_js)
+        self.assertIn("var(--accent-rose)", rules_js)
+        self.assertIn("var(--accent-amber)", rules_js)
+
+        # 5. Built flat style.css matches concatenated modular CSS files
+        parts = ["tokens.css", "base.css", "layout.css", "components.css", "modals.css", "rtl.css"]
+        part_contents = []
+        for p in parts:
+            with open(os.path.join(web_dir, "css", p), "r", encoding="utf-8") as pf:
+                part_contents.append(pf.read().rstrip())
+        expected_bundle = "\n\n".join(part_contents) + "\n"
+        self.assertEqual(flat_css, expected_bundle, "web/style.css must stay strictly synchronized with web/css/*.css")
 
 
 if __name__ == "__main__":

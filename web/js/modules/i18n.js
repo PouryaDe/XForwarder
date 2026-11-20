@@ -25,6 +25,8 @@ export const TRANSLATIONS = {
         "login.failed": "Invalid username or password",
         "login.theme": "Theme",
         "login.lang": "فارسی",
+        "login.art_badge": "MULTI-PATH FAILOVER ENGINE",
+        "login.art_pitch": "Every port, tunnel and failover in one place.",
 
         // Navigation & Sidebar
         "nav.main": "MAIN NAVIGATION",
@@ -446,6 +448,8 @@ export const TRANSLATIONS = {
         "login.failed": "نام کاربری یا رمز عبور نامعتبر است",
         "login.theme": "پوسته",
         "login.lang": "English",
+        "login.art_badge": "موتور رله و فیل‌اور چندمسیره",
+        "login.art_pitch": "کنترل کامل پورت‌ها، تونل‌ها و فیل‌اور هوشمند در یک جا.",
 
         // Navigation & Sidebar
         "nav.main": "ناوبری اصلی",

@@ -1,89 +1,190 @@
 /* ==========================================================================
-   XForwarder Design Tokens & Theme Palettes
-   Dual Theme System: Nova Dark Base (#0B0E14) & Crisp Light (#EEF1F7)
+   XForwarder Design Tokens & Theme Palettes (Ovira Mint Edition)
+   Dark Base: Obsidian Teal (#05090a) + Mint (#34e0a1)
+   Light Base: Warm Stone (#e8e7de) + Forest Mint (#2fd896 / #006b4a)
    ========================================================================== */
+
+@property --ang {
+    syntax: "<angle>";
+    inherits: false;
+    initial-value: 0deg;
+}
 
 :root, [data-theme="dark"] {
     color-scheme: dark;
-    --bg-base: #0B0E14;
-    --bg-surface: #12151f;
-    --bg-surface-2: #171b28;
-    --bg-card: rgba(255, 255, 255, 0.045);
-    --bg-card-hover: rgba(255, 255, 255, 0.065);
-    --border-color: rgba(255, 255, 255, 0.08);
-    --border-strong: rgba(255, 255, 255, 0.16);
-    --border-active: rgba(167, 139, 250, 0.45);
-    
-    --text-primary: #F5F7FB;
-    --text-secondary: #8B93A7;
-    --text-muted: #565F73;
 
-    /* Nova signature color palette */
-    --mint: #6EE7B7;
-    --violet: #A78BFA;
-    --amber: #FBBF6B;
-    --red: #FB7185;
+    /* Ovira Core Surface Hierarchy */
+    --ground: #05090a;
+    --raise: #0a1112;
+    --raise-2: #101a1b;
+    --raise-3: #172425;
+    --glass: rgba(10, 17, 18, 0.76);
+    --scrim: rgba(2, 6, 6, 0.74);
+    --edge: rgba(255, 255, 255, 0.07);
+    --unlit: #16231f;
 
-    --accent-primary: #A78BFA;
-    --accent-primary-hover: #9065F8;
-    --accent-cyan: #38BDF8;
-    --accent-emerald: #6EE7B7;
-    --accent-mint: #6EE7B7;
-    --accent-violet: #A78BFA;
-    --accent-amber: #FBBF6B;
-    --accent-rose: #FB7185;
+    /* Borders & Hairlines */
+    --line: rgba(154, 245, 207, 0.09);
+    --line-strong: rgba(154, 245, 207, 0.19);
+    --border-color: var(--line);
+    --border-strong: var(--line-strong);
+    --border-active: rgba(52, 224, 161, 0.5);
 
-    /* Nova aurora ambient blobs */
-    --blob-1: #22315c;
-    --blob-2: #3d2255;
-    --blob-3: #1c3b3a;
+    /* Semantic Surface Aliases */
+    --bg-base: var(--ground);
+    --bg-surface: var(--raise);
+    --bg-surface-2: var(--raise-2);
+    --bg-card: rgba(10, 17, 18, 0.78);
+    --bg-card-hover: rgba(16, 26, 27, 0.92);
 
-    --card-shadow: 0 20px 50px -12px rgba(0, 0, 0, 0.5);
-    --panel-shadow: 0 20px 50px -12px rgba(0, 0, 0, 0.5);
+    /* Ink & Typography */
+    --ink: #e9f3ee;
+    --ink-2: #a3b8af;
+    --ink-3: #70867c;
+    --text-primary: var(--ink);
+    --text-secondary: var(--ink-2);
+    --text-muted: var(--ink-3);
 
-    --radius-lg: 20px;
-    --radius-md: 14px;
+    /* Ovira Mint Signature Accent Palette */
+    --accent: #34e0a1;
+    --accent-text: #34e0a1;
+    --accent-2: #46d6e6;
+    --accent-ink: #001a0f;
+    --accent-wash: rgba(52, 224, 161, 0.10);
+    --accent-glow: rgba(52, 224, 161, 0.38);
+    --focus: #9af5cf;
+
+    /* Semantic Status Colors */
+    --good: #3ee8a6;
+    --warn: #ffb648;
+    --warn-wash: rgba(255, 182, 72, 0.12);
+    --bad: #ff6b57;
+    --bad-wash: rgba(255, 107, 87, 0.12);
+
+    /* XForwarder Semantic Token Mappings */
+    --mint: var(--accent);
+    --violet: var(--accent-2);
+    --amber: var(--warn);
+    --red: var(--bad);
+
+    --accent-primary: var(--accent);
+    --accent-primary-hover: #2bd496;
+    --accent-cyan: var(--accent-2);
+    --accent-emerald: var(--good);
+    --accent-mint: var(--accent-text);
+    --accent-violet: var(--accent-2);
+    --accent-amber: var(--warn);
+    --accent-rose: var(--bad);
+
+    /* Ambient Drifting Blobs, Dot Matrix & Grain */
+    --blob-a: rgba(52, 224, 161, 0.12);
+    --blob-b: rgba(70, 214, 230, 0.10);
+    --blob-c: rgba(52, 224, 161, 0.08);
+    --blob-1: var(--blob-a);
+    --blob-2: var(--blob-b);
+    --blob-3: var(--blob-c);
+    --grid-dot: rgba(154, 245, 207, 0.08);
+    --grid-lit: rgba(52, 224, 161, 0.55);
+    --grain: 0.05;
+
+    /* Shadows & Elevation */
+    --card-shadow: inset 0 1px 0 var(--edge), 0 24px 48px -32px rgba(0, 0, 0, 0.72);
+    --panel-shadow: inset 0 1px 0 var(--edge), 0 24px 48px -32px rgba(0, 0, 0, 0.72);
+    --shadow-float: 0 24px 64px rgba(0, 0, 0, 0.6), 0 4px 14px rgba(0, 0, 0, 0.45);
+
+    /* Radii & Motion System */
+    --radius-xl: 24px;
+    --radius-lg: 18px;
+    --radius-md: 12px;
     --radius-sm: 10px;
+    --r: 10px;
+    --r-lg: 18px;
+    --r-xl: 24px;
 
-    --font-display: 'Space Grotesk', -apple-system, BlinkMacSystemFont, sans-serif;
-    --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-    --font-mono: 'JetBrains Mono', monospace;
+    --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+    --out: cubic-bezier(0.16, 1, 0.3, 1);
+    --spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+    --fast: 0.14s;
+    --med: 0.26s;
+
+    /* Typography */
+    --font-display: 'Bricolage Grotesque', 'Vazirmatn', system-ui, -apple-system, sans-serif;
+    --font-sans: 'Hanken Grotesk', 'Vazirmatn', system-ui, -apple-system, sans-serif;
+    --font-body: var(--font-sans);
+    --font-mono: 'JetBrains Mono', ui-monospace, 'Cascadia Mono', 'SFMono-Regular', Menlo, Consolas, monospace;
 }
 
 [data-theme="light"] {
     color-scheme: light;
-    --bg-base: #EEF1F7;
-    --bg-surface: #FFFFFF;
-    --bg-surface-2: #F3F5FA;
-    --bg-card: rgba(255, 255, 255, 0.65);
-    --bg-card-hover: rgba(255, 255, 255, 0.80);
-    --border-color: rgba(20, 25, 45, 0.08);
-    --border-strong: rgba(20, 25, 45, 0.16);
-    --border-active: rgba(139, 92, 246, 0.5);
 
-    --text-primary: #12141C;
-    --text-secondary: #5B6272;
-    --text-muted: #64748B;
+    /* Ovira Light Warm-Stone Hierarchy */
+    --ground: #e8e7de;
+    --raise: #f6f5ee;
+    --raise-2: #eceadf;
+    --raise-3: #e0ded1;
+    --glass: rgba(246, 245, 238, 0.80);
+    --scrim: rgba(20, 28, 22, 0.42);
+    --edge: rgba(255, 255, 255, 0.90);
+    --unlit: #d8d6c8;
 
-    --mint: #059669;
-    --violet: #8B5CF6;
-    --amber: #D97706;
-    --red: #E11D48;
+    --line: rgba(0, 107, 74, 0.11);
+    --line-strong: rgba(0, 107, 74, 0.22);
+    --border-color: var(--line);
+    --border-strong: var(--line-strong);
+    --border-active: rgba(0, 107, 74, 0.50);
 
-    --accent-primary: #8B5CF6;
-    --accent-primary-hover: #7C3AED;
-    --accent-cyan: #0284C7;
-    --accent-emerald: #059669;
-    --accent-mint: #059669;
-    --accent-violet: #8B5CF6;
-    --accent-amber: #D97706;
-    --accent-rose: #E11D48;
+    --bg-base: var(--ground);
+    --bg-surface: var(--raise);
+    --bg-surface-2: var(--raise-2);
+    --bg-card: rgba(246, 245, 238, 0.86);
+    --bg-card-hover: rgba(255, 255, 255, 0.95);
 
-    /* Nova aurora ambient blobs (light) */
-    --blob-1: #c9dcfb;
-    --blob-2: #f0d9fb;
-    --blob-3: #c9f3ea;
+    --ink: #0b1713;
+    --ink-2: #43554e;
+    --ink-3: #6f8077;
+    --text-primary: var(--ink);
+    --text-secondary: var(--ink-2);
+    --text-muted: var(--ink-3);
 
-    --card-shadow: 0 20px 50px -15px rgba(30, 40, 80, 0.14);
-    --panel-shadow: 0 20px 50px -15px rgba(30, 40, 80, 0.14);
+    --accent: #2fd896;
+    --accent-text: #006b4a;
+    --accent-2: #0b8c9b;
+    --accent-ink: #001a0f;
+    --accent-wash: rgba(47, 216, 150, 0.14);
+    --accent-glow: rgba(47, 216, 150, 0.40);
+    --focus: #006b4a;
+
+    --good: #0f7f58;
+    --warn: #a35b00;
+    --warn-wash: rgba(163, 91, 0, 0.12);
+    --bad: #c43a28;
+    --bad-wash: rgba(196, 58, 40, 0.10);
+
+    --mint: var(--accent-text);
+    --violet: var(--accent-2);
+    --amber: var(--warn);
+    --red: var(--bad);
+
+    --accent-primary: var(--accent);
+    --accent-primary-hover: #25c586;
+    --accent-cyan: var(--accent-2);
+    --accent-emerald: var(--good);
+    --accent-mint: var(--accent-text);
+    --accent-violet: var(--accent-2);
+    --accent-amber: var(--warn);
+    --accent-rose: var(--bad);
+
+    --blob-a: rgba(47, 216, 150, 0.22);
+    --blob-b: rgba(11, 140, 155, 0.16);
+    --blob-c: rgba(47, 216, 150, 0.13);
+    --blob-1: var(--blob-a);
+    --blob-2: var(--blob-b);
+    --blob-3: var(--blob-c);
+    --grid-dot: rgba(0, 107, 74, 0.12);
+    --grid-lit: rgba(0, 107, 74, 0.55);
+    --grain: 0.07;
+
+    --card-shadow: inset 0 1px 0 var(--edge), 0 16px 36px -24px rgba(20, 30, 20, 0.16);
+    --panel-shadow: inset 0 1px 0 var(--edge), 0 16px 36px -24px rgba(20, 30, 20, 0.16);
+    --shadow-float: 0 24px 64px rgba(20, 30, 20, 0.20), 0 4px 14px rgba(20, 30, 20, 0.10);
 }

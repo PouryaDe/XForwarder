@@ -6,14 +6,31 @@
 /* 1. Global RTL Typography & Font Definitions */
 [dir="rtl"],
 [lang="fa"] {
-    --font-sans: 'Vazirmatn', -apple-system, BlinkMacSystemFont, 'Segoe UI', Tahoma, Arial, sans-serif;
-    --font-display: 'Vazirmatn', 'Space Grotesk', -apple-system, BlinkMacSystemFont, sans-serif;
+    --font-sans: 'Vazirmatn', 'Hanken Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Tahoma, Arial, sans-serif;
+    --font-display: 'Vazirmatn', 'Bricolage Grotesque', -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
 [dir="rtl"] body {
     font-family: var(--font-sans);
     direction: rtl;
     text-align: right;
+}
+
+[dir="rtl"] h1, [dir="rtl"] h2, [dir="rtl"] h3,
+[dir="rtl"] .login-pitch p {
+    letter-spacing: normal !important;
+}
+
+[dir="rtl"] .login-pitch p {
+    max-width: none;
+    font-family: var(--font-sans) !important;
+    line-height: 1.38;
+}
+
+[dir="rtl"] .login-pitch-kicker {
+    font-family: var(--font-sans) !important;
+    letter-spacing: normal !important;
+    text-transform: none;
 }
 
 /* 2. Universal Form Controls & Button Font Inheritance in RTL */
@@ -172,8 +189,19 @@
 
 /* 5. Sidebar in RTL */
 [dir="rtl"] .sidebar {
-    border-left: 1px solid var(--border-color);
-    border-right: none;
+    animation-name: dock-in-rtl;
+}
+
+[dir="rtl"] .sidebar-nav::before {
+    background: linear-gradient(to left, var(--accent-wash), transparent 90%), var(--raise-2);
+}
+
+[dir="rtl"] .btn-primary::after {
+    transform: skew(18deg) translate(120%);
+}
+
+[dir="rtl"] .btn-primary:hover:not(:disabled)::after {
+    transform: skew(18deg) translate(-520%);
 }
 
 [dir="rtl"] .btn-sidebar-close {
@@ -183,6 +211,7 @@
 
 [dir="rtl"] .nav-item {
     text-align: right !important;
+    animation-name: slide-in-rtl;
 }
 
 [dir="rtl"] .nav-item.active::before {
@@ -233,6 +262,8 @@
     [dir="rtl"] .sidebar {
         right: 0;
         left: auto;
+        border-left: 1px solid var(--border-color);
+        border-right: none;
         transform: translateX(100%);
     }
 
@@ -879,11 +910,11 @@
 }
 
 .login-lang-toggle {
-    height: 38px;
-    padding: 0 14px;
-    border-radius: 10px;
-    box-shadow: var(--card-shadow);
-    font-size: 0.84rem;
+    height: 36px;
+    padding: 0 12px;
+    border-radius: var(--r, 10px);
+    box-shadow: none;
+    font-size: 0.82rem;
 }
 
 /* Topbar Language Button */

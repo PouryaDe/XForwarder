@@ -1,7 +1,7 @@
 # Graph Report - Forward-Manager  (2026-11-16)
 
 ## Corpus Check
-- 107 files · ~142,350 words
+- 107 files · ~142,372 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 14 file(s) not represented in the graph (top: .css 7, .service 4, (none) 2)
 

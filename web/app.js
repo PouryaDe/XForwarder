@@ -26,6 +26,7 @@ import {
     setLastLatestLoss
 } from "./js/modules/state.js";
 import { initTheme, toggleTheme } from "./js/modules/theme.js";
+import { initAmbientEffects, updateNavIndicator } from "./js/modules/effects.js";
 import { initI18n, toggleLanguage, setLanguage, t, getCurrentLang } from "./js/modules/i18n.js";
 import { initNavigation, switchSection, openMobileSidebar, closeMobileSidebar } from "./js/modules/navigation.js";
 import { showLogin, showDashboard, checkSession, handleLogin, handleLogout, initAuth } from "./js/modules/auth.js";
@@ -345,6 +346,7 @@ let statusPollInterval = null;
 
 async function startAuthenticatedSession(username) {
     showDashboard(username);
+    requestAnimationFrame(updateNavIndicator);
     await fetchStatus();
     checkImportableRules();
     fetchSystemVersionInfo(false);
@@ -363,6 +365,7 @@ function stopAuthenticatedSession() {
 // Master Initialization
 async function initApp() {
     initTheme();
+    initAmbientEffects();
     initI18n(() => {
         fetchStatus();
     });

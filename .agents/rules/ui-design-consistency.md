@@ -20,33 +20,34 @@ Authoritative visual guidelines, design tokens, and aesthetic rules for **all** 
 
 ## 2. Dual-Theme Design System (Dark & Light Mode)
 
-### A. Dark Theme (`[data-theme="dark"]`, Default)
-- **Background Base:** `#0B0E14` (Nova Slate Navy)
-- **Surface Solid:** `#12151f` and `#171b28`
-- **Card Fill:** `rgba(255, 255, 255, 0.045)` with `backdrop-filter: blur(20px)`
-- **Border Lines:** `rgba(255, 255, 255, 0.08)` (Focus/Active: `rgba(167, 139, 250, 0.45)`)
-- **Card Shadows:** Deep subtle depth `0 20px 50px -12px rgba(0, 0, 0, 0.5)`
-- **Aurora Ambient Lighting:** 3 floating ambient blobs (`--blob-1: #22315c`, `--blob-2: #3d2255`, `--blob-3: #1c3b3a`)
+### A. Dark Theme (`[data-theme="dark"]`, Default — Ovira Mint)
+- **Background Base (`--ground`):** `#05090a` (Obsidian Teal)
+- **Surface Hierarchy:** `#0a1112` (`--raise`), `#101a1b` (`--raise-2`), `#172425` (`--raise-3`)
+- **Card Fill:** `rgba(10, 17, 18, 0.78)` with `backdrop-filter: blur(22px)` and radial pointer spotlight
+- **Border Lines:** `rgba(154, 245, 207, 0.09)` (Strong: `rgba(154, 245, 207, 0.19)`, Focus/Active: `rgba(52, 224, 161, 0.5)`)
+- **Card Shadows:** `inset 0 1px 0 var(--edge), 0 24px 48px -32px rgba(0, 0, 0, 0.72)`
+- **Ambient Lighting:** Drifting blobs (`--blob-a`, `--blob-b`, `--blob-c`), cursor-lit dot matrix (`.dots` / `.dots.lit`), and film-grain overlay
 - **Restrained Highlights Principle (Mandatory):**
-  - Never use loud neon glows (`box-shadow: 0 0 16px`) or flood normal/healthy cards with colored fills.
-  - Active path routes use refined border-left accents (`border-left: 3px solid var(--accent-emerald)`) instead of neon halos.
-  - Normal operational states (Auto Failover, healthy latency <150ms, priority badges, host IPs, engine running state) must remain quiet, clean, and neutral.
-  - Saturated highlight colors are strictly reserved for critical conditions: Red/Rose for DOWN/100% loss (`#FB7185`), and Amber for Degraded (>150ms or loss > 0%), Flapping, or Manual Forced testing overrides (`#FBBF6B`).
+  - Never flood normal/healthy cards with saturated colored fills.
+  - Active path routes use refined border-left accents (`border-left: 3px solid var(--accent-emerald)`).
+  - Normal operational states stay calm in obsidian-teal & ink hierarchy; Mint (`#34e0a1`) highlights active selections and primary CTAs with dark `#001a0f` (`--accent-ink`) label ink.
+  - Saturated alert colors are reserved for critical conditions: Coral/Red for DOWN/100% loss (`#ff6b57`), and Amber for Degraded (>150ms or loss > 0%), Flapping, or Manual Forced testing overrides (`#ffb648`).
 
-### B. Light Theme (`[data-theme="light"]`)
-- **Background Base:** `#EEF1F7` (Nova Light)
-- **Surface & Cards:** `#FFFFFF` and `rgba(255, 255, 255, 0.65)`
-- **Border Lines:** `rgba(20, 25, 45, 0.08)` (Focus/Active: `rgba(139, 92, 246, 0.5)`)
-- **Card Shadows:** `0 20px 50px -15px rgba(30, 40, 80, 0.14)`
-- **Aurora Ambient Lighting (Light):** Soft ambient blobs (`--blob-1: #c9dcfb`, `--blob-2: #f0d9fb`, `--blob-3: #c9f3ea`)
+### B. Light Theme (`[data-theme="light"]` — Ovira Warm Stone & Forest Mint)
+- **Background Base (`--ground`):** `#e8e7de` (Warm Stone)
+- **Surface & Cards:** `#f6f5ee` (`--raise`), `#eceadf` (`--raise-2`), `rgba(246, 245, 238, 0.86)` (`--bg-card`)
+- **Border Lines:** `rgba(0, 107, 74, 0.11)` (Strong: `rgba(0, 107, 74, 0.22)`, Focus/Active: `rgba(0, 107, 74, 0.50)`)
+- **Primary Accent & Accessible Text:** `--accent: #2fd896` with `#001a0f` button ink; `--accent-text: #006b4a` for legible Mint text/icons on light surfaces
+- **Card Shadows:** `inset 0 1px 0 var(--edge), 0 16px 36px -24px rgba(20, 30, 20, 0.16)`
+- **Ambient Lighting (Light):** Mint & Cyan blobs (`--blob-a: rgba(47, 216, 150, 0.22)`, `--blob-b: rgba(11, 140, 155, 0.16)`)
 
 ---
 
 ## 3. Brand Identity & Iconography Across Screens
 - **Official Brand Mark:** Double-chevron forward icon (`<polyline points="13 17 18 12 13 7"></polyline><polyline points="6 17 11 12 6 7"></polyline>`) housed inside `.logo-orb`.
-- **Logo Gradient:** `linear-gradient(135deg, var(--accent-primary), var(--accent-cyan))` with crisp white icon.
-- **Brand Badge:** Gradient pill badge (`PRO` / `SHIELD`) with `font-weight: 800` and letter-spacing `0.05em`.
-- **Consistency:** The brand mark and badge MUST appear identically on both the Dashboard Sidebar (`.sidebar-header .brand`) and the Login Screen (`.login-header .logo-orb`).
+- **Logo Treatment:** Solid Mint `var(--accent)` orb with deep `--accent-ink` (`#001a0f`) SVG strokes and subtle Mint glow.
+- **Brand Badge:** Mint-washed outline pill (`PRO` / `SHIELD`) with `font-weight: 800` and letter-spacing `0.05em`.
+- **Consistency:** The brand mark and badge MUST appear identically on both the Dashboard Sidebar (`.sidebar-header .brand`) and the Login Screen (`.login-header .logo-orb`), alongside the split-screen SVG Bore Tunnel artwork (`.login-art`).
 
 ---
 
@@ -60,9 +61,10 @@ Authoritative visual guidelines, design tokens, and aesthetic rules for **all** 
 ---
 
 ## 5. Typography Standards
-- **Interface Elements:** Google Fonts **Inter** (`font-family: 'Inter', -apple-system, sans-serif`) for headers, body, buttons, and navigation.
-- **Technical Readouts:** Google Fonts **JetBrains Mono** (`font-family: 'JetBrains Mono', monospace`) strictly for all ports (`:8090`), IP addresses (`10.88.1.2`), latencies (`14ms`), configuration filenames, and code snippets.
-- **Heading Scale:** Clean, legible sizes with negative tracking (`letter-spacing: -0.02em`).
+- **Display & Headings:** Google Fonts **Bricolage Grotesque** (`--font-display`) with tight tracking (`letter-spacing: -0.025em`).
+- **Interface Elements:** Google Fonts **Hanken Grotesk** (`--font-sans`) and **Vazirmatn** for Persian RTL.
+- **Technical Readouts:** Google Fonts **JetBrains Mono** (`--font-mono`) strictly for all ports (`:8090`), IP addresses (`10.88.1.2`), latencies (`14ms`), configuration filenames, and code snippets.
+- **Heading Scale:** Clean, legible sizes with negative tracking (`letter-spacing: -0.025em`).
 
 ---
 
@@ -73,8 +75,8 @@ Authoritative visual guidelines, design tokens, and aesthetic rules for **all** 
   - Integrated SVG icons (`.input-with-icon`) aligned left (`left: 14px`)
   - Arrow dropdown spacing: minimum `36px` right padding to avoid chevron-overlap
 - **Buttons:**
-  - `.btn-primary`: Indigo accent (`--accent-primary`), font-weight 600, smooth hover lift (`transform: translateY(-1px)`).
-  - `.btn-secondary`: Subtle translucent fill with 1px border.
+  - `.btn-primary`: Glossy Mint surface (`--accent`) with `#001a0f` ink, diagonal hover light-sweep (`::after`), font-weight 650, subtle hover lift (`transform: translateY(-1px)`).
+  - `.btn-secondary`: Tactile raised gradient (`var(--raise-2)` to `var(--raise)`) with 1px `--line-strong` border.
   - `.btn-sm`: Compact actions (height `32px`-`34px`, font-size `0.8rem`).
 - **Modals:**
   - Glass backdrop: `rgba(0, 0, 0, 0.65)` with `backdrop-filter: blur(8px)`.

@@ -78,55 +78,105 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link
-        href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Vazirmatn:wght@300;400;500;600;700;800;900&display=swap"
+        href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;600;700&family=Hanken+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Vazirmatn:wght@300;400;500;600;700;800;900&display=swap"
         rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=3.2.22">
+    <link rel="stylesheet" href="style.css?v=3.2.23">
 </head>
 
 <body>
-    <!-- Floating Ambient Aurora Background (Nova Style) -->
-    <div class="aurora" aria-hidden="true"><span></span><span></span><span></span></div>
+    <!-- Ovira Ambient Layer: Drifting Mint/Cyan Blobs, Cursor-Lit Dot Matrix & Film Grain -->
+    <div class="ambient aurora" aria-hidden="true">
+        <i class="blob a"></i>
+        <i class="blob b"></i>
+        <i class="blob c"></i>
+        <div class="dots"></div>
+        <div class="dots lit"></div>
+    </div>
 
-    <!-- Login Screen (Displayed when unauthenticated) -->
-    <div class="login-wrapper" id="loginScreen">
-        <!-- Top Theme Toggle for Login Screen -->
-        <div class="login-top-bar">
-            <button type="button" class="lang-toggle-btn login-lang-toggle" id="btnLoginLangToggle"
-                onclick="toggleLanguage(event)" title="تغییر زبان / Switch Language">
-                <span class="lang-icon">
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <circle cx="12" cy="12" r="10" />
-                        <line x1="2" y1="12" x2="22" y2="12" />
-                        <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
-                    </svg>
-                </span>
-                <span class="lang-name" id="loginLangName">فارسی</span>
-            </button>
-            <button type="button" class="theme-toggle-btn login-theme-toggle" id="btnLoginThemeToggle"
-                onclick="toggleTheme()" title="Toggle Light / Dark Theme">
-                <span class="theme-toggle-icon">
-                    <svg class="sun-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                        stroke-width="2">
-                        <circle cx="12" cy="12" r="5" />
-                        <line x1="12" y1="1" x2="12" y2="3" />
-                        <line x1="12" y1="21" x2="12" y2="23" />
-                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
-                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
-                        <line x1="1" y1="12" x2="3" y2="12" />
-                        <line x1="21" y1="12" x2="23" y2="12" />
-                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
-                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
-                    </svg>
-                    <svg class="moon-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                        stroke-width="2">
-                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
-                    </svg>
-                </span>
-                <span class="theme-name" id="loginThemeName">Theme</span>
-            </button>
+    <!-- Login Screen (Ovira Split-Screen with Animated Bore Tunnel Art) -->
+    <div class="login-wrapper login-shell" id="loginScreen">
+        <!-- Left Pane: Animated Tunnel Artwork -->
+        <div class="login-art" aria-hidden="true">
+            <svg class="bore" viewBox="0 0 600 720" preserveAspectRatio="xMidYMid slice">
+                <defs>
+                    <radialGradient id="bore-glow" cx="300" cy="400" r="260" gradientUnits="userSpaceOnUse">
+                        <stop offset="0" stop-color="var(--accent)" stop-opacity="0.55" />
+                        <stop offset="0.35" stop-color="var(--accent)" stop-opacity="0.12" />
+                        <stop offset="1" stop-color="var(--accent)" stop-opacity="0" />
+                    </radialGradient>
+                </defs>
+                <circle class="bore-sun" cx="300" cy="400" r="260" fill="url(#bore-glow)" />
+                <path class="bore-lane" d="M300 400 L-40 760" />
+                <path class="bore-lane" d="M300 400 L640 760" />
+                <g class="bore-gate" style="--i: 0"><path d="M40 680 V300 A260 260 0 0 1 560 300 V680" /><path class="bore-lamp" d="M270 42 H330" /></g>
+                <g class="bore-gate" style="--i: 1"><path d="M40 680 V300 A260 260 0 0 1 560 300 V680" /><path class="bore-lamp" d="M270 42 H330" /></g>
+                <g class="bore-gate" style="--i: 2"><path d="M40 680 V300 A260 260 0 0 1 560 300 V680" /><path class="bore-lamp" d="M270 42 H330" /></g>
+                <g class="bore-gate" style="--i: 3"><path d="M40 680 V300 A260 260 0 0 1 560 300 V680" /><path class="bore-lamp" d="M270 42 H330" /></g>
+                <g class="bore-gate" style="--i: 4"><path d="M40 680 V300 A260 260 0 0 1 560 300 V680" /><path class="bore-lamp" d="M270 42 H330" /></g>
+                <g class="bore-gate" style="--i: 5"><path d="M40 680 V300 A260 260 0 0 1 560 300 V680" /><path class="bore-lamp" d="M270 42 H330" /></g>
+                <g class="bore-gate" style="--i: 6"><path d="M40 680 V300 A260 260 0 0 1 560 300 V680" /><path class="bore-lamp" d="M270 42 H330" /></g>
+                <g class="bore-gate" style="--i: 7"><path d="M40 680 V300 A260 260 0 0 1 560 300 V680" /><path class="bore-lamp" d="M270 42 H330" /></g>
+                <g class="bore-gate" style="--i: 8"><path d="M40 680 V300 A260 260 0 0 1 560 300 V680" /><path class="bore-lamp" d="M270 42 H330" /></g>
+                <g class="bore-gate" style="--i: 9"><path d="M40 680 V300 A260 260 0 0 1 560 300 V680" /><path class="bore-lamp" d="M270 42 H330" /></g>
+            </svg>
+            <div class="login-pitch">
+                <span class="login-pitch-kicker" data-i18n="login.art_badge">MULTI-PATH FAILOVER ENGINE</span>
+                <p data-i18n="login.art_pitch">Every port, tunnel and failover in one place.</p>
+            </div>
         </div>
 
-        <div class="login-card">
+        <!-- Right Pane: Controls & Glass Sign-in Card -->
+        <div class="login-pane">
+            <!-- Top Bar for Login Screen -->
+            <div class="login-pane-head">
+                <div class="login-pane-brand">
+                    <div class="logo-orb login-pane-orb" title="XForwarder">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                            stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="13 17 18 12 13 7"></polyline>
+                            <polyline points="6 17 11 12 6 7"></polyline>
+                        </svg>
+                    </div>
+                    <span class="login-pane-brand-name" data-i18n="brand.title">XForwarder</span>
+                </div>
+                <div class="login-top-bar">
+                    <button type="button" class="lang-toggle-btn login-lang-toggle" id="btnLoginLangToggle"
+                        onclick="toggleLanguage(event)" title="تغییر زبان / Switch Language">
+                        <span class="lang-icon">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="10" />
+                                <line x1="2" y1="12" x2="22" y2="12" />
+                                <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+                            </svg>
+                        </span>
+                        <span class="lang-name" id="loginLangName">فارسی</span>
+                    </button>
+                    <button type="button" class="theme-toggle-btn login-theme-toggle" id="btnLoginThemeToggle"
+                        onclick="toggleTheme()" title="Toggle Light / Dark Theme">
+                        <span class="theme-toggle-icon">
+                            <svg class="sun-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <circle cx="12" cy="12" r="5" />
+                                <line x1="12" y1="1" x2="12" y2="3" />
+                                <line x1="12" y1="21" x2="12" y2="23" />
+                                <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
+                                <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
+                                <line x1="1" y1="12" x2="3" y2="12" />
+                                <line x1="21" y1="12" x2="23" y2="12" />
+                                <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
+                                <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
+                            </svg>
+                            <svg class="moon-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+                            </svg>
+                        </span>
+                        <span class="theme-name" id="loginThemeName">Theme</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="login-card">
             <div class="login-header">
                 <div class="logo-orb login-logo" title="XForwarder">
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
@@ -211,6 +261,7 @@
                     <span data-i18n="login.submit">Sign In to Dashboard</span>
                 </button>
             </form>
+            </div>
         </div>
     </div>
 
@@ -2199,7 +2250,7 @@
     <!-- Notification Toast Container -->
     <div class="toast-container" id="toastContainer"></div>
 
-    <script type="module" src="app.js?v=3.2.20"></script>
+    <script type="module" src="app.js?v=3.2.23"></script>
 </body>
 
 </html>

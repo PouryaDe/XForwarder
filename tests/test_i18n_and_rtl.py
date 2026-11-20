@@ -456,6 +456,37 @@ class TestI18nAndRTL(unittest.TestCase):
         self.assertIn('[dir="rtl"] .sidebar-footer-toggles {', flat_style)
         self.assertIn('flex-direction: row !important;', flat_style)
 
+    def test_ovira_rtl_floating_sidebar_and_bilingual_login_art(self):
+        """Verify RTL floating sidebar preserves glass border on desktop and Ovira login artwork keys are translated."""
+        with open(self.i18n_js_path, "r", encoding="utf-8") as f:
+            i18n_js = f.read()
+        with open(self.rtl_css_path, "r", encoding="utf-8") as f:
+            rtl_css = f.read()
+        with open(self.flat_style_css_path, "r", encoding="utf-8") as f:
+            flat_style = f.read()
+
+        # 1. Login Bore Tunnel artwork pitch & badge must exist in both EN and FA sections
+        en_block = i18n_js.split("fa: {", 1)[0]
+        fa_block = i18n_js.split("fa: {", 1)[1]
+        for key in ('"login.art_badge"', '"login.art_pitch"'):
+            self.assertIn(key, en_block, f"Missing {key} in English i18n")
+            self.assertIn(key, fa_block, f"Missing {key} in Persian i18n")
+
+        # 2. Desktop RTL floating sidebar pill must not chop its right border
+        desktop_rtl_sidebar = rtl_css.split("/* Mobile Off-canvas Sidebar in RTL */", 1)[0]
+        sidebar_rule_start = desktop_rtl_sidebar.find("[dir=\"rtl\"] .sidebar {")
+        sidebar_rule_end = desktop_rtl_sidebar.find("}", sidebar_rule_start)
+        desktop_sidebar_body = desktop_rtl_sidebar[sidebar_rule_start:sidebar_rule_end]
+        self.assertNotIn("border-right: none", desktop_sidebar_body)
+
+        # 3. Login language toggle matches 36px height of login theme toggle (no 38px override)
+        self.assertIn("height: 36px;", rtl_css)
+        lang_idx = rtl_css.rfind(".login-lang-toggle {")
+        lang_end = rtl_css.find("}", lang_idx)
+        self.assertIn("height: 36px;", rtl_css[lang_idx:lang_end])
+        self.assertNotIn("height: 38px;", rtl_css[lang_idx:lang_end])
+        self.assertIn("height: 36px;", flat_style[flat_style.rfind(".login-lang-toggle {"):])
+
 
 if __name__ == "__main__":
     unittest.main()

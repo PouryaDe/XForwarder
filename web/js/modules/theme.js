@@ -1,5 +1,5 @@
 /**
- * XForwarder - Dual Theme Subsystem (Nova Dark Base & Crisp Light)
+ * XForwarder - Dual Theme Subsystem (Ovira Mint Dark & Warm Stone Light)
  */
 
 let lastToggleTimestamp = 0;
