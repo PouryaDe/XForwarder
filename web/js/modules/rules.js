@@ -356,13 +356,20 @@ export function renderRuleCard(rule, rulesState) {
         </span>
     ` : '';
 
-    const displayPort = rule.port_range || rule.port;
+    const exclList = Array.isArray(rule.excluded_ports) ? rule.excluded_ports : [];
+    const displayPort = exclList.length > 0
+        ? `!= ${exclList.slice(0, 5).join(", ")}${exclList.length > 5 ? ` +${exclList.length - 5}` : ""}`
+        : (rule.port_range || rule.port);
+    const copyValue = exclList.length > 0 ? `!= { ${exclList.join(", ")} }` : String(rule.port_range || rule.port);
+    const exclTitleAttr = exclList.length > 0
+        ? ` title="${escapeHtml(`${rule.port_range || "1-65535"} except: ${exclList.join(", ")} (+ auto-protected SSH & panel port)`)}"`
+        : "";
     return `
         <div class="rule-card" id="rule-card-${encodedId}">
             <div class="rule-top">
                 <div class="port-badge">
-                    <span class="port-num">:${escapeHtml(displayPort)}</span>
-                    <button class="btn-copy" onclick="copyText(decodeURIComponent('${encodeURIComponent(displayPort)}'))" title="${escapeHtml(t("rules.copy_port_num", {}, "Copy Port Number"))}">${copyPortSvg}</button>
+                    <span class="port-num"${exclTitleAttr}>:${escapeHtml(displayPort)}</span>
+                    <button class="btn-copy" onclick="copyText(decodeURIComponent('${encodeURIComponent(copyValue)}'))" title="${escapeHtml(t("rules.copy_port_num", {}, "Copy Port Number"))}">${copyPortSvg}</button>
                     ${trafficPillHtml}
                     ${rState.switch_pending_seconds > 0 ? `<span class="badge-pending-switch" title="${escapeHtml(t("rules.switch_pending_tooltip", { prio: rState.candidate_priority || '' }, `Candidate P${rState.candidate_priority || ''} sustained quality advantage. Switching after streak confirmation.`))}"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>${escapeHtml(t("rules.switch_in", { sec: rState.switch_pending_seconds }, `Switch in ${rState.switch_pending_seconds}s`))}</span>` : ''}
                     ${rState.hold_remaining > 0 ? `<span class="badge-cooldown" title="${escapeHtml(t("rules.min_hold_tooltip", {}, "Route held stable to prevent disruption (Min Hold: 10m)"))}"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 14 14"/></svg>${escapeHtml(t("rules.hold", { sec: rState.hold_remaining }, `Hold ${rState.hold_remaining}s`))}</span>` : (rState.cooldown_remaining > 0 ? `<span class="badge-cooldown" title="${escapeHtml(t("rules.cooldown_tooltip", {}, "Post-Critical Cooldown active"))}"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 14 14"/></svg>${escapeHtml(t("rules.cooldown", { sec: rState.cooldown_remaining }, `Cooldown ${rState.cooldown_remaining}s`))}</span>` : '')}
@@ -482,12 +489,19 @@ export function renderRuleListRow(rule, rulesState) {
         </span>
     ` : '';
 
-    const displayPort = rule.port_range || rule.port;
+    const exclList = Array.isArray(rule.excluded_ports) ? rule.excluded_ports : [];
+    const displayPort = exclList.length > 0
+        ? `!= ${exclList.slice(0, 5).join(", ")}${exclList.length > 5 ? ` +${exclList.length - 5}` : ""}`
+        : (rule.port_range || rule.port);
+    const copyValue = exclList.length > 0 ? `!= { ${exclList.join(", ")} }` : String(rule.port_range || rule.port);
+    const exclTitleAttr = exclList.length > 0
+        ? ` title="${escapeHtml(`${rule.port_range || "1-65535"} except: ${exclList.join(", ")} (+ auto-protected SSH & panel port)`)}"`
+        : "";
     return `
         <div class="rule-list-row" id="rule-card-${encodedId}">
             <div class="rule-list-left">
-                <span class="rule-list-port">:${escapeHtml(displayPort)}</span>
-                <button class="btn-copy" onclick="copyText(decodeURIComponent('${encodeURIComponent(displayPort)}'))" title="${escapeHtml(t("rules.copy_port_num", {}, "Copy Port"))}">${copyPortSvg}</button>
+                <span class="rule-list-port"${exclTitleAttr}>:${escapeHtml(displayPort)}</span>
+                <button class="btn-copy" onclick="copyText(decodeURIComponent('${encodeURIComponent(copyValue)}'))" title="${escapeHtml(t("rules.copy_port_num", {}, "Copy Port"))}">${copyPortSvg}</button>
                 ${trafficPillHtml}
                 ${rState.switch_pending_seconds > 0 ? `<span class="badge-pending-switch" style="font-size:0.68rem; padding:2px 6px;" title="${escapeHtml(t("rules.switch_pending_tooltip", { prio: rState.candidate_priority || '' }, `Switching to P${rState.candidate_priority || ''} in ${rState.switch_pending_seconds}s`))}">${escapeHtml(t("rules.switch_in", { sec: rState.switch_pending_seconds }, `Switch in ${rState.switch_pending_seconds}s`))}</span>` : ''}
                 ${rState.hold_remaining > 0 ? `<span class="badge-cooldown" style="font-size:0.68rem; padding:2px 6px;" title="${escapeHtml(t("rules.min_hold_tooltip", {}, "Min Hold 10m"))}">${escapeHtml(t("rules.hold", { sec: rState.hold_remaining }, `Hold ${rState.hold_remaining}s`))}</span>` : (rState.cooldown_remaining > 0 ? `<span class="badge-cooldown" style="font-size:0.68rem; padding:2px 6px;" title="${escapeHtml(t("rules.cooldown_tooltip", {}, "Post-Critical Cooldown active"))}">${escapeHtml(t("rules.cooldown", { sec: rState.cooldown_remaining }, `Cooldown ${rState.cooldown_remaining}s`))}</span>` : '')}

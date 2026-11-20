@@ -358,6 +358,29 @@ def migrate_and_normalize_config(cfg: Dict[str, Any]) -> Tuple[Dict[str, Any], b
         if not isinstance(rule, dict):
             continue
 
+        # Normalize excluded_ports (optional NFTables != exception list) and shorthand `!= ...`
+        raw_port_val = str(rule.get("port") or "").strip()
+        if raw_port_val.startswith("!="):
+            shorthand_excl, _ = parse_excluded_ports(raw_port_val)
+            if shorthand_excl:
+                rule["excluded_ports"] = shorthand_excl
+                rule["port"] = 1
+                rule["port_range"] = "1-65535"
+                modified = True
+        if "excluded_ports" in rule:
+            parsed_excl, _ = parse_excluded_ports(rule.get("excluded_ports"))
+            if parsed_excl:
+                if rule.get("excluded_ports") != parsed_excl:
+                    rule["excluded_ports"] = parsed_excl
+                    modified = True
+                if not rule.get("port_range") and not rule.get("port"):
+                    rule["port"] = 1
+                    rule["port_range"] = "1-65535"
+                    modified = True
+            else:
+                rule.pop("excluded_ports", None)
+                modified = True
+
         # Normalize port / port_range
         sp, ep, prange = get_rule_port_bounds(rule)
         if sp is not None:
@@ -714,6 +737,76 @@ def get_protected_ports(config: Optional[Dict[str, Any]] = None) -> Set[int]:
     return protected
 
 
+def parse_excluded_ports(raw_excl: Any, expand_limit: int = 1000) -> Tuple[Optional[List[int]], Optional[str]]:
+    """
+    Parses excluded ports from a list of ints/strings or comma/space-separated text
+    (e.g. '22, 443, 1001' or '!= { 22, 443 }'). Returns (sorted_unique_ports, error_msg).
+    """
+    if raw_excl is None or raw_excl == "" or raw_excl == []:
+        return [], None
+
+    tokens: List[str] = []
+    if isinstance(raw_excl, list):
+        for item in raw_excl:
+            if isinstance(item, bool):
+                return None, "Invalid boolean port in excluded_ports"
+            tokens.append(str(item).strip())
+    elif isinstance(raw_excl, str):
+        cleaned = raw_excl.strip()
+        if cleaned.startswith("!="):
+            cleaned = cleaned[2:].strip()
+        cleaned = cleaned.strip("{}").strip()
+        if not cleaned:
+            return [], None
+        tokens = [tok.strip() for tok in re.split(r"[,\s]+", cleaned) if tok.strip()]
+    else:
+        return None, "excluded_ports must be a list of ports or comma-separated string"
+
+    ports: Set[int] = set()
+    for tok in tokens:
+        if "-" in tok:
+            parts = tok.split("-", 1)
+            try:
+                sp, ep = int(parts[0].strip()), int(parts[1].strip())
+            except ValueError:
+                return None, f"Invalid excluded port range '{tok}'"
+            if not (1 <= sp <= ep <= 65535):
+                return None, f"Excluded port range '{tok}' must be within 1-65535"
+            if (ep - sp) > expand_limit:
+                return None, f"Excluded port range '{tok}' is too large (max {expand_limit} ports)"
+            ports.update(range(sp, ep + 1))
+        else:
+            if not tok.isdigit():
+                return None, f"Invalid excluded port '{tok}'"
+            p = int(tok)
+            if not (1 <= p <= 65535):
+                return None, f"Excluded port {p} must be between 1 and 65535"
+            ports.add(p)
+
+    return sorted(ports), None
+
+
+def rules_ports_overlap(rule_a: dict, rule_b: dict) -> bool:
+    """
+    Returns True if two rules actually conflict on any active port, respecting
+    excluded_ports so e.g. a dedicated rule on :443 coexists cleanly with `1-65535 != [22, 443, 1001]`.
+    """
+    sa, ea, _ = get_rule_port_bounds(rule_a)
+    sb, eb, _ = get_rule_port_bounds(rule_b)
+    if sa is None or ea is None or sb is None or eb is None:
+        return False
+    if not ports_overlap(sa, ea, sb, eb):
+        return False
+
+    excl_a = set(rule_a.get("excluded_ports") or [])
+    excl_b = set(rule_b.get("excluded_ports") or [])
+    if excl_a and (eb - sb) <= 2000 and all(p in excl_a for p in range(sb, eb + 1)):
+        return False
+    if excl_b and (ea - sa) <= 2000 and all(p in excl_b for p in range(sa, ea + 1)):
+        return False
+    return True
+
+
 def is_valid_target(target: str) -> bool:
     """Strictly validates if a destination target is a valid IPv4, IPv6, or RFC hostname."""
     if not target or not isinstance(target, str):
@@ -747,9 +840,33 @@ def validate_rule(body: dict) -> Tuple[bool, str]:
         return False, "Invalid JSON body"
 
     raw_port = body.get("port_range") if body.get("port_range") else body.get("port")
-    start_p, end_p, port_range_str = parse_port_spec(raw_port)
-    if start_p is None:
-        return False, "Port must be between 1 and 65535 (or a valid range 'start-end')"
+    raw_port_str = str(raw_port).strip() if raw_port is not None else ""
+    if raw_port_str.startswith("!="):
+        # Support shorthand `!= 22, 443, 1001` syntax -> normalize to all ports 1-65535 with exclusions
+        shorthand_excl, excl_err = parse_excluded_ports(raw_port_str)
+        if excl_err or not shorthand_excl:
+            return False, excl_err or "Specify at least one valid port to exclude (e.g. '!= 22, 443')"
+        start_p, end_p, port_range_str = 1, 65535, "1-65535"
+        body["excluded_ports"] = shorthand_excl
+    elif "excluded_ports" in body and body.get("excluded_ports") not in (None, "", []):
+        parsed_excl, excl_err = parse_excluded_ports(body.get("excluded_ports"))
+        if excl_err:
+            return False, excl_err
+        body["excluded_ports"] = parsed_excl
+        if not raw_port_str:
+            start_p, end_p, port_range_str = 1, 65535, "1-65535"
+        else:
+            start_p, end_p, port_range_str = parse_port_spec(raw_port)
+            if start_p is None:
+                return False, "Port must be between 1 and 65535 (or a valid range 'start-end')"
+            if not port_range_str:
+                return False, "Excluded ports (!=) require an inbound port range (e.g. 1-65535)"
+    else:
+        body.pop("excluded_ports", None)
+        start_p, end_p, port_range_str = parse_port_spec(raw_port)
+        if start_p is None:
+            return False, "Port must be between 1 and 65535 (or a valid range 'start-end')"
+
     body["port"] = start_p
     if port_range_str:
         body["port_range"] = port_range_str
@@ -813,7 +930,7 @@ def validate_rule(body: dict) -> Tuple[bool, str]:
         d["type"] = d_type
 
         if port_range_str and d_type != "nftables":
-            return False, f"Port ranges ({port_range_str}) are only supported for 'nftables' destinations (not '{d_type}')"
+            return False, f"Port ranges / exclusions ({port_range_str}) are only supported for 'nftables' destinations (not '{d_type}')"
 
         if d_type == "haproxy":
             clean_target = target.strip("[]")
@@ -955,7 +1072,9 @@ def import_config_data(imported_raw: Any, mode: str = "merge") -> Tuple[bool, st
 
     if isinstance(imported_raw, list):
         imported_raw = {"rules": imported_raw}
-    elif isinstance(imported_raw, dict) and "rules" not in imported_raw and ("port" in imported_raw or "port_range" in imported_raw):
+    elif isinstance(imported_raw, dict) and "rules" not in imported_raw and (
+        "port" in imported_raw or "port_range" in imported_raw or "excluded_ports" in imported_raw
+    ):
         imported_raw = {"rules": [imported_raw]}
     elif not isinstance(imported_raw, dict):
         return False, "Invalid configuration payload. Must be a JSON object, rules array, or rule object.", {}
@@ -969,21 +1088,21 @@ def import_config_data(imported_raw: Any, mode: str = "merge") -> Tuple[bool, st
     web_port = current_cfg.get("web", {}).get("port", 8090)
 
     validated_rules = []
-    seen_bounds: List[Tuple[int, int]] = []
+    seen_rules: List[dict] = []
     for r in imported_rules:
         if not isinstance(r, dict):
             continue
         sp, ep, prange = get_rule_port_bounds(r)
         if sp is None:
             return False, f"Invalid port number/range: {r.get('port_range') or r.get('port')}", {}
-        label = prange or str(sp)
-        if sp <= web_port <= ep:
+        label = f"!={','.join(map(str, r['excluded_ports']))}" if r.get("excluded_ports") else (prange or str(sp))
+        if not r.get("excluded_ports") and sp <= web_port <= ep:
             return False, f"Port {web_port} is reserved for the XForwarder Web Dashboard", {}
-        if any(ports_overlap(sp, ep, bs, be) for bs, be in seen_bounds):
-            if sp == ep and (sp, ep) in seen_bounds:
+        if any(rules_ports_overlap(r, existing_r) for existing_r in seen_rules):
+            if sp == ep and any(get_rule_port_bounds(er)[:2] == (sp, ep) for er in seen_rules):
                 return False, f"Duplicate port {label} found in imported rules", {}
             return False, f"Duplicate port range {label} overlaps another rule in imported rules", {}
-        seen_bounds.append((sp, ep))
+        seen_rules.append(r)
 
         # Ensure consistent rule ID and initial priority
         if not r.get("id"):

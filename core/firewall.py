@@ -99,7 +99,16 @@ def generate_nftables_ruleset(
 
     all_ports = set(rule_ports or [])
     all_ranges = set(rule_ranges or [])
+    excl_counters: List[Tuple[str, str]] = []
+    seen_excl: Set[Tuple[str, str]] = set()
     for r in dnat_rules:
+        m_excl = re.search(r"\b(tcp|udp)\s+dport\s+(!=\s*(?:\{\s*[^}]+\s*\}|\d+))", r)
+        if m_excl:
+            proto_e, expr_e = m_excl.group(1), m_excl.group(2)
+            if (proto_e, expr_e) not in seen_excl:
+                seen_excl.add((proto_e, expr_e))
+                excl_counters.append((proto_e, expr_e))
+            continue
         m = re.search(r"dport\s+(\d+)(?:-(\d+))?", r)
         if m:
             try:
@@ -133,6 +142,13 @@ def generate_nftables_ruleset(
         forward_counters.append(f"        tcp sport {pr} counter name cnt_out_{cname}")
         forward_counters.append(f"        udp dport {pr} counter name cnt_in_{cname}")
         forward_counters.append(f"        udp sport {pr} counter name cnt_out_{cname}")
+
+    if excl_counters:
+        counter_defs.append("    counter cnt_in_1_excl { }")
+        counter_defs.append("    counter cnt_out_1_excl { }")
+        for proto_e, expr_e in excl_counters:
+            forward_counters.append(f"        {proto_e} dport {expr_e} ct status dnat counter name cnt_in_1_excl")
+            forward_counters.append(f"        {proto_e} sport {expr_e} counter name cnt_out_1_excl")
 
     counter_defs_str = "\n".join(counter_defs) + "\n\n" if counter_defs else ""
     forward_counters_str = "\n".join(forward_counters) + "\n" if forward_counters else ""

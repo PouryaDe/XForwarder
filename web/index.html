@@ -1666,9 +1666,9 @@
 
                 <div class="form-row">
                     <div class="form-group flex-1">
-                        <label for="formPort" data-i18n="modal.inbound_port">Inbound Listening Port</label>
-                        <input type="text" id="formPort" class="form-control" inputmode="numeric" placeholder="e.g. 2023 or 10000-20000" data-i18n-placeholder="modal.port_placeholder" required autocomplete="off">
-                        <small id="portRangeHint" class="text-amber" data-i18n="modal.range_hint_nft_only" style="display:none; font-size:0.74rem; margin-top:5px;">Port ranges are supported exclusively on NFTables (1:1 same-range or single target port).</small>
+                        <label for="formPort" data-i18n="modal.inbound_port">Inbound Port / Range</label>
+                        <input type="text" id="formPort" class="form-control font-mono" placeholder="e.g. 2023, 10000-20000, or != 22,443" data-i18n-placeholder="modal.port_placeholder" required autocomplete="off">
+                        <small id="portRangeHint" class="text-amber" data-i18n="modal.range_hint_nft_only" style="display:none; font-size:0.74rem; margin-top:5px;">Port ranges and != exclusions are supported exclusively on NFTables.</small>
                     </div>
                     <div class="form-group flex-1">
                         <label for="formProto" data-i18n="modal.proto">Transport Protocol</label>
@@ -1678,6 +1678,14 @@
                             <option value="udp" data-i18n="modal.proto_udp">UDP Only</option>
                         </select>
                     </div>
+                </div>
+
+                <div class="form-group" style="margin-bottom: 14px;">
+                    <label for="formExcludedPorts">
+                        <span data-i18n="modal.excluded_ports">Exclude Ports (!= All-Except)</span>
+                        <span style="font-size:0.75rem; color:var(--text-muted); font-weight:normal;" data-i18n="modal.excluded_ports_opt">(Optional · NFTables only · SSH &amp; panel port auto-protected)</span>
+                    </label>
+                    <input type="text" id="formExcludedPorts" class="form-control font-mono" placeholder="e.g. 22, 443, 1001" data-i18n-placeholder="modal.excluded_placeholder" autocomplete="off">
                 </div>
 
                 <div class="form-group" style="margin-bottom: 16px;">

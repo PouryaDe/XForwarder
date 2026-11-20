@@ -13,13 +13,50 @@ let draggedModalPrioIndex = null;
 let currentEditingRuleId = null;
 
 /**
- * Parses a single port ("443") or port range ("10000-20000").
- * Returns { start, end, rangeStr } where rangeStr is null for single ports.
+ * Parses comma/space separated excluded ports or small sub-ranges (e.g. "22, 443, 1001").
+ * Returns sorted array of unique ints, [] if empty, or null if invalid.
+ */
+function parseExcludedPortsInput(rawVal) {
+    if (rawVal === null || rawVal === undefined) return [];
+    let s = String(rawVal).trim();
+    if (!s) return [];
+    if (s.startsWith("!=")) s = s.slice(2).trim();
+    s = s.replace(/^\{|\}$/g, "").trim();
+    if (!s) return [];
+
+    const set = new Set();
+    for (const tok of s.split(/[\s,]+/)) {
+        if (!tok) continue;
+        const rm = /^(\d{1,5})-(\d{1,5})$/.exec(tok);
+        if (rm) {
+            const sp = parseInt(rm[1], 10);
+            const ep = parseInt(rm[2], 10);
+            if (isNaN(sp) || isNaN(ep) || sp < 1 || ep > 65535 || sp > ep || (ep - sp) > 1000) return null;
+            for (let p = sp; p <= ep; p++) set.add(p);
+        } else if (/^\d{1,5}$/.test(tok)) {
+            const p = parseInt(tok, 10);
+            if (isNaN(p) || p < 1 || p > 65535) return null;
+            set.add(p);
+        } else {
+            return null;
+        }
+    }
+    return Array.from(set).sort((a, b) => a - b);
+}
+
+/**
+ * Parses a single port ("443"), range ("10000-20000"), or wildcard exclusion ("!= 22, 443, 1001").
+ * Returns { start, end, rangeStr, excludedPorts? }.
  */
 function parsePortSpec(rawVal) {
     if (rawVal === null || rawVal === undefined) return null;
     const s = String(rawVal).trim();
     if (!s) return null;
+    if (s.startsWith("!=")) {
+        const excl = parseExcludedPortsInput(s);
+        if (!excl || excl.length === 0) return null;
+        return { start: 1, end: 65535, rangeStr: "1-65535", excludedPorts: excl };
+    }
     const rangeMatch = /^(\d{1,5})\s*-\s*(\d{1,5})$/.exec(s);
     if (rangeMatch) {
         const sp = parseInt(rangeMatch[1], 10);
@@ -36,7 +73,18 @@ function parsePortSpec(rawVal) {
 
 function getCurrentInboundSpec() {
     const portInput = document.getElementById("formPort");
-    return portInput ? parsePortSpec(portInput.value) : null;
+    const exclInput = document.getElementById("formExcludedPorts");
+    const parsedPort = portInput ? parsePortSpec(portInput.value) : null;
+    const rawExcl = exclInput ? exclInput.value.trim() : "";
+    if (parsedPort && parsedPort.excludedPorts) return parsedPort;
+    if (rawExcl) {
+        const excl = parseExcludedPortsInput(rawExcl);
+        if (parsedPort && parsedPort.rangeStr) {
+            return { ...parsedPort, excludedPorts: excl || [] };
+        }
+        return { start: 1, end: 65535, rangeStr: "1-65535", excludedPorts: excl || [] };
+    }
+    return parsedPort;
 }
 
 function refreshRangeConstraintUI() {
@@ -129,16 +177,23 @@ export function openEditRuleModal(ruleId) {
     const form = document.getElementById("ruleForm");
     if (!modal) return;
 
-    const displayPort = rule.port_range || rule.port;
+    const displayPort = (Array.isArray(rule.excluded_ports) && rule.excluded_ports.length > 0)
+        ? `!= ${rule.excluded_ports.join(", ")}`
+        : (rule.port_range || rule.port);
     if (form) form.reset();
     if (title) title.innerText = `${t("modal.rule_title_configure")} :${displayPort}`;
     updateCategoryDatalist(currentRules);
 
     const ruleIdInput = document.getElementById("editRuleId") || document.getElementById("ruleId");
-    if (ruleIdInput) ruleIdInput.value = rule.id || `rule-${displayPort}`;
+    if (ruleIdInput) ruleIdInput.value = rule.id || `rule-${rule.port_range || rule.port}`;
 
     const portInput = document.getElementById("formPort");
-    if (portInput) portInput.value = displayPort;
+    if (portInput) portInput.value = rule.port_range || rule.port || "1-65535";
+
+    const exclInput = document.getElementById("formExcludedPorts");
+    if (exclInput) {
+        exclInput.value = Array.isArray(rule.excluded_ports) ? rule.excluded_ports.join(", ") : "";
+    }
 
     const nameInput = document.getElementById("formName");
     if (nameInput) nameInput.value = rule.name || "";
@@ -542,20 +597,40 @@ export function initRuleModal(fetchStatusCallback) {
     }
 
     const formPortInput = document.getElementById("formPort");
+    const formExclInput = document.getElementById("formExcludedPorts");
     if (formPortInput) {
         formPortInput.addEventListener("input", () => {
+            const parsed = parsePortSpec(formPortInput.value);
+            if (parsed && parsed.excludedPorts && formExclInput) {
+                formExclInput.value = parsed.excludedPorts.join(", ");
+            }
             refreshRangeConstraintUI();
-            if (!currentEditingRuleId) {
-                const parsed = parsePortSpec(formPortInput.value);
-                if (parsed) {
-                    const fillVal = parsed.rangeStr || parsed.start;
-                    const portInputs = document.querySelectorAll("#destinationsContainer .dest-port");
-                    portInputs.forEach(input => {
-                        if (!input.value) {
-                            input.value = fillVal;
-                        }
-                    });
+            if (!currentEditingRuleId && parsed) {
+                const fillVal = parsed.rangeStr || parsed.start;
+                const portInputs = document.querySelectorAll("#destinationsContainer .dest-port");
+                portInputs.forEach(input => {
+                    if (!input.value) {
+                        input.value = fillVal;
+                    }
+                });
+            }
+        });
+    }
+    if (formExclInput) {
+        formExclInput.addEventListener("input", () => {
+            const hasExcl = Boolean(formExclInput.value.trim());
+            if (hasExcl && formPortInput) {
+                const cur = parsePortSpec(formPortInput.value);
+                if (!cur || !cur.rangeStr || cur.excludedPorts) {
+                    formPortInput.value = "1-65535";
                 }
+            }
+            refreshRangeConstraintUI();
+            if (hasExcl && !currentEditingRuleId) {
+                const portInputs = document.querySelectorAll("#destinationsContainer .dest-port");
+                portInputs.forEach(input => {
+                    if (!input.value) input.value = "1-65535";
+                });
             }
         });
     }
@@ -576,12 +651,34 @@ export function initRuleModal(fetchStatusCallback) {
             e.preventDefault();
             syncDestinationsFromDom();
 
-            const inbound = parsePortSpec(document.getElementById("formPort").value);
+            const rawPortVal = (document.getElementById("formPort")?.value || "").trim();
+            const rawExclVal = (document.getElementById("formExcludedPorts")?.value || "").trim();
+            let inbound = parsePortSpec(rawPortVal);
+            let excludedPorts = inbound && inbound.excludedPorts ? inbound.excludedPorts : [];
+
+            if (rawExclVal) {
+                const parsedExcl = parseExcludedPortsInput(rawExclVal);
+                if (parsedExcl === null) {
+                    showToast("Invalid excluded ports list. Use comma-separated ports like 22, 443, 1001", "error");
+                    return;
+                }
+                excludedPorts = parsedExcl;
+                if (!inbound && !rawPortVal) {
+                    inbound = { start: 1, end: 65535, rangeStr: "1-65535" };
+                }
+            }
+
             if (!inbound) {
-                showToast("Please enter a valid port (1 - 65535) or NFTables range (e.g. 10000-20000)", "error");
+                showToast("Please enter a valid port (1 - 65535), range (10000-20000), or != excluded ports", "error");
                 return;
             }
-            const inboundLabel = inbound.rangeStr || String(inbound.start);
+            if (excludedPorts.length > 0 && !inbound.rangeStr) {
+                showToast("Excluded ports (!=) require an inbound port range such as 1-65535", "error");
+                return;
+            }
+            const inboundLabel = excludedPorts.length > 0
+                ? `!=${excludedPorts.slice(0, 4).join(",")}`
+                : (inbound.rangeStr || String(inbound.start));
 
             if (currentModalDestinations.length === 0) {
                 showToast("At least one forwarding destination path is required", "error");
@@ -637,6 +734,12 @@ export function initRuleModal(fetchStatusCallback) {
             };
             if (inbound.rangeStr) {
                 rulePayload.port_range = inbound.rangeStr;
+            }
+            if (excludedPorts.length > 0) {
+                rulePayload.excluded_ports = excludedPorts;
+                if (!rulePayload.name || rulePayload.name === `Port ${inboundLabel}`) {
+                    rulePayload.name = `All != ${excludedPorts.join(", ")}`;
+                }
             }
 
             const createdAtStr = ruleCreatedAtInput ? ruleCreatedAtInput.value : "";

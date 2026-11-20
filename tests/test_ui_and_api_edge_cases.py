@@ -2694,6 +2694,69 @@ class TestUIAndAPIEdgeCases(unittest.TestCase):
         self.assertIn("tcp dport 2084-65535 dnat to 10.10.1.2", dnat_custom)
         self.assertNotIn("tcp dport 1002-8089", dnat_custom)
 
+        # 8. Excluded-ports (!=) mode: single NFTables rule, auto-injects web.port, and coexists with :443
+        from core.config_manager import rules_ports_overlap
+        excl_rule = {
+            "port": "!= 22, 443, 1001",
+            "protocol": "both",
+            "destinations": [{"priority": 1, "type": "nftables", "target": "10.10.1.2"}]
+        }
+        ok_vr, err_vr = validate_rule(excl_rule)
+        self.assertTrue(ok_vr, err_vr)
+        self.assertEqual(excl_rule["port"], 1)
+        self.assertEqual(excl_rule["port_range"], "1-65535")
+        self.assertEqual(excl_rule["excluded_ports"], [22, 443, 1001])
+
+        # Non-NFTables destination must be rejected on excluded_ports rule
+        bad_excl = {
+            "port": "1-65535",
+            "excluded_ports": [22, 443],
+            "destinations": [{"priority": 1, "type": "haproxy", "target": "2001:db8::1"}]
+        }
+        ok_bad, _ = validate_rule(bad_excl)
+        self.assertFalse(ok_bad)
+
+        # Dedicated rule on excluded port 443 does NOT overlap `!= 22, 443, 1001`
+        self.assertFalse(rules_ports_overlap(excl_rule, {"port": 443}))
+        self.assertTrue(rules_ports_overlap(excl_rule, {"port": 8443}))
+
+        # Engine generates clean single `dport != { 22, 443, 1001, 2083 }` DNAT & cnt_in_1_excl counters
+        eng.config = {"web": {"port": 2083}, "rules": [excl_rule]}
+        with patch.object(eng, "_detect_wan_interface", return_value="eth0"), \
+             patch("core.engine.apply_nftables", side_effect=fake_apply_nftables), \
+             patch("core.engine.apply_haproxy", return_value=(True, None)), \
+             patch("core.engine.apply_nginx", return_value=(True, None)), \
+             patch.object(eng, "_save_state_file"):
+            ok_ex, errs_ex = eng.sync_firewall_and_proxies()
+        self.assertTrue(ok_ex, errs_ex)
+        dnat_ex = "\n".join(captured_nft["dnat"])
+        self.assertIn('iifname "eth0" tcp dport != { 22, 443, 1001, 2083 } dnat to 10.10.1.2', dnat_ex)
+        self.assertIn('iifname "eth0" udp dport != { 22, 443, 1001, 2083 } dnat to 10.10.1.2', dnat_ex)
+        self.assertIn("cnt_in_1_excl", captured_nft["ruleset"])
+        self.assertIn("cnt_out_1_excl", captured_nft["ruleset"])
+        self.assertNotIn("cnt_in_1_65535", captured_nft["ruleset"])
+
+        # UI modal exposes #formExcludedPorts and != helper
+        self.assertIn("formExcludedPorts", modal_js)
+        self.assertIn("parseExcludedPortsInput", modal_js)
+        self.assertIn("excluded_ports", rules_js)
+
+        # Single-rule JSON paste with excluded_ports only normalizes via import_config_data
+        from core.config_manager import import_config_data
+        import os as _os, tempfile as _tf
+        with _tf.TemporaryDirectory() as _td:
+            _cfg_file = _os.path.join(_td, "cfg.json")
+            with open(_cfg_file, "w", encoding="utf-8") as _f:
+                json.dump({"web": {"port": 8090}, "rules": []}, _f)
+            with patch("core.config_manager.get_config_path", return_value=_cfg_file):
+                ok_imp, err_imp, res_imp = import_config_data({
+                    "excluded_ports": [22, 443, 1001],
+                    "protocol": "both",
+                    "destinations": [{"priority": 1, "type": "nftables", "target": "10.10.1.2"}]
+                }, mode="replace")
+            self.assertTrue(ok_imp, err_imp)
+            self.assertEqual(res_imp.get("imported_count"), 1)
+
 
 if __name__ == "__main__":
     unittest.main()

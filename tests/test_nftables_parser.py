@@ -390,18 +390,19 @@ table ip port_forward_iran {
 }
 """
         rules = parse_nftables_text(iran_table_text)
-        ranges = [r.get("port_range") for r in rules]
-        self.assertEqual(ranges, ["1-21", "23-442", "444-1000", "1002-65535"])
-
-        for r in rules:
-            self.assertEqual(r["protocol"], "both")
-            self.assertEqual(r["active_priority"], 1)
-            self.assertEqual(len(r["destinations"]), 1)
-            self.assertEqual(r["destinations"][0]["type"], "nftables")
-            self.assertEqual(r["destinations"][0]["target"], "10.10.1.2")
-            self.assertEqual(r["destinations"][0]["port_range"], r["port_range"])
-            self.assertEqual(r["_meta"]["table"], "port_forward_iran")
-            self.assertEqual(set(r["_meta"]["handles"]), {4, 5})
+        self.assertEqual(len(rules), 1)
+        r = rules[0]
+        self.assertEqual(r["port"], 1)
+        self.assertEqual(r["port_range"], "1-65535")
+        self.assertEqual(r["excluded_ports"], [22, 443, 1001])
+        self.assertEqual(r["protocol"], "both")
+        self.assertEqual(r["active_priority"], 1)
+        self.assertEqual(len(r["destinations"]), 1)
+        self.assertEqual(r["destinations"][0]["type"], "nftables")
+        self.assertEqual(r["destinations"][0]["target"], "10.10.1.2")
+        self.assertEqual(r["destinations"][0]["port_range"], "1-65535")
+        self.assertEqual(r["_meta"]["table"], "port_forward_iran")
+        self.assertEqual(set(r["_meta"]["handles"]), {4, 5})
 
         # Deactivation deletes each kernel handle exactly once (handle 4 and handle 5)
         with patch("shutil.which", return_value="/usr/sbin/nft"), \
@@ -418,7 +419,7 @@ table ip port_forward_iran {
                 capture_output=True, text=True, timeout=2.0
             )
 
-        # JSON ruleset parity for `op: !=`
+        # JSON ruleset parity for `op: !=` -> single unified excluded_ports rule
         iran_json = {
             "nftables": [
                 {
@@ -442,7 +443,9 @@ table ip port_forward_iran {
             ]
         }
         json_rules = parse_nftables_json(iran_json)
-        self.assertEqual([r.get("port_range") for r in json_rules], ["1-21", "23-442", "444-1000", "1002-65535"])
+        self.assertEqual(len(json_rules), 1)
+        self.assertEqual(json_rules[0].get("port_range"), "1-65535")
+        self.assertEqual(json_rules[0].get("excluded_ports"), [22, 443, 1001])
 
     def test_wide_range_and_jhash_map_import(self):
         """Verifies wide explicit NFTables port ranges and jhash map rules import cleanly without port explosion."""
@@ -465,7 +468,7 @@ table ip custom_nat {
         self.assertEqual([d["target"] for d in rules[1]["destinations"]], ["10.81.2.2", "10.81.3.2"])
 
     def test_import_splits_negated_range_around_web_panel_port(self):
-        """Verifies importing != {22, 443, 1001} splits 1002-65535 around configured web.port (8090) and deletes original handles."""
+        """Verifies != {22, 443, 1001} imports as one unified excluded_ports rule, coexists with :443, and explicit ranges still split around custom web.port."""
         import json
         import os
         import tempfile
@@ -481,8 +484,9 @@ table ip port_forward_iran {
         parsed = parse_nftables_text(live_content)
         with tempfile.TemporaryDirectory() as tmpdir:
             cfg_path = os.path.join(tmpdir, "config.json")
+            # Dedicated rule on excluded port 443 must coexist without blocking wildcard != rule
             with open(cfg_path, "w", encoding="utf-8") as f:
-                json.dump({"web": {"port": 8090}, "rules": []}, f)
+                json.dump({"web": {"port": 8090}, "rules": [{"port": 443, "protocol": "tcp"}]}, f)
 
             with patch("core.nftables_parser.get_live_nftables_rules", return_value=parsed), \
                  patch("core.nftables_parser.find_candidate_nftables_files", return_value=[]), \
@@ -491,14 +495,13 @@ table ip port_forward_iran {
                  patch("subprocess.run", return_value=MagicMock(returncode=0, stdout="", stderr="")) as mock_sub:
                 count, ports, logs = import_nftables_rules_into_config(cfg_path, deactivate_legacy=True)
 
-            self.assertEqual(count, 5)
-            self.assertEqual(ports, ["1-21", "23-442", "444-1000", "1002-8089", "8091-65535"])
+            self.assertEqual(count, 1)
+            self.assertEqual(ports, ["!=22,443,1001"])
             with open(cfg_path, "r", encoding="utf-8") as f:
                 saved = json.load(f)
-            saved_specs = [r.get("port_range") or r.get("port") for r in saved["rules"]]
-            self.assertEqual(saved_specs, ["1-21", "23-442", "444-1000", "1002-8089", "8091-65535"])
-            self.assertFalse(any(1002 <= 8090 <= 65535 and sp == "1002-65535" for sp in saved_specs))
-            # Both original kernel handles deleted once each despite split
+            self.assertEqual(len(saved["rules"]), 2)
+            self.assertEqual(saved["rules"][1]["excluded_ports"], [22, 443, 1001])
+            self.assertEqual(saved["rules"][1]["port_range"], "1-65535")
             mock_sub.assert_any_call(
                 ["nft", "delete", "rule", "ip", "port_forward_iran", "prerouting", "handle", "4"],
                 capture_output=True, text=True, timeout=2.0
@@ -508,31 +511,31 @@ table ip port_forward_iran {
                 capture_output=True, text=True, timeout=2.0
             )
 
-        # Unified discovery with protected_ports splits before user even clicks Import
+        # Unified discovery reports one clean != rule and respects custom web.port on explicit ranges
         with patch("core.haproxy_parser.discover_importable_rules", return_value=[]), \
              patch("core.nftables_parser.get_live_nftables_rules", return_value=parsed), \
              patch("core.nftables_parser.find_candidate_nftables_files", return_value=[]):
             disc = discover_all_relay_rules(existing_rules=[], protected_ports={22, 8090})
-        self.assertEqual(disc["ports"], ["1-21", "23-442", "444-1000", "1002-8089", "8091-65535"])
+        self.assertEqual(disc["ports"], ["!=22,443,1001"])
 
-        # Edge cases on split_port_interval_excluding
+        # Explicit positive range 1002-65535 (without excluded_ports) still splits around configured web.port (8090 / 2083)
+        explicit_range = parse_nftables_text("table ip nat {\n chain pre {\n tcp dport 1002-65535 dnat to 10.10.1.2 # handle 9\n }\n}")
         from core.config_manager import split_port_interval_excluding, get_protected_ports
         self.assertEqual(split_port_interval_excluding(8090, 8090, {22, 8090}), [])
         self.assertEqual(split_port_interval_excluding(21, 24, {22, 23, True}), [(21, 21), (24, 24)])
         self.assertEqual(split_port_interval_excluding(9000, 8000, {22}), [])
         self.assertEqual(split_port_interval_excluding(100, 200, {8090}), [(100, 200)])
 
-        # Custom non-default web.port (e.g. 2083): protects 2083 instead of hardcoding 8090
         self.assertEqual(get_protected_ports({"web": {"port": 2083}}), {22, 2083})
         with tempfile.TemporaryDirectory() as tmpdir_custom:
             cfg_custom = os.path.join(tmpdir_custom, "config.json")
             with open(cfg_custom, "w", encoding="utf-8") as f:
                 json.dump({"web": {"port": 2083}, "rules": []}, f)
-            with patch("core.nftables_parser.get_live_nftables_rules", return_value=parsed), \
+            with patch("core.nftables_parser.get_live_nftables_rules", return_value=explicit_range), \
                  patch("core.nftables_parser.find_candidate_nftables_files", return_value=[]):
                 c_count, c_ports, _ = import_nftables_rules_into_config(cfg_custom, deactivate_legacy=False)
-            self.assertEqual(c_count, 5)
-            self.assertEqual(c_ports, ["1-21", "23-442", "444-1000", "1002-2082", "2084-65535"])
+            self.assertEqual(c_count, 2)
+            self.assertEqual(c_ports, ["1002-2082", "2084-65535"])
 
 
 if __name__ == "__main__":

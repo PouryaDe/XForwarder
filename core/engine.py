@@ -1119,6 +1119,7 @@ class XForwarderEngine:
                     "id": r.get("id"),
                     "port": r.get("port"),
                     "port_range": r.get("port_range"),
+                    "excluded_ports": r.get("excluded_ports"),
                     "protocol": r.get("protocol"),
                     "active_priority": r.get("active_priority"),
                     "force_override": r.get("force_override", 0),
@@ -1134,15 +1135,37 @@ class XForwarderEngine:
         web_port: int
     ) -> List[Tuple[int, int]]:
         """
-        Resolves effective NFTables intervals for a rule while protecting web_port
-        and splitting ranges around SSH (22) and web_port to prevent self-lockout.
+        Resolves effective positive NFTables intervals for a rule while protecting web_port
+        and splitting ranges around SSH (22), web_port, and any rule `excluded_ports`.
+        (Full 1-65535 `excluded_ports` wildcard rules emit native `dport != { ... }` instead.)
         """
         start_p, end_p, port_range = get_rule_port_bounds(rule)
         if start_p is None or end_p is None:
             return []
+        excl = {
+            int(p) for p in (rule.get("excluded_ports") or [])
+            if isinstance(p, int) and not isinstance(p, bool) and 1 <= p <= 65535
+        }
         if port_range:
-            return split_port_interval_excluding(start_p, end_p, protected_ports)
-        return [] if start_p == web_port else [(start_p, start_p)]
+            return split_port_interval_excluding(start_p, end_p, protected_ports | excl)
+        return [] if (start_p == web_port or start_p in excl) else [(start_p, start_p)]
+
+    @staticmethod
+    def _build_nft_excl_expr(rule: Dict[str, Any], protected_ports: Set[int]) -> Optional[str]:
+        """Returns native NFTables `!= { ... }` selector when rule is a full-range 1-65535 exclusion."""
+        excl = rule.get("excluded_ports")
+        if not excl:
+            return None
+        sp, ep, _ = get_rule_port_bounds(rule)
+        if sp != 1 or ep != 65535:
+            return None
+        eff_excl = sorted({
+            int(p) for p in excl
+            if isinstance(p, int) and not isinstance(p, bool) and 1 <= p <= 65535
+        } | protected_ports)
+        if not eff_excl:
+            return None
+        return f"!= {eff_excl[0]}" if len(eff_excl) == 1 else "!= { " + ", ".join(str(p) for p in eff_excl) + " }"
 
     def sync_firewall_and_proxies(self) -> Tuple[bool, List[str]]:
         wan_iface = self._detect_wan_interface()
@@ -1246,11 +1269,15 @@ class XForwarderEngine:
                     dnat_target = f"[{clean_target}]" if is_ipv6 else clean_target
                 else:
                     dnat_target = f"[{clean_target}]:{target_port}" if is_ipv6 else f"{clean_target}:{target_port}"
-                safe_intervals = self._resolve_safe_nft_intervals(rule, protected_ports, web_port)
-                if not safe_intervals and not port_range and port and port != web_port:
-                    safe_intervals = [(int(port), int(port))]
-                for sub_s, sub_e in safe_intervals:
-                    listen_spec = sub_s if sub_s == sub_e else f"{sub_s}-{sub_e}"
+                excl_expr = self._build_nft_excl_expr(rule, protected_ports)
+                if excl_expr:
+                    dport_selectors: List[Any] = [excl_expr]
+                else:
+                    safe_intervals = self._resolve_safe_nft_intervals(rule, protected_ports, web_port)
+                    if not safe_intervals and not port_range and port and port != web_port:
+                        safe_intervals = [(int(port), int(port))]
+                    dport_selectors = [sub_s if sub_s == sub_e else f"{sub_s}-{sub_e}" for sub_s, sub_e in safe_intervals]
+                for listen_spec in dport_selectors:
                     if proto in ("tcp", "both"):
                         nft_dnat_rules.append(
                             f'        iifname "{wan_iface}" tcp dport {listen_spec} dnat to {dnat_target}'
@@ -1283,6 +1310,8 @@ class XForwarderEngine:
         protected_ports = get_protected_ports(self.config)
         web_port = int((self.config.get("web") or {}).get("port", 8090) or 8090)
         for r in self.config.get("rules", []):
+            if self._build_nft_excl_expr(r, protected_ports):
+                continue
             for sub_s, sub_e in self._resolve_safe_nft_intervals(r, protected_ports, web_port):
                 if sub_s < sub_e:
                     rule_ranges.add(f"{sub_s}-{sub_e}")
