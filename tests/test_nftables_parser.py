@@ -464,6 +464,64 @@ table ip custom_nat {
         self.assertEqual(rules[1]["port_range"], "30000-30500")
         self.assertEqual([d["target"] for d in rules[1]["destinations"]], ["10.81.2.2", "10.81.3.2"])
 
+    def test_import_splits_negated_range_around_web_panel_port(self):
+        """Verifies importing != {22, 443, 1001} splits 1002-65535 around configured web.port (8090) and deletes original handles."""
+        import json
+        import os
+        import tempfile
+        live_content = """
+table ip port_forward_iran {
+    chain prerouting {
+        type nat hook prerouting priority dstnat; policy accept;
+        iifname "eth0" tcp dport != { 22, 443, 1001 } dnat to 10.10.1.2 # handle 4
+        iifname "eth0" udp dport != { 22, 443, 1001 } dnat to 10.10.1.2 # handle 5
+    }
+}
+"""
+        parsed = parse_nftables_text(live_content)
+        with tempfile.TemporaryDirectory() as tmpdir:
+            cfg_path = os.path.join(tmpdir, "config.json")
+            with open(cfg_path, "w", encoding="utf-8") as f:
+                json.dump({"web": {"port": 8090}, "rules": []}, f)
+
+            with patch("core.nftables_parser.get_live_nftables_rules", return_value=parsed), \
+                 patch("core.nftables_parser.find_candidate_nftables_files", return_value=[]), \
+                 patch("core.nftables_parser.backup_legacy_nftables", return_value="/tmp/bak.nft"), \
+                 patch("shutil.which", return_value="/usr/sbin/nft"), \
+                 patch("subprocess.run", return_value=MagicMock(returncode=0, stdout="", stderr="")) as mock_sub:
+                count, ports, logs = import_nftables_rules_into_config(cfg_path, deactivate_legacy=True)
+
+            self.assertEqual(count, 5)
+            self.assertEqual(ports, ["1-21", "23-442", "444-1000", "1002-8089", "8091-65535"])
+            with open(cfg_path, "r", encoding="utf-8") as f:
+                saved = json.load(f)
+            saved_specs = [r.get("port_range") or r.get("port") for r in saved["rules"]]
+            self.assertEqual(saved_specs, ["1-21", "23-442", "444-1000", "1002-8089", "8091-65535"])
+            self.assertFalse(any(1002 <= 8090 <= 65535 and sp == "1002-65535" for sp in saved_specs))
+            # Both original kernel handles deleted once each despite split
+            mock_sub.assert_any_call(
+                ["nft", "delete", "rule", "ip", "port_forward_iran", "prerouting", "handle", "4"],
+                capture_output=True, text=True, timeout=2.0
+            )
+            mock_sub.assert_any_call(
+                ["nft", "delete", "rule", "ip", "port_forward_iran", "prerouting", "handle", "5"],
+                capture_output=True, text=True, timeout=2.0
+            )
+
+        # Unified discovery with protected_ports splits before user even clicks Import
+        with patch("core.haproxy_parser.discover_importable_rules", return_value=[]), \
+             patch("core.nftables_parser.get_live_nftables_rules", return_value=parsed), \
+             patch("core.nftables_parser.find_candidate_nftables_files", return_value=[]):
+            disc = discover_all_relay_rules(existing_rules=[], protected_ports={22, 8090})
+        self.assertEqual(disc["ports"], ["1-21", "23-442", "444-1000", "1002-8089", "8091-65535"])
+
+        # Edge cases on split_port_interval_excluding
+        from core.config_manager import split_port_interval_excluding
+        self.assertEqual(split_port_interval_excluding(8090, 8090, {22, 8090}), [])
+        self.assertEqual(split_port_interval_excluding(21, 24, {22, 23, True}), [(21, 21), (24, 24)])
+        self.assertEqual(split_port_interval_excluding(9000, 8000, {22}), [])
+        self.assertEqual(split_port_interval_excluding(100, 200, {8090}), [(100, 200)])
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -32,7 +32,8 @@ from core.config_manager import (
     get_config_path, get_state_file_path, migrate_and_normalize_config,
     load_config as cm_load_config, save_config as cm_save_config,
     CONFIG_PATH as DEFAULT_CONFIG_PATH, LEGACY_CONFIG_PATH, LOCAL_CONFIG_PATH,
-    STATE_FILE_PATH, LEGACY_STATE_FILE_PATH, get_rule_port_bounds
+    STATE_FILE_PATH, LEGACY_STATE_FILE_PATH, get_rule_port_bounds,
+    split_port_interval_excluding, get_protected_ports
 )
 from core.prober import (
     is_private_or_tunnel_target, validate_probe_route,
@@ -1111,16 +1112,37 @@ class XForwarderEngine:
 
     def _get_rules_fingerprint(self) -> str:
         rules = self.config.get("rules", [])
-        return json.dumps([
-            {
-                "id": r.get("id"),
-                "port": r.get("port"),
-                "protocol": r.get("protocol"),
-                "active_priority": r.get("active_priority"),
-                "force_override": r.get("force_override", 0),
-                "destinations": r.get("destinations")
-            } for r in rules
-        ], sort_keys=True)
+        return json.dumps({
+            "web_port": int((self.config.get("web") or {}).get("port", 8090) or 8090),
+            "rules": [
+                {
+                    "id": r.get("id"),
+                    "port": r.get("port"),
+                    "port_range": r.get("port_range"),
+                    "protocol": r.get("protocol"),
+                    "active_priority": r.get("active_priority"),
+                    "force_override": r.get("force_override", 0),
+                    "destinations": r.get("destinations")
+                } for r in rules
+            ]
+        }, sort_keys=True)
+
+    @staticmethod
+    def _resolve_safe_nft_intervals(
+        rule: Dict[str, Any],
+        protected_ports: Set[int],
+        web_port: int
+    ) -> List[Tuple[int, int]]:
+        """
+        Resolves effective NFTables intervals for a rule while protecting web_port
+        and splitting ranges around SSH (22) and web_port to prevent self-lockout.
+        """
+        start_p, end_p, port_range = get_rule_port_bounds(rule)
+        if start_p is None or end_p is None:
+            return []
+        if port_range:
+            return split_port_interval_excluding(start_p, end_p, protected_ports)
+        return [] if start_p == web_port else [(start_p, start_p)]
 
     def sync_firewall_and_proxies(self) -> Tuple[bool, List[str]]:
         wan_iface = self._detect_wan_interface()
@@ -1128,11 +1150,16 @@ class XForwarderEngine:
         udp_entries = []
         nginx_entries = []
         nft_dnat_rules = []
+        protected_ports = get_protected_ports(self.config)
+        web_port = int((self.config.get("web") or {}).get("port", 8090) or 8090)
 
         rules = self.config.get("rules", [])
         for rule in rules:
             start_p, end_p, port_range = get_rule_port_bounds(rule)
             port = start_p if start_p is not None else rule.get("port")
+            if not port_range and port == web_port:
+                print(f"[WARN] Skipping rule on protected Web Dashboard port {web_port} to prevent lockout.", flush=True)
+                continue
             proto = str(rule.get("protocol", "both")).lower()
             active_prio = rule.get("active_priority", 1)
 
@@ -1214,20 +1241,24 @@ class XForwarderEngine:
             elif dest_type == "nftables":
                 clean_target = target.strip("[]")
                 is_ipv6 = ":" in clean_target
-                listen_spec = port_range or port
                 if port_range and (dest.get("port_range") or dest.get("port") is None):
-                    # Preserve 1:1 inbound-to-outbound ports across the range in nftables
+                    # Preserve 1:1 inbound-to-outbound ports across each sub-interval in nftables
                     dnat_target = f"[{clean_target}]" if is_ipv6 else clean_target
                 else:
                     dnat_target = f"[{clean_target}]:{target_port}" if is_ipv6 else f"{clean_target}:{target_port}"
-                if proto in ("tcp", "both"):
-                    nft_dnat_rules.append(
-                        f'        iifname "{wan_iface}" tcp dport {listen_spec} dnat to {dnat_target}'
-                    )
-                if proto in ("udp", "both"):
-                    nft_dnat_rules.append(
-                        f'        iifname "{wan_iface}" udp dport {listen_spec} dnat to {dnat_target}'
-                    )
+                safe_intervals = self._resolve_safe_nft_intervals(rule, protected_ports, web_port)
+                if not safe_intervals and not port_range and port and port != web_port:
+                    safe_intervals = [(int(port), int(port))]
+                for sub_s, sub_e in safe_intervals:
+                    listen_spec = sub_s if sub_s == sub_e else f"{sub_s}-{sub_e}"
+                    if proto in ("tcp", "both"):
+                        nft_dnat_rules.append(
+                            f'        iifname "{wan_iface}" tcp dport {listen_spec} dnat to {dnat_target}'
+                        )
+                    if proto in ("udp", "both"):
+                        nft_dnat_rules.append(
+                            f'        iifname "{wan_iface}" udp dport {listen_spec} dnat to {dnat_target}'
+                        )
 
         errors: List[str] = []
         ok_nft, err_nft = self._apply_nftables(nft_dnat_rules)
@@ -1249,12 +1280,14 @@ class XForwarderEngine:
     def _apply_nftables(self, dnat_rules: List[str]) -> Tuple[bool, Optional[str]]:
         rule_ports: Set[int] = set()
         rule_ranges: Set[str] = set()
+        protected_ports = get_protected_ports(self.config)
+        web_port = int((self.config.get("web") or {}).get("port", 8090) or 8090)
         for r in self.config.get("rules", []):
-            sp, ep, prange = get_rule_port_bounds(r)
-            if prange:
-                rule_ranges.add(prange)
-            elif sp and sp > 0:
-                rule_ports.add(sp)
+            for sub_s, sub_e in self._resolve_safe_nft_intervals(r, protected_ports, web_port):
+                if sub_s < sub_e:
+                    rule_ranges.add(f"{sub_s}-{sub_e}")
+                else:
+                    rule_ports.add(sub_s)
         ok, err, new_content = apply_nftables(
             dnat_rules,
             rule_ports=rule_ports,

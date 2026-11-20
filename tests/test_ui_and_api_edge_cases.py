@@ -2627,6 +2627,58 @@ class TestUIAndAPIEdgeCases(unittest.TestCase):
         self.assertEqual(handler.send_json.call_args[0][1], 409)
         self.assertIn("8090", handler.send_json.call_args[0][0]["error"])
 
+        # 7. Runtime self-protection: even if config.json contains 1002-65535, engine splits DNAT around {22, web.port}
+        from core.engine import XForwarderEngine
+        from core.firewall import generate_nftables_ruleset
+        eng = XForwarderEngine.__new__(XForwarderEngine)
+        eng.config = {
+            "web": {"port": 8090},
+            "rules": [
+                {
+                    "id": "direct-web-port",
+                    "port": 8090,
+                    "protocol": "tcp",
+                    "active_priority": 1,
+                    "destinations": [{"priority": 1, "type": "haproxy", "target": "10.10.1.2", "port": 8090}]
+                },
+                {
+                    "id": "wide-legacy",
+                    "port": 1002,
+                    "port_range": "1002-65535",
+                    "protocol": "both",
+                    "active_priority": 1,
+                    "destinations": [{"priority": 1, "type": "nftables", "target": "10.10.1.2", "port": 1002, "port_range": "1002-65535"}]
+                }
+            ]
+        }
+        eng.runtime_state = {"active_services": {}, "rules_state": {}}
+        eng._last_nft_content = None
+        eng._last_applied_rules = ""
+        eng.state_file_path = "/tmp/nonexistent-xfwd-state.json"
+
+        captured_nft = {}
+
+        def fake_apply_nftables(dnat_rules, rule_ports=None, last_content=None, rule_ranges=None):
+            captured_nft["dnat"] = list(dnat_rules)
+            captured_nft["ruleset"] = generate_nftables_ruleset(dnat_rules, rule_ports=rule_ports, rule_ranges=rule_ranges)
+            return True, None, captured_nft["ruleset"]
+
+        with patch.object(eng, "_detect_wan_interface", return_value="eth0"), \
+             patch("core.engine.apply_nftables", side_effect=fake_apply_nftables), \
+             patch("core.engine.apply_haproxy", return_value=(True, None)), \
+             patch("core.engine.apply_nginx", return_value=(True, None)), \
+             patch.object(eng, "_save_state_file"):
+            ok_sync, errs_sync = eng.sync_firewall_and_proxies()
+
+        self.assertTrue(ok_sync, errs_sync)
+        dnat_joined = "\n".join(captured_nft["dnat"])
+        self.assertIn("tcp dport 1002-8089 dnat to 10.10.1.2", dnat_joined)
+        self.assertIn("tcp dport 8091-65535 dnat to 10.10.1.2", dnat_joined)
+        self.assertNotIn("1002-65535", dnat_joined)
+        self.assertIn("cnt_in_1002_8089", captured_nft["ruleset"])
+        self.assertIn("cnt_in_8091_65535", captured_nft["ruleset"])
+        self.assertNotIn("cnt_in_1002_65535", captured_nft["ruleset"])
+
 
 if __name__ == "__main__":
     unittest.main()

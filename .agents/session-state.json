@@ -1,9 +1,9 @@
 {
-  "last_updated": "2026-11-20T18:15:00+03:30",
+  "last_updated": "2026-11-20T21:05:00+03:30",
   "active_task": "None",
   "active_spec": null,
   "phase": "Idle",
   "completed_milestones": [],
   "next_steps": [],
-  "notes": "Last completed baseline: Ovira Mint Web UI & Linux CLI TUI, IPv6-safe apt/dpkg nginx installer recovery, NFTables negated-set (`!= { ... }`) & jhash discovery, and NFTables-only inbound/outbound port-range forwarding."
+  "notes": "Last completed baseline: Protected-port ({22, web.port}) range splitting during NFTables discovery/import and runtime engine sync/DNAT application to prevent self-lockout from wide negated-set imports (e.g., 1002-65535)."
 }

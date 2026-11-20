@@ -21,6 +21,7 @@ All DNAT routing managed by XForwarder must strictly reside inside the dedicated
 - **NFTables-Only Port Ranges (`port_range`) & Excluded Sets (`!= { ... }`)**:
   - Contiguous inbound/outbound port ranges (`start-end`) are permitted exclusively on `nftables` destinations (`haproxy` and `nginx` forbid port ranges). Outbound must either preserve ports 1:1 (`dnat to <ip>`, matching `port_range`) or target a single fixed port (`dnat to <ip>:<port>`).
   - Range traffic counters use `cnt_in_<start>_<end>` / `cnt_out_<start>_<end>`, wide range flushes (>32 ports) skip per-port conntrack loops, and `nftables_parser.py` expands excluded sets (`dport != { 22, 443, 1001 }`) into clean complementary ranges while tracking all merged TCP/UDP handles for atomic deactivation.
+  - **Self-Lockout Protection (`{22, web.port}`)**: Both discovery/import (`discover_all_relay_rules`, `import_nftables_rules_into_config`) and runtime sync (`XForwarderEngine.sync_firewall_and_proxies` / `_apply_nftables`) split any wide port range around protected management ports (`get_protected_ports(config)` via `split_port_interval_excluding`) and skip `web.port` single-port rules so kernel DNAT never hijacks SSH or the XForwarder Web Dashboard.
 
 ## 2. HAProxy Zero-Tunnel Relay
 - **Config Path**: `/etc/haproxy/haproxy.cfg`

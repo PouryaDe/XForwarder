@@ -128,7 +128,7 @@ XForwarder/
 
 13. **Active Rules Auto-Discovery, Import, Port Ranges & Deconfliction (Mandatory)**:
     - Pre-existing relay rules on the server (HAProxy listen blocks or active NFTables/iptables DNAT rules in kernel tables or `/etc/nftables/*.nft`, including negated sets `dport != { ... }` and `jhash` maps) must be automatically detectable via unified discovery (`discover_all_relay_rules`).
-    - Port-range forwarding (`port_range: "start-end"`) is restricted exclusively to `nftables` kernel DNAT (1:1 same-range or single target port; forbidden on HAProxy/Nginx), with `cnt_in_<start>_<end>` counters and overlap/web-port collision guards.
+    - Port-range forwarding (`port_range: "start-end"`) is restricted exclusively to `nftables` kernel DNAT (1:1 same-range or single target port; forbidden on HAProxy/Nginx), with `cnt_in_<start>_<end>` counters and overlap/web-port collision guards. Broad discovered/imported ranges (e.g., `1002-65535` from `!= { 22, 443, 1001 }`) are automatically split around protected system ports (`{22, web.port}`) via `split_port_interval_excluding`, and `engine.py` enforces runtime protected-port range splitting in `sync_firewall_and_proxies()` / `_apply_nftables()` to guarantee panel and SSH access can never be DNAT-hijacked.
     - When imported, an atomic ruleset snapshot must be created at `/etc/xforwarder/backups/legacy_nftables_<timestamp>.nft`.
     - Conflicting unmanaged legacy DNAT rules must be safely deactivated using exact rule handles (`nft delete rule <family> <table> <chain> handle <id>`, deduplicated across merged TCP/UDP rules) to eliminate kernel PREROUTING hook collision and guarantee zero-collision forwarding.
 

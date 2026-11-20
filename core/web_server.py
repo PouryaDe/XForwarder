@@ -531,10 +531,12 @@ class XForwarderWebHandler(BaseHTTPRequestHandler):
                 cfg = load_config()
                 existing_rules = cfg.get("rules", [])
                 try:
+                    from core.config_manager import get_protected_ports
                     from core.nftables_parser import discover_all_relay_rules
                 except ImportError:
+                    from config_manager import get_protected_ports
                     from nftables_parser import discover_all_relay_rules
-                data = discover_all_relay_rules(existing_rules)
+                data = discover_all_relay_rules(existing_rules, protected_ports=get_protected_ports(cfg))
                 self.send_json(data)
                 return
             elif subpath == "/api/config/export":

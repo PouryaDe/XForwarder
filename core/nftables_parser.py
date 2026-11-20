@@ -19,9 +19,15 @@ import ipaddress
 from typing import List, Dict, Any, Tuple, Optional, Set, Union
 
 try:
-    from core.config_manager import get_rule_port_bounds, ports_overlap
+    from core.config_manager import (
+        get_rule_port_bounds, ports_overlap,
+        split_port_interval_excluding, get_protected_ports
+    )
 except ImportError:
-    from config_manager import get_rule_port_bounds, ports_overlap
+    from config_manager import (
+        get_rule_port_bounds, ports_overlap,
+        split_port_interval_excluding, get_protected_ports
+    )
 
 logger = logging.getLogger("xforwarder.nftables_parser")
 
@@ -124,19 +130,69 @@ def _invert_excluded_ports_to_ranges(excluded: Set[int]) -> List[Tuple[int, int]
     Converts a set of excluded ports (from `dport != { ... }`) into complementary
     contiguous [start, end] port intervals inside 1..65535.
     """
-    valid = sorted(p for p in excluded if 1 <= p <= 65535)
-    if not valid:
-        return [(1, 65535)]
-    intervals: List[Tuple[int, int]] = []
-    cursor = 1
-    for ex in valid:
-        if ex > cursor:
-            intervals.append((cursor, ex - 1))
-        if ex + 1 > cursor:
-            cursor = ex + 1
-    if cursor <= 65535:
-        intervals.append((cursor, 65535))
-    return intervals
+    return split_port_interval_excluding(1, 65535, excluded)
+
+
+def _apply_protected_port_splits(
+    rules: List[Dict[str, Any]],
+    protected_ports: Optional[Set[int]]
+) -> List[Dict[str, Any]]:
+    """
+    Splits or drops discovered/imported rules overlapping protected system ports
+    (such as SSH 22 or XForwarder Web Dashboard port) so importing broad ranges
+    like 1002-65535 never locks out management access. Preserves `_meta.source_spec`
+    and handles so legacy rules still deactivate cleanly.
+    """
+    if not protected_ports:
+        return rules
+
+    safe_rules: List[Dict[str, Any]] = []
+    for r in rules:
+        sp, ep, _ = get_rule_port_bounds(r)
+        if sp is None or ep is None:
+            continue
+        sub_intervals = split_port_interval_excluding(sp, ep, protected_ports)
+        if not sub_intervals:
+            continue
+        if len(sub_intervals) == 1 and sub_intervals[0] == (sp, ep):
+            safe_rules.append(r)
+            continue
+
+        orig_spec = str(r.get("port_range") or r.get("port") or "")
+        base_id = str(r.get("id") or f"Imported NFTables {orig_spec}")
+        orig_meta = dict(r.get("_meta") or {})
+        if orig_spec and "source_spec" not in orig_meta:
+            orig_meta["source_spec"] = orig_spec
+
+        for sub_s, sub_e in sub_intervals:
+            new_dests = []
+            for d in r.get("destinations", []):
+                nd = dict(d)
+                # Preserve explicit fixed single-port redirects; adjust 1:1 range destinations to sub-interval
+                if sub_s == sub_e:
+                    if nd.get("port_range") or nd.get("port") is None or nd.get("port") == sp:
+                        nd["port"] = sub_s
+                    nd.pop("port_range", None)
+                else:
+                    if nd.get("port_range") or nd.get("port") is None or nd.get("port") == sp:
+                        nd["port"] = sub_s
+                        nd["port_range"] = f"{sub_s}-{sub_e}"
+                new_dests.append(nd)
+
+            sub_rule: Dict[str, Any] = {
+                "id": f"{base_id} ({sub_s})" if sub_s == sub_e else f"{base_id} ({sub_s}-{sub_e})",
+                "port": sub_s,
+                "protocol": r.get("protocol", "both"),
+                "active_priority": r.get("active_priority", 1),
+                "destinations": new_dests,
+                "_meta": dict(orig_meta),
+            }
+            if sub_s < sub_e:
+                sub_rule["port_range"] = f"{sub_s}-{sub_e}"
+            if "_source" in r:
+                sub_rule["_source"] = r["_source"]
+            safe_rules.append(sub_rule)
+    return safe_rules
 
 
 def _parse_port_tokens(expr_body: str, expand_limit: int = 100) -> Set[int]:
@@ -836,10 +892,14 @@ def find_candidate_nftables_files() -> List[str]:
     return candidates
 
 
-def discover_importable_nftables_rules(existing_rules: Optional[List[Dict[str, Any]]] = None) -> List[Dict[str, Any]]:
+def discover_importable_nftables_rules(
+    existing_rules: Optional[List[Dict[str, Any]]] = None,
+    protected_ports: Optional[Set[int]] = None
+) -> List[Dict[str, Any]]:
     """
     Scans live kernel rules and persistent files for NFTables forwarding rules.
-    Returns rules whose port/range does not overlap existing_rules.
+    Returns rules whose port/range does not overlap existing_rules, automatically
+    splitting ranges around any protected_ports (e.g., SSH 22 and web dashboard port).
     """
     configured_bounds: List[Tuple[int, int]] = []
     if existing_rules:
@@ -862,7 +922,7 @@ def discover_importable_nftables_rules(existing_rules: Optional[List[Dict[str, A
         return False
 
     # 1. Live kernel rules (highest priority)
-    for r in get_live_nftables_rules():
+    for r in _apply_protected_port_splits(get_live_nftables_rules(), protected_ports):
         if not _conflicts_existing_or_discovered(r):
             sp, ep, _ = get_rule_port_bounds(r)
             discovered_rules.append(r)
@@ -874,7 +934,7 @@ def discover_importable_nftables_rules(existing_rules: Optional[List[Dict[str, A
             with open(path, "r", encoding="utf-8", errors="ignore") as f:
                 content = f.read()
             file_rules = parse_iptables_text(content) if "iptables" in path else parse_nftables_text(content)
-            for r in file_rules:
+            for r in _apply_protected_port_splits(file_rules, protected_ports):
                 if not _conflicts_existing_or_discovered(r):
                     sp, ep, _ = get_rule_port_bounds(r)
                     discovered_rules.append(r)
@@ -948,7 +1008,7 @@ def deactivate_legacy_rules(imported_rules: List[Dict[str, Any]]) -> Tuple[int, 
     for r in imported_rules:
         meta = r.get("_meta", {})
         if not meta.get("handle") and not meta.get("handles"):
-            spec = str(r.get("port_range") or r.get("port") or "")
+            spec = str(meta.get("source_spec") or r.get("port_range") or r.get("port") or "")
             if spec:
                 specs_needing_lookup.add(spec)
 
@@ -968,6 +1028,7 @@ def deactivate_legacy_rules(imported_rules: List[Dict[str, Any]]) -> Tuple[int, 
         meta = r.get("_meta", {})
         port_label = r.get("port_range") or r.get("port")
         spec_key = str(port_label or "")
+        source_key = str(meta.get("source_spec") or spec_key)
         if not spec_key:
             continue
 
@@ -979,8 +1040,8 @@ def deactivate_legacy_rules(imported_rules: List[Dict[str, Any]]) -> Tuple[int, 
         family = meta.get("family", "ip")
 
         # Supplement with live handles if discovered
-        if not handles and spec_key in live_handles:
-            live_meta = live_handles[spec_key]
+        if not handles and source_key in live_handles:
+            live_meta = live_handles[source_key]
             handles = list(live_meta.get("handles") or [])
             if not handles and live_meta.get("handle") is not None:
                 handles.append(live_meta.get("handle"))
@@ -1097,7 +1158,7 @@ def import_nftables_rules_into_config(
         return 0, [], [f"Error reading config: {e}"]
 
     rules = cfg.get("rules", [])
-    importable = discover_importable_nftables_rules(rules)
+    importable = discover_importable_nftables_rules(rules, protected_ports=get_protected_ports(cfg))
 
     if not importable:
         return 0, [], ["No new unimported NFTables rules found"]
@@ -1135,7 +1196,10 @@ def import_nftables_rules_into_config(
         return 0, [], [f"Failed to save config: {e}"]
 
 
-def discover_all_relay_rules(existing_rules: Optional[List[Dict[str, Any]]] = None) -> Dict[str, Any]:
+def discover_all_relay_rules(
+    existing_rules: Optional[List[Dict[str, Any]]] = None,
+    protected_ports: Optional[Set[int]] = None
+) -> Dict[str, Any]:
     """
     Unified discovery scanning both HAProxy configurations and active NFTables rules.
     Returns structured results with per-source metrics.
@@ -1150,7 +1214,7 @@ def discover_all_relay_rules(existing_rules: Optional[List[Dict[str, Any]]] = No
 
     # 2. NFTables rules (exclude overlapping HAProxy ports to avoid double discovery)
     all_known = list(existing_rules or []) + ha_rules
-    nft_rules = discover_importable_nftables_rules(all_known)
+    nft_rules = discover_importable_nftables_rules(all_known, protected_ports=protected_ports)
     for r in nft_rules:
         r["_source"] = "nftables"
 

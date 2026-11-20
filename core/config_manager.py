@@ -13,7 +13,7 @@ import re
 import ipaddress
 import socket
 import subprocess
-from typing import Dict, Any, Tuple, Optional, List
+from typing import Dict, Any, Tuple, Optional, List, Set
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 CONFIG_PATH = "/etc/xforwarder/config.json"
@@ -669,6 +669,49 @@ def get_rule_port_bounds(rule: dict) -> Tuple[Optional[int], Optional[int], Opti
 def ports_overlap(a_start: int, a_end: int, b_start: int, b_end: int) -> bool:
     """Returns True when two closed port intervals [a_start, a_end] and [b_start, b_end] intersect."""
     return not (a_end < b_start or b_end < a_start)
+
+
+def split_port_interval_excluding(start_p: int, end_p: int, excluded: Set[int]) -> List[Tuple[int, int]]:
+    """
+    Splits closed interval [start_p, end_p] into maximal contiguous sub-intervals
+    excluding any port in `excluded`, clamped to valid ports 1..65535.
+    """
+    lo = max(1, int(start_p))
+    hi = min(65535, int(end_p))
+    if lo > hi:
+        return []
+    cuts = sorted(
+        p for p in (excluded or set())
+        if isinstance(p, int) and not isinstance(p, bool) and lo <= p <= hi
+    )
+    if not cuts:
+        return [(lo, hi)]
+    intervals: List[Tuple[int, int]] = []
+    cursor = lo
+    for p in cuts:
+        if p > cursor:
+            intervals.append((cursor, p - 1))
+        if p + 1 > cursor:
+            cursor = p + 1
+    if cursor <= hi:
+        intervals.append((cursor, hi))
+    return intervals
+
+
+def get_protected_ports(config: Optional[Dict[str, Any]] = None) -> Set[int]:
+    """Returns system-critical ports (SSH 22 and configured Web UI port) that must never be DNAT-hijacked."""
+    protected: Set[int] = {22}
+    web_port = 8090
+    if isinstance(config, dict):
+        try:
+            web_port = int((config.get("web") or {}).get("port", 8090) or 8090)
+        except (TypeError, ValueError):
+            web_port = 8090
+    if 1 <= web_port <= 65535:
+        protected.add(web_port)
+    else:
+        protected.add(8090)
+    return protected
 
 
 def is_valid_target(target: str) -> bool:
