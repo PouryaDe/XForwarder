@@ -23,7 +23,8 @@ import {
     lastRuntime,
     setLastRuntime,
     setLastTrafficData,
-    setLastLatestLoss
+    setLastLatestLoss,
+    setLastNetwork
 } from "./js/modules/state.js";
 import { initTheme, toggleTheme } from "./js/modules/theme.js";
 import { initAmbientEffects, updateNavIndicator } from "./js/modules/effects.js";
@@ -233,6 +234,7 @@ export async function fetchStatus() {
         setCurrentRules(cfg.rules || []);
         setLastTrafficData(data.traffic || null);
         setLastLatestLoss(data.latest_loss || {});
+        setLastNetwork(data.network || null);
         updateCategoryDatalist(currentRules);
 
         renderStats(currentRules, lastRuntime, data.traffic);

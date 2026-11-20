@@ -1,5 +1,4 @@
 {
-  "0": "DummyHandler",
   "2": "TestPerformanceAndOptimizations",
   "4": "mock_check",
   "5": "🌐 XForwarder",
@@ -21,7 +20,6 @@
   "28": "TestI18nAndRTL",
   "30": "Experience 005: PBKDF2 Salted Auth and Adaptive Rate Limiting",
   "32": "Python Core Standards (`core/engine.py` & `core/web_server.py`)",
-  "33": "Experience 001: Zero-Collision HAProxy and NFTables Failover",
   "34": "TestTrafficAwareFailover",
   "35": "escapeHtml",
   "36": "TestToggleDestination",

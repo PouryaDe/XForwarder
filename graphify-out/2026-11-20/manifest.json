@@ -1,8 +1,8 @@
 {
   "core/engine.py": {
-    "mtime": 1795197508.2232509,
-    "seen": 1795198181.9406824,
-    "ast_hash": "540ff6c5a586e91d546e93c01affa577",
+    "mtime": 1795201769.794446,
+    "seen": 1795201847.3119028,
+    "ast_hash": "deaf3bb77eb2a8597f7fc636eaa73e40",
     "semantic_hash": ""
   },
   "core/web_server.py": {
@@ -288,9 +288,9 @@
     "semantic_hash": ""
   },
   "tests/test_ui_and_api_edge_cases.py": {
-    "mtime": 1795200777.2697122,
-    "seen": 1795200840.1207669,
-    "ast_hash": "a2580311266b0e0f879a15e2fe52ca94",
+    "mtime": 1795201775.0393538,
+    "seen": 1795201847.311937,
+    "ast_hash": "c7a01f334af6de4cd49c62fd4979e5e3",
     "semantic_hash": ""
   },
   "tests/test_network_interfaces.py": {
@@ -438,15 +438,15 @@
     "semantic_hash": ""
   },
   "core/config_manager.py": {
-    "mtime": 1795198831.611195,
-    "seen": 1795198898.4347007,
-    "ast_hash": "5554d01e9c473eae185914a708aaa5ec",
+    "mtime": 1795201657.8757799,
+    "seen": 1795201847.311901,
+    "ast_hash": "99eee5e9b37e5ff38247d6a234106e37",
     "semantic_hash": ""
   },
   "core/firewall.py": {
-    "mtime": 1795200731.1060655,
-    "seen": 1795200840.1207063,
-    "ast_hash": "d1645a85225e905bc86d8200d8c0d7f3",
+    "mtime": 1795201669.8382485,
+    "seen": 1795201847.3119037,
+    "ast_hash": "54757ae7b02cc4549e744a5b40e8950f",
     "semantic_hash": ""
   },
   "core/prober.py": {
@@ -510,15 +510,15 @@
     "semantic_hash": ""
   },
   "web/js/modules/rule_modal.js": {
-    "mtime": 1795200773.2503152,
-    "seen": 1795200840.1207855,
-    "ast_hash": "d8e458e26863efa15e34643ecc8509c8",
+    "mtime": 1795201701.3667989,
+    "seen": 1795201847.3119476,
+    "ast_hash": "264f135cc3801ece77db92630c25bf5c",
     "semantic_hash": ""
   },
   "web/js/modules/rules.js": {
-    "mtime": 1795197664.530414,
-    "seen": 1795198181.940726,
-    "ast_hash": "05e9e67db773466d150faf0d1837b255",
+    "mtime": 1795201709.1890662,
+    "seen": 1795201847.3119483,
+    "ast_hash": "991456574bfc3a5a8601dd0dd470c35a",
     "semantic_hash": ""
   },
   "web/js/modules/state.js": {
@@ -618,9 +618,9 @@
     "semantic_hash": ""
   },
   "web/js/modules/i18n.js": {
-    "mtime": 1795197670.979182,
-    "seen": 1795198181.94072,
-    "ast_hash": "089894b204c204a06650e602fa1ddd28",
+    "mtime": 1795201715.0844626,
+    "seen": 1795201847.3119426,
+    "ast_hash": "e5c545268670e39330393eaefb65a07e",
     "semantic_hash": ""
   },
   "tests/test_i18n_and_rtl.py": {

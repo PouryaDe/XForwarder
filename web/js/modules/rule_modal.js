@@ -4,7 +4,7 @@
 
 import { API_BASE } from "./api.js";
 import { escapeHtml, showToast } from "./utils.js";
-import { currentRules, lastRuntime } from "./state.js";
+import { currentRules, lastNetwork, setLastNetwork } from "./state.js";
 import { updateCategoryDatalist } from "./rules.js";
 import { t } from "./i18n.js";
 
@@ -253,26 +253,79 @@ export function closeRuleModal() {
 export function renderDestinationsList() {
     const container = document.getElementById("destinationsContainer");
     if (!container) return;
-    updateTunnelIfaceDatalist();
     container.innerHTML = "";
     currentModalDestinations.forEach((dest, idx) => {
         const row = renderDestinationRow(dest, idx, currentModalDestinations.length);
         container.appendChild(row);
     });
+    if (!lastNetwork) {
+        ensureNetworkInterfacesLoaded();
+    }
 }
 
-function updateTunnelIfaceDatalist() {
-    let dl = document.getElementById("tunnelIfaceDatalist");
-    if (!dl) {
-        dl = document.createElement("datalist");
-        dl.id = "tunnelIfaceDatalist";
-        document.body.appendChild(dl);
+let networkFetchPromise = null;
+function ensureNetworkInterfacesLoaded() {
+    if (networkFetchPromise) return;
+    networkFetchPromise = fetch(`${API_BASE}/network`)
+        .then(r => (r.ok ? r.json() : null))
+        .then(net => {
+            if (net && typeof net === "object") {
+                setLastNetwork(net);
+                document.querySelectorAll("#destinationsContainer .dest-tunnel-iface").forEach(sel => {
+                    const prevVal = sel.value || sel.dataset.savedValue || "";
+                    sel.innerHTML = buildTunnelIfaceOptionsHtml(prevVal);
+                });
+            }
+        })
+        .catch(() => {})
+        .finally(() => { networkFetchPromise = null; });
+}
+
+function getAvailableServerInterfaces() {
+    const entries = [];
+    const seen = new Set();
+    const net = lastNetwork || {};
+
+    (Array.isArray(net.tunnel_interfaces) ? net.tunnel_interfaces : []).forEach(tObj => {
+        const name = String((tObj && tObj.name) || "").trim();
+        if (!name || seen.has(name)) return;
+        seen.add(name);
+        const ipPart = tObj.ip && tObj.ip !== "No IP assigned" ? ` · ${tObj.ip}` : "";
+        const statePart = tObj.state ? ` · ${tObj.state}` : "";
+        entries.push({ name, label: `${name} (${tObj.type || "Tunnel"}${ipPart}${statePart})` });
+    });
+
+    (Array.isArray(net.server_ips) ? net.server_ips : []).forEach(sObj => {
+        const name = String((sObj && sObj.interface) || "").trim();
+        if (!name || seen.has(name)) return;
+        seen.add(name);
+        const ipPart = sObj.ip ? ` · ${sObj.ip}` : "";
+        entries.push({ name, label: `${name} (WAN / Host${ipPart})` });
+    });
+
+    const primaryName = String(net.primary_interface || "").trim();
+    if (primaryName && !seen.has(primaryName)) {
+        seen.add(primaryName);
+        entries.push({ name: primaryName, label: `${primaryName} (Primary WAN)` });
     }
-    const rawTunnels = (lastRuntime && lastRuntime.network && Array.isArray(lastRuntime.network.tunnel_interfaces))
-        ? lastRuntime.network.tunnel_interfaces
-        : (lastRuntime && Array.isArray(lastRuntime.tunnel_interfaces) ? lastRuntime.tunnel_interfaces : []);
-    const names = Array.from(new Set(rawTunnels.map(tObj => tObj && tObj.name).filter(Boolean)));
-    dl.innerHTML = names.map(n => `<option value="${escapeHtml(n)}"></option>`).join("");
+    return entries;
+}
+
+function buildTunnelIfaceOptionsHtml(selectedVal = "") {
+    const cur = String(selectedVal || "").trim();
+    const autoLabel = escapeHtml(t("modal.tunnel_iface_auto", {}, "Auto (Default Kernel Route / ct status dnat)"));
+    let html = `<option value="" ${!cur ? "selected" : ""}>${autoLabel}</option>`;
+    const list = getAvailableServerInterfaces();
+    let foundSelected = !cur;
+    list.forEach(item => {
+        const isSel = cur && cur === item.name;
+        if (isSel) foundSelected = true;
+        html += `<option value="${escapeHtml(item.name)}" ${isSel ? "selected" : ""}>${escapeHtml(item.label)}</option>`;
+    });
+    if (cur && !foundSelected) {
+        html += `<option value="${escapeHtml(cur)}" selected>${escapeHtml(cur)} (Saved)</option>`;
+    }
+    return html;
 }
 
 export function renderDestinationRow(dest, index, totalCount) {
@@ -348,7 +401,9 @@ export function renderDestinationRow(dest, index, totalCount) {
         </div>
         <div class="form-group dest-iface-group" style="margin-bottom:10px; display:${type === "nftables" ? "block" : "none"};">
             <label>${escapeHtml(t("modal.tunnel_iface", {}, "Tunnel / Outbound Interface (Optional · NFTables)"))}</label>
-            <input type="text" class="form-control font-mono dest-tunnel-iface" list="tunnelIfaceDatalist" maxlength="15" placeholder="${escapeHtml(t("modal.tunnel_iface_placeholder", {}, "Auto (or e.g. backhaul1, ipip2, gre1)"))}" value="${escapeHtml(dest.tunnel_iface || "")}" autocomplete="off">
+            <select class="form-control font-mono dest-tunnel-iface" data-saved-value="${escapeHtml(dest.tunnel_iface || "")}">
+                ${buildTunnelIfaceOptionsHtml(dest.tunnel_iface || "")}
+            </select>
         </div>
         <div class="form-group" style="margin-bottom:10px;">
             <label>${escapeHtml(t("modal.comment_label"))}</label>

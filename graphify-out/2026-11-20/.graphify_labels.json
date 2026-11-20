@@ -50,6 +50,5 @@
   "110": ".test_multi_metric_composite_scoring_and_loss_penalization",
   "113": ".test_forced_priority_down_falls_back_to_auto_mode",
   "115": ".test_evaluate_rule_failback_from_degraded_backup_clears_hold_remaining",
-  "126": "Interactive Requirements Clarification (Reverse Prompt Engineering)",
   "147": "patch"
 }
