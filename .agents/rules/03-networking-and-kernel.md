@@ -1,6 +1,7 @@
 ---
-trigger: always_on
-description: Kernel networking, NFTables table isolation, HAProxy configuration, and tunnel interface standards.
+trigger: model_decision
+always_on: false
+description: Kernel networking, NFTables table isolation, HAProxy configuration, NIC offload tuning, and tunnel interface discovery standards. Load when modifying firewall, proxy generation, or network scripts.
 ---
 
 # Networking & Kernel Standards (XForwarder)

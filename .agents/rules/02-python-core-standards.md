@@ -1,6 +1,7 @@
 ---
-trigger: always_on
-description: Coding standards, lightweight constraints, and thread-safety rules for XForwarder Python daemons.
+trigger: model_decision
+always_on: false
+description: Coding standards, stdlib-only constraints, atomic file persistence, and thread-safety rules for XForwarder Python daemons in core/. Load when modifying core/*.py.
 ---
 
 # Python Core Standards (`core/engine.py` & `core/web_server.py`)

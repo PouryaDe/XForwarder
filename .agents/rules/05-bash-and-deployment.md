@@ -1,6 +1,7 @@
 ---
-trigger: always_on
-description: Bash CLI conventions, deployment locations, systemd service management, and installer guidelines.
+trigger: model_decision
+always_on: false
+description: Bash CLI conventions, deployment locations, systemd service management, and installer guidelines. Load when modifying xforwarder.sh or systemd/*.service.
 ---
 
 # Bash CLI & Deployment Standards (`xforwarder.sh`)

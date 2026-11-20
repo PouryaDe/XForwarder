@@ -1,3 +1,10 @@
+---
+name: backward-compatibility-and-migrations
+description: "Mandatory backward compatibility, pre-update atomic backup, and idempotent schema migration standards. Load when modifying config schemas, migrations, or update paths."
+always_on: false
+trigger: model_decision
+---
+
 # Backward Compatibility & Automated Schema Migration Rule (XForwarder)
 
 ## 1. Prime Directive: Zero Data Loss Across Updates

@@ -32,7 +32,7 @@ This skill guides the agent through operating, maintaining, configuring, and ver
     "secret_path": "xfwd-admin",
     "auth": {
       "username": "admin",
-      "password_hash": "<SHA256_HEX>"
+      "password_hash": "<PBKDF2_SHA256_HASH>"
     }
   },
   "rules": [

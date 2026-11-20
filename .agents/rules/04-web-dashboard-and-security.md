@@ -1,6 +1,7 @@
 ---
-trigger: always_on
-description: Web dashboard UI aesthetics, Vanilla stack constraints, session authentication, and API security guidelines.
+trigger: model_decision
+always_on: false
+description: Web dashboard UI aesthetics, Vanilla JS/CSS stack constraints, PBKDF2 session auth, and API security guidelines. Load when modifying web/ or core/web_server.py or core/auth.py.
 ---
 
 # Web Dashboard & Security Standards (`web/` & `core/web_server.py`)

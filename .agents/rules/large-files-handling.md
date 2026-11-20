@@ -20,7 +20,7 @@ When reading or modifying larger files (`core/engine.py`, `core/web_server.py`, 
 
 ## 2. Surgical Edits (Zero Full-File Overwrite)
 - **Never perform full file replacements on active code:** Overwriting large daemon files risks truncating unviewed sections and introducing regressions.
-- **Use Chunk Replacement:** Always use `replace_file_content` targeting small, exact blocks of code.
+- **Use Chunk Replacement:** Always use `edit_file` targeting small, exact blocks of code.
 - **Match Exact Indentation:** Verify exact whitespace and indentation of surrounding lines to ensure unique chunk matching.
 
 ---

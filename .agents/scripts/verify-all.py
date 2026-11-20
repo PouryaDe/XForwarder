@@ -1,13 +1,15 @@
 #!/usr/bin/env python3
 """
-Pre-Commit & Task Completion Verification Pipeline for XForwarder
-Runs syntax compilation, anti-pattern checks, JSON schema validation, and git status.
+Pre-Commit & Task Completion Verification Pipeline for XForwarder.
+Runs syntax compilation, anti-pattern checks, ES module checks, unit tests, JSON validation, and git status.
 """
 
-import sys
+import json
 import os
 import subprocess
-import json
+import sys
+
+sys.dont_write_bytecode = True
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 REPO_ROOT = os.path.dirname(os.path.dirname(SCRIPT_DIR))
@@ -19,9 +21,8 @@ def run_step(step_name: str, cmd: list) -> bool:
     if res.returncode == 0:
         print(f"[PASSED]  {step_name}")
         return True
-    else:
-        print(f"[FAILED]  {step_name} (exit code: {res.returncode})", file=sys.stderr)
-        return False
+    print(f"[FAILED]  {step_name} (exit code: {res.returncode})", file=sys.stderr)
+    return False
 
 
 def validate_json_files() -> bool:
@@ -45,7 +46,7 @@ def validate_json_files() -> bool:
     return all_ok
 
 
-def show_git_status():
+def show_git_status() -> None:
     print("\n" + "=" * 65)
     print("  Git Workspace Status")
     print("=" * 65)
@@ -53,8 +54,8 @@ def show_git_status():
         res = subprocess.run(["git", "status", "--short"], cwd=REPO_ROOT, stdout=subprocess.PIPE, text=True)
         lines = res.stdout.strip().splitlines()
         if lines:
-            for l in lines:
-                print(f"  {l}")
+            for line in lines:
+                print(f"  {line}")
         else:
             print("  (Working tree clean)")
     except Exception as e:
@@ -62,27 +63,29 @@ def show_git_status():
     print("=" * 65)
 
 
-def main():
+def main() -> None:
     print("\n" + "#" * 65)
     print("  XForwarder Universal Verification Pipeline")
     print("#" * 65)
 
     success = True
+    py = [sys.executable, "-B"]
 
-    # Step 1: Syntax compilation
-    if not run_step("Python Syntax Verification", [sys.executable, os.path.join(SCRIPT_DIR, "syntax-check.py")]):
+    if not run_step("Python Syntax Verification", [*py, os.path.join(SCRIPT_DIR, "syntax-check.py")]):
         success = False
 
-    # Step 2: Anti-Pattern Verification
-    if not run_step("Anti-Pattern & Architectural Rules", [sys.executable, os.path.join(SCRIPT_DIR, "check-anti-patterns.py")]):
+    if not run_step("Anti-Pattern & Architectural Rules", [*py, os.path.join(SCRIPT_DIR, "check-anti-patterns.py")]):
         success = False
 
-    # Step 3: Unit Tests & Regression Verification
-    if os.path.isdir(os.path.join(REPO_ROOT, "tests")):
-        if not run_step("Unit Tests & Regression Verification", [sys.executable, "-m", "unittest", "discover", "-s", "tests"]):
+    es_check = os.path.join(SCRIPT_DIR, "check_es_imports.py")
+    if os.path.exists(es_check):
+        if not run_step("ES Module Imports & Exports", [*py, es_check]):
             success = False
 
-    # Step 4: JSON file validation
+    if os.path.isdir(os.path.join(REPO_ROOT, "tests")):
+        if not run_step("Unit Tests & Regression Verification", [*py, "-m", "unittest", "discover", "-s", "tests"]):
+            success = False
+
     if not validate_json_files():
         success = False
 
@@ -93,11 +96,11 @@ def main():
         print("  [ALL CHECKS PASSED] Workspace is healthy and ready to commit.")
         print("=" * 65 + "\n")
         sys.exit(0)
-    else:
-        print("\n" + "=" * 65, file=sys.stderr)
-        print("  [VERIFICATION FAILED] Please resolve the issues above before finishing.", file=sys.stderr)
-        print("=" * 65 + "\n", file=sys.stderr)
-        sys.exit(1)
+
+    print("\n" + "=" * 65, file=sys.stderr)
+    print("  [VERIFICATION FAILED] Please resolve the issues above before finishing.", file=sys.stderr)
+    print("=" * 65 + "\n", file=sys.stderr)
+    sys.exit(1)
 
 
 if __name__ == "__main__":

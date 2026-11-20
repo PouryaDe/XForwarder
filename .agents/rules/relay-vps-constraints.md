@@ -1,8 +1,8 @@
 ---
 name: relay-vps-constraints
-description: "Linux intermediate relay server resource limits, non-blocking network socket constraints, and isolation standards."
-always_on: true
-trigger: always_on
+description: "Linux intermediate relay server resource limits (<15MB RAM), non-blocking socket cleanup, and kernel isolation standards. Load when auditing performance or socket/FD usage."
+always_on: false
+trigger: model_decision
 ---
 
 # Intermediate Relay VPS Constraints Rule (XForwarder)

@@ -1,6 +1,7 @@
 ---
-trigger: always_on
-description: Architectural principles, multi-path priority failover logic, and zero-collision forwarding rules for XForwarder.
+trigger: model_decision
+always_on: false
+description: Architectural principles, multi-path priority failover logic, route quality scoring, L4/blackhole probing, and zero-collision forwarding rules for XForwarder. Load when editing failover, probing, or routing logic.
 ---
 
 # Architecture & Failover Rules (XForwarder)

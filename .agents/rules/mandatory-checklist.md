@@ -19,11 +19,12 @@ Universal protocol executed proactively at the conclusion of every coding task i
 - **Syntax Check:** Run `python .agents/scripts/syntax-check.py` or `python -m py_compile <file>`.
 - **Anti-Pattern Audit:** Run `python .agents/scripts/check-anti-patterns.py`. Zero third-party pip dependencies, zero global firewall flushes.
 - **Clean Code & DRY:** Extract repeated socket/IP formatting logic into clean, reusable methods.
-- **Security Check:** Validate that `/api/*` endpoints require authentication, password hashes are SHA-256, and inputs are sanitized.
+- **Security Check:** Validate that `/api/*` endpoints require authentication, password hashes use salted PBKDF2-HMAC-SHA256, and inputs are sanitized.
 
-## 2. Automated Verification Pipeline
+## 2. Automated Verification Pipeline & Graph Sync
 - Run `python .agents/scripts/verify-all.py`.
-- Ensure all automated checks pass: Python syntax, anti-pattern scan, JSON validation, and clean Git state.
+- Ensure all automated checks pass: Python syntax, anti-pattern scan, ES module imports, unit tests, JSON validation, and clean Git state.
+- If code files changed, run `graphify update .` (AST-only, zero API cost).
 
 ## 3. Requirement Convergence
 - **Convergence Audit:** Verify that 100% of user requirements, edge cases, and error states are handled. Never leave unverified gaps.
