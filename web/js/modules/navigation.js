@@ -6,7 +6,7 @@ import { t } from "./i18n.js";
 import { BASE_PATH } from "./api.js";
 import { updateNavIndicator } from "./effects.js";
 
-export const SECTIONS = ["rules", "overview", "services", "security", "updates", "logs"];
+export const SECTIONS = ["overview", "rules", "services", "security", "updates", "logs"];
 
 export function getSectionFromLocation() {
     const pathParts = String(window.location.pathname || "")

@@ -1,7 +1,7 @@
 # Graph Report - Forward-Manager  (2026-11-21)
 
 ## Corpus Check
-- 107 files · ~149,705 words
+- 107 files · ~149,809 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 14 file(s) not represented in the graph (top: .css 7, .service 4, (none) 2)
 
@@ -11,7 +11,7 @@
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `5761e6e0`
+- Built from commit: `38b5abb2`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -124,10 +124,10 @@
 ## Surprising Connections (you probably didn't know these)
 - `Key Decisions & Architectural Changes` --references--> `TrafficCollector`  [INFERRED]
   .agents/experiences/014-per-port-and-per-tunnel-traffic-accounting-and-delta-engine.md → core/traffic.py
-- `3. Architecture & Solution Implemented` --references--> `get_services_status()`  [INFERRED]
-  .agents/experiences/006-host-subsystem-inspection-and-drag-drop-priorities.md → core/system_info.py
 - `4. Invariants & Rules for AI Agents` --references--> `hash_password()`  [INFERRED]
   .agents/experiences/005-pbkdf2-salted-auth-and-adaptive-rate-limiting.md → core/auth.py
+- `3. Architecture & Solution Implemented` --references--> `get_services_status()`  [INFERRED]
+  .agents/experiences/006-host-subsystem-inspection-and-drag-drop-priorities.md → core/system_info.py
 - `2. Non-Negotiable Architectural Invariants` --references--> `migrate_and_normalize_config()`  [INFERRED]
   .agents/AGENTS.md → core/config_manager.py
 - `3. Architecture & Solution Implemented` --references--> `migrate_and_normalize_config()`  [INFERRED]
@@ -425,16 +425,16 @@ Nodes (3): initTheme(), toggleTheme(), updateThemeToggleUI()
 _Questions this graph is uniquely positioned to answer:_
 
 - **Why does `XForwarderEngine` connect `XForwarderEngine` to `3. Architecture & Solution Implemented`, `web_server.py`, `TestPerformanceAndOptimizations`, `TestTrafficAwareFailover`, `TestToggleDestination`, `TestNginxStreamEngine`, `TestXForwarderMigration`, `TestEngineProbes`, `TestTargetMetricCache`, `3. Architecture & Solution Implemented`, `firewall.py`, `auth.py`, `sync_system_rules`, `session-state.py`, `TestFastFailoverAndAntiFlap`, `.test_nftables_dual_stack_rules_generation`, `import_config_data`, `engine.py`?**
-  _High betweenness centrality (0.209) - this node is a cross-community bridge._
+  _High betweenness centrality (0.194) - this node is a cross-community bridge._
 - **Are the 10 inferred relationships involving `XForwarderEngine` (e.g. with `2. Root Cause / Core Dynamics` and `TestEngineProbes`) actually correct?**
   _`XForwarderEngine` has 10 INFERRED edges - model-reasoned connections that need verification._
 - **Should `import_config_data` be split into smaller, more focused modules?**
   _Cohesion score 0.14624505928853754 - nodes in this community are weakly interconnected._
 - **Why does `⚡ Core Rules & Constraints` connect `nftables_parser.py` to `import_config_data`, `escapeHtml`, `config_manager.py`, `⚡ Core Rules & Constraints`, `read_haproxy_backend_health`, `⚡ Core Rules & Constraints`, `sync_system_rules`, `rules.js`, `parse_ping_replies`, `import_config_data`, `engine.py`?**
-  _High betweenness centrality (0.155) - this node is a cross-community bridge._
+  _High betweenness centrality (0.161) - this node is a cross-community bridge._
 - **Should `TestPerformanceAndOptimizations` be split into smaller, more focused modules?**
   _Cohesion score 0.0420899854862119 - nodes in this community are weakly interconnected._
 - **Why does `TestUIAndAPIEdgeCases` connect `TestUIAndAPIEdgeCases` to `.test_services_status_api_and_dom`, `.test_nftables_destination_must_be_ip_address`, `.test_installer_nginx_ipv6_and_dpkg_recovery_guards`, `.test_rules_view_toggle_and_category_assets`, `.test_restart_services_action_logic`, `.test_frontend_css_no_hover_motion_transforms`, `.test_frontend_js_latency_and_priority_shortening`, `.test_service_restart_dom_and_ui_wiring`, `.test_drag_and_drop_edge_cases_and_reorder_logic`, `.test_overview_relay_engines_alignment_and_responsive`, `TestXForwarderSecurity`, `.test_validate_rule_arbitrary_priorities`, `.test_topology_and_engines_grid_layout`, `.test_service_restart_edge_cases_and_failures`, `.test_nova_admin_design_system_and_login_cleanup`, `.test_system_version_and_update_apis`, `.test_validate_rule_destination_defaults_port_if_missing`, `.test_copy_port_and_category_json_and_import_modal`, `.test_ovira_effects_module_and_pointer_safety`, `.test_clean_page_headers_dedicated_updates_and_hashless_routing`, `.test_frontend_css_no_hover_borders_and_subtle_transitions`, `.test_drag_and_drop_priority_reordering_integrity`, `TrafficCollector`, `.test_packet_loss_diagnostic_tool_elements`, `XForwarderEngine`, `.test_latency_badge_classification_edge_cases`, `.test_override_endpoint_flushes_conntrack`, `web_server.py`, `config_manager.py`, `.test_rule_update_created_at_preservation`, `.test_system_update_dom_and_ui_wiring`, `.test_signin_button_direct_click_and_deferred_execution_safety`, `.test_pre_auth_flicker_prevention`, `.test_validate_rule_invalid_characters_rejected`, `.test_login_form_event_prevention_and_auth_integrity`, `.test_validate_rule_haproxy_requires_ipv6`, `.test_version_detection_with_commit_file_and_fallback`, `.test_switch_logs_modal_and_event_persistence`, `.test_validate_rule_port_boundary_conditions`, `.test_cli_ovira_mint_tui_design_and_safety_guards`, `.test_topbar_extended_system_metrics_and_api`, `.test_get_update_status_parsing_and_ansi_cleaning`, `.test_session_token_header_authentication_flow`, `.test_ui_proxy_protocol_and_test_target_dom`, `.test_ovira_login_split_screen_and_controls_integrity`, `.test_static_asset_cache_control_and_versioning`, `.test_dark_theme_tokens_and_restrained_highlights`, `.test_dark_and_light_theme_button_color_harmonization`, `.test_validate_rule_empty_destinations_rejected`, `.test_nftables_dual_stack_rules_generation`, `.test_get_remote_version_info_rate_limit_fallback`, `.test_service_restart_api_endpoints`?**
-  _High betweenness centrality (0.106) - this node is a cross-community bridge._
+  _High betweenness centrality (0.105) - this node is a cross-community bridge._
 - **Should `XForwarderWebHandler` be split into smaller, more focused modules?**
   _Cohesion score 0.135632183908046 - nodes in this community are weakly interconnected._

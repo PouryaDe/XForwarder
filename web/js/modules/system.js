@@ -129,6 +129,11 @@ export async function fetchSystemVersionInfo(force = false) {
                 : "Just now";
         }
 
+        const navUpdateDot = document.getElementById("navUpdateDot");
+        if (navUpdateDot) {
+            navUpdateDot.style.display = data.update_available ? "inline-block" : "none";
+        }
+
         if (data.update_available) {
             if (badgeUpdateStatus) {
                 badgeUpdateStatus.className = "stat-badge badge-amber";

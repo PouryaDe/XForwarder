@@ -309,6 +309,16 @@
     border: 1px solid color-mix(in srgb, var(--good) 28%, transparent);
 }
 
+.nav-update-dot {
+    flex: 0 0 auto;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--good);
+    box-shadow: 0 0 8px var(--good);
+    display: inline-block;
+}
+
 /* ── Sidebar Footer ── */
 .sidebar-footer {
     display: flex;
@@ -468,7 +478,7 @@
 .main-wrapper {
     flex: 1;
     min-width: 0;
-    padding: 20px 18px 64px;
+    padding: 28px 20px 64px;
     max-width: 1400px;
     margin: 0 auto;
     width: 100%;
@@ -496,11 +506,14 @@
     align-items: center;
     gap: 16px;
     flex-wrap: wrap;
-    margin: 2px 0 22px 0;
+    min-height: 44px;
+    margin: 12px 0 32px 0;
     padding: 0 2px;
 }
 
 .page-header-text {
+    display: flex;
+    align-items: center;
     min-width: 0;
     flex: 1 1 280px;
 }
@@ -509,7 +522,7 @@
     font-family: var(--font-page-title);
     font-size: clamp(1.7rem, 2.35vw, 2.08rem);
     font-weight: 700;
-    line-height: 1.15;
+    line-height: 1.2;
     letter-spacing: -0.03em;
     color: var(--ink);
     margin: 0;
@@ -521,6 +534,11 @@
     gap: 8px;
     flex-wrap: wrap;
     flex-shrink: 0;
+}
+
+.page-header-actions .btn {
+    height: 36px;
+    min-height: 36px;
 }
 
 .updates-page-shell {

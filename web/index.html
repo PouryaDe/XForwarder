@@ -297,17 +297,6 @@
             <nav class="sidebar-nav">
                 <div class="nav-section-label" data-i18n="nav.main">MAIN NAVIGATION</div>
 
-                <button class="nav-item active" data-section="rules" id="navItemRules">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <rect x="2" y="2" width="20" height="8" rx="2" ry="2" />
-                        <rect x="2" y="14" width="20" height="8" rx="2" ry="2" />
-                        <line x1="6" y1="6" x2="6.01" y2="6" />
-                        <line x1="6" y1="18" x2="6.01" y2="18" />
-                    </svg>
-                    <span class="nav-label" data-i18n="nav.rules">Port Matrix</span>
-                    <span class="nav-badge" id="navRulesCount">0</span>
-                </button>
-
                 <button class="nav-item" data-section="overview" id="navItemOverview">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <rect x="3" y="3" width="7" height="7" />
@@ -315,30 +304,42 @@
                         <rect x="14" y="14" width="7" height="7" />
                         <rect x="3" y="14" width="7" height="7" />
                     </svg>
-                    <span class="nav-label" data-i18n="nav.overview">Overview & Health</span>
+                    <span class="nav-label" data-i18n="nav.overview">Overview</span>
+                </button>
+
+                <button class="nav-item active" data-section="rules" id="navItemRules">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="2" y="2" width="20" height="8" rx="2" ry="2" />
+                        <rect x="2" y="14" width="20" height="8" rx="2" ry="2" />
+                        <line x1="6" y1="6" x2="6.01" y2="6" />
+                        <line x1="6" y1="18" x2="6.01" y2="18" />
+                    </svg>
+                    <span class="nav-label" data-i18n="nav.rules">Ports</span>
+                    <span class="nav-badge" id="navRulesCount">0</span>
                 </button>
 
                 <button class="nav-item" data-section="services" id="navItemServices">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
                     </svg>
-                    <span class="nav-label" data-i18n="nav.services">Relay Services</span>
+                    <span class="nav-label" data-i18n="nav.services">Services</span>
                 </button>
 
                 <button class="nav-item" data-section="security" id="navItemSecurity">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
                     </svg>
-                    <span class="nav-label" data-i18n="nav.security">Security & Access</span>
+                    <span class="nav-label" data-i18n="nav.security">Security</span>
                 </button>
 
                 <button class="nav-item" data-section="updates" id="navItemUpdates">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <polyline points="8 17 12 21 16 17" />
-                        <line x1="12" y1="12" x2="12" y2="21" />
-                        <path d="M20.88 18.09A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.29" />
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10" />
+                        <polyline points="16 12 12 8 8 12" />
+                        <line x1="12" y1="16" x2="12" y2="8" />
                     </svg>
-                    <span class="nav-label" data-i18n="nav.updates">System Updates</span>
+                    <span class="nav-label" data-i18n="nav.updates">Updates</span>
+                    <span class="nav-update-dot" id="navUpdateDot" style="display:none;" title="Update available"></span>
                 </button>
 
                 <button class="nav-item" data-section="logs" id="navItemLogs">
@@ -349,7 +350,7 @@
                         <line x1="16" y1="17" x2="8" y2="17" />
                         <polyline points="10 9 9 9 8 9" />
                     </svg>
-                    <span class="nav-label" data-i18n="nav.logs">Logs & Probes</span>
+                    <span class="nav-label" data-i18n="nav.logs">Logs</span>
                 </button>
             </nav>
 
@@ -603,7 +604,7 @@
             <section class="dashboard-section" id="sectionOverview" style="display:none;">
                 <div class="page-header">
                     <div class="page-header-text">
-                        <h1 class="page-title" data-i18n="overview.title">Overview &amp; Health</h1>
+                        <h1 class="page-title" data-i18n="overview.title">Overview</h1>
                     </div>
                 </div>
                 <!-- Live System Resource & Telemetry Dashboard (Graphical Gauges) -->

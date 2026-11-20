@@ -30,12 +30,12 @@ export const TRANSLATIONS = {
 
         // Navigation & Sidebar
         "nav.main": "MAIN NAVIGATION",
-        "nav.rules": "Port Matrix",
-        "nav.overview": "Overview & Health",
-        "nav.services": "Relay Services",
-        "nav.updates": "System Updates",
-        "nav.security": "Security & Access",
-        "nav.logs": "Logs & Probes",
+        "nav.rules": "Ports",
+        "nav.overview": "Overview",
+        "nav.services": "Services",
+        "nav.updates": "Updates",
+        "nav.security": "Security",
+        "nav.logs": "Logs",
         "user.admin": "Administrator",
         "user.role": "Administrator",
 
@@ -102,8 +102,8 @@ export const TRANSLATIONS = {
         "rules.flap_guard": "Flap Guard",
         "rules.traffic_cycle_tooltip": "Billing Cycle Traffic: ↑ {tx} · ↓ {rx} (Click for details & reset)",
 
-        // Section 2: Overview & Health
-        "overview.title": "Overview & Health",
+        // Section 2: Overview
+        "overview.title": "Overview",
         "overview.desc": "Live server telemetry, daily bandwidth accounting, tunnel topology, and 30-day packet loss analytics.",
         "overview.cpu": "CPU & Load",
         "overview.cpu_load": "Processor Load",
@@ -467,13 +467,13 @@ export const TRANSLATIONS = {
         "login.art_pitch": "کنترل کامل پورت‌ها، تونل‌ها و فیل‌اور هوشمند در یک جا.",
 
         // Navigation & Sidebar
-        "nav.main": "ناوبری اصلی",
-        "nav.rules": "ماتریس پورت‌ها",
-        "nav.overview": "نمای کلی و سلامت",
-        "nav.services": "سرویس‌های رله",
-        "nav.updates": "به‌روزرسانی سیستم",
-        "nav.security": "امنیت و دسترسی",
-        "nav.logs": "لاگ‌ها و پروب‌ها",
+        "nav.main": "منوی اصلی",
+        "nav.rules": "پورت‌ها",
+        "nav.overview": "نمای کلی",
+        "nav.services": "سرویس‌ها",
+        "nav.updates": "آپدیت",
+        "nav.security": "امنیت",
+        "nav.logs": "لاگ‌ها",
         "user.admin": "مدیر سیستم",
         "user.role": "مدیر سیستم",
 
@@ -540,8 +540,8 @@ export const TRANSLATIONS = {
         "rules.flap_guard": "محافظ نوسان",
         "rules.traffic_cycle_tooltip": "ترافیک دوره جاری: ارسال ↑ {tx} · دریافت ↓ {rx} (برای جزئیات و صفر کردن کلیک کنید)",
 
-        // Section 2: Overview & Health
-        "overview.title": "نمای کلی و سلامت",
+        // Section 2: Overview
+        "overview.title": "نمای کلی",
         "overview.desc": "پایش لحظه‌ای منابع سرور، آمار مصرف روزانه پهنای باند، توپولوژی تونل‌ها و تحلیل ۳۰ روزه افت بسته.",
         "overview.cpu": "پردازنده و بار سیستم",
         "overview.cpu_load": "بار پردازنده",

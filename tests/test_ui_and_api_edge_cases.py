@@ -2860,6 +2860,17 @@ class TestUIAndAPIEdgeCases(unittest.TestCase):
         self.assertIn('.toast-icon {', modals_css)
         self.assertIn('.toast-message {', modals_css)
         self.assertIn('.toast-close {', modals_css)
+        # Overview first in sidebar, short concise nav items, update green indicator dot, and centered header spacing
+        self.assertLess(html.index('id="navItemOverview"'), html.index('id="navItemRules"'))
+        self.assertIn('data-i18n="nav.overview">Overview<', html)
+        self.assertIn('data-i18n="overview.title">Overview<', html)
+        self.assertIn('id="navUpdateDot"', html)
+        self.assertIn('.nav-update-dot {', layout_css)
+        self.assertIn('margin: 12px 0 32px 0;', layout_css)
+        self.assertIn('.page-header-actions .btn {', layout_css)
+        with open(os.path.join(web_dir, "js", "modules", "system.js"), "r", encoding="utf-8") as f:
+            sys_js = f.read()
+        self.assertIn('navUpdateDot', sys_js)
 
         # 4. Hash-free path routing in navigation.js & BASE_PATH stripping in api.js
         self.assertIn('"updates"', nav_js)
