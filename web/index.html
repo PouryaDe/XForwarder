@@ -1668,7 +1668,10 @@
                     <div class="form-group flex-1">
                         <label for="formPort" data-i18n="modal.inbound_port">Inbound Port / Range</label>
                         <input type="text" id="formPort" class="form-control font-mono" placeholder="e.g. 2023, 10000-20000, or != 22,443" data-i18n-placeholder="modal.port_placeholder" required autocomplete="off">
-                        <small id="portRangeHint" class="text-amber" data-i18n="modal.range_hint_nft_only" style="display:none; font-size:0.74rem; margin-top:5px;">Port ranges and != exclusions are supported exclusively on NFTables.</small>
+                        <div id="portRangeHint" class="range-info-note" style="display:none;">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                            <span data-i18n="modal.range_hint_nft_only">NFTables 1:1 range mode — forwards exact port or a fixed target port.</span>
+                        </div>
                     </div>
                     <div class="form-group flex-1">
                         <label for="formProto" data-i18n="modal.proto">Transport Protocol</label>
@@ -1681,11 +1684,15 @@
                 </div>
 
                 <div class="form-group" style="margin-bottom: 14px;">
-                    <label for="formExcludedPorts">
+                    <label for="exclTagText">
                         <span data-i18n="modal.excluded_ports">Exclude Ports (!= All-Except)</span>
                         <span style="font-size:0.75rem; color:var(--text-muted); font-weight:normal;" data-i18n="modal.excluded_ports_opt">(Optional · NFTables only · SSH &amp; panel port auto-protected)</span>
                     </label>
-                    <input type="text" id="formExcludedPorts" class="form-control font-mono" placeholder="e.g. 22, 443, 1001" data-i18n-placeholder="modal.excluded_placeholder" autocomplete="off">
+                    <div class="tag-input-box" id="exclTagInputBox">
+                        <div class="tag-chips" id="exclTagChips"></div>
+                        <input type="text" id="exclTagText" class="tag-inline-input font-mono" placeholder="Add port + Space or , (e.g. 22 443 1001)" data-i18n-placeholder="modal.excluded_placeholder" autocomplete="off">
+                    </div>
+                    <input type="hidden" id="formExcludedPorts" value="">
                 </div>
 
                 <div class="form-group" style="margin-bottom: 16px;">

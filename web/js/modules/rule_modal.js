@@ -92,7 +92,7 @@ function refreshRangeConstraintUI() {
     const isRange = Boolean(inbound && inbound.rangeStr);
     const hintEl = document.getElementById("portRangeHint");
     if (hintEl) {
-        hintEl.style.display = isRange ? "block" : "none";
+        hintEl.style.display = isRange ? "inline-flex" : "none";
     }
 
     const boxes = document.querySelectorAll("#destinationsContainer .priority-box");
@@ -150,6 +150,8 @@ export function openAddRuleModal() {
     const ruleCreatedAtInput = document.getElementById("ruleCreatedAt");
     if (ruleCreatedAtInput) ruleCreatedAtInput.value = "";
 
+    setExcludedTags([]);
+
     currentModalDestinations = [
         { priority: 1, type: "haproxy", target: "", port: "", comment: "", proxy_protocol: false, is_relay: false, enabled: true },
         { priority: 2, type: "nftables", target: "", port: "", comment: "", proxy_protocol: false, is_relay: true, enabled: true }
@@ -190,10 +192,7 @@ export function openEditRuleModal(ruleId) {
     const portInput = document.getElementById("formPort");
     if (portInput) portInput.value = rule.port_range || rule.port || "1-65535";
 
-    const exclInput = document.getElementById("formExcludedPorts");
-    if (exclInput) {
-        exclInput.value = Array.isArray(rule.excluded_ports) ? rule.excluded_ports.join(", ") : "";
-    }
+    setExcludedTags(Array.isArray(rule.excluded_ports) ? rule.excluded_ports : []);
 
     const nameInput = document.getElementById("formName");
     if (nameInput) nameInput.value = rule.name || "";
@@ -271,9 +270,11 @@ function ensureNetworkInterfacesLoaded() {
         .then(net => {
             if (net && typeof net === "object") {
                 setLastNetwork(net);
-                document.querySelectorAll("#destinationsContainer .dest-tunnel-iface").forEach(sel => {
-                    const prevVal = sel.value || sel.dataset.savedValue || "";
-                    sel.innerHTML = buildTunnelIfaceOptionsHtml(prevVal);
+                document.querySelectorAll("#destinationsContainer .dest-iface-group").forEach(grp => {
+                    const hidden = grp.querySelector(".dest-tunnel-iface");
+                    const wrap = grp.querySelector(".iface-tags-wrap");
+                    const prevVal = (hidden && hidden.value) || "";
+                    if (wrap) wrap.innerHTML = buildTunnelIfaceTagsHtml(prevVal);
                 });
             }
         })
@@ -290,42 +291,106 @@ function getAvailableServerInterfaces() {
         const name = String((tObj && tObj.name) || "").trim();
         if (!name || seen.has(name)) return;
         seen.add(name);
-        const ipPart = tObj.ip && tObj.ip !== "No IP assigned" ? ` · ${tObj.ip}` : "";
-        const statePart = tObj.state ? ` · ${tObj.state}` : "";
-        entries.push({ name, label: `${name} (${tObj.type || "Tunnel"}${ipPart}${statePart})` });
+        const ipPart = tObj.ip && tObj.ip !== "No IP assigned" ? tObj.ip : "";
+        const statePart = String(tObj.state || "UP").toUpperCase();
+        entries.push({
+            name,
+            ip: ipPart,
+            up: statePart === "UP",
+            label: `${name} (${tObj.type || "Tunnel"}${ipPart ? ` · ${ipPart}` : ""} · ${statePart})`
+        });
     });
 
     (Array.isArray(net.server_ips) ? net.server_ips : []).forEach(sObj => {
         const name = String((sObj && sObj.interface) || "").trim();
         if (!name || seen.has(name)) return;
         seen.add(name);
-        const ipPart = sObj.ip ? ` · ${sObj.ip}` : "";
-        entries.push({ name, label: `${name} (WAN / Host${ipPart})` });
+        const ipPart = sObj.ip || "";
+        entries.push({
+            name,
+            ip: ipPart,
+            up: true,
+            label: `${name} (WAN${ipPart ? ` · ${ipPart}` : ""})`
+        });
     });
 
     const primaryName = String(net.primary_interface || "").trim();
     if (primaryName && !seen.has(primaryName)) {
         seen.add(primaryName);
-        entries.push({ name: primaryName, label: `${primaryName} (Primary WAN)` });
+        entries.push({ name: primaryName, ip: "", up: true, label: `${primaryName} (Primary WAN)` });
     }
     return entries;
 }
 
-function buildTunnelIfaceOptionsHtml(selectedVal = "") {
+function buildTunnelIfaceTagsHtml(selectedVal = "") {
     const cur = String(selectedVal || "").trim();
-    const autoLabel = escapeHtml(t("modal.tunnel_iface_auto", {}, "Auto (Default Kernel Route / ct status dnat)"));
-    let html = `<option value="" ${!cur ? "selected" : ""}>${autoLabel}</option>`;
+    const autoLabel = escapeHtml(t("modal.tunnel_iface_auto_tag", {}, "Auto"));
+    let html = `<button type="button" class="iface-tag-chip ${!cur ? "is-selected" : ""}" data-iface="">${autoLabel}</button>`;
     const list = getAvailableServerInterfaces();
     let foundSelected = !cur;
     list.forEach(item => {
-        const isSel = cur && cur === item.name;
+        const isSel = Boolean(cur && cur === item.name);
         if (isSel) foundSelected = true;
-        html += `<option value="${escapeHtml(item.name)}" ${isSel ? "selected" : ""}>${escapeHtml(item.label)}</option>`;
+        html += `<button type="button" class="iface-tag-chip ${isSel ? "is-selected" : ""}" data-iface="${escapeHtml(item.name)}" title="${escapeHtml(item.label)}"><span class="iface-dot ${item.up ? "is-up" : "is-down"}"></span><span>${escapeHtml(item.name)}</span>${item.ip ? `<small>${escapeHtml(item.ip)}</small>` : ""}</button>`;
     });
     if (cur && !foundSelected) {
-        html += `<option value="${escapeHtml(cur)}" selected>${escapeHtml(cur)} (Saved)</option>`;
+        html += `<button type="button" class="iface-tag-chip is-selected" data-iface="${escapeHtml(cur)}" title="Saved interface"><span class="iface-dot is-up"></span><span>${escapeHtml(cur)}</span><small>saved</small></button>`;
     }
     return html;
+}
+
+let currentExcludedTags = [];
+
+function renderExcludedTagChips() {
+    const chipsEl = document.getElementById("exclTagChips");
+    const hiddenEl = document.getElementById("formExcludedPorts");
+    if (hiddenEl) {
+        hiddenEl.value = currentExcludedTags.join(", ");
+    }
+    if (!chipsEl) return;
+    chipsEl.innerHTML = currentExcludedTags.map(p => (
+        `<span class="xfwd-tag-chip" data-port="${escapeHtml(p)}"><span>${escapeHtml(p)}</span><button type="button" class="xfwd-tag-remove" data-remove-port="${escapeHtml(p)}" aria-label="Remove ${escapeHtml(p)}">&times;</button></span>`
+    )).join("");
+}
+
+function setExcludedTags(portsArr) {
+    const parsed = parseExcludedPortsInput(Array.isArray(portsArr) ? portsArr.join(",") : String(portsArr || ""));
+    currentExcludedTags = parsed || [];
+    const inlineEl = document.getElementById("exclTagText");
+    if (inlineEl) inlineEl.value = "";
+    renderExcludedTagChips();
+}
+
+function addExcludedTokens(rawText, triggerRangeFill = true) {
+    const tokens = String(rawText || "").split(/[\s,]+/).filter(Boolean);
+    if (tokens.length === 0) return true;
+    const next = new Set(currentExcludedTags);
+    for (const tok of tokens) {
+        const parsed = parseExcludedPortsInput(tok);
+        if (parsed === null || parsed.length === 0) {
+            showToast(`Invalid port token '${tok}'`, "warn");
+            return false;
+        }
+        parsed.forEach(p => next.add(p));
+    }
+    currentExcludedTags = Array.from(next).sort((a, b) => a - b);
+    renderExcludedTagChips();
+    if (triggerRangeFill && currentExcludedTags.length > 0) {
+        const formPortInput = document.getElementById("formPort");
+        if (formPortInput) {
+            const cur = parsePortSpec(formPortInput.value);
+            if (!cur || !cur.rangeStr || cur.excludedPorts) {
+                formPortInput.value = "1-65535";
+            }
+        }
+        refreshRangeConstraintUI();
+        if (!currentEditingRuleId) {
+            document.querySelectorAll("#destinationsContainer .dest-port").forEach(input => {
+                if (!input.value) input.value = "1-65535";
+            });
+        }
+    }
+    return true;
 }
 
 export function renderDestinationRow(dest, index, totalCount) {
@@ -401,9 +466,8 @@ export function renderDestinationRow(dest, index, totalCount) {
         </div>
         <div class="form-group dest-iface-group" style="margin-bottom:10px; display:${type === "nftables" ? "block" : "none"};">
             <label>${escapeHtml(t("modal.tunnel_iface", {}, "Tunnel / Outbound Interface (Optional · NFTables)"))}</label>
-            <select class="form-control font-mono dest-tunnel-iface" data-saved-value="${escapeHtml(dest.tunnel_iface || "")}">
-                ${buildTunnelIfaceOptionsHtml(dest.tunnel_iface || "")}
-            </select>
+            <input type="hidden" class="dest-tunnel-iface" value="${escapeHtml(dest.tunnel_iface || "")}">
+            <div class="iface-tags-wrap">${buildTunnelIfaceTagsHtml(dest.tunnel_iface || "")}</div>
         </div>
         <div class="form-group" style="margin-bottom:10px;">
             <label>${escapeHtml(t("modal.comment_label"))}</label>
@@ -419,8 +483,9 @@ export function renderDestinationRow(dest, index, totalCount) {
                 <span>${escapeHtml(t("modal.mid_server"))}</span>
             </label>
             <div class="dest-test-group">
-                <button type="button" class="btn btn-secondary btn-xs btn-test-dest" onclick="testModalDestination(${index})">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+                <button type="button" class="btn-test-dest" id="btnTestDest_${index}" onclick="testModalDestination(${index})">
+                    <span class="test-pulse-ring"></span>
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
                     <span>${escapeHtml(t("modal.test_target"))}</span>
                 </button>
                 <span class="test-dest-result" id="testDestResult_${index}"></span>
@@ -522,7 +587,7 @@ export function removeDestinationRow(index) {
 }
 
 export function handleModalPrioDragStart(e, index) {
-    if (e.target.closest("input, select, textarea, button, .btn-prio-move, .btn-remove-prio")) {
+    if (e.target.closest("input, select, textarea, button, .btn-prio-move, .btn-remove-prio, .iface-tag-chip")) {
         e.preventDefault();
         return;
     }
@@ -590,26 +655,34 @@ export async function testModalDestination(index) {
     const portParsed = parsePortSpec(dest.port_range || dest.port || listenRaw);
     const port = portParsed ? portParsed.start : null;
     const resEl = document.getElementById(`testDestResult_${index}`);
+    const btnEl = document.getElementById(`btnTestDest_${index}`);
+    const setResultPill = (kind, htmlText, titleText = "") => {
+        if (!resEl) return;
+        const titleAttr = titleText ? ` title="${escapeHtml(titleText)}"` : "";
+        resEl.innerHTML = `<span class="test-pill is-${kind}"${titleAttr}><span class="test-pill-dot"></span><span>${htmlText}</span></span>`;
+    };
 
     if (!target) {
         showToast("Please enter a destination target IP or host", "warn");
-        if (resEl) { resEl.innerHTML = `<span class="text-amber">${escapeHtml(t("status.enter_target", {}, "Enter target IP"))}</span>`; }
+        setResultPill("warn", escapeHtml(t("status.enter_target", {}, "Enter target IP")));
         return;
     }
     if ((dest.type || "haproxy") === "haproxy" && !target.includes(':')) {
         showToast("HAProxy destination target must be a valid IPv6 address", "warn");
-        if (resEl) { resEl.innerHTML = `<span class="text-amber">${escapeHtml(t("status.ipv6_required", {}, "IPv6 required for HAProxy"))}</span>`; }
+        setResultPill("warn", escapeHtml(t("status.ipv6_required", {}, "IPv6 required")));
         return;
     }
     if (!port) {
         showToast("Please specify a port to test", "warn");
-        if (resEl) { resEl.innerHTML = `<span class="text-amber">${escapeHtml(t("status.enter_port", {}, "Enter port"))}</span>`; }
+        setResultPill("warn", escapeHtml(t("status.enter_port", {}, "Enter port")));
         return;
     }
 
-    if (resEl) {
-        resEl.innerHTML = `<span class="btn-spinner" style="width:11px;height:11px;display:inline-block;vertical-align:middle;"></span> <span class="text-muted" style="font-size:0.75rem;">${escapeHtml(t("status.probing", {}, "Probing..."))}</span>`;
+    if (btnEl) {
+        btnEl.disabled = true;
+        btnEl.classList.add("is-probing");
     }
+    setResultPill("probing", escapeHtml(t("status.probing", {}, "Probing...")));
 
     try {
         const res = await fetch(`${API_BASE}/test-target`, {
@@ -627,22 +700,27 @@ export async function testModalDestination(index) {
         if (res.ok && data.ok) {
             const loss = data.packet_loss !== undefined ? data.packet_loss : (data.healthy ? 0 : 100);
             if (data.healthy) {
-                const latStr = (data.latency_ms !== null && data.latency_ms !== undefined && data.latency_ms > 0) ? ` (${data.latency_ms}ms · ${loss}% loss)` : ` (${loss}% loss)`;
-                if (resEl) resEl.innerHTML = `<span class="badge-probe text-emerald" style="display:inline-flex;align-items:center;gap:4px;font-size:0.75rem;">${escapeHtml(t("status.reachable", {}, "Reachable"))}${latStr}</span>`;
+                const latStr = (data.latency_ms !== null && data.latency_ms !== undefined && data.latency_ms > 0) ? ` · ${data.latency_ms}ms · ${loss}%` : ` · ${loss}% loss`;
+                setResultPill("ok", `${escapeHtml(t("status.reachable", {}, "Reachable"))}${latStr}`);
                 showToast(`Destination [${target}]:${port} reachable${latStr}`);
             } else {
                 const reason = data.reason ? `: ${data.reason}` : "";
-                if (resEl) resEl.innerHTML = `<span class="badge-fail text-rose" style="display:inline-flex;align-items:center;gap:4px;font-size:0.75rem;" title="${escapeHtml(data.reason || '')}">${escapeHtml(t("status.unreachable", {}, "Unreachable"))} (100% loss${escapeHtml(reason)})</span>`;
+                setResultPill("fail", `${escapeHtml(t("status.unreachable", {}, "Unreachable"))} (${loss}%)`, data.reason || "");
                 showToast(`Destination [${target}]:${port} failed health probe${reason}`, "error");
             }
         } else {
             const errMsg = data.error || "Connection test failed";
-            if (resEl) resEl.innerHTML = `<span class="badge-fail text-rose" style="font-size:0.75rem;">${escapeHtml(errMsg)}</span>`;
+            setResultPill("fail", escapeHtml(errMsg));
             showToast(`Target test error: ${errMsg}`, "error");
         }
     } catch (err) {
-        if (resEl) resEl.innerHTML = `<span class="badge-fail text-rose" style="font-size:0.75rem;">${escapeHtml(t("status.network_error", {}, "Network Error"))}</span>`;
+        setResultPill("fail", escapeHtml(t("status.network_error", {}, "Network Error")));
         showToast("Error executing target probe: " + err.message, "error");
+    } finally {
+        if (btnEl) {
+            btnEl.disabled = false;
+            btnEl.classList.remove("is-probing");
+        }
     }
 }
 
@@ -683,11 +761,74 @@ export function initRuleModal(fetchStatusCallback) {
 
     const formPortInput = document.getElementById("formPort");
     const formExclInput = document.getElementById("formExcludedPorts");
+    const exclTagBox = document.getElementById("exclTagInputBox");
+    const exclTagText = document.getElementById("exclTagText");
+    const exclTagChips = document.getElementById("exclTagChips");
+    const destContainer = document.getElementById("destinationsContainer");
+
+    if (destContainer) {
+        destContainer.addEventListener("click", (ev) => {
+            const chip = ev.target.closest(".iface-tag-chip");
+            if (!chip) return;
+            const grp = chip.closest(".dest-iface-group");
+            if (!grp) return;
+            const hidden = grp.querySelector(".dest-tunnel-iface");
+            if (hidden) hidden.value = chip.dataset.iface || "";
+            grp.querySelectorAll(".iface-tag-chip").forEach(c => c.classList.remove("is-selected"));
+            chip.classList.add("is-selected");
+        });
+    }
+
+    if (exclTagBox && exclTagText) {
+        exclTagBox.addEventListener("click", () => exclTagText.focus());
+        exclTagText.addEventListener("keydown", (ev) => {
+            if (ev.key === " " || ev.key === "," || ev.key === "Enter") {
+                ev.preventDefault();
+                const val = exclTagText.value.trim();
+                if (val && addExcludedTokens(val, true)) {
+                    exclTagText.value = "";
+                }
+            } else if (ev.key === "Backspace" && !exclTagText.value && currentExcludedTags.length > 0) {
+                currentExcludedTags.pop();
+                renderExcludedTagChips();
+                refreshRangeConstraintUI();
+            }
+        });
+        exclTagText.addEventListener("input", () => {
+            if (/[\s,]/.test(exclTagText.value)) {
+                const raw = exclTagText.value;
+                const endsWithDelim = /[\s,]$/.test(raw);
+                const parts = raw.split(/[\s,]+/);
+                const tail = endsWithDelim ? "" : (parts.pop() || "");
+                const toCommit = parts.filter(Boolean).join(" ");
+                if (toCommit && addExcludedTokens(toCommit, true)) {
+                    exclTagText.value = tail;
+                }
+            }
+        });
+        exclTagText.addEventListener("blur", () => {
+            const val = exclTagText.value.trim();
+            if (val && addExcludedTokens(val, true)) {
+                exclTagText.value = "";
+            }
+        });
+    }
+    if (exclTagChips) {
+        exclTagChips.addEventListener("click", (ev) => {
+            const rmBtn = ev.target.closest(".xfwd-tag-remove");
+            if (!rmBtn) return;
+            const pRem = parseInt(rmBtn.dataset.removePort || "0", 10);
+            currentExcludedTags = currentExcludedTags.filter(p => p !== pRem);
+            renderExcludedTagChips();
+            refreshRangeConstraintUI();
+        });
+    }
+
     if (formPortInput) {
         formPortInput.addEventListener("input", () => {
             const parsed = parsePortSpec(formPortInput.value);
-            if (parsed && parsed.excludedPorts && formExclInput) {
-                formExclInput.value = parsed.excludedPorts.join(", ");
+            if (parsed && parsed.excludedPorts) {
+                setExcludedTags(parsed.excludedPorts);
             }
             refreshRangeConstraintUI();
             if (!currentEditingRuleId && parsed) {
@@ -697,24 +838,6 @@ export function initRuleModal(fetchStatusCallback) {
                     if (!input.value) {
                         input.value = fillVal;
                     }
-                });
-            }
-        });
-    }
-    if (formExclInput) {
-        formExclInput.addEventListener("input", () => {
-            const hasExcl = Boolean(formExclInput.value.trim());
-            if (hasExcl && formPortInput) {
-                const cur = parsePortSpec(formPortInput.value);
-                if (!cur || !cur.rangeStr || cur.excludedPorts) {
-                    formPortInput.value = "1-65535";
-                }
-            }
-            refreshRangeConstraintUI();
-            if (hasExcl && !currentEditingRuleId) {
-                const portInputs = document.querySelectorAll("#destinationsContainer .dest-port");
-                portInputs.forEach(input => {
-                    if (!input.value) input.value = "1-65535";
                 });
             }
         });
@@ -734,6 +857,10 @@ export function initRuleModal(fetchStatusCallback) {
     if (ruleForm) {
         ruleForm.addEventListener("submit", async (e) => {
             e.preventDefault();
+            if (exclTagText && exclTagText.value.trim()) {
+                if (!addExcludedTokens(exclTagText.value.trim(), true)) return;
+                exclTagText.value = "";
+            }
             syncDestinationsFromDom();
 
             const rawPortVal = (document.getElementById("formPort")?.value || "").trim();

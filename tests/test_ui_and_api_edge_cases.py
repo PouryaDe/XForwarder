@@ -2788,7 +2788,9 @@ class TestUIAndAPIEdgeCases(unittest.TestCase):
             eng.sync_firewall_and_proxies()
         self.assertIn('oifname "my_tun1" masquerade', captured_nft["ruleset"])
         self.assertIn("dest-tunnel-iface", modal_js)
-        self.assertIn("buildTunnelIfaceOptionsHtml", modal_js)
+        self.assertIn("buildTunnelIfaceTagsHtml", modal_js)
+        self.assertIn("renderExcludedTagChips", modal_js)
+        self.assertIn("test-pill", modal_js)
 
         # UI modal exposes #formExcludedPorts and != helper
         self.assertIn("formExcludedPorts", modal_js)
