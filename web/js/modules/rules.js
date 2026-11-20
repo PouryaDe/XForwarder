@@ -333,7 +333,7 @@ export function renderRuleCard(rule, rulesState) {
                     </div>
                 </div>
                 <div class="path-dest">
-                    <span>${escapeHtml(String(dest.type || 'haproxy').toUpperCase())}: ${targetDisplay}:${escapeHtml(dest.port_range ? `${dest.port_range} (1:1)` : (dest.port || rule.port))}</span>
+                    <span>${escapeHtml(String(dest.type || 'haproxy').toUpperCase())}: ${targetDisplay}:${escapeHtml(dest.port_range ? `${dest.port_range} (1:1)` : (dest.port || rule.port))}${dest.tunnel_iface ? ` <em style="color:var(--text-muted); font-style:normal;">(${escapeHtml(dest.tunnel_iface)})</em>` : ''}</span>
                     <button class="btn-copy" onclick="copyText(decodeURIComponent('${encodeURIComponent(rawTarget)}'))" title="${escapeHtml(t("rules.copy_dest_ip", {}, "Copy Destination IP"))}">${copyPortSvg}</button>
                 </div>
                 <div class="path-meta">
@@ -465,7 +465,7 @@ export function renderRuleListRow(rule, rulesState) {
                 <span style="width:7px; height:7px; border-radius:50%; background:${dotColor}; display:inline-block;"></span>
                 <span style="font-weight:700; color:var(--text-primary); font-family:var(--font-mono);">#${prio}</span>
                 ${dest.is_relay ? `<span class="badge-relay-pill" style="font-size:0.62rem; padding:1px 4px;" title="${escapeHtml(t("rules.relay_tooltip", {}, "Mid Server"))}">${escapeHtml(t("rules.relay", {}, "Mid Server"))}</span>` : ''}
-                <span class="font-mono" style="color:var(--text-secondary); font-size:0.75rem;">${targetDisplay}:${escapeHtml(destPortLabel)}</span>
+                <span class="font-mono" style="color:var(--text-secondary); font-size:0.75rem;">${targetDisplay}:${escapeHtml(destPortLabel)}${dest.tunnel_iface ? ` (${escapeHtml(dest.tunnel_iface)})` : ''}</span>
                 ${latText && isEnabled ? `<span class="font-mono" style="color:var(--accent-mint); font-size:0.72rem;">${latText}</span>` : ''}
                 ${isEnabled ? loss50Inline : ''}
                 ${isActive && isEnabled ? `<span style="font-size:0.68rem; font-weight:700; color:${isFailover ? 'var(--accent-amber)' : 'var(--accent-mint)'}; text-transform:uppercase;">${isFailover ? escapeHtml(t("status.failover", {}, "FAILOVER")) : escapeHtml(t("status.active", {}, "ACTIVE"))}</span>` : ''}

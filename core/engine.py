@@ -1307,9 +1307,15 @@ class XForwarderEngine:
     def _apply_nftables(self, dnat_rules: List[str]) -> Tuple[bool, Optional[str]]:
         rule_ports: Set[int] = set()
         rule_ranges: Set[str] = set()
+        custom_oifs: Set[str] = set()
         protected_ports = get_protected_ports(self.config)
         web_port = int((self.config.get("web") or {}).get("port", 8090) or 8090)
         for r in self.config.get("rules", []):
+            for d in r.get("destinations", []):
+                if d.get("enabled", True) and d.get("type") == "nftables":
+                    t_iface = str(d.get("tunnel_iface") or "").strip()
+                    if t_iface:
+                        custom_oifs.add(t_iface)
             if self._build_nft_excl_expr(r, protected_ports):
                 continue
             for sub_s, sub_e in self._resolve_safe_nft_intervals(r, protected_ports, web_port):
@@ -1317,12 +1323,14 @@ class XForwarderEngine:
                     rule_ranges.add(f"{sub_s}-{sub_e}")
                 else:
                     rule_ports.add(sub_s)
-        ok, err, new_content = apply_nftables(
-            dnat_rules,
-            rule_ports=rule_ports,
-            last_content=self._last_nft_content,
-            rule_ranges=rule_ranges
-        )
+        apply_kwargs: Dict[str, Any] = {
+            "rule_ports": rule_ports,
+            "last_content": self._last_nft_content,
+            "rule_ranges": rule_ranges,
+        }
+        if custom_oifs:
+            apply_kwargs["custom_oifs"] = custom_oifs
+        ok, err, new_content = apply_nftables(dnat_rules, **apply_kwargs)
         if ok:
             self._last_nft_content = new_content
             self.runtime_state["active_services"]["nftables"] = bool(dnat_rules)

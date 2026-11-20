@@ -4,7 +4,7 @@
 
 import { API_BASE } from "./api.js";
 import { escapeHtml, showToast } from "./utils.js";
-import { currentRules } from "./state.js";
+import { currentRules, lastRuntime } from "./state.js";
 import { updateCategoryDatalist } from "./rules.js";
 import { t } from "./i18n.js";
 
@@ -219,6 +219,7 @@ export function openEditRuleModal(ruleId) {
         target: d.target || "",
         port: d.port_range ? d.port_range : (d.port !== undefined && d.port !== null ? d.port : ""),
         port_range: d.port_range || null,
+        tunnel_iface: d.tunnel_iface || "",
         comment: d.comment || "",
         proxy_protocol: Boolean(d.proxy_protocol),
         is_relay: Boolean(d.is_relay),
@@ -252,11 +253,26 @@ export function closeRuleModal() {
 export function renderDestinationsList() {
     const container = document.getElementById("destinationsContainer");
     if (!container) return;
+    updateTunnelIfaceDatalist();
     container.innerHTML = "";
     currentModalDestinations.forEach((dest, idx) => {
         const row = renderDestinationRow(dest, idx, currentModalDestinations.length);
         container.appendChild(row);
     });
+}
+
+function updateTunnelIfaceDatalist() {
+    let dl = document.getElementById("tunnelIfaceDatalist");
+    if (!dl) {
+        dl = document.createElement("datalist");
+        dl.id = "tunnelIfaceDatalist";
+        document.body.appendChild(dl);
+    }
+    const rawTunnels = (lastRuntime && lastRuntime.network && Array.isArray(lastRuntime.network.tunnel_interfaces))
+        ? lastRuntime.network.tunnel_interfaces
+        : (lastRuntime && Array.isArray(lastRuntime.tunnel_interfaces) ? lastRuntime.tunnel_interfaces : []);
+    const names = Array.from(new Set(rawTunnels.map(tObj => tObj && tObj.name).filter(Boolean)));
+    dl.innerHTML = names.map(n => `<option value="${escapeHtml(n)}"></option>`).join("");
 }
 
 export function renderDestinationRow(dest, index, totalCount) {
@@ -330,6 +346,10 @@ export function renderDestinationRow(dest, index, totalCount) {
                 <input type="text" inputmode="numeric" class="form-control dest-port" placeholder="${isRangeRule ? escapeHtml(t("modal.dest_port_range_placeholder", {}, "Same range or single port")) : "Default"}" value="${escapeHtml(port)}">
             </div>
         </div>
+        <div class="form-group dest-iface-group" style="margin-bottom:10px; display:${type === "nftables" ? "block" : "none"};">
+            <label>${escapeHtml(t("modal.tunnel_iface", {}, "Tunnel / Outbound Interface (Optional · NFTables)"))}</label>
+            <input type="text" class="form-control font-mono dest-tunnel-iface" list="tunnelIfaceDatalist" maxlength="15" placeholder="${escapeHtml(t("modal.tunnel_iface_placeholder", {}, "Auto (or e.g. backhaul1, ipip2, gre1)"))}" value="${escapeHtml(dest.tunnel_iface || "")}" autocomplete="off">
+        </div>
         <div class="form-group" style="margin-bottom:10px;">
             <label>${escapeHtml(t("modal.comment_label"))}</label>
             <input type="text" class="form-control dest-comment" placeholder="e.g. ${isPrimary ? 'Foreign Server 1 - Primary IPv6' : 'Backup Tunnel Node ' + prio}" value="${escapeHtml(comment)}">
@@ -371,8 +391,12 @@ export function handleDestTypeChange(selectEl) {
     const row = selectEl.closest(".priority-box");
     if (!row) return;
     const targetInput = row.querySelector(".dest-target");
-    if (!targetInput) return;
+    const ifaceGroup = row.querySelector(".dest-iface-group");
     const val = selectEl.value;
+    if (ifaceGroup) {
+        ifaceGroup.style.display = val === "nftables" ? "block" : "none";
+    }
+    if (!targetInput) return;
     if (val === "haproxy") {
         targetInput.placeholder = "2001:4ba0:cafe:84e::1 (IPv6 only)";
     } else if (val === "nftables") {
@@ -391,6 +415,7 @@ export function syncDestinationsFromDom() {
         const typeEl = box.querySelector(".dest-type");
         const targetEl = box.querySelector(".dest-target");
         const portEl = box.querySelector(".dest-port");
+        const ifaceEl = box.querySelector(".dest-tunnel-iface");
         const commentEl = box.querySelector(".dest-comment");
         const proxyProtoEl = box.querySelector(".dest-proxy-proto");
         const relayEl = box.querySelector(".dest-is-relay");
@@ -398,9 +423,11 @@ export function syncDestinationsFromDom() {
 
         const rawDPort = portEl ? portEl.value.trim() : "";
         const parsedDPort = rawDPort ? parsePortSpec(rawDPort) : null;
+        const dType = typeEl ? typeEl.value : "haproxy";
+        const rawIface = ifaceEl ? ifaceEl.value.trim() : "";
         const destObj = {
             priority: i + 1,
-            type: typeEl ? typeEl.value : "haproxy",
+            type: dType,
             target: targetEl ? targetEl.value.trim() : "",
             port: parsedDPort ? parsedDPort.start : null,
             comment: commentEl ? commentEl.value.trim() : "",
@@ -408,6 +435,9 @@ export function syncDestinationsFromDom() {
             is_relay: relayEl ? relayEl.checked : false,
             enabled: enabledEl ? enabledEl.checked : true
         };
+        if (dType === "nftables" && rawIface) {
+            destObj.tunnel_iface = rawIface;
+        }
         if (parsedDPort && parsedDPort.rangeStr) {
             destObj.port_range = parsedDPort.rangeStr;
         } else if (rawDPort) {
@@ -762,7 +792,11 @@ export function initRuleModal(fetchStatusCallback) {
                 const data = await res.json().catch(() => ({}));
 
                 if (res.ok && data.ok) {
-                    showToast(`Port :${inboundLabel} rule saved successfully!`, "success");
+                    if (data.sync_ok === false && Array.isArray(data.sync_errors) && data.sync_errors.length > 0) {
+                        showToast(`Rule saved, but firewall/proxy sync reported: ${data.sync_errors[0]}`, "warning");
+                    } else {
+                        showToast(`Port :${inboundLabel} rule saved successfully!`, "success");
+                    }
                     closeRuleModal();
                     if (typeof fetchStatusCallback === "function") fetchStatusCallback();
                 } else {

@@ -76,11 +76,36 @@ def flush_conntrack(port: Any, proto: Optional[str] = None) -> None:
                 pass
 
 
+IFACE_NAME_REGEX = re.compile(r"^[a-zA-Z0-9][a-zA-Z0-9_.\-]{0,14}$")
+
+
+def _format_postrouting_masquerades(custom_oifs: Optional[Set[str]] = None) -> str:
+    """Builds validated postrouting masquerade statements including custom tunnel interfaces."""
+    lines = [
+        "        ct status dnat masquerade",
+        '        oifname "gre*" masquerade',
+        '        oifname "ipip*" masquerade',
+        '        oifname "ftcp*" masquerade',
+        '        oifname "awg*" masquerade',
+        '        oifname "gnv*" masquerade',
+        '        oifname "vxlan*" masquerade',
+        '        oifname "wg*" masquerade',
+        '        oifname "tun*" masquerade',
+        '        oifname "backhaul*" masquerade',
+    ]
+    for iface in sorted(custom_oifs or set()):
+        clean_iface = str(iface or "").strip()
+        if IFACE_NAME_REGEX.match(clean_iface):
+            lines.append(f'        oifname "{clean_iface}" masquerade')
+    return "\n".join(lines)
+
+
 def generate_nftables_ruleset(
     dnat_rules: List[str],
     rule_ports: Optional[Set[int]] = None,
     enable_ipv6: Optional[bool] = None,
-    rule_ranges: Optional[Set[str]] = None
+    rule_ranges: Optional[Set[str]] = None,
+    custom_oifs: Optional[Set[str]] = None
 ) -> str:
     """Generates a complete, isolated NFTables ruleset string (single ports + NFTables ranges)."""
     if enable_ipv6 is None:
@@ -153,6 +178,7 @@ def generate_nftables_ruleset(
     counter_defs_str = "\n".join(counter_defs) + "\n\n" if counter_defs else ""
     forward_counters_str = "\n".join(forward_counters) + "\n" if forward_counters else ""
 
+    postrouting_block = _format_postrouting_masquerades(custom_oifs)
     tables_content = [
         f"""table ip xfwd_orchestrator
 delete table ip xfwd_orchestrator
@@ -165,14 +191,7 @@ table ip xfwd_orchestrator {{
 
     chain postrouting {{
         type nat hook postrouting priority srcnat; policy accept;
-        oifname "gre*" masquerade
-        oifname "ipip*" masquerade
-        oifname "ftcp*" masquerade
-        oifname "awg*" masquerade
-        oifname "gnv*" masquerade
-        oifname "vxlan*" masquerade
-        oifname "wg*" masquerade
-        oifname "tun*" masquerade
+{postrouting_block}
     }}
 
     chain forward {{
@@ -199,14 +218,7 @@ table ip6 xfwd_orchestrator {{
 
     chain postrouting {{
         type nat hook postrouting priority srcnat; policy accept;
-        oifname "gre*" masquerade
-        oifname "ipip*" masquerade
-        oifname "ftcp*" masquerade
-        oifname "awg*" masquerade
-        oifname "gnv*" masquerade
-        oifname "vxlan*" masquerade
-        oifname "wg*" masquerade
-        oifname "tun*" masquerade
+{postrouting_block}
     }}
 
     chain forward {{
@@ -226,13 +238,19 @@ def apply_nftables(
     dnat_rules: List[str],
     rule_ports: Optional[Set[int]] = None,
     last_content: Optional[str] = None,
-    rule_ranges: Optional[Set[str]] = None
+    rule_ranges: Optional[Set[str]] = None,
+    custom_oifs: Optional[Set[str]] = None
 ) -> Tuple[bool, Optional[str], Optional[str]]:
     """
     Validates and atomically applies NFTables ruleset.
     Returns (success: bool, error_msg: Optional[str], new_content: Optional[str]).
     """
-    nft_content = generate_nftables_ruleset(dnat_rules, rule_ports=rule_ports, rule_ranges=rule_ranges)
+    nft_content = generate_nftables_ruleset(
+        dnat_rules,
+        rule_ports=rule_ports,
+        rule_ranges=rule_ranges,
+        custom_oifs=custom_oifs
+    )
 
     if not shutil.which("nft"):
         return True, None, nft_content

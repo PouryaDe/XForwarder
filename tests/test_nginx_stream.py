@@ -270,9 +270,11 @@ class TestNginxStreamEngine(unittest.TestCase):
             # Retrieve the input passed to communicate()
             sent_input = mock_proc.communicate.call_args_list[0][1]["input"]
             self.assertNotIn('oifname { "gre*"', sent_input)
+            self.assertIn('ct status dnat masquerade', sent_input)
             self.assertIn('oifname "gre*" masquerade', sent_input)
             self.assertIn('oifname "ipip*" masquerade', sent_input)
             self.assertIn('oifname "awg*" masquerade', sent_input)
+            self.assertIn('oifname "backhaul*" masquerade', sent_input)
 
 
 if __name__ == "__main__":

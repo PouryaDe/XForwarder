@@ -2658,9 +2658,11 @@ class TestUIAndAPIEdgeCases(unittest.TestCase):
 
         captured_nft = {}
 
-        def fake_apply_nftables(dnat_rules, rule_ports=None, last_content=None, rule_ranges=None):
+        def fake_apply_nftables(dnat_rules, rule_ports=None, last_content=None, rule_ranges=None, custom_oifs=None):
             captured_nft["dnat"] = list(dnat_rules)
-            captured_nft["ruleset"] = generate_nftables_ruleset(dnat_rules, rule_ports=rule_ports, rule_ranges=rule_ranges)
+            captured_nft["ruleset"] = generate_nftables_ruleset(
+                dnat_rules, rule_ports=rule_ports, rule_ranges=rule_ranges, custom_oifs=custom_oifs
+            )
             return True, None, captured_nft["ruleset"]
 
         with patch.object(eng, "_detect_wan_interface", return_value="eth0"), \
@@ -2735,6 +2737,57 @@ class TestUIAndAPIEdgeCases(unittest.TestCase):
         self.assertIn("cnt_in_1_excl", captured_nft["ruleset"])
         self.assertIn("cnt_out_1_excl", captured_nft["ruleset"])
         self.assertNotIn("cnt_in_1_65535", captured_nft["ruleset"])
+        self.assertIn("ct status dnat masquerade", captured_nft["ruleset"])
+
+        # Sub-range 1000-20000 with excluded_ports=[2053] must route port 10001 and exclude 2053 & web.port
+        sub_excl_rule = {
+            "id": "sub-1000-20000",
+            "port": 1000,
+            "port_range": "1000-20000",
+            "excluded_ports": [2053],
+            "protocol": "both",
+            "active_priority": 1,
+            "destinations": [{"priority": 1, "type": "nftables", "target": "10.10.1.2", "port": 1000, "port_range": "1000-20000"}]
+        }
+        eng.config = {"web": {"port": 8090}, "rules": [sub_excl_rule]}
+        with patch.object(eng, "_detect_wan_interface", return_value="eth0"), \
+             patch("core.engine.apply_nftables", side_effect=fake_apply_nftables), \
+             patch("core.engine.apply_haproxy", return_value=(True, None)), \
+             patch("core.engine.apply_nginx", return_value=(True, None)), \
+             patch.object(eng, "_save_state_file"):
+            ok_sub, errs_sub = eng.sync_firewall_and_proxies()
+        self.assertTrue(ok_sub, errs_sub)
+        dnat_sub = "\n".join(captured_nft["dnat"])
+        self.assertIn("tcp dport 1000-2052 dnat to 10.10.1.2", dnat_sub)
+        self.assertIn("tcp dport 2054-8089 dnat to 10.10.1.2", dnat_sub)
+        self.assertIn("tcp dport 8091-20000 dnat to 10.10.1.2", dnat_sub)
+
+        # Custom tunnel_iface validation & explicit postrouting masquerade rule
+        iface_rule = {
+            "port": "1000-20000",
+            "excluded_ports": [2053],
+            "protocol": "both",
+            "destinations": [{"priority": 1, "type": "nftables", "target": "10.10.1.2", "tunnel_iface": "my_tun1"}]
+        }
+        ok_if, err_if = validate_rule(iface_rule)
+        self.assertTrue(ok_if, err_if)
+        self.assertEqual(iface_rule["destinations"][0]["tunnel_iface"], "my_tun1")
+
+        bad_if = {
+            "port": 443,
+            "destinations": [{"priority": 1, "type": "nftables", "target": "10.10.1.2", "tunnel_iface": "eth0;rm -rf"}]
+        }
+        self.assertFalse(validate_rule(bad_if)[0])
+
+        eng.config = {"web": {"port": 8090}, "rules": [iface_rule]}
+        with patch.object(eng, "_detect_wan_interface", return_value="eth0"), \
+             patch("core.engine.apply_nftables", side_effect=fake_apply_nftables), \
+             patch("core.engine.apply_haproxy", return_value=(True, None)), \
+             patch("core.engine.apply_nginx", return_value=(True, None)), \
+             patch.object(eng, "_save_state_file"):
+            eng.sync_firewall_and_proxies()
+        self.assertIn('oifname "my_tun1" masquerade', captured_nft["ruleset"])
+        self.assertIn("dest-tunnel-iface", modal_js)
 
         # UI modal exposes #formExcludedPorts and != helper
         self.assertIn("formExcludedPorts", modal_js)

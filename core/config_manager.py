@@ -23,6 +23,7 @@ STATE_FILE_PATH = "/run/xforwarder/state.json"
 LEGACY_STATE_FILE_PATH = "/run/forward-manager/state.json"
 
 HOSTNAME_REGEX = re.compile(r"^[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$")
+IFACE_NAME_REGEX = re.compile(r"^[a-zA-Z0-9][a-zA-Z0-9_.\-]{0,14}$")
 
 
 def get_config_path(override_path: Optional[str] = None) -> str:
@@ -982,6 +983,18 @@ def validate_rule(body: dict) -> Tuple[bool, str]:
 
         d["enabled"] = _coerce_bool(d.get("enabled"), True)
         d["is_relay"] = _coerce_bool(d.get("is_relay"), False)
+
+        # Optional custom outbound tunnel interface (NFTables masquerade + ping -I isolation)
+        raw_iface = str(d.get("tunnel_iface") or "").strip()
+        if raw_iface:
+            if d_type != "nftables":
+                d.pop("tunnel_iface", None)
+            elif not IFACE_NAME_REGEX.match(raw_iface):
+                return False, f"Invalid tunnel interface '{raw_iface}'. Must be 1-15 alphanumeric, '.', '_', or '-' characters"
+            else:
+                d["tunnel_iface"] = raw_iface
+        else:
+            d.pop("tunnel_iface", None)
 
     return True, ""
 

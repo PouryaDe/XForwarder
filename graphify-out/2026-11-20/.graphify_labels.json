@@ -26,7 +26,6 @@
   "35": "escapeHtml",
   "36": "TestToggleDestination",
   "38": "TestNginxStreamEngine",
-  "42": "2. Non-Negotiable Architectural Constraints",
   "43": "Experience 002: Atomic File Persistence and Tmp Renaming",
   "44": "TestEngineProbes",
   "52": ".test_latency_badge_classification_edge_cases",
@@ -45,14 +44,12 @@
   "84": "Experience 012: Kernel Zero-Copy Splicing, BBR Network Tuning, and Session Timeout Optimization",
   "88": ".test_anti_flapping_cooldown_hold_and_hard_outage_bypass",
   "91": ".test_hysteresis_percent_10_margin",
-  "96": "3. Architecture & Solution Implemented",
   "97": "Experience 017: Resilient Failover and Non-Disruptive Failback",
   "98": "5. Verification & Testing",
   "109": "Experience 015: Intermediate Relay Subsystem & Primary Anchor Failover",
   "110": ".test_multi_metric_composite_scoring_and_loss_penalization",
   "113": ".test_forced_priority_down_falls_back_to_auto_mode",
   "115": ".test_evaluate_rule_failback_from_degraded_backup_clears_hold_remaining",
-  "123": "2. Mandatory Helper Centralization",
   "126": "Interactive Requirements Clarification (Reverse Prompt Engineering)",
   "147": "patch"
 }
