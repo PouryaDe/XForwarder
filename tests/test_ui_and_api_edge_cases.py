@@ -2871,6 +2871,13 @@ class TestUIAndAPIEdgeCases(unittest.TestCase):
         with open(os.path.join(web_dir, "js", "modules", "system.js"), "r", encoding="utf-8") as f:
             sys_js = f.read()
         self.assertIn('navUpdateDot', sys_js)
+        # Centered brand badge, single-level rules controls bar, sort-box, equal-sized header buttons
+        self.assertIn('height: 18px;', layout_css)
+        self.assertIn('height: 38px;', layout_css)
+        self.assertIn('class="rules-controls-bar"', html)
+        self.assertNotIn('class="main-panel rules-header-card"', html)
+        self.assertIn('class="sort-box"', html)
+        self.assertIn('Port: Low to High', html)
 
         # 4. Hash-free path routing in navigation.js & BASE_PATH stripping in api.js
         self.assertIn('"updates"', nav_js)

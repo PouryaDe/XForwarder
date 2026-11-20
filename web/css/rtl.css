@@ -356,6 +356,18 @@
     text-align: right !important;
 }
 
+[dir="rtl"] .sort-box .sort-icon {
+    right: 12px !important;
+    left: auto !important;
+}
+
+[dir="rtl"] .sort-box .sort-select {
+    padding-right: 34px !important;
+    padding-left: 34px !important;
+    background-position: left 11px center !important;
+    text-align: right !important;
+}
+
 /* 10. Technical LTR Layout Preservation for Routing Matrix (Rule Cards & Categories) */
 [dir="rtl"] .section-title,
 [dir="rtl"] .section-desc {

@@ -460,7 +460,7 @@
                         <h1 class="page-title" data-i18n="rules.title">Port Routing &amp; Multi-Path Matrix</h1>
                     </div>
                     <div class="page-header-actions panel-actions-group">
-                        <button class="btn btn-secondary btn-sm" id="btnExportConfig"
+                        <button class="btn btn-secondary" id="btnExportConfig"
                             title="Export Configuration Backup (JSON)">
                             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                                 stroke-width="2">
@@ -470,7 +470,7 @@
                             </svg>
                             <span class="btn-text" data-i18n="rules.export">Export</span>
                         </button>
-                        <button class="btn btn-secondary btn-sm" id="btnOpenImportModal"
+                        <button class="btn btn-secondary" id="btnOpenImportModal"
                             title="Import Configuration (JSON)">
                             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                                 stroke-width="2">
@@ -480,7 +480,7 @@
                             </svg>
                             <span class="btn-text" data-i18n="rules.import">Import</span>
                         </button>
-                        <button class="btn btn-secondary btn-sm" id="btnOpenTrafficModal"
+                        <button class="btn btn-secondary" id="btnOpenTrafficModal"
                             title="Traffic & Bandwidth Analytics (Hourly, Daily, Monthly, Reset)">
                             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                                 stroke-width="2">
@@ -490,7 +490,7 @@
                             </svg>
                             <span class="btn-text" data-i18n="rules.traffic">Traffic</span>
                         </button>
-                        <button class="btn btn-secondary btn-sm" id="btnOpenSwitchLogsModal"
+                        <button class="btn btn-secondary" id="btnOpenSwitchLogsModal"
                             title="Switch Decision Logs & History (Inspect why and when priorities changed)">
                             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                                 stroke-width="2">
@@ -499,7 +499,7 @@
                             <span class="btn-text" data-i18n="rules.switch_logs">Switch Logs</span>
                         </button>
                         <button class="btn btn-primary" id="btnOpenAddModal">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                                 stroke-width="2">
                                 <line x1="12" y1="5" x2="12" y2="19" />
                                 <line x1="5" y1="12" x2="19" y2="12" />
@@ -508,7 +508,7 @@
                         </button>
                     </div>
                 </div>
-                <div class="main-panel rules-header-card">
+                <div class="rules-controls-bar">
 
                     <!-- Pre-existing HAProxy Discovered Alert Banner -->
                     <div id="importBanner" class="import-banner" style="display:none;">
@@ -558,14 +558,21 @@
 
                         <!-- Sort Order Selector -->
                         <div class="sort-actions">
-                            <select id="selectSortRules" class="form-control sort-select" title="Sort Rules Order">
-                                <option value="port_asc" data-i18n="rules.sort_port_asc" selected>Sort: Port (Low → High)</option>
-                                <option value="port_desc" data-i18n="rules.sort_port_desc">Sort: Port (High → Low)</option>
-                                <option value="date_desc" data-i18n="rules.sort_date_desc">Sort: Newest Added</option>
-                                <option value="date_asc" data-i18n="rules.sort_date_asc">Sort: Oldest Added</option>
-                                <option value="status" data-i18n="rules.sort_status">Sort: Status / Health</option>
-                                <option value="category" data-i18n="rules.sort_category">Sort: Category (A → Z)</option>
-                            </select>
+                            <div class="sort-box">
+                                <svg class="sort-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M3 6h18" />
+                                    <path d="M7 12h10" />
+                                    <path d="M10 18h4" />
+                                </svg>
+                                <select id="selectSortRules" class="sort-select" title="Sort Rules Order">
+                                    <option value="port_asc" data-i18n="rules.sort_port_asc" selected>Port: Low to High</option>
+                                    <option value="port_desc" data-i18n="rules.sort_port_desc">Port: High to Low</option>
+                                    <option value="date_desc" data-i18n="rules.sort_date_desc">Newest First</option>
+                                    <option value="date_asc" data-i18n="rules.sort_date_asc">Oldest First</option>
+                                    <option value="status" data-i18n="rules.sort_status">Health Status</option>
+                                    <option value="category" data-i18n="rules.sort_category">Category (A–Z)</option>
+                                </select>
+                            </div>
                         </div>
 
                         <!-- View Toggle: Cards vs Compact List -->
@@ -1527,15 +1534,15 @@
                         <h1 class="page-title" data-i18n="logs.title">Real-time Failover &amp; Probe Logs</h1>
                     </div>
                     <div class="page-header-actions">
-                        <button class="btn btn-secondary btn-sm" id="btnCopyConsoleLogs" title="Copy console logs to clipboard">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <button class="btn btn-secondary" id="btnCopyConsoleLogs" title="Copy console logs to clipboard">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
                                 <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
                             </svg>
                             <span data-i18n="logs.copy">Copy Logs</span>
                         </button>
-                        <button class="btn btn-secondary btn-sm" id="btnClearLogs" data-i18n="logs.clear">Clear Log</button>
-                        <button class="btn btn-primary btn-sm" id="btnToggleLogFeed">
+                        <button class="btn btn-secondary" id="btnClearLogs" data-i18n="logs.clear">Clear Log</button>
+                        <button class="btn btn-primary" id="btnToggleLogFeed">
                             <span class="pulse-dot" style="display:inline-block;"></span>
                             <span id="logFeedText" data-i18n="logs.live_active">Live Feed Active</span>
                         </button>
