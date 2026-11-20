@@ -516,11 +516,23 @@ table ip port_forward_iran {
         self.assertEqual(disc["ports"], ["1-21", "23-442", "444-1000", "1002-8089", "8091-65535"])
 
         # Edge cases on split_port_interval_excluding
-        from core.config_manager import split_port_interval_excluding
+        from core.config_manager import split_port_interval_excluding, get_protected_ports
         self.assertEqual(split_port_interval_excluding(8090, 8090, {22, 8090}), [])
         self.assertEqual(split_port_interval_excluding(21, 24, {22, 23, True}), [(21, 21), (24, 24)])
         self.assertEqual(split_port_interval_excluding(9000, 8000, {22}), [])
         self.assertEqual(split_port_interval_excluding(100, 200, {8090}), [(100, 200)])
+
+        # Custom non-default web.port (e.g. 2083): protects 2083 instead of hardcoding 8090
+        self.assertEqual(get_protected_ports({"web": {"port": 2083}}), {22, 2083})
+        with tempfile.TemporaryDirectory() as tmpdir_custom:
+            cfg_custom = os.path.join(tmpdir_custom, "config.json")
+            with open(cfg_custom, "w", encoding="utf-8") as f:
+                json.dump({"web": {"port": 2083}, "rules": []}, f)
+            with patch("core.nftables_parser.get_live_nftables_rules", return_value=parsed), \
+                 patch("core.nftables_parser.find_candidate_nftables_files", return_value=[]):
+                c_count, c_ports, _ = import_nftables_rules_into_config(cfg_custom, deactivate_legacy=False)
+            self.assertEqual(c_count, 5)
+            self.assertEqual(c_ports, ["1-21", "23-442", "444-1000", "1002-2082", "2084-65535"])
 
 
 if __name__ == "__main__":

@@ -1017,6 +1017,14 @@ with open(tmp_path, 'w', encoding='utf-8') as f:
 os.replace(tmp_path, cfg_path)
 PYEOF
 
+    # Wake core failover engine immediately so any wide port ranges split around the new web port
+    if systemctl is-active --quiet "$DAEMON_SERVICE" 2>/dev/null; then
+        systemctl kill -s SIGUSR1 "$DAEMON_SERVICE" >/dev/null 2>&1 || true
+    fi
+    if command -v conntrack >/dev/null 2>&1; then
+        conntrack -D -p tcp --dport "$new_port" >/dev/null 2>&1 || true
+    fi
+
     systemctl restart "$WEB_SERVICE"
     msg_ok "Web management port updated to $new_port. Service restarted."
     show_web_access_info
@@ -1306,6 +1314,13 @@ with open(tmp_path, 'w', encoding='utf-8') as f:
     json.dump(cfg, f, indent=2, ensure_ascii=False)
 os.replace(tmp_path, cfg_path)
 PYEOF
+
+    if systemctl is-active --quiet "$DAEMON_SERVICE" 2>/dev/null; then
+        systemctl kill -s SIGUSR1 "$DAEMON_SERVICE" >/dev/null 2>&1 || true
+    fi
+    if command -v conntrack >/dev/null 2>&1; then
+        conntrack -D -p tcp --dport "$new_port" >/dev/null 2>&1 || true
+    fi
 
     systemctl restart "$WEB_SERVICE"
     msg_ok "All Web settings updated successfully. Service restarted."

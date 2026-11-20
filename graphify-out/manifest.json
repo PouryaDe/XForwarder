@@ -90,9 +90,9 @@
     "semantic_hash": ""
   },
   "xforwarder.sh": {
-    "mtime": 1795185933.1159186,
-    "seen": 1795186044.14016,
-    "ast_hash": "07056981e4416a6ce4a2075c70b0fa4f",
+    "mtime": 1795196575.9197526,
+    "seen": 1795196627.5742185,
+    "ast_hash": "189439111b70450a77e257762d75fbfd",
     "semantic_hash": ""
   },
   ".agents/skills/xfwd-ops/SKILL.md": {
@@ -288,9 +288,9 @@
     "semantic_hash": ""
   },
   "tests/test_ui_and_api_edge_cases.py": {
-    "mtime": 1795195849.725586,
-    "seen": 1795195895.8965664,
-    "ast_hash": "4c30624eb7892dd405817e3dfec22ef6",
+    "mtime": 1795196581.4412477,
+    "seen": 1795196627.5742,
+    "ast_hash": "29ef87d16479a8616a1a62ba0ecdea24",
     "semantic_hash": ""
   },
   "tests/test_network_interfaces.py": {
@@ -378,9 +378,9 @@
     "semantic_hash": ""
   },
   "tests/test_nftables_parser.py": {
-    "mtime": 1795196125.0499687,
-    "seen": 1795196173.0251734,
-    "ast_hash": "602b2f9ed91932a5df8c950ddc27b91c",
+    "mtime": 1795196578.855196,
+    "seen": 1795196627.5741885,
+    "ast_hash": "9d0957ccca6597690ceb0cc05c591e59",
     "semantic_hash": ""
   },
   ".agents/experiences/011-nftables-active-rules-auto-discovery-and-deconfliction.md": {

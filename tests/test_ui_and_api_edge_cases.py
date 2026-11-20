@@ -2679,6 +2679,21 @@ class TestUIAndAPIEdgeCases(unittest.TestCase):
         self.assertIn("cnt_in_8091_65535", captured_nft["ruleset"])
         self.assertNotIn("cnt_in_1002_65535", captured_nft["ruleset"])
 
+        # Changing web.port to non-default 2083 protects 2083 dynamically and allows forwarding 8090
+        eng.config["web"]["port"] = 2083
+        with patch.object(eng, "_detect_wan_interface", return_value="eth0"), \
+             patch("core.engine.apply_nftables", side_effect=fake_apply_nftables), \
+             patch("core.engine.apply_haproxy", return_value=(True, None)), \
+             patch("core.engine.apply_nginx", return_value=(True, None)), \
+             patch.object(eng, "_save_state_file"):
+            ok_custom, errs_custom = eng.sync_firewall_and_proxies()
+
+        self.assertTrue(ok_custom, errs_custom)
+        dnat_custom = "\n".join(captured_nft["dnat"])
+        self.assertIn("tcp dport 1002-2082 dnat to 10.10.1.2", dnat_custom)
+        self.assertIn("tcp dport 2084-65535 dnat to 10.10.1.2", dnat_custom)
+        self.assertNotIn("tcp dport 1002-8089", dnat_custom)
+
 
 if __name__ == "__main__":
     unittest.main()
