@@ -84,9 +84,9 @@
     "semantic_hash": ""
   },
   "web/index.html": {
-    "mtime": 1795210553.9421713,
-    "seen": 1795210636.1955404,
-    "ast_hash": "7ee51bdf93f68c3cee76fd3a0969a6e0",
+    "mtime": 1795211014.5330825,
+    "seen": 1795211118.4843254,
+    "ast_hash": "81c1e132d1b923cce5d474862b1ff999",
     "semantic_hash": ""
   },
   "xforwarder.sh": {
@@ -288,9 +288,9 @@
     "semantic_hash": ""
   },
   "tests/test_ui_and_api_edge_cases.py": {
-    "mtime": 1795210561.4202442,
-    "seen": 1795210636.195475,
-    "ast_hash": "56d553c039f7b0bff0d7bf087868bde1",
+    "mtime": 1795211027.501334,
+    "seen": 1795211118.4842584,
+    "ast_hash": "89e3202630d7fe902a101d0b4e721871",
     "semantic_hash": ""
   },
   "tests/test_network_interfaces.py": {
@@ -645,6 +645,12 @@
     "mtime": 1795180439.0222228,
     "seen": 1795180653.8285499,
     "ast_hash": "8b5a4ce6df7f333d68bef6a4e6a3d7dd",
+    "semantic_hash": ""
+  },
+  "web/favicon.svg": {
+    "mtime": 1795211010.0830498,
+    "seen": 1795211118.4843266,
+    "ast_hash": "7acbc727b9a176594fcbb45ce961c727",
     "semantic_hash": ""
   }
 }

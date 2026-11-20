@@ -854,7 +854,7 @@
 }
 
 [dir="rtl"] .toast-close {
-    margin-right: auto !important;
+    margin-right: 4px !important;
     margin-left: 0 !important;
 }
 

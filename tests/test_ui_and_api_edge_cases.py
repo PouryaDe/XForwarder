@@ -2845,12 +2845,21 @@ class TestUIAndAPIEdgeCases(unittest.TestCase):
         self.assertNotIn('<p class="page-subtitle"', html)
         self.assertIn('.page-title {', layout_css)
         self.assertIn('--font-page-title', layout_css)
-        # Simplified sidebar footer & horizontal service rows
+        # Simplified sidebar footer & horizontal service rows & favicon + inline toast
         self.assertNotIn('class="user-avatar"', html)
         self.assertNotIn('class="user-role"', html)
         self.assertIn('id="sidebarLangLabel">FA<', html)
         self.assertIn('id="themeToggleLabel">Light<', html)
         self.assertEqual(html.count('service-row-card'), 3)
+        self.assertTrue(os.path.isfile(os.path.join(web_dir, "favicon.svg")))
+        self.assertIn('href="favicon.svg', html)
+        self.assertIn('font-size: 0.56rem;', layout_css)
+        with open(os.path.join(web_dir, "css", "modals.css"), "r", encoding="utf-8") as f:
+            modals_css = f.read()
+        self.assertIn('display: flex;\n    align-items: center;', modals_css.replace("\r\n", "\n"))
+        self.assertIn('.toast-icon {', modals_css)
+        self.assertIn('.toast-message {', modals_css)
+        self.assertIn('.toast-close {', modals_css)
 
         # 4. Hash-free path routing in navigation.js & BASE_PATH stripping in api.js
         self.assertIn('"updates"', nav_js)
