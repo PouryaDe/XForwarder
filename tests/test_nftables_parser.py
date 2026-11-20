@@ -373,6 +373,97 @@ table ip nat {
                 capture_output=True, text=True, timeout=2.0
             )
 
+    def test_negated_dport_set_table_and_handles_deconfliction(self):
+        """Verifies tables with `dport != { 22, 443, 1001 } dnat to ...` are detected, merged, and cleanly deactivated."""
+        iran_table_text = """
+table ip port_forward_iran {
+    chain prerouting {
+        type nat hook prerouting priority dstnat; policy accept;
+        #iifname "eth0" tcp dport != { 22, 443, 51821 } dnat to jhash ip saddr mod 2 map { 0 : 10.81.2.2, 1 : 10.81.3.2 }
+        iifname "eth0" tcp dport != { 22, 443, 1001 } dnat to 10.10.1.2 # handle 4
+        iifname "eth0" udp dport != { 22, 443, 1001 } dnat to 10.10.1.2 # handle 5
+    }
+    chain postrouting {
+        type nat hook postrouting priority srcnat; policy accept;
+        oifname { "ipip2", "ipip3" } masquerade
+    }
+}
+"""
+        rules = parse_nftables_text(iran_table_text)
+        ranges = [r.get("port_range") for r in rules]
+        self.assertEqual(ranges, ["1-21", "23-442", "444-1000", "1002-65535"])
+
+        for r in rules:
+            self.assertEqual(r["protocol"], "both")
+            self.assertEqual(r["active_priority"], 1)
+            self.assertEqual(len(r["destinations"]), 1)
+            self.assertEqual(r["destinations"][0]["type"], "nftables")
+            self.assertEqual(r["destinations"][0]["target"], "10.10.1.2")
+            self.assertEqual(r["destinations"][0]["port_range"], r["port_range"])
+            self.assertEqual(r["_meta"]["table"], "port_forward_iran")
+            self.assertEqual(set(r["_meta"]["handles"]), {4, 5})
+
+        # Deactivation deletes each kernel handle exactly once (handle 4 and handle 5)
+        with patch("shutil.which", return_value="/usr/sbin/nft"), \
+             patch("subprocess.run") as mock_sub:
+            mock_sub.return_value = MagicMock(returncode=0, stdout="", stderr="")
+            deact, logs = deactivate_legacy_rules(rules)
+            self.assertEqual(deact, 2)
+            mock_sub.assert_any_call(
+                ["nft", "delete", "rule", "ip", "port_forward_iran", "prerouting", "handle", "4"],
+                capture_output=True, text=True, timeout=2.0
+            )
+            mock_sub.assert_any_call(
+                ["nft", "delete", "rule", "ip", "port_forward_iran", "prerouting", "handle", "5"],
+                capture_output=True, text=True, timeout=2.0
+            )
+
+        # JSON ruleset parity for `op: !=`
+        iran_json = {
+            "nftables": [
+                {
+                    "rule": {
+                        "family": "ip",
+                        "table": "port_forward_iran",
+                        "chain": "prerouting",
+                        "handle": 14,
+                        "expr": [
+                            {
+                                "match": {
+                                    "op": "!=",
+                                    "left": {"payload": {"protocol": "tcp", "field": "dport"}},
+                                    "right": {"set": [22, 443, 1001]}
+                                }
+                            },
+                            {"dnat": {"addr": "10.10.1.2"}}
+                        ]
+                    }
+                }
+            ]
+        }
+        json_rules = parse_nftables_json(iran_json)
+        self.assertEqual([r.get("port_range") for r in json_rules], ["1-21", "23-442", "444-1000", "1002-65535"])
+
+    def test_wide_range_and_jhash_map_import(self):
+        """Verifies wide explicit NFTables port ranges and jhash map rules import cleanly without port explosion."""
+        content = """
+table ip custom_nat {
+    chain prerouting {
+        type nat hook prerouting priority dstnat; policy accept;
+        tcp dport 10000-20000 dnat to 10.10.1.2 # handle 71
+        udp dport 30000-30500 dnat to jhash ip saddr mod 2 map { 0 : 10.81.2.2, 1 : 10.81.3.2 } # handle 72
+    }
+}
+"""
+        rules = parse_nftables_text(content)
+        self.assertEqual(len(rules), 2)
+        self.assertEqual(rules[0]["port_range"], "10000-20000")
+        self.assertEqual(rules[0]["destinations"][0]["type"], "nftables")
+        self.assertEqual(rules[0]["destinations"][0]["port_range"], "10000-20000")
+
+        self.assertEqual(rules[1]["port_range"], "30000-30500")
+        self.assertEqual([d["target"] for d in rules[1]["destinations"]], ["10.81.2.2", "10.81.3.2"])
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -333,7 +333,7 @@ export function renderRuleCard(rule, rulesState) {
                     </div>
                 </div>
                 <div class="path-dest">
-                    <span>${escapeHtml(String(dest.type || 'haproxy').toUpperCase())}: ${targetDisplay}:${escapeHtml(dest.port || rule.port)}</span>
+                    <span>${escapeHtml(String(dest.type || 'haproxy').toUpperCase())}: ${targetDisplay}:${escapeHtml(dest.port_range ? `${dest.port_range} (1:1)` : (dest.port || rule.port))}</span>
                     <button class="btn-copy" onclick="copyText(decodeURIComponent('${encodeURIComponent(rawTarget)}'))" title="${escapeHtml(t("rules.copy_dest_ip", {}, "Copy Destination IP"))}">${copyPortSvg}</button>
                 </div>
                 <div class="path-meta">
@@ -356,12 +356,13 @@ export function renderRuleCard(rule, rulesState) {
         </span>
     ` : '';
 
+    const displayPort = rule.port_range || rule.port;
     return `
         <div class="rule-card" id="rule-card-${encodedId}">
             <div class="rule-top">
                 <div class="port-badge">
-                    <span class="port-num">:${escapeHtml(rule.port)}</span>
-                    <button class="btn-copy" onclick="copyText(decodeURIComponent('${encodeURIComponent(rule.port)}'))" title="${escapeHtml(t("rules.copy_port_num", {}, "Copy Port Number"))}">${copyPortSvg}</button>
+                    <span class="port-num">:${escapeHtml(displayPort)}</span>
+                    <button class="btn-copy" onclick="copyText(decodeURIComponent('${encodeURIComponent(displayPort)}'))" title="${escapeHtml(t("rules.copy_port_num", {}, "Copy Port Number"))}">${copyPortSvg}</button>
                     ${trafficPillHtml}
                     ${rState.switch_pending_seconds > 0 ? `<span class="badge-pending-switch" title="${escapeHtml(t("rules.switch_pending_tooltip", { prio: rState.candidate_priority || '' }, `Candidate P${rState.candidate_priority || ''} sustained quality advantage. Switching after streak confirmation.`))}"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>${escapeHtml(t("rules.switch_in", { sec: rState.switch_pending_seconds }, `Switch in ${rState.switch_pending_seconds}s`))}</span>` : ''}
                     ${rState.hold_remaining > 0 ? `<span class="badge-cooldown" title="${escapeHtml(t("rules.min_hold_tooltip", {}, "Route held stable to prevent disruption (Min Hold: 10m)"))}"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 14 14"/></svg>${escapeHtml(t("rules.hold", { sec: rState.hold_remaining }, `Hold ${rState.hold_remaining}s`))}</span>` : (rState.cooldown_remaining > 0 ? `<span class="badge-cooldown" title="${escapeHtml(t("rules.cooldown_tooltip", {}, "Post-Critical Cooldown active"))}"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 14 14"/></svg>${escapeHtml(t("rules.cooldown", { sec: rState.cooldown_remaining }, `Cooldown ${rState.cooldown_remaining}s`))}</span>` : '')}
@@ -451,12 +452,13 @@ export function renderRuleListRow(rule, rulesState) {
 
         const statusDetail = stat.reason ? ` · ${stat.reason}` : (stat.status ? ` · ${String(stat.status).toUpperCase()}` : '');
 
+        const destPortLabel = dest.port_range ? `${dest.port_range} (1:1)` : (dest.port || rule.port);
         return `
-            <div class="${pillClass}" title="Priority #${prio}: ${escapeHtml(String(dest.type || 'haproxy').toUpperCase())} ${targetDisplay}:${escapeHtml(dest.port || rule.port)}${latText}${escapeHtml(statusDetail)}">
+            <div class="${pillClass}" title="Priority #${prio}: ${escapeHtml(String(dest.type || 'haproxy').toUpperCase())} ${targetDisplay}:${escapeHtml(destPortLabel)}${latText}${escapeHtml(statusDetail)}">
                 <span style="width:7px; height:7px; border-radius:50%; background:${dotColor}; display:inline-block;"></span>
                 <span style="font-weight:700; color:var(--text-primary); font-family:var(--font-mono);">#${prio}</span>
                 ${dest.is_relay ? `<span class="badge-relay-pill" style="font-size:0.62rem; padding:1px 4px;" title="${escapeHtml(t("rules.relay_tooltip", {}, "Mid Server"))}">${escapeHtml(t("rules.relay", {}, "Mid Server"))}</span>` : ''}
-                <span class="font-mono" style="color:var(--text-secondary); font-size:0.75rem;">${targetDisplay}:${escapeHtml(dest.port || rule.port)}</span>
+                <span class="font-mono" style="color:var(--text-secondary); font-size:0.75rem;">${targetDisplay}:${escapeHtml(destPortLabel)}</span>
                 ${latText && isEnabled ? `<span class="font-mono" style="color:var(--accent-mint); font-size:0.72rem;">${latText}</span>` : ''}
                 ${isEnabled ? loss50Inline : ''}
                 ${isActive && isEnabled ? `<span style="font-size:0.68rem; font-weight:700; color:${isFailover ? 'var(--accent-amber)' : 'var(--accent-mint)'}; text-transform:uppercase;">${isFailover ? escapeHtml(t("status.failover", {}, "FAILOVER")) : escapeHtml(t("status.active", {}, "ACTIVE"))}</span>` : ''}
@@ -480,11 +482,12 @@ export function renderRuleListRow(rule, rulesState) {
         </span>
     ` : '';
 
+    const displayPort = rule.port_range || rule.port;
     return `
         <div class="rule-list-row" id="rule-card-${encodedId}">
             <div class="rule-list-left">
-                <span class="rule-list-port">:${escapeHtml(rule.port)}</span>
-                <button class="btn-copy" onclick="copyText(decodeURIComponent('${encodeURIComponent(rule.port)}'))" title="${escapeHtml(t("rules.copy_port_num", {}, "Copy Port"))}">${copyPortSvg}</button>
+                <span class="rule-list-port">:${escapeHtml(displayPort)}</span>
+                <button class="btn-copy" onclick="copyText(decodeURIComponent('${encodeURIComponent(displayPort)}'))" title="${escapeHtml(t("rules.copy_port_num", {}, "Copy Port"))}">${copyPortSvg}</button>
                 ${trafficPillHtml}
                 ${rState.switch_pending_seconds > 0 ? `<span class="badge-pending-switch" style="font-size:0.68rem; padding:2px 6px;" title="${escapeHtml(t("rules.switch_pending_tooltip", { prio: rState.candidate_priority || '' }, `Switching to P${rState.candidate_priority || ''} in ${rState.switch_pending_seconds}s`))}">${escapeHtml(t("rules.switch_in", { sec: rState.switch_pending_seconds }, `Switch in ${rState.switch_pending_seconds}s`))}</span>` : ''}
                 ${rState.hold_remaining > 0 ? `<span class="badge-cooldown" style="font-size:0.68rem; padding:2px 6px;" title="${escapeHtml(t("rules.min_hold_tooltip", {}, "Min Hold 10m"))}">${escapeHtml(t("rules.hold", { sec: rState.hold_remaining }, `Hold ${rState.hold_remaining}s`))}</span>` : (rState.cooldown_remaining > 0 ? `<span class="badge-cooldown" style="font-size:0.68rem; padding:2px 6px;" title="${escapeHtml(t("rules.cooldown_tooltip", {}, "Post-Critical Cooldown active"))}">${escapeHtml(t("rules.cooldown", { sec: rState.cooldown_remaining }, `Cooldown ${rState.cooldown_remaining}s`))}</span>` : '')}

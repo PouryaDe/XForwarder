@@ -18,6 +18,9 @@ All DNAT routing managed by XForwarder must strictly reside inside the dedicated
 - **Masquerading Interface Masks**: The postrouting chain masquerades outbound traffic on recognized tunnel interfaces:
   `oifname { "gre*", "ipip*", "ftcp*", "awg*", "gnv*", "vxlan*", "wg*", "tun*" } masquerade`
 - **TCP MSS Clamping**: The forward chain must clamp TCP MSS to the path MTU (`tcp flags syn tcp option maxseg size set rt mtu`) to prevent tunnel MTU packet drops and fragmentation over GRE, IPIP, and AWG tunnels.
+- **NFTables-Only Port Ranges (`port_range`) & Excluded Sets (`!= { ... }`)**:
+  - Contiguous inbound/outbound port ranges (`start-end`) are permitted exclusively on `nftables` destinations (`haproxy` and `nginx` forbid port ranges). Outbound must either preserve ports 1:1 (`dnat to <ip>`, matching `port_range`) or target a single fixed port (`dnat to <ip>:<port>`).
+  - Range traffic counters use `cnt_in_<start>_<end>` / `cnt_out_<start>_<end>`, wide range flushes (>32 ports) skip per-port conntrack loops, and `nftables_parser.py` expands excluded sets (`dport != { 22, 443, 1001 }`) into clean complementary ranges while tracking all merged TCP/UDP handles for atomic deactivation.
 
 ## 2. HAProxy Zero-Tunnel Relay
 - **Config Path**: `/etc/haproxy/haproxy.cfg`

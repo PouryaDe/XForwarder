@@ -1667,8 +1667,8 @@
                 <div class="form-row">
                     <div class="form-group flex-1">
                         <label for="formPort" data-i18n="modal.inbound_port">Inbound Listening Port</label>
-                        <input type="number" id="formPort" class="form-control" placeholder="e.g. 2023" data-i18n-placeholder="modal.port_placeholder" required min="1"
-                            max="65535">
+                        <input type="text" id="formPort" class="form-control" inputmode="numeric" placeholder="e.g. 2023 or 10000-20000" data-i18n-placeholder="modal.port_placeholder" required autocomplete="off">
+                        <small id="portRangeHint" class="text-amber" data-i18n="modal.range_hint_nft_only" style="display:none; font-size:0.74rem; margin-top:5px;">Port ranges are supported exclusively on NFTables (1:1 same-range or single target port).</small>
                     </div>
                     <div class="form-group flex-1">
                         <label for="formProto" data-i18n="modal.proto">Transport Protocol</label>

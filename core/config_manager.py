@@ -358,17 +358,30 @@ def migrate_and_normalize_config(cfg: Dict[str, Any]) -> Tuple[Dict[str, Any], b
         if not isinstance(rule, dict):
             continue
 
-        # Normalize port
-        try:
-            port = int(rule.get("port", 0))
+        # Normalize port / port_range
+        sp, ep, prange = get_rule_port_bounds(rule)
+        if sp is not None:
+            port = sp
             if rule.get("port") != port:
                 rule["port"] = port
                 modified = True
-        except (ValueError, TypeError):
-            port = 0
+            if prange and rule.get("port_range") != prange:
+                rule["port_range"] = prange
+                modified = True
+            elif not prange and "port_range" in rule:
+                rule.pop("port_range", None)
+                modified = True
+        else:
+            try:
+                port = int(rule.get("port", 0))
+                if rule.get("port") != port:
+                    rule["port"] = port
+                    modified = True
+            except (ValueError, TypeError):
+                port = 0
 
         if not rule.get("id"):
-            rule["id"] = f"rule-{port}"
+            rule["id"] = f"rule-{prange or port}"
             modified = True
 
         proto = str(rule.get("protocol", "both")).lower()
@@ -436,13 +449,31 @@ def migrate_and_normalize_config(cfg: Dict[str, Any]) -> Tuple[Dict[str, Any], b
                 d["priority"] = prio
                 modified = True
 
-            try:
-                d_port = int(d.get("port", port))
-            except (ValueError, TypeError):
-                d_port = port
-            if d.get("port") != d_port:
-                d["port"] = d_port
-                modified = True
+            raw_dport = d.get("port_range") or d.get("port")
+            if raw_dport is not None and str(raw_dport).strip() != "":
+                dsp, dep, drange = parse_port_spec(raw_dport)
+                if dsp is not None:
+                    d_port = dsp
+                    if d.get("port") != d_port:
+                        d["port"] = d_port
+                        modified = True
+                    if drange and d.get("port_range") != drange:
+                        d["port_range"] = drange
+                        modified = True
+                    elif not drange and "port_range" in d:
+                        d.pop("port_range", None)
+                        modified = True
+                else:
+                    if d.get("port") != port:
+                        d["port"] = port
+                        modified = True
+            else:
+                if d.get("port") != port:
+                    d["port"] = port
+                    modified = True
+                if prange and d.get("port_range") != prange:
+                    d["port_range"] = prange
+                    modified = True
 
             if "comment" not in d:
                 d["comment"] = ""
@@ -584,6 +615,62 @@ def update_state_rules(rule_updates: Dict[str, dict], state_path: Optional[str] 
         pass
 
 
+from typing import Dict, Any, Optional, Tuple, List
+
+PORT_RANGE_REGEX = re.compile(r"^\s*(\d{1,5})\s*-\s*(\d{1,5})\s*$")
+
+
+def parse_port_spec(val: Any) -> Tuple[Optional[int], Optional[int], Optional[str]]:
+    """
+    Parses a single port (int/str) or port range ('start-end').
+    Returns (start_port, end_port, range_str_or_None).
+    Normalizes single-port ranges ('443-443') to (443, 443, None).
+    Returns (None, None, None) when invalid.
+    """
+    if val is None or isinstance(val, bool):
+        return None, None, None
+    if isinstance(val, int):
+        return (val, val, None) if 1 <= val <= 65535 else (None, None, None)
+
+    s = str(val).strip()
+    if not s:
+        return None, None, None
+
+    m = PORT_RANGE_REGEX.match(s)
+    if m:
+        sp, ep = int(m.group(1)), int(m.group(2))
+        if not (1 <= sp <= ep <= 65535):
+            return None, None, None
+        if sp == ep:
+            return sp, sp, None
+        return sp, ep, f"{sp}-{ep}"
+
+    try:
+        p = int(s)
+        if 1 <= p <= 65535:
+            return p, p, None
+    except ValueError:
+        pass
+    return None, None, None
+
+
+def get_rule_port_bounds(rule: dict) -> Tuple[Optional[int], Optional[int], Optional[str]]:
+    """Extracts canonical (start_port, end_port, port_range_str) from a rule dict."""
+    if not isinstance(rule, dict):
+        return None, None, None
+    raw_range = rule.get("port_range")
+    if raw_range:
+        sp, ep, rstr = parse_port_spec(raw_range)
+        if sp is not None:
+            return sp, ep, rstr
+    return parse_port_spec(rule.get("port"))
+
+
+def ports_overlap(a_start: int, a_end: int, b_start: int, b_end: int) -> bool:
+    """Returns True when two closed port intervals [a_start, a_end] and [b_start, b_end] intersect."""
+    return not (a_end < b_start or b_end < a_start)
+
+
 def is_valid_target(target: str) -> bool:
     """Strictly validates if a destination target is a valid IPv4, IPv6, or RFC hostname."""
     if not target or not isinstance(target, str):
@@ -612,18 +699,19 @@ def is_valid_target(target: str) -> bool:
 
 
 def validate_rule(body: dict) -> Tuple[bool, str]:
-    """Validates forwarding rule schema and destination attributes."""
+    """Validates forwarding rule schema and destination attributes (single port or NFTables range)."""
     if not isinstance(body, dict):
         return False, "Invalid JSON body"
 
-    port = body.get("port")
-    try:
-        port = int(port)
-        if port < 1 or port > 65535:
-            return False, "Port must be between 1 and 65535"
-        body["port"] = port
-    except (ValueError, TypeError):
-        return False, "Port must be a valid integer"
+    raw_port = body.get("port_range") if body.get("port_range") else body.get("port")
+    start_p, end_p, port_range_str = parse_port_spec(raw_port)
+    if start_p is None:
+        return False, "Port must be between 1 and 65535 (or a valid range 'start-end')"
+    body["port"] = start_p
+    if port_range_str:
+        body["port_range"] = port_range_str
+    else:
+        body.pop("port_range", None)
 
     proto = str(body.get("protocol", "both")).lower()
     if proto not in ("tcp", "udp", "both"):
@@ -668,7 +756,9 @@ def validate_rule(body: dict) -> Tuple[bool, str]:
         d_type = str(d.get("type", "")).lower().strip()
         if not d_type:
             clean_t = target.strip("[]")
-            if ":" in clean_t:
+            if port_range_str:
+                d_type = "nftables"
+            elif ":" in clean_t:
                 d_type = "haproxy"
             elif clean_t.startswith("10.") or clean_t.startswith("192.168.") or clean_t.startswith("172."):
                 d_type = "nftables"
@@ -678,6 +768,9 @@ def validate_rule(body: dict) -> Tuple[bool, str]:
         elif d_type not in ("haproxy", "nftables", "nginx"):
             return False, "Destination type must be 'haproxy', 'nftables', or 'nginx'"
         d["type"] = d_type
+
+        if port_range_str and d_type != "nftables":
+            return False, f"Port ranges ({port_range_str}) are only supported for 'nftables' destinations (not '{d_type}')"
 
         if d_type == "haproxy":
             clean_target = target.strip("[]")
@@ -696,14 +789,27 @@ def validate_rule(body: dict) -> Tuple[bool, str]:
             except ValueError:
                 return False, f"NFTables destination target must be a valid IPv4 or IPv6 address (got '{target}')"
 
-        d_port = d.get("port", port)
-        try:
-            d_port = int(d_port)
-            if d_port < 1 or d_port > 65535:
-                return False, "Destination port must be between 1 and 65535"
-            d["port"] = d_port
-        except (ValueError, TypeError):
-            return False, "Destination port must be a valid integer"
+        raw_dport = d.get("port_range") if d.get("port_range") else d.get("port")
+        if raw_dport is None or str(raw_dport).strip() == "":
+            d["port"] = start_p
+            if port_range_str:
+                d["port_range"] = port_range_str
+            else:
+                d.pop("port_range", None)
+        else:
+            d_sp, d_ep, d_range_str = parse_port_spec(raw_dport)
+            if d_sp is None:
+                return False, "Destination port must be between 1 and 65535 (or a valid matching range)"
+            if d_range_str:
+                if d_type != "nftables":
+                    return False, f"Destination port range '{d_range_str}' is only supported for 'nftables' (not '{d_type}')"
+                if not port_range_str or d_range_str != port_range_str:
+                    return False, f"NFTables outbound port range must match inbound range ({port_range_str or start_p}) or be a single target port"
+                d["port"] = d_sp
+                d["port_range"] = d_range_str
+            else:
+                d["port"] = d_sp
+                d.pop("port_range", None)
 
         prio = d.get("priority", 1)
         try:
@@ -806,7 +912,7 @@ def import_config_data(imported_raw: Any, mode: str = "merge") -> Tuple[bool, st
 
     if isinstance(imported_raw, list):
         imported_raw = {"rules": imported_raw}
-    elif isinstance(imported_raw, dict) and "rules" not in imported_raw and "port" in imported_raw:
+    elif isinstance(imported_raw, dict) and "rules" not in imported_raw and ("port" in imported_raw or "port_range" in imported_raw):
         imported_raw = {"rules": [imported_raw]}
     elif not isinstance(imported_raw, dict):
         return False, "Invalid configuration payload. Must be a JSON object, rules array, or rule object.", {}
@@ -820,31 +926,31 @@ def import_config_data(imported_raw: Any, mode: str = "merge") -> Tuple[bool, st
     web_port = current_cfg.get("web", {}).get("port", 8090)
 
     validated_rules = []
-    seen_ports = set()
+    seen_bounds: List[Tuple[int, int]] = []
     for r in imported_rules:
         if not isinstance(r, dict):
             continue
-        try:
-            port = int(r.get("port", 0))
-        except (ValueError, TypeError):
-            continue
-        if port <= 0 or port > 65535:
-            return False, f"Invalid port number: {port}", {}
-        if port == web_port:
-            return False, f"Port {port} is reserved for the XForwarder Web Dashboard", {}
-        if port in seen_ports:
-            return False, f"Duplicate port {port} found in imported rules", {}
-        seen_ports.add(port)
+        sp, ep, prange = get_rule_port_bounds(r)
+        if sp is None:
+            return False, f"Invalid port number/range: {r.get('port_range') or r.get('port')}", {}
+        label = prange or str(sp)
+        if sp <= web_port <= ep:
+            return False, f"Port {web_port} is reserved for the XForwarder Web Dashboard", {}
+        if any(ports_overlap(sp, ep, bs, be) for bs, be in seen_bounds):
+            if sp == ep and (sp, ep) in seen_bounds:
+                return False, f"Duplicate port {label} found in imported rules", {}
+            return False, f"Duplicate port range {label} overlaps another rule in imported rules", {}
+        seen_bounds.append((sp, ep))
 
         # Ensure consistent rule ID and initial priority
         if not r.get("id"):
-            r["id"] = f"rule-{port}"
+            r["id"] = f"rule-{label}"
         if "active_priority" not in r:
             r["active_priority"] = 1
 
         valid, err = validate_rule(r)
         if not valid:
-            return False, f"Rule for port {port} is invalid: {err}", {}
+            return False, f"Rule for port {label} is invalid: {err}", {}
         validated_rules.append(r)
 
     # Atomic Pre-Update Backup
@@ -874,9 +980,9 @@ def import_config_data(imported_raw: Any, mode: str = "merge") -> Tuple[bool, st
                 current_cfg[param] = imported_cfg[param]
     else:  # merge
         current_rules = current_cfg.get("rules", [])
-        rules_map = {r.get("port"): r for r in current_rules if isinstance(r, dict)}
+        rules_map = {str(r.get("port_range") or r.get("port")): r for r in current_rules if isinstance(r, dict)}
         for vr in validated_rules:
-            rules_map[vr["port"]] = vr
+            rules_map[str(vr.get("port_range") or vr.get("port"))] = vr
         current_cfg["rules"] = list(rules_map.values())
 
     if save_config(current_cfg):

@@ -358,18 +358,20 @@ def parse_nftables_counters_json(json_text: str) -> Dict[int, Dict[str, int]]:
 
             if name.startswith("cnt_in_"):
                 try:
-                    port = int(name.split("cnt_in_")[1])
+                    suffix = name.split("cnt_in_", 1)[1]
+                    port = int(suffix.split("_", 1)[0])
                     if port not in port_stats:
                         port_stats[port] = {"rx_bytes": 0, "tx_bytes": 0}
-                    port_stats[port]["rx_bytes"] = bytes_cnt
+                    port_stats[port]["rx_bytes"] += bytes_cnt
                 except ValueError:
                     pass
             elif name.startswith("cnt_out_"):
                 try:
-                    port = int(name.split("cnt_out_")[1])
+                    suffix = name.split("cnt_out_", 1)[1]
+                    port = int(suffix.split("_", 1)[0])
                     if port not in port_stats:
                         port_stats[port] = {"rx_bytes": 0, "tx_bytes": 0}
-                    port_stats[port]["tx_bytes"] = bytes_cnt
+                    port_stats[port]["tx_bytes"] += bytes_cnt
                 except ValueError:
                     pass
     except Exception:

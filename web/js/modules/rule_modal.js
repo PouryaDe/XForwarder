@@ -12,6 +12,66 @@ let currentModalDestinations = [];
 let draggedModalPrioIndex = null;
 let currentEditingRuleId = null;
 
+/**
+ * Parses a single port ("443") or port range ("10000-20000").
+ * Returns { start, end, rangeStr } where rangeStr is null for single ports.
+ */
+function parsePortSpec(rawVal) {
+    if (rawVal === null || rawVal === undefined) return null;
+    const s = String(rawVal).trim();
+    if (!s) return null;
+    const rangeMatch = /^(\d{1,5})\s*-\s*(\d{1,5})$/.exec(s);
+    if (rangeMatch) {
+        const sp = parseInt(rangeMatch[1], 10);
+        const ep = parseInt(rangeMatch[2], 10);
+        if (isNaN(sp) || isNaN(ep) || sp < 1 || ep > 65535 || sp > ep) return null;
+        if (sp === ep) return { start: sp, end: sp, rangeStr: null };
+        return { start: sp, end: ep, rangeStr: `${sp}-${ep}` };
+    }
+    if (!/^\d{1,5}$/.test(s)) return null;
+    const p = parseInt(s, 10);
+    if (isNaN(p) || p < 1 || p > 65535) return null;
+    return { start: p, end: p, rangeStr: null };
+}
+
+function getCurrentInboundSpec() {
+    const portInput = document.getElementById("formPort");
+    return portInput ? parsePortSpec(portInput.value) : null;
+}
+
+function refreshRangeConstraintUI() {
+    const inbound = getCurrentInboundSpec();
+    const isRange = Boolean(inbound && inbound.rangeStr);
+    const hintEl = document.getElementById("portRangeHint");
+    if (hintEl) {
+        hintEl.style.display = isRange ? "block" : "none";
+    }
+
+    const boxes = document.querySelectorAll("#destinationsContainer .priority-box");
+    boxes.forEach((box) => {
+        const selectEl = box.querySelector(".dest-type");
+        const portEl = box.querySelector(".dest-port");
+        if (selectEl) {
+            const prev = selectEl.value || "nftables";
+            const optionsHtml = isRange
+                ? `<option value="nftables" selected>NFTables (Kernel)</option>`
+                : `
+                    <option value="haproxy" ${prev === "haproxy" ? "selected" : ""}>HAProxy (IPv6)</option>
+                    <option value="nginx" ${prev === "nginx" ? "selected" : ""}>Nginx (Stream)</option>
+                    <option value="nftables" ${prev === "nftables" ? "selected" : ""}>NFTables (Kernel)</option>
+                `;
+            selectEl.innerHTML = optionsHtml;
+            if (isRange) selectEl.value = "nftables";
+            handleDestTypeChange(selectEl);
+        }
+        if (portEl) {
+            portEl.placeholder = isRange
+                ? (t("modal.dest_port_range_placeholder", {}, "Same range or single port"))
+                : "Default";
+        }
+    });
+}
+
 function getPrioTagClass(prio) {
     if (prio === 1) return "prio-tag-1";
     if (prio === 2) return "prio-tag-2";
@@ -48,6 +108,7 @@ export function openAddRuleModal() {
     ];
 
     renderDestinationsList();
+    refreshRangeConstraintUI();
     modal.classList.add("show");
     setTimeout(() => {
         const portInput = document.getElementById("formPort");
@@ -68,15 +129,16 @@ export function openEditRuleModal(ruleId) {
     const form = document.getElementById("ruleForm");
     if (!modal) return;
 
+    const displayPort = rule.port_range || rule.port;
     if (form) form.reset();
-    if (title) title.innerText = `${t("modal.rule_title_configure")} :${rule.port}`;
+    if (title) title.innerText = `${t("modal.rule_title_configure")} :${displayPort}`;
     updateCategoryDatalist(currentRules);
 
     const ruleIdInput = document.getElementById("editRuleId") || document.getElementById("ruleId");
-    if (ruleIdInput) ruleIdInput.value = rule.id || `rule-${rule.port}`;
+    if (ruleIdInput) ruleIdInput.value = rule.id || `rule-${displayPort}`;
 
     const portInput = document.getElementById("formPort");
-    if (portInput) portInput.value = rule.port;
+    if (portInput) portInput.value = displayPort;
 
     const nameInput = document.getElementById("formName");
     if (nameInput) nameInput.value = rule.name || "";
@@ -98,9 +160,10 @@ export function openEditRuleModal(ruleId) {
 
     currentModalDestinations = (rule.destinations || []).map(d => ({
         priority: d.priority || 1,
-        type: d.type || "haproxy",
+        type: rule.port_range ? "nftables" : (d.type || "haproxy"),
         target: d.target || "",
-        port: d.port !== undefined && d.port !== null ? d.port : "",
+        port: d.port_range ? d.port_range : (d.port !== undefined && d.port !== null ? d.port : ""),
+        port_range: d.port_range || null,
         comment: d.comment || "",
         proxy_protocol: Boolean(d.proxy_protocol),
         is_relay: Boolean(d.is_relay),
@@ -110,7 +173,7 @@ export function openEditRuleModal(ruleId) {
     if (currentModalDestinations.length === 0) {
         currentModalDestinations.push({
             priority: 1,
-            type: "haproxy",
+            type: rule.port_range ? "nftables" : "haproxy",
             target: "",
             port: "",
             comment: "",
@@ -121,6 +184,7 @@ export function openEditRuleModal(ruleId) {
     }
 
     renderDestinationsList();
+    refreshRangeConstraintUI();
     modal.classList.add("show");
 }
 
@@ -143,9 +207,11 @@ export function renderDestinationsList() {
 export function renderDestinationRow(dest, index, totalCount) {
     const prio = index + 1;
     const isPrimary = prio === 1;
-    const type = dest.type || (isPrimary ? "haproxy" : "nftables");
+    const inboundSpec = getCurrentInboundSpec();
+    const isRangeRule = Boolean(inboundSpec && inboundSpec.rangeStr);
+    const type = isRangeRule ? "nftables" : (dest.type || (isPrimary ? "haproxy" : "nftables"));
     const target = dest.target || "";
-    const port = dest.port !== undefined && dest.port !== null ? dest.port : "";
+    const port = dest.port_range || (dest.port !== undefined && dest.port !== null ? dest.port : "");
     const comment = dest.comment || "";
     const canRemove = totalCount > 1;
 
@@ -193,9 +259,11 @@ export function renderDestinationRow(dest, index, totalCount) {
             <div class="form-group dest-col-type">
                 <label>${escapeHtml(t("modal.dest_type"))}</label>
                 <select class="form-control dest-type" onchange="handleDestTypeChange(this)">
-                    <option value="haproxy" ${type === "haproxy" ? "selected" : ""}>HAProxy (IPv6)</option>
-                    <option value="nginx" ${type === "nginx" ? "selected" : ""}>Nginx (Stream)</option>
-                    <option value="nftables" ${type === "nftables" ? "selected" : ""}>NFTables (Kernel)</option>
+                    ${isRangeRule
+                        ? `<option value="nftables" selected>NFTables (Kernel)</option>`
+                        : `<option value="haproxy" ${type === "haproxy" ? "selected" : ""}>HAProxy (IPv6)</option>
+                           <option value="nginx" ${type === "nginx" ? "selected" : ""}>Nginx (Stream)</option>
+                           <option value="nftables" ${type === "nftables" ? "selected" : ""}>NFTables (Kernel)</option>`}
                 </select>
             </div>
             <div class="form-group dest-col-target">
@@ -204,7 +272,7 @@ export function renderDestinationRow(dest, index, totalCount) {
             </div>
             <div class="form-group dest-col-port">
                 <label>${escapeHtml(t("modal.dest_port"))}</label>
-                <input type="number" class="form-control dest-port" placeholder="Default" min="1" max="65535" value="${escapeHtml(port)}">
+                <input type="text" inputmode="numeric" class="form-control dest-port" placeholder="${isRangeRule ? escapeHtml(t("modal.dest_port_range_placeholder", {}, "Same range or single port")) : "Default"}" value="${escapeHtml(port)}">
             </div>
         </div>
         <div class="form-group" style="margin-bottom:10px;">
@@ -273,16 +341,24 @@ export function syncDestinationsFromDom() {
         const relayEl = box.querySelector(".dest-is-relay");
         const enabledEl = box.querySelector(".dest-enabled-check");
 
-        updated.push({
+        const rawDPort = portEl ? portEl.value.trim() : "";
+        const parsedDPort = rawDPort ? parsePortSpec(rawDPort) : null;
+        const destObj = {
             priority: i + 1,
             type: typeEl ? typeEl.value : "haproxy",
             target: targetEl ? targetEl.value.trim() : "",
-            port: (portEl && portEl.value.trim()) ? parseInt(portEl.value.trim()) : null,
+            port: parsedDPort ? parsedDPort.start : null,
             comment: commentEl ? commentEl.value.trim() : "",
             proxy_protocol: proxyProtoEl ? proxyProtoEl.checked : false,
             is_relay: relayEl ? relayEl.checked : false,
             enabled: enabledEl ? enabledEl.checked : true
-        });
+        };
+        if (parsedDPort && parsedDPort.rangeStr) {
+            destObj.port_range = parsedDPort.rangeStr;
+        } else if (rawDPort) {
+            destObj._invalidPortInput = rawDPort;
+        }
+        updated.push(destObj);
     });
     currentModalDestinations = updated;
 }
@@ -370,8 +446,9 @@ export async function testModalDestination(index) {
     const dest = currentModalDestinations[index];
     if (!dest) return;
     const target = (dest.target || "").trim().replace(/^\[|\]$/g, '');
-    const listenPort = document.getElementById("formPort") ? document.getElementById("formPort").value.trim() : "";
-    const port = dest.port || listenPort;
+    const listenRaw = document.getElementById("formPort") ? document.getElementById("formPort").value.trim() : "";
+    const portParsed = parsePortSpec(dest.port_range || dest.port || listenRaw);
+    const port = portParsed ? portParsed.start : null;
     const resEl = document.getElementById(`testDestResult_${index}`);
 
     if (!target) {
@@ -443,17 +520,12 @@ export function initRuleModal(fetchStatusCallback) {
     if (btnAddDestination) {
         btnAddDestination.addEventListener("click", () => {
             syncDestinationsFromDom();
-            const mainPortInput = document.getElementById("formPort");
-            let defaultPort = "";
-            if (mainPortInput && mainPortInput.value) {
-                const parsed = parseInt(mainPortInput.value.trim(), 10);
-                if (!isNaN(parsed) && parsed >= 1 && parsed <= 65535) {
-                    defaultPort = parsed;
-                }
-            }
+            const inboundSpec = getCurrentInboundSpec();
+            const isRange = Boolean(inboundSpec && inboundSpec.rangeStr);
+            const defaultPort = inboundSpec ? (inboundSpec.rangeStr || inboundSpec.start) : "";
             const nextPrio = currentModalDestinations.length + 1;
-            const nextType = nextPrio === 1 ? "haproxy" : "nftables";
-            currentModalDestinations.push({
+            const nextType = isRange ? "nftables" : (nextPrio === 1 ? "haproxy" : "nftables");
+            const newDest = {
                 priority: nextPrio,
                 type: nextType,
                 target: "",
@@ -462,7 +534,9 @@ export function initRuleModal(fetchStatusCallback) {
                 proxy_protocol: false,
                 is_relay: nextPrio > 1,
                 enabled: true
-            });
+            };
+            if (isRange) newDest.port_range = inboundSpec.rangeStr;
+            currentModalDestinations.push(newDest);
             renderDestinationsList();
         });
     }
@@ -470,13 +544,15 @@ export function initRuleModal(fetchStatusCallback) {
     const formPortInput = document.getElementById("formPort");
     if (formPortInput) {
         formPortInput.addEventListener("input", () => {
+            refreshRangeConstraintUI();
             if (!currentEditingRuleId) {
-                const parsed = parseInt(formPortInput.value.trim(), 10);
-                if (!isNaN(parsed) && parsed >= 1 && parsed <= 65535) {
+                const parsed = parsePortSpec(formPortInput.value);
+                if (parsed) {
+                    const fillVal = parsed.rangeStr || parsed.start;
                     const portInputs = document.querySelectorAll("#destinationsContainer .dest-port");
                     portInputs.forEach(input => {
                         if (!input.value) {
-                            input.value = parsed;
+                            input.value = fillVal;
                         }
                     });
                 }
@@ -500,23 +576,45 @@ export function initRuleModal(fetchStatusCallback) {
             e.preventDefault();
             syncDestinationsFromDom();
 
-            const portVal = parseInt(document.getElementById("formPort").value, 10);
-            if (isNaN(portVal) || portVal < 1 || portVal > 65535) {
-                showToast("Please enter a valid port (1 - 65535)", "error");
+            const inbound = parsePortSpec(document.getElementById("formPort").value);
+            if (!inbound) {
+                showToast("Please enter a valid port (1 - 65535) or NFTables range (e.g. 10000-20000)", "error");
                 return;
             }
+            const inboundLabel = inbound.rangeStr || String(inbound.start);
 
             if (currentModalDestinations.length === 0) {
                 showToast("At least one forwarding destination path is required", "error");
                 return;
             }
 
+            const sanitizedDests = [];
             for (let i = 0; i < currentModalDestinations.length; i++) {
                 const d = currentModalDestinations[i];
                 if (!d.target || !d.target.trim()) {
                     showToast(`Please enter target IP for Priority #${i + 1}`, "error");
                     return;
                 }
+                if (d._invalidPortInput) {
+                    showToast(`Priority #${i + 1} has an invalid target port '${d._invalidPortInput}'`, "error");
+                    return;
+                }
+                if (inbound.rangeStr) {
+                    if (d.type !== "nftables") {
+                        showToast(`Port range ${inbound.rangeStr} is supported only on NFTables (Priority #${i + 1})`, "error");
+                        return;
+                    }
+                    if (d.port_range && d.port_range !== inbound.rangeStr) {
+                        showToast(`NFTables outbound range on Priority #${i + 1} must match ${inbound.rangeStr} or be a single port`, "error");
+                        return;
+                    }
+                } else if (d.port_range) {
+                    showToast(`Destination port range '${d.port_range}' requires a matching inbound NFTables range`, "error");
+                    return;
+                }
+                const cleanDest = { ...d };
+                delete cleanDest._invalidPortInput;
+                sanitizedDests.push(cleanDest);
             }
 
             const ruleIdInput = document.getElementById("editRuleId") || document.getElementById("ruleId");
@@ -528,15 +626,18 @@ export function initRuleModal(fetchStatusCallback) {
             const ruleCreatedAtInput = document.getElementById("ruleCreatedAt");
 
             const rulePayload = {
-                id: (ruleIdInput && ruleIdInput.value) ? ruleIdInput.value : `rule-${portVal}`,
-                name: (nameInput && nameInput.value ? nameInput.value.trim() : "") || `Port ${portVal}`,
-                port: portVal,
+                id: (ruleIdInput && ruleIdInput.value) ? ruleIdInput.value : `rule-${inboundLabel}`,
+                name: (nameInput && nameInput.value ? nameInput.value.trim() : "") || `Port ${inboundLabel}`,
+                port: inbound.start,
                 protocol: (protoInput && protoInput.value) ? protoInput.value : "both",
                 category: (catInput && catInput.value ? catInput.value.trim() : ""),
                 active_priority: parseInt((activePriorityInput && activePriorityInput.value) || "1", 10),
                 force_override: parseInt((forceOverrideInput && forceOverrideInput.value) || "0", 10),
-                destinations: currentModalDestinations
+                destinations: sanitizedDests
             };
+            if (inbound.rangeStr) {
+                rulePayload.port_range = inbound.rangeStr;
+            }
 
             const createdAtStr = ruleCreatedAtInput ? ruleCreatedAtInput.value : "";
             if (createdAtStr && !isNaN(parseFloat(createdAtStr))) {
@@ -558,7 +659,7 @@ export function initRuleModal(fetchStatusCallback) {
                 const data = await res.json().catch(() => ({}));
 
                 if (res.ok && data.ok) {
-                    showToast(`Port :${portVal} rule saved successfully!`, "success");
+                    showToast(`Port :${inboundLabel} rule saved successfully!`, "success");
                     closeRuleModal();
                     if (typeof fetchStatusCallback === "function") fetchStatusCallback();
                 } else {

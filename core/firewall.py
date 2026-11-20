@@ -36,37 +36,53 @@ def _find_conntrack_bin() -> Optional[str]:
     return None
 
 
-def flush_conntrack(port: int, proto: Optional[str] = None) -> None:
-    """Flushes stale conntrack states for TCP and UDP on a validated port."""
-    try:
-        port_int = int(port)
-    except (TypeError, ValueError):
-        return
-    if port_int <= 0 or port_int > 65535:
+def flush_conntrack(port: Any, proto: Optional[str] = None) -> None:
+    """Flushes stale conntrack states for TCP and UDP on a validated port or tiny range."""
+    ports_to_flush: List[int] = []
+    s_port = str(port or "").strip()
+    if "-" in s_port:
+        parts = s_port.split("-", 1)
+        try:
+            sp, ep = int(parts[0].strip()), int(parts[1].strip())
+            if 1 <= sp <= ep <= 65535 and (ep - sp) <= 32:
+                ports_to_flush = list(range(sp, ep + 1))
+        except (TypeError, ValueError):
+            return
+    else:
+        try:
+            port_int = int(port)
+            if 1 <= port_int <= 65535:
+                ports_to_flush = [port_int]
+        except (TypeError, ValueError):
+            return
+
+    if not ports_to_flush:
         return
     conntrack_bin = _find_conntrack_bin()
     if not conntrack_bin:
         return
     protos = [proto] if proto in ("tcp", "udp") else ["tcp", "udp"]
-    for p in protos:
-        try:
-            subprocess.run(
-                [conntrack_bin, "-D", "-p", p, "--dport", str(port_int)],
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL,
-                timeout=5.0,
-                check=False
-            )
-        except Exception:
-            pass
+    for port_int in ports_to_flush:
+        for p in protos:
+            try:
+                subprocess.run(
+                    [conntrack_bin, "-D", "-p", p, "--dport", str(port_int)],
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                    timeout=5.0,
+                    check=False
+                )
+            except Exception:
+                pass
 
 
 def generate_nftables_ruleset(
     dnat_rules: List[str],
     rule_ports: Optional[Set[int]] = None,
-    enable_ipv6: Optional[bool] = None
+    enable_ipv6: Optional[bool] = None,
+    rule_ranges: Optional[Set[str]] = None
 ) -> str:
-    """Generates a complete, isolated NFTables ruleset string."""
+    """Generates a complete, isolated NFTables ruleset string (single ports + NFTables ranges)."""
     if enable_ipv6 is None:
         enable_ipv6 = is_ipv6_supported()
 
@@ -82,11 +98,20 @@ def generate_nftables_ruleset(
     ipv4_block = "\n".join(ipv4_rules) if ipv4_rules else "        # No active NFTables IPv4 DNAT rules"
 
     all_ports = set(rule_ports or [])
+    all_ranges = set(rule_ranges or [])
     for r in dnat_rules:
-        m = re.search(r"dport\s+(\d+)", r)
+        m = re.search(r"dport\s+(\d+)(?:-(\d+))?", r)
         if m:
             try:
-                all_ports.add(int(m.group(1)))
+                sp = int(m.group(1))
+                if m.group(2):
+                    ep = int(m.group(2))
+                    if sp < ep:
+                        all_ranges.add(f"{sp}-{ep}")
+                    else:
+                        all_ports.add(sp)
+                else:
+                    all_ports.add(sp)
             except ValueError:
                 pass
 
@@ -99,6 +124,15 @@ def generate_nftables_ruleset(
         forward_counters.append(f"        tcp sport {p} counter name cnt_out_{p}")
         forward_counters.append(f"        udp dport {p} counter name cnt_in_{p}")
         forward_counters.append(f"        udp sport {p} counter name cnt_out_{p}")
+
+    for pr in sorted(list(all_ranges)):
+        cname = pr.replace("-", "_")
+        counter_defs.append(f"    counter cnt_in_{cname} {{ }}")
+        counter_defs.append(f"    counter cnt_out_{cname} {{ }}")
+        forward_counters.append(f"        tcp dport {pr} counter name cnt_in_{cname}")
+        forward_counters.append(f"        tcp sport {pr} counter name cnt_out_{cname}")
+        forward_counters.append(f"        udp dport {pr} counter name cnt_in_{cname}")
+        forward_counters.append(f"        udp sport {pr} counter name cnt_out_{cname}")
 
     counter_defs_str = "\n".join(counter_defs) + "\n\n" if counter_defs else ""
     forward_counters_str = "\n".join(forward_counters) + "\n" if forward_counters else ""
@@ -175,13 +209,14 @@ table ip6 xfwd_orchestrator {{
 def apply_nftables(
     dnat_rules: List[str],
     rule_ports: Optional[Set[int]] = None,
-    last_content: Optional[str] = None
+    last_content: Optional[str] = None,
+    rule_ranges: Optional[Set[str]] = None
 ) -> Tuple[bool, Optional[str], Optional[str]]:
     """
     Validates and atomically applies NFTables ruleset.
     Returns (success: bool, error_msg: Optional[str], new_content: Optional[str]).
     """
-    nft_content = generate_nftables_ruleset(dnat_rules, rule_ports=rule_ports)
+    nft_content = generate_nftables_ruleset(dnat_rules, rule_ports=rule_ports, rule_ranges=rule_ranges)
 
     if not shutil.which("nft"):
         return True, None, nft_content

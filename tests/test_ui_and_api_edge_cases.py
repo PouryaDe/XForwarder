@@ -2474,6 +2474,159 @@ class TestUIAndAPIEdgeCases(unittest.TestCase):
         expected_bundle = "\n\n".join(part_contents) + "\n"
         self.assertEqual(flat_css, expected_bundle, "web/style.css must stay strictly synchronized with web/css/*.css")
 
+    def test_installer_nginx_ipv6_and_dpkg_recovery_guards(self):
+        """Verifies xforwarder.sh safely installs Nginx on IPv6-disabled hosts and recovers half-configured dpkg."""
+        sh_path = os.path.join(REPO_ROOT, "xforwarder.sh")
+        with open(sh_path, "r", encoding="utf-8", newline="") as f:
+            sh = f.read()
+
+        # 1. Must preserve Unix LF line endings (no CRLF corruption on Linux bash)
+        self.assertNotIn("\r\n", sh, "xforwarder.sh must strictly use LF line endings")
+
+        # 2. Must implement safe apt/dpkg installer using Debian policy-rc.d guard & cleanup
+        self.assertIn("apt_install_safe()", sh)
+        self.assertIn("/usr/sbin/policy-rc.d", sh)
+        self.assertIn("exit 101", sh)
+        self.assertIn("rm -f /usr/sbin/policy-rc.d", sh)
+
+        # 3. Must heal broken dpkg states (e.g. nginx failed postinst on [::]:80) and strip default site
+        self.assertIn("dpkg --configure -a", sh)
+        self.assertIn("dpkg-query -W -f='${Status}\\n' nginx", sh)
+        self.assertIn("rm -f /etc/nginx/sites-enabled/default /etc/nginx/conf.d/default.conf", sh)
+        self.assertIn('apt_install_safe ${pkgs[@]+"${pkgs[@]}"}', sh)
+
+    def test_cli_ovira_mint_tui_design_and_safety_guards(self):
+        """Verifies xforwarder.sh implements Ovira Mint TUI components, TTY FD cleanup, and width bounds."""
+        sh_path = os.path.join(REPO_ROOT, "xforwarder.sh")
+        with open(sh_path, "r", encoding="utf-8", newline="") as f:
+            sh = f.read()
+
+        # 1. Ovira Mint TUI palette, gradient logo, and Unicode box glyphs
+        self.assertIn("ui_init()", sh)
+        self.assertIn("trap ui_restore_terminal EXIT", sh)
+        self.assertIn(r"\033[38;2;52;224;161m", sh)
+        self.assertIn("ui_logo()", sh)
+        self.assertIn("ui_title_bar()", sh)
+        self.assertIn("ui_header()", sh)
+
+        # 2. Interactive arrow-key selector, cards, steps, and DRY helpers
+        for fn in ("ui_choose()", "pick_yesno()", "ask()", "ask_secret()", "read_ssl_path()", "card_top()", "card_kv()", "card_end()", "step()", "section()"):
+            self.assertIn(fn, sh, f"xforwarder.sh must define {fn}")
+
+        # 3. Safety under set -Eeuo pipefail: clamp negative line lengths and guard terminal restore
+        self.assertIn("(( n < 0 )) && n=0", sh)
+        self.assertIn("(( rem < 2 )) && rem=2", sh)
+        self.assertIn("MENU_ACTIVE", sh)
+        self.assertIn("CONFIGURATION SUMMARY", sh)
+        self.assertIn("READY · XForwarder", sh)
+
+    def test_nftables_port_range_validation_engine_and_ui(self):
+        """Verifies inbound & 1:1/fixed outbound port ranges work exclusively on NFTables (never HAProxy/Nginx)."""
+        from core.config_manager import parse_port_spec
+        from core.firewall import generate_nftables_ruleset, flush_conntrack
+        from core.traffic import parse_nftables_counters_json
+
+        # 1. Port spec parser edge cases
+        self.assertEqual(parse_port_spec("10000-20000"), (10000, 20000, "10000-20000"))
+        self.assertEqual(parse_port_spec("443-443"), (443, 443, None))
+        self.assertEqual(parse_port_spec("20000-10000"), (None, None, None))
+        self.assertEqual(parse_port_spec("0-100"), (None, None, None))
+
+        # 2. Validator allows NFTables range rules (1:1 same range or fixed outbound port)
+        ok_same, err_same = validate_rule({
+            "port": "10000-20000",
+            "protocol": "both",
+            "destinations": [{"priority": 1, "type": "nftables", "target": "10.10.1.2", "port": "10000-20000"}]
+        })
+        self.assertTrue(ok_same, err_same)
+
+        ok_single_out, err_single = validate_rule({
+            "port_range": "10000-20000",
+            "protocol": "tcp",
+            "destinations": [{"priority": 1, "type": "nftables", "target": "10.10.1.2", "port": 443}]
+        })
+        self.assertTrue(ok_single_out, err_single)
+
+        # 3. Validator rejects HAProxy, Nginx, and mismatched outbound ranges
+        bad_ha, msg_ha = validate_rule({
+            "port_range": "10000-20000",
+            "protocol": "tcp",
+            "destinations": [{"priority": 1, "type": "haproxy", "target": "2001:db8::1", "port": 443}]
+        })
+        self.assertFalse(bad_ha)
+        self.assertIn("nftables", msg_ha.lower())
+
+        bad_ngx, msg_ngx = validate_rule({
+            "port_range": "10000-20000",
+            "protocol": "tcp",
+            "destinations": [{"priority": 1, "type": "nginx", "target": "1.2.3.4", "port": 443}]
+        })
+        self.assertFalse(bad_ngx)
+        self.assertIn("nftables", msg_ngx.lower())
+
+        bad_shift, msg_shift = validate_rule({
+            "port_range": "10000-20000",
+            "protocol": "tcp",
+            "destinations": [{"priority": 1, "type": "nftables", "target": "10.10.1.2", "port": "30000-40000"}]
+        })
+        self.assertFalse(bad_shift)
+        self.assertIn("match inbound range", msg_shift.lower())
+
+        # 4. Ruleset generation, traffic counter parsing, and conntrack flush safety for wide ranges
+        ruleset = generate_nftables_ruleset(
+            ['        iifname "eth0" tcp dport 10000-20000 dnat to 10.10.1.2'],
+            rule_ranges={"10000-20000"},
+            enable_ipv6=False
+        )
+        self.assertIn("counter cnt_in_10000_20000 { }", ruleset)
+        self.assertIn("tcp dport 10000-20000 counter name cnt_in_10000_20000", ruleset)
+        self.assertNotIn("cnt_in_10000 {", ruleset)
+
+        stats = parse_nftables_counters_json(json.dumps({
+            "nftables": [
+                {"counter": {"name": "cnt_in_10000_20000", "bytes": 4096}},
+                {"counter": {"name": "cnt_out_10000_20000", "bytes": 8192}}
+            ]
+        }))
+        self.assertEqual(stats[10000], {"rx_bytes": 4096, "tx_bytes": 8192})
+
+        with patch("core.firewall._find_conntrack_bin", return_value="/usr/sbin/conntrack"), \
+             patch("subprocess.run") as mock_ct:
+            flush_conntrack("10000-20000")
+            mock_ct.assert_not_called()
+
+        # 5. Web UI restricts destination types to NFTables-only on port ranges and displays ranges
+        with open(os.path.join(REPO_ROOT, "web", "js", "modules", "rule_modal.js"), "r", encoding="utf-8") as f:
+            modal_js = f.read()
+        with open(os.path.join(REPO_ROOT, "web", "js", "modules", "rules.js"), "r", encoding="utf-8") as f:
+            rules_js = f.read()
+        self.assertIn("parsePortSpec", modal_js)
+        self.assertIn("refreshRangeConstraintUI", modal_js)
+        self.assertIn("rule.port_range || rule.port", rules_js)
+
+        # 6. Security: range builder rejects hostnames; API POST /api/rule blocks ranges overlapping web_port or existing rules
+        from core.nftables_parser import _build_xforwarder_range_rule_from_nftables
+        self.assertIsNone(_build_xforwarder_range_rule_from_nftables(10000, 20000, ["evil.example.com"]))
+
+        import io
+        handler = MagicMock()
+        handler.headers = {"Host": "127.0.0.1:8080", "Origin": "http://127.0.0.1:8080"}
+        handler.is_authenticated.return_value = True
+        handler.check_origin.return_value = True
+        handler.resolve_path.return_value = (True, "/api/rule", "")
+        payload = json.dumps({
+            "port_range": "8000-9000",
+            "protocol": "tcp",
+            "destinations": [{"priority": 1, "type": "nftables", "target": "10.10.1.2", "port_range": "8000-9000"}]
+        }).encode("utf-8")
+        handler.headers["Content-Length"] = str(len(payload))
+        handler.rfile = io.BytesIO(payload)
+        with patch("core.web_server.load_config", return_value={"web": {"port": 8090}, "rules": []}):
+            XForwarderWebHandler.do_POST(handler)
+        handler.send_json.assert_called_once()
+        self.assertEqual(handler.send_json.call_args[0][1], 409)
+        self.assertIn("8090", handler.send_json.call_args[0][0]["error"])
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -126,10 +126,11 @@ XForwarder/
     - Remote Release & Update Engine: Web dashboard compares local git commit/version against remote GitHub repository (`/api/system/version`) and initiates decoupled update executions via `systemd-run` (`/api/system/update`, `/api/system/update/status`).
     - Controlled Service Lifecycle: Dashboard provides controlled service restart/reload capabilities (`POST /api/services/restart`) supporting individual reload and dedicated restart targets (`engine`, `haproxy`, `haproxy_restart`, `nginx`, `nginx_restart`, `nftables`, `nftables_restart`) and graceful delayed self-restarts for `web` and `all` with UI reconnection polling, dynamic action confirmation dialogs (`askConfirm` with context-aware buttons), and immediate telemetry cache invalidation.
 
-13. **Active Rules Auto-Discovery, Import & Deconfliction (Mandatory)**:
-    - Pre-existing relay rules on the server (HAProxy listen blocks or active NFTables/iptables DNAT rules in kernel tables or `/etc/nftables.conf`) must be automatically detectable via unified discovery (`discover_all_relay_rules`).
+13. **Active Rules Auto-Discovery, Import, Port Ranges & Deconfliction (Mandatory)**:
+    - Pre-existing relay rules on the server (HAProxy listen blocks or active NFTables/iptables DNAT rules in kernel tables or `/etc/nftables/*.nft`, including negated sets `dport != { ... }` and `jhash` maps) must be automatically detectable via unified discovery (`discover_all_relay_rules`).
+    - Port-range forwarding (`port_range: "start-end"`) is restricted exclusively to `nftables` kernel DNAT (1:1 same-range or single target port; forbidden on HAProxy/Nginx), with `cnt_in_<start>_<end>` counters and overlap/web-port collision guards.
     - When imported, an atomic ruleset snapshot must be created at `/etc/xforwarder/backups/legacy_nftables_<timestamp>.nft`.
-    - Conflicting unmanaged legacy DNAT rules must be safely deactivated using exact rule handles (`nft delete rule <family> <table> <chain> handle <id>`) to eliminate kernel PREROUTING hook collision and guarantee zero-collision forwarding.
+    - Conflicting unmanaged legacy DNAT rules must be safely deactivated using exact rule handles (`nft delete rule <family> <table> <chain> handle <id>`, deduplicated across merged TCP/UDP rules) to eliminate kernel PREROUTING hook collision and guarantee zero-collision forwarding.
 
 14. **Kernel Zero-Copy Splicing, BBR Tuning & Bounded UDP Timeouts (Mandatory)**:
     - HAProxy forwarding must enforce zero-copy kernel splicing (`option splice-auto`, `tune.pipesize 262144`, `tune.bufsize 65536`), bounded worker lifecycles (`hard-stop-after 2m` preventing zombie worker accumulation on reloads), and multi-core CPU thread affinity (`nbthread {cpu_cores}`, `cpu-map`) with defensive fallback to minimize CPU usage, prevent single-core bottlenecks, and avoid user-space buffer copies.

@@ -32,7 +32,7 @@ from core.config_manager import (
     get_config_path, get_state_file_path, migrate_and_normalize_config,
     load_config as cm_load_config, save_config as cm_save_config,
     CONFIG_PATH as DEFAULT_CONFIG_PATH, LEGACY_CONFIG_PATH, LOCAL_CONFIG_PATH,
-    STATE_FILE_PATH, LEGACY_STATE_FILE_PATH
+    STATE_FILE_PATH, LEGACY_STATE_FILE_PATH, get_rule_port_bounds
 )
 from core.prober import (
     is_private_or_tunnel_target, validate_probe_route,
@@ -1131,7 +1131,8 @@ class XForwarderEngine:
 
         rules = self.config.get("rules", [])
         for rule in rules:
-            port = rule.get("port")
+            start_p, end_p, port_range = get_rule_port_bounds(rule)
+            port = start_p if start_p is not None else rule.get("port")
             proto = str(rule.get("protocol", "both")).lower()
             active_prio = rule.get("active_priority", 1)
 
@@ -1151,8 +1152,12 @@ class XForwarderEngine:
             target = str(dest.get("target", "")).strip().strip("[]")
             target_port = dest.get("port", port)
             dest_type = dest.get("type", "haproxy")
+            if port_range and dest_type != "nftables":
+                # Port ranges are restricted strictly to NFTables kernel DNAT
+                continue
+
             target_str = f"[{target}]:{target_port}" if ":" in target else f"{target}:{target_port}"
-            comment_clean = str(dest.get("comment") or rule.get("id") or f"Port {port}").replace("\n", " ").replace("\r", "")
+            comment_clean = str(dest.get("comment") or rule.get("id") or f"Port {port_range or port}").replace("\n", " ").replace("\r", "")
 
             if dest_type == "haproxy":
                 send_proxy = bool(dest.get("proxy_protocol", False) or dest.get("send_proxy", False))
@@ -1209,14 +1214,19 @@ class XForwarderEngine:
             elif dest_type == "nftables":
                 clean_target = target.strip("[]")
                 is_ipv6 = ":" in clean_target
-                dnat_target = f"[{clean_target}]:{target_port}" if is_ipv6 else f"{clean_target}:{target_port}"
+                listen_spec = port_range or port
+                if port_range and (dest.get("port_range") or dest.get("port") is None):
+                    # Preserve 1:1 inbound-to-outbound ports across the range in nftables
+                    dnat_target = f"[{clean_target}]" if is_ipv6 else clean_target
+                else:
+                    dnat_target = f"[{clean_target}]:{target_port}" if is_ipv6 else f"{clean_target}:{target_port}"
                 if proto in ("tcp", "both"):
                     nft_dnat_rules.append(
-                        f'        iifname "{wan_iface}" tcp dport {port} dnat to {dnat_target}'
+                        f'        iifname "{wan_iface}" tcp dport {listen_spec} dnat to {dnat_target}'
                     )
                 if proto in ("udp", "both"):
                     nft_dnat_rules.append(
-                        f'        iifname "{wan_iface}" udp dport {port} dnat to {dnat_target}'
+                        f'        iifname "{wan_iface}" udp dport {listen_spec} dnat to {dnat_target}'
                     )
 
         errors: List[str] = []
@@ -1237,15 +1247,20 @@ class XForwarderEngine:
         return len(errors) == 0, errors
 
     def _apply_nftables(self, dnat_rules: List[str]) -> Tuple[bool, Optional[str]]:
-        rule_ports = set()
+        rule_ports: Set[int] = set()
+        rule_ranges: Set[str] = set()
         for r in self.config.get("rules", []):
-            try:
-                p = int(r.get("port", 0))
-                if p > 0:
-                    rule_ports.add(p)
-            except (ValueError, TypeError):
-                pass
-        ok, err, new_content = apply_nftables(dnat_rules, rule_ports=rule_ports, last_content=self._last_nft_content)
+            sp, ep, prange = get_rule_port_bounds(r)
+            if prange:
+                rule_ranges.add(prange)
+            elif sp and sp > 0:
+                rule_ports.add(sp)
+        ok, err, new_content = apply_nftables(
+            dnat_rules,
+            rule_ports=rule_ports,
+            last_content=self._last_nft_content,
+            rule_ranges=rule_ranges
+        )
         if ok:
             self._last_nft_content = new_content
             self.runtime_state["active_services"]["nftables"] = bool(dnat_rules)

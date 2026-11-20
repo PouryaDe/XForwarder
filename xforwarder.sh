@@ -27,18 +27,341 @@ LEGACY_SHORT_LINK="/usr/local/bin/fwdman"
 DAEMON_SERVICE="xforwarder"
 WEB_SERVICE="xforwarder-web"
 
-# ANSI Colors
-CYAN='\033[0;36m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-RED='\033[0;31m'
+# ── Ovira Mint Terminal UI Engine (Zero External Dependencies) ──────────────
+UI_FD=""
+UI_ROWS=24
+UI_COLS=80
+UI_KEY=""
+UTF=0
+COLOR=0
+MENU_ACTIVE=0
+UPDATED_CLI=0
+
+# Legacy color variables mapped safely to Mint/Teal palette
+CYAN='\033[38;5;44m'
+GREEN='\033[38;5;84m'
+YELLOW='\033[38;5;220m'
+RED='\033[38;5;203m'
 BOLD='\033[1m'
+DIM='\033[2m'
 NC='\033[0m'
 
-msg_info() { printf "%b[INFO]%b %s\n" "$CYAN" "$NC" "$*"; }
-msg_ok()   { printf "%b[OK]%b %s\n" "$GREEN" "$NC" "$*"; }
-msg_warn() { printf "%b[WARN]%b %s\n" "$YELLOW" "$NC" "$*"; }
-msg_err()  { printf "%b[ERROR]%b %s\n" "$RED" "$NC" "$*" >&2; }
+ACC=""
+RST=""
+GRN=""
+TEAL=""
+PURPLE=""
+GRAY=""
+YEL=""
+SEL_BG=""
+LOGO_TINT=("" "" "" "" "")
+G_TL="+" G_TR="+" G_BL="+" G_BR="+" G_V="|" G_H="-" G_LT="+" G_SEC="*"
+G_OK="+" G_ERR="x" G_ON="*" G_OFF="o" G_HALF="~" G_ARR=">" G_SEL=">" G_MID="-"
+G_UD="Up/Down" G_FLOW="->"
+
+ui_init() {
+    case "${LC_ALL:-${LC_CTYPE:-${LANG:-}}}" in *[Uu][Tt][Ff]-8*|*[Uu][Tt][Ff]8*) UTF=1 ;; esac
+    if [[ -t 1 && -z "${NO_COLOR:-}" && "${TERM:-}" != "dumb" ]]; then
+        COLOR=1
+    fi
+
+    if (( COLOR )); then
+        if [[ "${COLORTERM:-}" == *truecolor* || "${COLORTERM:-}" == *24bit* ]]; then
+            ACC=$'\033[38;2;52;224;161m'
+        else
+            ACC=$'\033[38;5;78m'
+        fi
+        BOLD=$'\033[1m'; DIM=$'\033[2m'; RST=$'\033[0m'; NC="$RST"
+        GRN=$'\033[38;5;84m'; TEAL=$'\033[38;5;44m'; PURPLE=$'\033[38;5;141m'
+        GRAY=$'\033[38;5;245m'; YEL=$'\033[38;5;220m'; RED=$'\033[38;5;203m'
+        CYAN="$TEAL"; GREEN="$GRN"; YELLOW="$YEL"
+        SEL_BG=$'\033[48;5;237m'
+        LOGO_TINT=($'\033[38;5;154m' $'\033[38;5;118m' $'\033[38;5;84m' $'\033[38;5;79m' $'\033[38;5;44m')
+    else
+        ACC=""; BOLD=""; DIM=""; RST=""; GRN=""; TEAL=""; PURPLE=""; GRAY=""; YEL=""; RED=""; SEL_BG=""
+        CYAN=""; GREEN=""; YELLOW=""; NC=""
+        LOGO_TINT=("" "" "" "" "")
+    fi
+
+    if (( UTF )); then
+        G_TL="╭"; G_TR="╮"; G_BL="╰"; G_BR="╯"; G_V="│"; G_H="─"; G_LT="├"; G_SEC="◆"
+        G_OK="✓"; G_ERR="✗"; G_ON="●"; G_OFF="○"; G_HALF="◐"; G_ARR="›"; G_SEL="❯"; G_MID="·"
+        G_UD="↑/↓"; G_FLOW="→"
+    fi
+
+    UI_FD=""
+    if (( ${YES:-0} == 0 )); then
+        if [[ -t 0 ]]; then
+            UI_FD=0
+        elif [[ -r /dev/tty && -w /dev/tty ]] && { : < /dev/tty; } 2>/dev/null; then
+            exec 3< /dev/tty
+            UI_FD=3
+        fi
+    fi
+}
+
+ui_restore_terminal() {
+    if [[ -t 1 ]]; then
+        printf '\033[?25h\033[?7h'
+    fi
+    if [[ -n "${UI_FD:-}" ]]; then
+        stty echo icanon <&"$UI_FD" 2>/dev/null || true
+    fi
+}
+
+ui_has_input() { [[ -n "${UI_FD:-}" ]]; }
+ui_rich() { [[ -n "${UI_FD:-}" && -t 1 ]]; }
+
+ui_term_size() {
+    local size=""
+    [[ -n "${UI_FD:-}" ]] && size=$(stty size <&"$UI_FD" 2>/dev/null || true)
+    UI_ROWS=${size%% *}
+    UI_COLS=${size##* }
+    [[ "$UI_ROWS" =~ ^[0-9]+$ ]] && (( UI_ROWS > 0 )) || UI_ROWS=${LINES:-24}
+    [[ "$UI_COLS" =~ ^[0-9]+$ ]] && (( UI_COLS > 0 )) || UI_COLS=${COLUMNS:-80}
+}
+
+ui_width() {
+    local w=$(( UI_COLS - 4 ))
+    (( w > 72 )) && w=72
+    (( w < 44 )) && w=44
+    printf '%d' "$w"
+}
+
+ui_line() {
+    local n="${1:-0}" line=""
+    (( n < 0 )) && n=0
+    printf -v line '%*s' "$n" ''
+    printf '%s' "${line// /${2:-$G_H}}"
+}
+
+msg_info() { printf '  %s%s%s %s\n' "$TEAL" "$G_ARR" "$RST" "$*"; }
+msg_ok()   { printf '  %s%s%s %s\n' "$GRN" "$G_OK" "$RST" "$*"; }
+msg_warn() { printf '  %s!%s %s\n' "$YEL" "$RST" "$*"; }
+msg_err()  { printf '  %s%s %s%s\n' "$RED" "$G_ERR" "$*" "$RST" >&2; }
+
+ui_logo() {
+    local -a art=(
+        '__  _______ ___  ______        ___    ____  ____  _____ ____  '
+        '\ \/ /  ___/ _ \|  _ \ \      / / \  |  _ \|  _ \| ____|  _ \ '
+        ' \  /| |_ | | | | |_) \ \ /\ / / _ \ | |_) | | | |  _| | |_) |'
+        ' /  \|  _|| |_| |  _ < \ V  V / ___ \|  _ <| |_| | |___|  _ < '
+        '/_/\_\_|   \___/|_| \_\ \_/\_/_/   \_\_| \_\____/|_____|_| \_\'
+    )
+    local i
+    for i in "${!art[@]}"; do
+        printf '  %s%s%s\n' "$BOLD${LOGO_TINT[i]}" "${art[i]}" "$RST"
+    done
+    printf '  %sXForwarder Multi-Path Failover Engine%s  %s·  v%s  ·  Linux Relay%s\n' \
+        "$ACC" "$RST" "$GRAY" "$SCRIPT_VERSION" "$RST"
+}
+
+ui_title_bar() {
+    local w inner title="XForwarder" tag="${1:-Relay Panel}" ver="v${SCRIPT_VERSION}" pad
+    w=$(ui_width); inner=$(( w - 2 ))
+    pad=$(( inner - 4 - ${#title} - 2 - ${#tag} - ${#ver} - 2 ))
+    (( pad < 1 )) && pad=1
+    printf '  %s%s%s%s%s\n' "$DIM$TEAL" "$G_TL" "$(ui_line "$inner")" "$G_TR" "$RST"
+    printf '  %s%s%s  %s%s %s%s  %s%s%s%*s%s%s%s  %s%s%s\n' \
+        "$DIM$TEAL" "$G_V" "$RST" "$BOLD$ACC" "$G_SEC" "$title" "$RST" "$PURPLE" "$tag" "$RST" \
+        "$pad" "" "$GRAY" "$ver" "$RST" "$DIM$TEAL" "$G_V" "$RST"
+    printf '  %s%s%s%s%s\n' "$DIM$TEAL" "$G_BL" "$(ui_line "$inner")" "$G_BR" "$RST"
+}
+
+ui_header() {
+    ui_term_size
+    if ui_rich && (( ${MENU_ACTIVE:-0} )); then
+        printf '\033[H\033[2J\033[3J'
+    fi
+    if [[ "${1:-}" == "big" ]] && (( UI_ROWS >= 28 && UI_COLS >= 66 )); then
+        echo; ui_logo
+    else
+        echo; ui_title_bar "${2:-Multi-Path Failover Panel}"
+    fi
+}
+
+section() {
+    printf '\n  %s%s %s%s\n' "$BOLD$PURPLE" "$G_SEC" "$1" "$RST"
+    printf '  %s%s%s\n' "$DIM$TEAL" "$(ui_line "$(ui_width)")" "$RST"
+}
+
+step() {
+    printf '\n  %s%s Step %s/%s %s %s%s\n' "$BOLD$PURPLE" "$G_SEC" "$1" "$2" "$G_MID" "$3" "$RST"
+    printf '  %s%s%s\n' "$DIM$TEAL" "$(ui_line "$(ui_width)")" "$RST"
+}
+
+card_top() {
+    local rem=$(( $(ui_width) - ${#1} - 4 ))
+    (( rem < 2 )) && rem=2
+    printf '\n  %s%s%s %s%s%s %s%s%s\n' "$DIM$TEAL" "$G_TL" "$G_H" "$BOLD$ACC" "$1" "$RST" "$DIM$TEAL" "$(ui_line "$rem")" "$RST"
+}
+card_sep() {
+    local rem=$(( $(ui_width) - ${#1} - 4 ))
+    (( rem < 2 )) && rem=2
+    printf '  %s%s%s %s %s%s\n' "$DIM$TEAL" "$G_LT" "$G_H" "$1" "$(ui_line "$rem")" "$RST"
+}
+card_text() { printf '  %s%s%s  %s\n' "$DIM$TEAL" "$G_V" "$RST" "$1"; }
+card_kv()   { printf '  %s%s%s  %s%-16s%s %s%s%s\n' "$DIM$TEAL" "$G_V" "$RST" "$GRAY" "$1" "$RST" "${3:-}" "$2" "$RST"; }
+card_copy() { printf '\n  %s%s%s\n\n' "$BOLD$ACC" "$1" "$RST"; }
+card_end()  { printf '  %s%s%s%s\n' "$DIM$TEAL" "$G_BL" "$(ui_line $(( $(ui_width) - 1 )))" "$RST"; }
+
+ui_read_key() {
+    local key="" rest="" status=0
+    UI_KEY=""
+    IFS= read -rsn1 -t 1 key <&"$UI_FD" || status=$?
+    (( status > 128 )) && return 2
+    (( status == 0 )) || return 1
+    case "$key" in
+        "") UI_KEY="enter"; return 0 ;;
+        $'\177'|$'\b') UI_KEY="backspace"; return 0 ;;
+        $'\033') ;;
+        *) UI_KEY="$key"; return 0 ;;
+    esac
+    IFS= read -rsn2 -t 0.05 rest <&"$UI_FD" || true
+    case "$rest" in
+        '[A'|'OA') UI_KEY="up" ;;
+        '[B'|'OB') UI_KEY="down" ;;
+        '[H'|'OH') UI_KEY="home" ;;
+        '[F'|'OF') UI_KEY="end" ;;
+        '') UI_KEY="esc" ;;
+        *) UI_KEY="other"; IFS= read -rsn1 -t 0.05 _ <&"$UI_FD" || true ;;
+    esac
+    return 0
+}
+
+ui_choose() {
+    local -n __uc_out="$1"
+    local __uc_sel="$2" __uc_i __uc_n __uc_drawn=0 __uc_w __uc_pad __uc_line __uc_frame __uc_ans __uc_status __uc_num_pad
+    shift 2
+    local -a __uc_opts=("$@")
+    __uc_n=${#__uc_opts[@]}
+    (( __uc_sel >= 0 && __uc_sel < __uc_n )) || __uc_sel=0
+    if [[ -z "${UI_FD:-}" ]]; then __uc_out=$__uc_sel; return 0; fi
+
+    if ! ui_rich; then
+        for __uc_i in "${!__uc_opts[@]}"; do
+            printf '    [%d] %s\n' $(( __uc_i + 1 )) "${__uc_opts[__uc_i]}"
+        done
+        while :; do
+            printf '  Select 1-%d [%d]: ' "$__uc_n" $(( __uc_sel + 1 ))
+            IFS= read -r __uc_ans <&"$UI_FD" || return 1
+            __uc_ans=${__uc_ans:-$(( __uc_sel + 1 ))}
+            if [[ "$__uc_ans" =~ ^[0-9]+$ ]] && (( __uc_ans >= 1 && __uc_ans <= __uc_n )); then break; fi
+        done
+        __uc_out=$(( __uc_ans - 1 ))
+        return 0
+    fi
+
+    ui_term_size
+    __uc_w=$(ui_width)
+    for __uc_i in "${!__uc_opts[@]}"; do
+        (( ${#__uc_opts[__uc_i]} + 10 > __uc_w )) && __uc_w=$(( ${#__uc_opts[__uc_i]} + 10 ))
+    done
+    (( __uc_w > UI_COLS - 3 )) && __uc_w=$(( UI_COLS - 3 ))
+    printf '\033[?25l\033[?7l'
+    stty -echo <&"$UI_FD" 2>/dev/null || true
+    while :; do
+        __uc_frame=""
+        (( __uc_drawn )) && __uc_frame+=$'\033'"[${__uc_drawn}A"$'\r'
+        for __uc_i in "${!__uc_opts[@]}"; do
+            __uc_num_pad=$(( __uc_i + 1 ))
+            if (( __uc_i == __uc_sel )); then
+                __uc_pad=$(( __uc_w - 9 - ${#__uc_opts[__uc_i]} ))
+                (( __uc_pad < 1 )) && __uc_pad=1
+                printf -v __uc_line '  %s%s%s %s %2d  %s%*s%s' "$ACC" "$G_SEL" "$RST" "$SEL_BG$BOLD" \
+                    "$__uc_num_pad" "${__uc_opts[__uc_i]}" "$__uc_pad" "" "$RST"
+            else
+                printf -v __uc_line '    %s%2d%s  %s' "$GRAY" "$__uc_num_pad" "$RST" "${__uc_opts[__uc_i]}"
+            fi
+            __uc_frame+="${__uc_line}"$'\033[K\n'
+        done
+        __uc_frame+=$'\n'"  ${DIM}${GRAY}${G_UD} move ${G_MID} Enter select ${G_MID} q back${RST}"$'\033[K\n'
+        printf '%s' "$__uc_frame"
+        __uc_drawn=$(( __uc_n + 2 ))
+
+        __uc_status=0
+        ui_read_key || __uc_status=$?
+        case $__uc_status in
+            1) UI_KEY="esc" ;;
+            2) continue ;;
+        esac
+        case "$UI_KEY" in
+            up|k) (( __uc_sel = (__uc_sel - 1 + __uc_n) % __uc_n )) || true ;;
+            down|j|$'\t') (( __uc_sel = (__uc_sel + 1) % __uc_n )) || true ;;
+            home) __uc_sel=0 ;;
+            end) __uc_sel=$(( __uc_n - 1 )) ;;
+            [1-9]) (( UI_KEY <= __uc_n )) && __uc_sel=$(( UI_KEY - 1 )) ;;
+            enter) break ;;
+            esc|q|Q)
+                printf '\033[%dA\r\033[J\033[?7h\033[?25h' "$__uc_drawn"
+                stty echo <&"$UI_FD" 2>/dev/null || true
+                return 1
+                ;;
+        esac
+    done
+    printf '\033[%dA\r\033[J\033[?7h\033[?25h' "$__uc_drawn"
+    stty echo <&"$UI_FD" 2>/dev/null || true
+    printf '  %s%s%s %s\n' "$GRN" "$G_OK" "$RST" "${__uc_opts[__uc_sel]}"
+    __uc_out="$__uc_sel"
+    return 0
+}
+
+pick_yesno() {
+    local a def=0 d="${2:-n}"
+    [[ "${d,,}" == y* ]] || def=1
+    ui_has_input || { (( def == 0 )); return; }
+    printf '\n  %s%s%s\n' "$BOLD" "$1" "$RST"
+    ui_choose a "$def" "Yes" "No" || return 1
+    (( a == 0 ))
+}
+
+ask() {
+    local -n __ask_out="$1"
+    local __ask_q="$2" __ask_def="${3-}" __ask_line="" __ask_p
+    if [[ -z "${UI_FD:-}" ]]; then __ask_out=$__ask_def; return 0; fi
+    __ask_p="  ${BOLD}${ACC}?${RST} ${__ask_q}"
+    [[ -n "$__ask_def" ]] && __ask_p+=" ${GRAY}[${__ask_def}]${RST}"
+    read -e -r -p "${__ask_p}: " __ask_line <&"$UI_FD" || __ask_line=""
+    __ask_out="${__ask_line:-$__ask_def}"
+}
+
+ask_secret() {
+    local -n __sec_out="$1"
+    local __sec_q="$2" __sec_val=""
+    while [[ -z "$__sec_val" ]]; do
+        read -r -s -p "  ${BOLD}${ACC}?${RST} ${__sec_q}: " __sec_val <&"${UI_FD:-0}" || __sec_val=""
+        echo
+        if [[ -z "$__sec_val" ]]; then
+            msg_warn "Password cannot be empty. Please enter a valid password."
+        fi
+    done
+    __sec_out="$__sec_val"
+}
+
+read_ssl_path() {
+    local -n __ssl_out="$1"
+    local __label="$2" __default_path="$3" __val=""
+    while true; do
+        ask __val "$__label" "$__default_path"
+        __val=$(echo "$__val" | tr -d '[:space:]')
+        if [[ -z "$__val" ]]; then
+            msg_warn "Path cannot be empty."
+            continue
+        fi
+        if [[ ! -f "$__val" ]]; then
+            msg_warn "File '$__val' does not exist on this server right now."
+            if pick_yesno "Save path anyway?" n; then
+                break
+            fi
+        else
+            break
+        fi
+    done
+    __ssl_out="$__val"
+}
+
+ui_init
+trap ui_restore_terminal EXIT
 
 check_root() {
     if [[ "$EUID" -ne 0 ]]; then
@@ -62,6 +385,56 @@ detect_wan_iface() {
     echo "${iface:-eth0}"
 }
 
+apt_install_safe() {
+    local pkgs=("$@")
+    local created_policy=0
+    local rc=0
+    local has_pending_dpkg=0
+    local nginx_status=""
+
+    nginx_status=$(dpkg-query -W -f='${Status}\n' nginx 2>/dev/null || true)
+    if [[ -n "$(dpkg --audit 2>/dev/null || true)" ]] || [[ -n "$nginx_status" && "$nginx_status" != "install ok installed" ]]; then
+        has_pending_dpkg=1
+        # Unlink default Nginx site (`listen [::]:80`) before configuring half-installed packages
+        rm -f /etc/nginx/sites-enabled/default /etc/nginx/conf.d/default.conf >/dev/null 2>&1 || true
+    fi
+
+    if [[ "$has_pending_dpkg" -eq 0 && ${#pkgs[@]} -eq 0 ]]; then
+        return 0
+    fi
+
+    if [[ ${#pkgs[@]} -gt 0 ]]; then
+        msg_info "Installing missing dependencies: ${pkgs[*]}..."
+    fi
+
+    # Temporarily defer daemon autostart via Debian policy-rc.d so default configs
+    # (`listen [::]:80` on IPv6-disabled VPS or busy port 80) do not abort dpkg postinst.
+    if [[ ! -e /usr/sbin/policy-rc.d ]]; then
+        printf '#!/bin/sh\nexit 101\n' > /usr/sbin/policy-rc.d
+        chmod 755 /usr/sbin/policy-rc.d
+        created_policy=1
+    fi
+
+    if [[ "$has_pending_dpkg" -eq 1 ]]; then
+        msg_info "Completing pending dpkg configuration safely..."
+        DEBIAN_FRONTEND=noninteractive dpkg --configure -a || rc=$?
+    fi
+
+    if [[ $rc -eq 0 && ${#pkgs[@]} -gt 0 ]]; then
+        apt-get update -q || true
+        DEBIAN_FRONTEND=noninteractive apt-get install -y -q "${pkgs[@]}" || rc=$?
+    fi
+
+    if [[ "$created_policy" -eq 1 ]]; then
+        rm -f /usr/sbin/policy-rc.d
+    fi
+
+    # Strip default Nginx welcome site immediately so IPv6 `[::]:80` binds are never retained
+    rm -f /etc/nginx/sites-enabled/default /etc/nginx/conf.d/default.conf >/dev/null 2>&1 || true
+
+    return "$rc"
+}
+
 ensure_dependencies() {
     msg_info "Checking system dependencies (NFTables, HAProxy, Nginx, Python3)..."
     local pkgs=()
@@ -82,12 +455,11 @@ ensure_dependencies() {
         rpm -q nginx-mod-stream >/dev/null 2>&1 || pkgs+=(nginx-mod-stream)
     fi
 
-    if [[ ${#pkgs[@]} -gt 0 ]]; then
+    if command -v apt-get >/dev/null 2>&1; then
+        apt_install_safe ${pkgs[@]+"${pkgs[@]}"}
+    elif [[ ${#pkgs[@]} -gt 0 ]]; then
         msg_info "Installing missing dependencies: ${pkgs[*]}..."
-        if command -v apt-get >/dev/null 2>&1; then
-            apt-get update -q || true
-            DEBIAN_FRONTEND=noninteractive apt-get install -y -q "${pkgs[@]}"
-        elif command -v dnf >/dev/null 2>&1; then
+        if command -v dnf >/dev/null 2>&1; then
             dnf install -y -q "${pkgs[@]}"
         elif command -v yum >/dev/null 2>&1; then
             yum install -y -q "${pkgs[@]}"
@@ -307,8 +679,12 @@ is_installed() {
 
 install_xforwarder() {
     check_root
+    ui_header big "Linux Multi-Path Relay Setup"
+
+    step 1 4 "System Dependencies & Kernel Tuning"
     ensure_dependencies
 
+    step 2 4 "Sync Repository & Backups"
     local script_dir
     script_dir=$(dirname "$(readlink -f "$0")")
     local cleanup_tmp=""
@@ -360,81 +736,52 @@ install_xforwarder() {
         cp "$LEGACY_CONFIG_FILE" "$CONFIG_FILE"
     fi
 
-    # Wizard for initial configuration
+    # Interactive Configuration Wizard (Step 3 & Step 4)
     if [[ ! -f "$CONFIG_FILE" ]]; then
-        echo
-        printf "%b=======================================================%b\n" "$CYAN" "$NC"
-        printf "%b  XForwarder Setup Wizard%b\n" "$BOLD" "$NC"
-        printf "%b=======================================================%b\n\n" "$CYAN" "$NC"
+        step 3 4 "Network & Web Dashboard Access"
 
-        local default_iface
+        local default_iface user_iface
         default_iface=$(detect_wan_iface)
-        read -r -p "WAN Interface name [$default_iface]: " user_iface
-        user_iface="${user_iface:-$default_iface}"
+        ask user_iface "WAN interface name" "$default_iface"
 
-        local default_port="8090"
-        read -r -p "Web Management Port [$default_port]: " user_port
-        user_port="${user_port:-$default_port}"
+        local default_port="8090" user_port
+        ask user_port "Web management port" "$default_port"
 
-        local default_user="admin"
-        read -r -p "Admin Username [$default_user]: " user_name
-        user_name="${user_name:-$default_user}"
+        local default_user="admin" user_name
+        ask user_name "Admin username" "$default_user"
 
         local user_pass=""
-        while [[ -z "$user_pass" ]]; do
-            read -r -s -p "Admin Password: " user_pass
-            echo
-            if [[ -z "$user_pass" ]]; then
-                msg_warn "Password cannot be empty. Please enter a valid password."
-            fi
-        done
+        ask_secret user_pass "Admin password"
 
-        local default_secret="xfwd-admin"
-        read -r -p "Security Secret Path (URL slug) [$default_secret]: " user_secret
-        user_secret="${user_secret:-$default_secret}"
+        local default_secret="xfwd-admin" user_secret
+        ask user_secret "Security secret path (URL slug)" "$default_secret"
         user_secret=$(echo "$user_secret" | sed -e 's/^[ \t\/]*//' -e 's/[ \t\/]*$//')
         user_secret="${user_secret:-xfwd-admin}"
 
-        echo
-        local user_ssl_cert=""
-        local user_ssl_key=""
-        read -r -p "Enable SSL/TLS (HTTPS) for Web Panel? [y/N]: " ask_ssl
-        if [[ "$ask_ssl" =~ ^[Yy]$ ]]; then
-            while true; do
-                read -r -p "SSL Certificate Path (e.g. /etc/letsencrypt/live/domain/fullchain.pem): " user_ssl_cert
-                user_ssl_cert=$(echo "$user_ssl_cert" | tr -d '[:space:]')
-                if [[ -z "$user_ssl_cert" ]]; then
-                    msg_warn "Certificate path cannot be empty if SSL is enabled."
-                    continue
-                fi
-                if [[ ! -f "$user_ssl_cert" ]]; then
-                    msg_warn "File '$user_ssl_cert' does not exist on this server right now."
-                    read -r -p "Save path anyway? [y/N]: " confirm_cert
-                    if [[ "$confirm_cert" =~ ^[Yy]$ ]]; then
-                        break
-                    fi
-                else
-                    break
-                fi
-            done
+        step 4 4 "HTTPS Certificate & Review"
+        local user_ssl_cert="" user_ssl_key="" ssl_idx=1
+        ui_choose ssl_idx 1 \
+            "Enable HTTPS with existing TLS certificate & key files" \
+            "Plain HTTP (default / behind reverse proxy)" || ssl_idx=1
+        if (( ssl_idx == 0 )); then
+            read_ssl_path user_ssl_cert "SSL certificate path" "/etc/letsencrypt/live/domain/fullchain.pem"
+            read_ssl_path user_ssl_key "SSL private key path" "/etc/letsencrypt/live/domain/privkey.pem"
+        fi
 
-            while true; do
-                read -r -p "SSL Private Key Path (e.g. /etc/letsencrypt/live/domain/privkey.pem): " user_ssl_key
-                user_ssl_key=$(echo "$user_ssl_key" | tr -d '[:space:]')
-                if [[ -z "$user_ssl_key" ]]; then
-                    msg_warn "Private key path cannot be empty if SSL is enabled."
-                    continue
-                fi
-                if [[ ! -f "$user_ssl_key" ]]; then
-                    msg_warn "File '$user_ssl_key' does not exist on this server right now."
-                    read -r -p "Save path anyway? [y/N]: " confirm_key
-                    if [[ "$confirm_key" =~ ^[Yy]$ ]]; then
-                        break
-                    fi
-                else
-                    break
-                fi
-            done
+        card_top "CONFIGURATION SUMMARY"
+        card_kv "WAN Interface" "$user_iface"
+        card_kv "Web Port" "${user_port}/tcp"
+        card_kv "Admin User" "$user_name"
+        card_kv "Secret Path" "/${user_secret}/"
+        card_kv "HTTPS / TLS" "$([[ -n "$user_ssl_cert" ]] && echo "Enabled" || echo "Disabled (HTTP)")"
+        card_end
+
+        if ui_has_input && ! pick_yesno "Write configuration and start XForwarder services?" y; then
+            msg_warn "Setup cancelled before writing configuration."
+            if [[ -n "$cleanup_tmp" && -d "$cleanup_tmp" ]]; then
+                rm -rf "$cleanup_tmp"
+            fi
+            return 0
         fi
 
         local pass_hash
@@ -469,7 +816,7 @@ sys.path.insert(0, '$INSTALL_DIR')
 from core.nftables_parser import import_all_relay_rules_into_config
 count, ports, logs = import_all_relay_rules_into_config('$CONFIG_FILE', deactivate_legacy=True)
 if count > 0:
-    print(f'\033[0;32m[OK] Auto-imported {count} pre-existing relay port rules (HAProxy/NFTables): {ports}\033[0m')
+    print(f'  \033[38;5;84m✓\033[0m Auto-imported {count} pre-existing relay port rules (HAProxy/NFTables): {ports}')
 " 2>/dev/null || true
     fi
 
@@ -497,7 +844,7 @@ if count > 0:
         rm -rf "$cleanup_tmp"
     fi
 
-    msg_ok "CLI commands installed: xforwarder and xfwd (aliases: forward-manager, fwdman)"
+    msg_ok "CLI commands ready: xforwarder / xfwd (aliases: forward-manager, fwdman)"
     show_web_access_info
 }
 
@@ -622,6 +969,8 @@ update_xforwarder() {
         systemctl restart "$WEB_SERVICE" 2>/dev/null || true
     fi
 
+    UPDATED_CLI=1
+
     if [[ -n "$cleanup_tmp" && -d "$cleanup_tmp" ]]; then
         rm -rf "$cleanup_tmp"
     fi
@@ -638,11 +987,11 @@ change_web_port() {
         return 1
     fi
 
-    local current_port
+    ui_header "" "Web Panel Port"
+    local current_port new_port
     current_port=$(python3 -c "import json; print(json.load(open('$active_cfg')).get('web', {}).get('port', 8090))" 2>/dev/null || echo "8090")
 
-    read -r -p "Enter new Web Management Port [$current_port]: " new_port
-    new_port="${new_port:-$current_port}"
+    ask new_port "New web management port" "$current_port"
 
     if ! [[ "$new_port" =~ ^[0-9]+$ ]] || (( new_port < 1 || new_port > 65535 )); then
         msg_err "Invalid port number. Must be between 1 and 65535."
@@ -682,11 +1031,11 @@ change_web_username() {
         return 1
     fi
 
-    local current_user
+    ui_header "" "Admin Username"
+    local current_user new_user
     current_user=$(python3 -c "import json; print(json.load(open('$active_cfg')).get('web', {}).get('auth', {}).get('username', 'admin'))" 2>/dev/null || echo "admin")
 
-    read -r -p "Enter new Admin Username [$current_user]: " new_user
-    new_user="${new_user:-$current_user}"
+    ask new_user "New admin username" "$current_user"
     new_user=$(echo "$new_user" | tr -d '[:space:]')
 
     if [[ -z "$new_user" ]]; then
@@ -729,14 +1078,9 @@ change_web_password() {
         return 1
     fi
 
+    ui_header "" "Admin Password"
     local new_pass=""
-    while [[ -z "$new_pass" ]]; do
-        read -r -s -p "Enter new Admin Password: " new_pass
-        echo
-        if [[ -z "$new_pass" ]]; then
-            msg_warn "Password cannot be empty. Please enter a valid password."
-        fi
-    done
+    ask_secret new_pass "New admin password"
 
     python3 - "$active_cfg" "$new_pass" << 'PYEOF'
 import sys, json, hashlib, secrets, os
@@ -775,11 +1119,11 @@ change_web_secret_path() {
         return 1
     fi
 
-    local current_secret
+    ui_header "" "Security URL Slug"
+    local current_secret new_secret
     current_secret=$(python3 -c "import json; print(json.load(open('$active_cfg')).get('web', {}).get('secret_path', 'xfwd-admin'))" 2>/dev/null || echo "xfwd-admin")
 
-    read -r -p "Enter new Security Path (e.g. xfwd-admin, secret, panel) [$current_secret]: " new_secret
-    new_secret="${new_secret:-$current_secret}"
+    ask new_secret "New security path (e.g. xfwd-admin, panel)" "$current_secret"
     new_secret=$(echo "$new_secret" | sed -e 's/^[ \t\/]*//' -e 's/[ \t\/]*$//')
     new_secret="${new_secret:-xfwd-admin}"
 
@@ -816,54 +1160,17 @@ change_web_ssl() {
         return 1
     fi
 
+    ui_header "" "HTTPS / TLS Certificates"
     local current_cert current_key
     current_cert=$(python3 -c "import json; print(json.load(open('$active_cfg')).get('web', {}).get('ssl_cert', ''))" 2>/dev/null || echo "")
     current_key=$(python3 -c "import json; print(json.load(open('$active_cfg')).get('web', {}).get('ssl_key', ''))" 2>/dev/null || echo "")
 
-    echo
-    printf "%b=======================================================%b\n" "$CYAN" "$NC"
-    printf "%b   Configure SSL/TLS (HTTPS) for Web Panel%b\n" "$BOLD" "$NC"
-    printf "%b=======================================================%b\n" "$CYAN" "$NC"
-    printf "Enter paths to your SSL certificate (fullchain.pem / cert.crt)\nand private key (privkey.pem / server.key).\n\n"
+    section "TLS CERTIFICATE PATHS"
+    msg_info "Provide paths to your certificate (fullchain.pem) and private key (privkey.pem)."
 
     local new_cert new_key
-    while true; do
-        read -r -p "SSL Certificate File Path [${current_cert:-/etc/letsencrypt/live/domain/fullchain.pem}]: " new_cert
-        new_cert="${new_cert:-$current_cert}"
-        new_cert=$(echo "$new_cert" | tr -d '[:space:]')
-        if [[ -z "$new_cert" ]]; then
-            msg_warn "Certificate path cannot be empty."
-            continue
-        fi
-        if [[ ! -f "$new_cert" ]]; then
-            msg_warn "File '$new_cert' does not exist on this server right now."
-            read -r -p "Save path anyway? [y/N]: " confirm_cert
-            if [[ "$confirm_cert" =~ ^[Yy]$ ]]; then
-                break
-            fi
-        else
-            break
-        fi
-    done
-
-    while true; do
-        read -r -p "SSL Private Key File Path [${current_key:-/etc/letsencrypt/live/domain/privkey.pem}]: " new_key
-        new_key="${new_key:-$current_key}"
-        new_key=$(echo "$new_key" | tr -d '[:space:]')
-        if [[ -z "$new_key" ]]; then
-            msg_warn "Private key path cannot be empty."
-            continue
-        fi
-        if [[ ! -f "$new_key" ]]; then
-            msg_warn "File '$new_key' does not exist on this server right now."
-            read -r -p "Save path anyway? [y/N]: " confirm_key
-            if [[ "$confirm_key" =~ ^[Yy]$ ]]; then
-                break
-            fi
-        else
-            break
-        fi
-    done
+    read_ssl_path new_cert "SSL certificate file path" "${current_cert:-/etc/letsencrypt/live/domain/fullchain.pem}"
+    read_ssl_path new_key "SSL private key file path" "${current_key:-/etc/letsencrypt/live/domain/privkey.pem}"
 
     python3 - "$active_cfg" "$new_cert" "$new_key" << 'PYEOF'
 import sys, json, os
@@ -931,6 +1238,7 @@ change_all_web_settings() {
         return 1
     fi
 
+    ui_header "" "Web Panel Setup Wizard"
     local current_port current_user current_secret current_cert current_key
     current_port=$(python3 -c "import json; print(json.load(open('$active_cfg')).get('web', {}).get('port', 8090))" 2>/dev/null || echo "8090")
     current_user=$(python3 -c "import json; print(json.load(open('$active_cfg')).get('web', {}).get('auth', {}).get('username', 'admin'))" 2>/dev/null || echo "admin")
@@ -938,48 +1246,31 @@ change_all_web_settings() {
     current_cert=$(python3 -c "import json; print(json.load(open('$active_cfg')).get('web', {}).get('ssl_cert', ''))" 2>/dev/null || echo "")
     current_key=$(python3 -c "import json; print(json.load(open('$active_cfg')).get('web', {}).get('ssl_key', ''))" 2>/dev/null || echo "")
 
-    echo
-    printf "%b=======================================================%b\n" "$CYAN" "$NC"
-    printf "%b   Web Panel Settings Wizard%b\n" "$BOLD" "$NC"
-    printf "%b=======================================================%b\n" "$CYAN" "$NC"
-    read -r -p "Web Management Port [$current_port]: " new_port
-    new_port="${new_port:-$current_port}"
+    local new_port new_user new_pass="" new_secret
+    ask new_port "Web management port" "$current_port"
     if ! [[ "$new_port" =~ ^[0-9]+$ ]] || (( new_port < 1 || new_port > 65535 )); then
         msg_err "Invalid port number. Must be between 1 and 65535."
         return 1
     fi
 
-    read -r -p "Admin Username [$current_user]: " new_user
-    new_user="${new_user:-$current_user}"
+    ask new_user "Admin username" "$current_user"
     new_user=$(echo "$new_user" | tr -d '[:space:]')
     if [[ -z "$new_user" ]]; then
         msg_err "Username cannot be empty."
         return 1
     fi
 
-    local new_pass=""
-    while [[ -z "$new_pass" ]]; do
-        read -r -s -p "Admin Password: " new_pass
-        echo
-        if [[ -z "$new_pass" ]]; then
-            msg_warn "Password cannot be empty."
-        fi
-    done
+    ask_secret new_pass "Admin password"
 
-    read -r -p "Security Secret Path [$current_secret]: " new_secret
-    new_secret="${new_secret:-$current_secret}"
+    ask new_secret "Security secret path" "$current_secret"
     new_secret=$(echo "$new_secret" | sed -e 's/^[ \t\/]*//' -e 's/[ \t\/]*$//')
     new_secret="${new_secret:-xfwd-admin}"
 
     local new_cert="$current_cert"
     local new_key="$current_key"
-    echo
-    read -r -p "Configure SSL/TLS (HTTPS) Certificates? [y/N]: " ask_ssl_wiz
-    if [[ "$ask_ssl_wiz" =~ ^[Yy]$ ]]; then
-        read -r -p "SSL Certificate Path [${current_cert}]: " input_cert
-        new_cert="${input_cert:-$current_cert}"
-        read -r -p "SSL Private Key Path [${current_key}]: " input_key
-        new_key="${input_key:-$current_key}"
+    if pick_yesno "Configure SSL/TLS (HTTPS) certificates?" n; then
+        read_ssl_path new_cert "SSL certificate path" "${current_cert:-/etc/letsencrypt/live/domain/fullchain.pem}"
+        read_ssl_path new_key "SSL private key path" "${current_key:-/etc/letsencrypt/live/domain/privkey.pem}"
     fi
 
     python3 - "$active_cfg" "$new_port" "$new_user" "$new_pass" "$new_secret" "$new_cert" "$new_key" << 'PYEOF'
@@ -1043,40 +1334,39 @@ modify_web_settings_menu() {
         current_ssl_status="Disabled (HTTP)"
     fi
 
-    echo
-    printf "%b=======================================================%b\n" "$CYAN" "$NC"
-    printf "%b   Web Panel Settings Management%b\n" "$BOLD" "$NC"
-    printf "%b=======================================================%b\n" "$CYAN" "$NC"
-    printf "  %bCurrent Port:%b          %s\n" "$BOLD" "$NC" "$current_port"
-    printf "  %bCurrent Username:%b      %s\n" "$BOLD" "$NC" "$current_user"
-    printf "  %bCurrent Security Path:%b /%s/\n" "$BOLD" "$NC" "${current_secret:-}"
-    printf "  %bCurrent SSL/TLS:%b       %s\n" "$BOLD" "$NC" "$current_ssl_status"
+    ui_header "" "Web Panel Settings"
+    card_top "CURRENT WEB SETTINGS"
+    card_kv "Port" "${current_port}/tcp"
+    card_kv "Username" "$current_user"
+    card_kv "Security Path" "/${current_secret:-}/"
+    card_kv "SSL / TLS" "$current_ssl_status"
     if [[ -n "$current_cert" ]]; then
-        printf "  %bSSL Cert File:%b         %s\n" "$BOLD" "$NC" "$current_cert"
-        printf "  %bSSL Key File:%b          %s\n" "$BOLD" "$NC" "$current_key"
+        card_kv "SSL Cert" "$current_cert"
+        card_kv "SSL Key" "$current_key"
     fi
-    printf "%b-------------------------------------------------------%b\n" "$CYAN" "$NC"
-    echo "1) Change Web Port"
-    echo "2) Change Admin Username"
-    echo "3) Change Admin Password"
-    echo "4) Change Security Path (Secret URL Slug)"
-    echo "5) Configure SSL/TLS Certificates (Enable HTTPS)"
-    echo "6) Disable SSL/TLS (Revert to HTTP)"
-    echo "7) Change All Web Settings (Interactive Wizard)"
-    echo "0) Return to Main Menu"
+    card_end
     echo
-    read -r -p "Select an option [0-7]: " web_choice
 
-    case "$web_choice" in
-        1) change_web_port ;;
-        2) change_web_username ;;
-        3) change_web_password ;;
-        4) change_web_secret_path ;;
-        5) change_web_ssl ;;
-        6) disable_web_ssl ;;
-        7) change_all_web_settings ;;
-        0) return 0 ;;
-        *) msg_warn "Invalid selection." ;;
+    local web_idx=0
+    ui_choose web_idx 0 \
+        "Change Web Port" \
+        "Change Admin Username" \
+        "Change Admin Password" \
+        "Change Security Path (URL Slug)" \
+        "Configure SSL/TLS Certificates (HTTPS)" \
+        "Disable SSL/TLS (Revert to HTTP)" \
+        "Run Full Web Settings Wizard" \
+        "Back to Main Menu" || return 0
+
+    case "$web_idx" in
+        0) change_web_port ;;
+        1) change_web_username ;;
+        2) change_web_password ;;
+        3) change_web_secret_path ;;
+        4) change_web_ssl ;;
+        5) disable_web_ssl ;;
+        6) change_all_web_settings ;;
+        7) return 0 ;;
     esac
 }
 
@@ -1113,84 +1403,92 @@ show_web_access_info() {
         access_url="${scheme}://${wan_ip}:${port}/"
     fi
 
-    echo
-    printf "%b===============================================================%b\n" "$GREEN" "$NC"
-    printf "%b  XForwarder Web Dashboard (24/7 Online)%b\n" "$BOLD" "$NC"
-    printf "%b===============================================================%b\n" "$GREEN" "$NC"
-    printf "  %bURL:%b           %s\n" "$BOLD" "$NC" "$access_url"
-    printf "  %bPort:%b          %s\n" "$BOLD" "$NC" "$port"
-    printf "  %bSecurity Path:%b /%s/\n" "$BOLD" "$NC" "${secret_path:-}"
-    printf "  %bUsername:%b      %s\n" "$BOLD" "$NC" "$username"
-    printf "  %bSSL/TLS:%b       %s\n" "$BOLD" "$NC" "$([[ "$scheme" == "https" ]] && echo "Enabled (HTTPS)" || echo "Disabled (HTTP)")"
-    printf "  %bStatus:%b        Active (24/7 Enabled)\n" "$BOLD" "$NC"
-    printf "%b===============================================================%b\n\n" "$GREEN" "$NC"
+    card_top "READY · XForwarder v${SCRIPT_VERSION}"
+    card_kv "Username" "$username" "$BOLD"
+    card_kv "Port" "${port}/tcp"
+    card_kv "Security Path" "/${secret_path:-}/"
+    card_kv "SSL / TLS" "$([[ "$scheme" == "https" ]] && echo "Enabled (HTTPS)" || echo "Disabled (HTTP)")"
+    card_kv "Status" "Active (24/7 Online)" "$GRN"
+    card_sep "Dashboard URL (open in browser)"
+    card_copy "$access_url"
+    card_sep "Quick guide"
+    card_text "Run ${BOLD}xfwd${RST} or ${BOLD}xforwarder${RST} any time for interactive management."
+    card_end
 }
 
 show_status() {
     check_root
+    ui_header "" "Live Relay Status"
     local state_file="/run/xforwarder/state.json"
     if [[ ! -f "$state_file" ]]; then
         state_file="/run/forward-manager/state.json"
     fi
 
     if [[ ! -f "$state_file" ]]; then
-        msg_warn "State file not available yet. Checking system services..."
+        msg_warn "State file not available yet. Checking systemd services..."
         systemctl status "$DAEMON_SERVICE" "$WEB_SERVICE" --no-pager 2>/dev/null || true
         return 0
     fi
 
-    python3 -c "
-import json
+    python3 - "$state_file" << 'PYEOF'
+import json, shutil, subprocess, sys
+
+state_file = sys.argv[1]
+MINT = "\033[38;2;52;224;161m"
+TEAL = "\033[38;5;44m"
+GRN  = "\033[38;5;84m"
+GRAY = "\033[38;5;245m"
+BOLD = "\033[1m"
+RST  = "\033[0m"
+if not sys.stdout.isatty():
+    MINT = TEAL = GRN = GRAY = BOLD = RST = ""
 
 try:
-    with open('$state_file') as f:
+    with open(state_file, "r", encoding="utf-8") as f:
         data = json.load(f)
-    cfg = data.get('config', {})
-    rt = data.get('runtime', {})
-    rules = cfg.get('rules', [])
+    cfg = data.get("config", {})
+    rt = data.get("runtime", {})
+    rules = cfg.get("rules", [])
 
-    print('\n--------------------------------------------------------------')
-    print(' XForwarder - Real-time Status')
-    print('--------------------------------------------------------------')
-    print(f' WAN Interface:    {rt.get("wan_interface", "unknown")}')
-    print(f' Active Services:  HAProxy: {rt.get("active_services", {}).get("haproxy")} | Nginx: {rt.get("active_services", {}).get("nginx")} | NFTables: {rt.get("active_services", {}).get("nftables")}')
-    try:
-        import shutil, subprocess
-        nft_ok = 'Active' if (shutil.which('nft') and subprocess.run(['nft', 'list', 'tables'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode == 0) else ('Installed' if shutil.which('nft') else 'Not Installed')
-        ha_ok = 'Running' if (shutil.which('haproxy') and subprocess.run(['systemctl', 'is-active', 'haproxy'], stdout=subprocess.PIPE, text=True).stdout.strip() == 'active') else ('Installed' if shutil.which('haproxy') else 'Not Installed')
-        ngx_ok = 'Running' if (shutil.which('nginx') and subprocess.run(['systemctl', 'is-active', 'nginx'], stdout=subprocess.PIPE, text=True).stdout.strip() == 'active') else ('Installed' if shutil.which('nginx') else 'Not Installed')
-        print(f' System Engines:   NFTables: {nft_ok} | HAProxy: {ha_ok} | Nginx: {ngx_ok}')
-    except Exception:
-        pass
-    print(f' Rules Configured: {len(rules)}')
-    print('--------------------------------------------------------------')
+    nft_ok = "Active" if (shutil.which("nft") and subprocess.run(["nft", "list", "tables"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode == 0) else ("Installed" if shutil.which("nft") else "Missing")
+    ha_ok  = "Running" if (shutil.which("haproxy") and subprocess.run(["systemctl", "is-active", "haproxy"], stdout=subprocess.PIPE, text=True).stdout.strip() == "active") else ("Installed" if shutil.which("haproxy") else "Missing")
+    ngx_ok = "Running" if (shutil.which("nginx") and subprocess.run(["systemctl", "is-active", "nginx"], stdout=subprocess.PIPE, text=True).stdout.strip() == "active") else ("Installed" if shutil.which("nginx") else "Missing")
+    svcs = rt.get("active_services", {})
+
+    print(f"\n  {TEAL}╭─ {BOLD}{MINT}RUNTIME & SYSTEM ENGINES{RST} {TEAL}{'─'*42}{RST}")
+    print(f"  {TEAL}│{RST}  {GRAY}{'WAN Interface':18s}{RST} {rt.get('wan_interface', 'unknown')}")
+    print(f"  {TEAL}│{RST}  {GRAY}{'Active Routing':18s}{RST} HAProxy: {svcs.get('haproxy')} · Nginx: {svcs.get('nginx')} · NFTables: {svcs.get('nftables')}")
+    print(f"  {TEAL}│{RST}  {GRAY}{'System Engines':18s}{RST} NFTables: {nft_ok} · HAProxy: {ha_ok} · Nginx: {ngx_ok}")
+    print(f"  {TEAL}│{RST}  {GRAY}{'Rules Configured':18s}{RST} {len(rules)}")
+    print(f"  {TEAL}╰{'─'*69}{RST}\n")
 
     if not rules:
-        print(' No port forwarding rules configured. Login to Web UI to add rules.')
+        print(f"  {GRAY}› No port forwarding rules configured yet. Login to the Web UI to add rules.{RST}\n")
     else:
-        fmt = '{:<8} {:<10} {:<10} {:<30} {:<15}'
-        print(fmt.format('Port', 'Proto', 'Active', 'Current Destination', 'Status'))
-        print('-' * 75)
+        fmt = "  {:<14} {:<9} {:<11} {:<30} {}"
+        print(f"{BOLD}" + fmt.format("PORT / RANGE", "PROTO", "ACTIVE", "CURRENT DESTINATION", "STATE") + f"{RST}")
+        print(f"  {GRAY}{'─'*74}{RST}")
         for r in rules:
-            p = r.get('port')
-            proto = r.get('protocol', 'both')
-            proto_str = 'TCP+UDP' if str(proto).lower() == 'both' else str(proto).upper()
-            act_prio = r.get('active_priority', 1)
-            dest = next((d for d in r.get('destinations', []) if d.get('priority') == act_prio), None)
+            p_disp = r.get("port_range") or r.get("port")
+            proto = r.get("protocol", "both")
+            proto_str = "TCP+UDP" if str(proto).lower() == "both" else str(proto).upper()
+            act_prio = r.get("active_priority", 1)
+            dest = next((d for d in r.get("destinations", []) if d.get("priority") == act_prio), None)
             if dest:
-                dest_str = f\"{dest.get('type')}: {dest.get('target')}:{dest.get('port', p)}\"
+                d_port = dest.get("port_range") or dest.get("port", p_disp)
+                dest_str = f"{dest.get('type')}: {dest.get('target')}:{d_port}"
             else:
-                dest_str = 'None'
-            prio_tag = f'Priority {act_prio}'
-            print(fmt.format(f':{p}', proto_str, prio_tag, dest_str, 'HEALTHY'))
-    print('--------------------------------------------------------------\n')
+                dest_str = "None"
+            print(fmt.format(f":{p_disp}", proto_str, f"Priority #{act_prio}", dest_str, f"{GRN}● HEALTHY{RST}"))
+        print()
 except Exception as e:
-    print('Error parsing state:', e)
-"
+    print(f"  Error parsing state: {e}")
+PYEOF
 }
 
 import_relay_rules() {
     check_root
+    ui_header "" "Import Pre-Existing Rules"
     local active_cfg
     active_cfg=$(resolve_active_config)
     msg_info "Scanning for pre-existing HAProxy & NFTables relay rules on this server..."
@@ -1200,11 +1498,11 @@ sys.path.insert(0, '$INSTALL_DIR')
 from core.nftables_parser import import_all_relay_rules_into_config
 count, ports, logs = import_all_relay_rules_into_config('$active_cfg', deactivate_legacy=True)
 for log in logs:
-    print(f'   \033[0;36m*\033[0m {log}')
+    print(f'   \033[38;5;44m·\033[0m {log}')
 if count > 0:
-    print(f'\033[0;32m[OK] Successfully imported {count} relay port rule(s) into XForwarder: {ports}\033[0m')
+    print(f'  \033[38;5;84m✓\033[0m Successfully imported {count} relay port rule(s) into XForwarder: {ports}')
 else:
-    print('\033[1;33m[INFO] No new unimported HAProxy or NFTables forwarding rules found.\033[0m')
+    print('  \033[38;5;220m!\033[0m No new unimported HAProxy or NFTables forwarding rules found.')
 "
     systemctl restart "$DAEMON_SERVICE" "$WEB_SERVICE" >/dev/null 2>&1 || true
     msg_ok "XForwarder services synced with imported rules."
@@ -1244,9 +1542,9 @@ try:
         json.dump(data, f, indent=2, ensure_ascii=False)
     os.replace(tmp_path, target_path)
     rule_count = len(data.get('rules', []))
-    print(f'\033[0;32m[OK] Successfully exported configuration ({rule_count} rules) to {target_path}\033[0m')
+    print(f'  \033[38;5;84m✓\033[0m Successfully exported configuration ({rule_count} rules) to {target_path}')
 except Exception as e:
-    print(f'\033[0;31m[ERROR] Failed to export configuration: {e}\033[0m', file=sys.stderr)
+    print(f'  \033[38;5;203m✗\033[0m Failed to export configuration: {e}', file=sys.stderr)
     sys.exit(1)
 " "$target_path"
 }
@@ -1257,9 +1555,7 @@ import_config_cli() {
     local mode="${2:---merge}"
 
     if [[ -z "$file_path" ]]; then
-        echo
-        printf "%bEnter path to backup JSON file to import:%b " "$YELLOW" "$NC"
-        read -r file_path
+        ask file_path "Path to backup JSON file to import" ""
     fi
 
     if [[ ! -f "$file_path" ]]; then
@@ -1288,7 +1584,7 @@ try:
     with open(file_path, 'r', encoding='utf-8') as f:
         payload = json.load(f)
 except Exception as e:
-    print(f'\033[0;31m[ERROR] Failed to read JSON file: {e}\033[0m', file=sys.stderr)
+    print(f'  \033[38;5;203m✗\033[0m Failed to read JSON file: {e}', file=sys.stderr)
     sys.exit(1)
 
 ok, err, info = import_config_data(payload, mode=import_mode)
@@ -1296,12 +1592,11 @@ if ok:
     imported_cnt = info.get('imported_count', 0)
     total_cnt = info.get('count', 0)
     backup_file = info.get('backup', '')
-    print(f'\033[0;32m[OK] Successfully imported {imported_cnt} rule(s) in {info.get(\"mode\")} mode.\033[0m')
-    print(f'\033[0;32m[OK] Total active rules: {total_cnt}.\033[0m')
+    print(f'  \033[38;5;84m✓\033[0m Imported {imported_cnt} rule(s) in {info.get(\"mode\")} mode (total: {total_cnt}).')
     if backup_file:
-        print(f'\033[1;33m[INFO] Pre-restore atomic backup saved to: {backup_file}\033[0m')
+        print(f'  \033[38;5;44m›\033[0m Pre-restore atomic backup saved to: {backup_file}')
 else:
-    print(f'\033[0;31m[ERROR] Import failed: {err}\033[0m', file=sys.stderr)
+    print(f'  \033[38;5;203m✗\033[0m Import failed: {err}', file=sys.stderr)
     sys.exit(1)
 " "$file_path" "$clean_mode" || return 1
 
@@ -1311,96 +1606,83 @@ else:
 }
 
 backup_restore_menu() {
-    clear
-    printf "%b=======================================================%b\n" "$CYAN" "$NC"
-    printf "%b   Backup & Restore (Export / Import Configuration)%b\n" "$BOLD" "$NC"
-    printf "%b=======================================================%b\n\n" "$CYAN" "$NC"
+    ui_header "" "Backup & Restore (JSON)"
+    local b_idx=0 dest="" src=""
+    ui_choose b_idx 0 \
+        "Export configuration to JSON file" \
+        "Import configuration (Merge — preserve non-conflicting rules)" \
+        "Import configuration (Replace — overwrite all existing rules)" \
+        "Back to Main Menu" || return 0
 
-    echo "1) Export Configuration to JSON file"
-    echo "2) Import Configuration (Merge mode - keeps existing non-conflicting rules)"
-    echo "3) Import Configuration (Replace mode - replaces all rules)"
-    echo "0) Back to Main Menu"
-    echo
-    read -r -p "Select an option [0-3]: " bchoice
-
-    case "$bchoice" in
-        1)
-            echo
-            printf "%bEnter export file path (leave empty for default timestamped file):%b " "$YELLOW" "$NC"
-            read -r dest
+    case "$b_idx" in
+        0)
+            ask dest "Export file path (blank = timestamped file)" ""
             export_config_cli "$dest"
-            echo
-            read -r -p "Press Enter to continue..."
+            ;;
+        1)
+            ask src "Path to backup JSON file to import" ""
+            import_config_cli "$src" "--merge"
             ;;
         2)
-            echo
-            printf "%bEnter path to backup JSON file to import:%b " "$YELLOW" "$NC"
-            read -r src
-            import_config_cli "$src" "--merge"
-            echo
-            read -r -p "Press Enter to continue..."
-            ;;
-        3)
-            echo
-            printf "%bWARNING: Replace mode will replace all existing port rules!%b\n" "$RED" "$NC"
-            printf "%bEnter path to backup JSON file to import:%b " "$YELLOW" "$NC"
-            read -r src
-            printf "%bAre you sure you want to proceed with REPLACE mode? (y/N):%b " "$YELLOW" "$NC"
-            read -r confirm
-            if [[ "$confirm" =~ ^[Yy]$ ]]; then
+            msg_warn "Replace mode will overwrite all existing port forwarding rules!"
+            ask src "Path to backup JSON file to import" ""
+            if pick_yesno "Proceed with REPLACE mode?" n; then
                 import_config_cli "$src" "--replace"
             else
                 msg_info "Import cancelled."
             fi
-            echo
-            read -r -p "Press Enter to continue..."
             ;;
-        0)
+        3)
             return 0
-            ;;
-        *)
-            msg_warn "Invalid selection."
             ;;
     esac
 }
 
 show_menu() {
-    clear
-    printf "%b=======================================================%b\n" "$CYAN" "$NC"
-    printf "%b   XForwarder (v%s)%b\n" "$BOLD" "$SCRIPT_VERSION" "$NC"
-    printf "%b   Multi-Path Priority, HAProxy Relay & NFTables Failover%b\n" "$CYAN" "$NC"
-    printf "%b=======================================================%b\n\n" "$CYAN" "$NC"
+    ui_has_input || { show_status; return 0; }
+    MENU_ACTIVE=1
+    local choice=0
+    while :; do
+        ui_header big "Control Menu"
+        ui_choose choice "$choice" \
+            "Show Web Dashboard Access URL" \
+            "Show Live Status & Active Port Routes" \
+            "Web Panel Settings (Port, User, Password, Path, SSL)" \
+            "Restart XForwarder Services" \
+            "View Core Engine Live Logs (Ctrl+C exits)" \
+            "Update XForwarder (Auto-Migrate & Preserve Rules)" \
+            "Re-install / Run Setup Wizard" \
+            "Import Pre-existing Relay Rules (HAProxy & NFTables)" \
+            "Backup & Restore (Export / Import JSON)" \
+            "Check & Install System Dependencies" \
+            "Network Performance Tuning (BBR, Sysctl & Limits)" \
+            "Exit" || break
 
-    echo "1) Show Web Dashboard Access URL"
-    echo "2) Show Status & Active Port Routes"
-    echo "3) Web Panel Settings (Port, Username, Password, Secret Path, SSL/TLS)"
-    echo "4) Restart XForwarder Services"
-    echo "5) View Core Engine Live Logs"
-    echo "6) Update XForwarder (Auto-Migrate & Preserve Rules)"
-    echo "7) Re-install / Full Setup Wizard"
-    echo "8) Import Pre-existing Relay Rules (HAProxy & NFTables)"
-    echo "9) Backup & Restore (Export / Import Settings JSON)"
-    echo "10) Check & Install System Dependencies (NFTables, HAProxy, Nginx)"
-    echo "11) Network Performance Tuning (BBR, Sysctl & Systemd Limits)"
-    echo "0) Exit"
-    echo
-    read -r -p "Select an option [0-11]: " choice
-
-    case "$choice" in
-        1) show_web_access_info ;;
-        2) show_status ;;
-        3) modify_web_settings_menu ;;
-        4) systemctl restart "$DAEMON_SERVICE" "$WEB_SERVICE" && msg_ok "Services restarted." ;;
-        5) journalctl -u "$DAEMON_SERVICE" -f ;;
-        6) update_xforwarder ;;
-        7) install_xforwarder ;;
-        8) import_relay_rules ;;
-        9) backup_restore_menu ;;
-        10) check_root; ensure_dependencies ;;
-        11) check_root; tune_network ;;
-        0) exit 0 ;;
-        *) msg_warn "Invalid selection." ;;
-    esac
+        MENU_ACTIVE=0
+        UPDATED_CLI=0
+        echo ""
+        case "$choice" in
+            0) show_web_access_info ;;
+            1) show_status ;;
+            2) modify_web_settings_menu ;;
+            3) check_root && systemctl restart "$DAEMON_SERVICE" "$WEB_SERVICE" && msg_ok "Services restarted." ;;
+            4) check_root && journalctl -u "$DAEMON_SERVICE" -f || true ;;
+            5) update_xforwarder ;;
+            6) install_xforwarder ;;
+            7) import_relay_rules ;;
+            8) backup_restore_menu ;;
+            9) check_root; ensure_dependencies ;;
+            10) check_root; tune_network ;;
+            11) break ;;
+        esac
+        echo ""
+        read -r -p "  Press Enter to return to menu..." _ <&"$UI_FD" || break
+        if (( UPDATED_CLI )) && [[ -x "$BIN_LINK" ]]; then
+            ui_restore_terminal
+            exec "$BIN_LINK"
+        fi
+        MENU_ACTIVE=1
+    done
 }
 
 # CLI dispatcher
@@ -1413,13 +1695,11 @@ case "${1:-}" in
         ;;
     update|upgrade)
         if ! is_installed; then
-            echo
-            printf "%b=======================================================%b\n" "$CYAN" "$NC"
-            printf "%b   XForwarder is not installed on this system.%b\n" "$YELLOW" "$NC"
-            printf "%b   Starting initial installation wizard...%b\n" "$GREEN" "$NC"
-            printf "%b=======================================================%b\n\n" "$CYAN" "$NC"
+            ui_header big "Initial Setup"
+            msg_warn "XForwarder is not installed on this system. Starting setup wizard..."
             install_xforwarder
         else
+            ui_header "" "System Update"
             update_xforwarder
         fi
         ;;
@@ -1505,19 +1785,16 @@ case "${1:-}" in
         ;;
     check-deps|install-deps|deps)
         check_root
+        ui_header "" "System Dependencies"
         ensure_dependencies
         ;;
     optimize|tune|tune-network)
         check_root
+        ui_header "" "Kernel & BBR Tuning"
         tune_network
         ;;
     "")
         if ! is_installed; then
-            echo
-            printf "%b=======================================================%b\n" "$CYAN" "$NC"
-            printf "%b   XForwarder is not installed on this system.%b\n" "$YELLOW" "$NC"
-            printf "%b   Starting initial installation wizard...%b\n" "$GREEN" "$NC"
-            printf "%b=======================================================%b\n\n" "$CYAN" "$NC"
             install_xforwarder
         else
             show_menu

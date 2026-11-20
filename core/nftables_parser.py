@@ -16,7 +16,12 @@ import subprocess
 import time
 import logging
 import ipaddress
-from typing import List, Dict, Any, Tuple, Optional, Set
+from typing import List, Dict, Any, Tuple, Optional, Set, Union
+
+try:
+    from core.config_manager import get_rule_port_bounds, ports_overlap
+except ImportError:
+    from config_manager import get_rule_port_bounds, ports_overlap
 
 logger = logging.getLogger("xforwarder.nftables_parser")
 
@@ -53,11 +58,37 @@ DPORT_RANGE_REGEX = re.compile(
     re.IGNORECASE
 )
 
+# Matches negated multiport exclusion sets in textual NFTables:
+# Examples:
+#   tcp dport != { 22, 443, 1001 }
+#   udp dport != { 22, 443, 1001 }
+DPORT_NEGATED_SET_REGEX = re.compile(
+    r"(?:(tcp|udp|th)\s+)?dport\s*!=\s*\{\s*([0-9,\s\-]+)\s*\}",
+    re.IGNORECASE
+)
+
+# Matches negated single port or range in textual NFTables:
+# Examples:
+#   tcp dport != 22
+#   udp dport != 8000-8010
+DPORT_NEGATED_SINGLE_REGEX = re.compile(
+    r"(?:(tcp|udp|th)\s+)?dport\s*!=\s*(\d{1,5})(?:\s*-\s*(\d{1,5}))?\b",
+    re.IGNORECASE
+)
+
 # Matches multiport sets in textual NFTables:
 # Examples:
 #   tcp dport { 80, 443, 8443 }
 DPORT_SET_REGEX = re.compile(
     r"(?:(tcp|udp|th)\s+)?dport\s*\{\s*([0-9,\s\-]+)\s*\}",
+    re.IGNORECASE
+)
+
+# Matches jhash map DNAT targets:
+# Example:
+#   dnat to jhash ip saddr mod 3 map { 0 : 10.81.2.2, 1 : 10.81.3.2, 2 : 10.81.10.2 }
+DNAT_JHASH_MAP_REGEX = re.compile(
+    r"\bdnat(?:\s+(?:ip|ip6))?\s+to\s+jhash\b.*?map\s*\{\s*([^}]+)\s*\}",
     re.IGNORECASE
 )
 
@@ -86,6 +117,121 @@ def _is_valid_target(target: str) -> bool:
         return True
     except ValueError:
         return bool(re.match(r"^[a-zA-Z0-9]([a-zA-Z0-9\.\-_]{0,253}[a-zA-Z0-9])?$", clean))
+
+
+def _invert_excluded_ports_to_ranges(excluded: Set[int]) -> List[Tuple[int, int]]:
+    """
+    Converts a set of excluded ports (from `dport != { ... }`) into complementary
+    contiguous [start, end] port intervals inside 1..65535.
+    """
+    valid = sorted(p for p in excluded if 1 <= p <= 65535)
+    if not valid:
+        return [(1, 65535)]
+    intervals: List[Tuple[int, int]] = []
+    cursor = 1
+    for ex in valid:
+        if ex > cursor:
+            intervals.append((cursor, ex - 1))
+        if ex + 1 > cursor:
+            cursor = ex + 1
+    if cursor <= 65535:
+        intervals.append((cursor, 65535))
+    return intervals
+
+
+def _parse_port_tokens(expr_body: str, expand_limit: int = 100) -> Set[int]:
+    """Parses comma-separated port numbers and ranges from a set expression body."""
+    ports: Set[int] = set()
+    for token in expr_body.split(","):
+        token = token.strip()
+        if not token:
+            continue
+        if "-" in token:
+            parts = token.split("-", 1)
+            try:
+                sp, ep = int(parts[0].strip()), int(parts[1].strip())
+                if 1 <= sp <= ep <= 65535 and (ep - sp) <= expand_limit:
+                    ports.update(range(sp, ep + 1))
+            except ValueError:
+                pass
+        else:
+            try:
+                p = int(token)
+                if 1 <= p <= 65535:
+                    ports.add(p)
+            except ValueError:
+                pass
+    return ports
+
+
+def _build_xforwarder_range_rule_from_nftables(
+    start_port: int,
+    end_port: int,
+    targets: List[str],
+    target_port: Optional[int] = None,
+    protocol: str = "both",
+    table_name: str = "nat",
+    chain_name: str = "prerouting",
+    family: str = "ip",
+    handle: Optional[int] = None,
+    handles: Optional[List[int]] = None,
+    raw_rule: str = ""
+) -> Optional[Dict[str, Any]]:
+    """
+    Constructs an NFTables-only XForwarder port-range rule from an extracted
+    range or excluded-port rule (e.g. `1-21`, `1002-65535`).
+    """
+    if not (1 <= start_port < end_port <= 65535):
+        return None
+    clean_targets: List[str] = []
+    for t in targets:
+        ct = str(t or "").strip().strip("[]")
+        if _is_valid_target(ct) and ct not in clean_targets:
+            try:
+                ipaddress.ip_address(ct)
+                clean_targets.append(ct)
+            except ValueError:
+                pass
+    if not clean_targets:
+        return None
+
+    range_str = f"{start_port}-{end_port}"
+    dests: List[Dict[str, Any]] = []
+    for idx, ct in enumerate(clean_targets, start=1):
+        d_entry: Dict[str, Any] = {
+            "priority": idx,
+            "type": "nftables",
+            "target": ct,
+            "port": int(target_port) if target_port and 1 <= target_port <= 65535 else start_port,
+            "proxy_protocol": False,
+            "is_relay": idx > 1,
+            "enabled": True,
+            "comment": f"Imported from NFTables ({family} {table_name}/{chain_name})"
+        }
+        if not target_port:
+            d_entry["port_range"] = range_str
+        dests.append(d_entry)
+
+    meta_handles = list(handles or ([] if handle is None else [handle]))
+    return {
+        "id": f"rule-{range_str}",
+        "port": start_port,
+        "port_range": range_str,
+        "protocol": protocol,
+        "active_priority": 1,
+        "force_override": 0,
+        "destinations": dests,
+        "_meta": {
+            "source": "nftables",
+            "family": family,
+            "table": table_name,
+            "chain": chain_name,
+            "port_range": range_str,
+            "handle": meta_handles[0] if meta_handles else handle,
+            "handles": meta_handles,
+            "raw_rule": raw_rule.strip()
+        }
+    }
 
 
 def _build_xforwarder_rule_from_nftables(
@@ -151,13 +297,40 @@ def _build_xforwarder_rule_from_nftables(
     }
 
 
+def _merge_or_append_rule(
+    rules: List[Dict[str, Any]],
+    rule_index: Dict[Any, int],
+    key: Any,
+    rule_obj: Optional[Dict[str, Any]],
+    proto: str,
+    handle: Optional[int]
+) -> None:
+    """Appends a new rule or merges protocol/handle when TCP & UDP rules share the exact key."""
+    if not rule_obj:
+        return
+    if key in rule_index:
+        existing = rules[rule_index[key]]
+        ex_proto = existing.get("protocol", "both")
+        if ex_proto != proto and {ex_proto, proto} <= {"tcp", "udp"}:
+            existing["protocol"] = "both"
+        meta = existing.setdefault("_meta", {})
+        handles = meta.setdefault("handles", [])
+        if meta.get("handle") is not None and meta["handle"] not in handles:
+            handles.append(meta["handle"])
+        if handle is not None and handle not in handles:
+            handles.append(handle)
+        return
+    rule_index[key] = len(rules)
+    rules.append(rule_obj)
+
+
 def parse_nftables_json(data: dict) -> List[Dict[str, Any]]:
     """
     Parses 'nft -j list ruleset' output dictionary.
-    Extracts DNAT rules from unmanaged tables.
+    Extracts single-port, range, and excluded-set (`!= { ... }`) DNAT rules from unmanaged tables.
     """
     rules: List[Dict[str, Any]] = []
-    seen_ports: Set[int] = set()
+    rule_index: Dict[Any, int] = {}
 
     nft_items = data.get("nftables", [])
     if not isinstance(nft_items, list):
@@ -183,6 +356,8 @@ def parse_nftables_json(data: dict) -> List[Dict[str, Any]]:
 
         dnat_info = None
         ports: List[int] = []
+        range_intervals: List[Tuple[int, int]] = []
+        excluded_ports: Set[int] = set()
         rule_proto = "both"
 
         for expr in exprs:
@@ -197,6 +372,7 @@ def parse_nftables_json(data: dict) -> List[Dict[str, Any]]:
             # Check matches
             if "match" in expr:
                 m = expr["match"]
+                op = str(m.get("op", "==")).strip()
                 left = m.get("left", {})
                 right = m.get("right")
 
@@ -208,34 +384,51 @@ def parse_nftables_json(data: dict) -> List[Dict[str, Any]]:
                     if field == "dport":
                         if proto in ("tcp", "udp"):
                             rule_proto = proto
-                        if isinstance(right, int):
-                            ports.append(right)
-                        elif isinstance(right, str):
+                        is_negated = (op == "!=")
+                        bucket = excluded_ports if is_negated else None
+
+                        def _add_int(val):
                             try:
-                                ports.append(int(right))
-                            except ValueError:
+                                p_val = int(val)
+                                if 1 <= p_val <= 65535:
+                                    if is_negated:
+                                        bucket.add(p_val)
+                                    else:
+                                        ports.append(p_val)
+                            except (ValueError, TypeError):
                                 pass
-                        elif isinstance(right, list):
-                            for p in right:
+
+                        def _add_range_item(item_pair):
+                            if isinstance(item_pair, list) and len(item_pair) == 2:
                                 try:
-                                    ports.append(int(p))
+                                    sp, ep = int(item_pair[0]), int(item_pair[1])
+                                    if 1 <= sp <= ep <= 65535:
+                                        if is_negated:
+                                            if (ep - sp) <= 1000:
+                                                bucket.update(range(sp, ep + 1))
+                                        elif (ep - sp) <= 100 and sp < ep:
+                                            range_intervals.append((sp, ep))
+                                        elif sp < ep:
+                                            range_intervals.append((sp, ep))
+                                        else:
+                                            ports.append(sp)
                                 except (ValueError, TypeError):
                                     pass
+
+                        if isinstance(right, (int, str)):
+                            _add_int(right)
+                        elif isinstance(right, list):
+                            for entry in right:
+                                _add_int(entry)
                         elif isinstance(right, dict):
                             if "set" in right:
-                                for p in right["set"]:
-                                    try:
-                                        ports.append(int(p))
-                                    except (ValueError, TypeError):
-                                        pass
-                            elif "range" in right and isinstance(right["range"], list) and len(right["range"]) == 2:
-                                try:
-                                    start_p = int(right["range"][0])
-                                    end_p = int(right["range"][1])
-                                    if 1 <= start_p <= end_p <= 65535 and (end_p - start_p) <= 100:
-                                        ports.extend(range(start_p, end_p + 1))
-                                except (ValueError, TypeError):
-                                    pass
+                                for entry in right["set"]:
+                                    if isinstance(entry, dict) and "range" in entry:
+                                        _add_range_item(entry["range"])
+                                    else:
+                                        _add_int(entry)
+                            elif "range" in right:
+                                _add_range_item(right["range"])
 
                 # Match on meta l4proto
                 if isinstance(left, dict) and "meta" in left:
@@ -246,36 +439,80 @@ def parse_nftables_json(data: dict) -> List[Dict[str, Any]]:
                         elif isinstance(right, list) and set(right) == {"tcp", "udp"}:
                             rule_proto = "both"
 
-        if not dnat_info or not ports:
+        if not dnat_info:
             continue
 
-        target_addr = str(dnat_info.get("addr", "")).strip().strip("[]")
+        raw_addr = dnat_info.get("addr", "")
+        target_addrs: List[str] = []
+        if isinstance(raw_addr, str) and raw_addr.strip():
+            target_addrs = [raw_addr.strip().strip("[]")]
+        elif isinstance(raw_addr, dict) and "map" in raw_addr:
+            # Handle jhash map targets when present in structured nft JSON
+            map_data = raw_addr.get("map", {}).get("data", {})
+            if isinstance(map_data, dict) and isinstance(map_data.get("set"), list):
+                for entry in map_data["set"]:
+                    if isinstance(entry, list) and len(entry) == 2 and isinstance(entry[1], str):
+                        target_addrs.append(entry[1].strip().strip("[]"))
+
+        if not target_addrs:
+            continue
+
         target_port_val = dnat_info.get("port")
+        raw_rule_json = json.dumps(rule_info)
 
-        if not target_addr:
-            continue
+        # Complementary port intervals from negated `dport != { ... }`
+        if excluded_ports:
+            for sp, ep in _invert_excluded_ports_to_ranges(excluded_ports):
+                if sp == ep:
+                    t_port = int(target_port_val) if target_port_val else sp
+                    rule_obj = _build_xforwarder_rule_from_nftables(
+                        port=sp, target=target_addrs[0], target_port=t_port, protocol=rule_proto,
+                        table_name=table_name, chain_name=chain_name, family=family,
+                        handle=handle, raw_rule=raw_rule_json
+                    )
+                    _merge_or_append_rule(rules, rule_index, (sp, sp, target_addrs[0], t_port), rule_obj, rule_proto, handle)
+                else:
+                    t_port = int(target_port_val) if target_port_val else None
+                    rule_obj = _build_xforwarder_range_rule_from_nftables(
+                        start_port=sp, end_port=ep, targets=target_addrs, target_port=t_port,
+                        protocol=rule_proto, table_name=table_name, chain_name=chain_name,
+                        family=family, handle=handle, raw_rule=raw_rule_json
+                    )
+                    _merge_or_append_rule(rules, rule_index, (sp, ep, tuple(target_addrs), t_port), rule_obj, rule_proto, handle)
 
+        # Direct range rules
+        for sp, ep in range_intervals:
+            if (ep - sp) <= 100 and target_port_val:
+                for p in range(sp, ep + 1):
+                    t_port = int(target_port_val)
+                    rule_obj = _build_xforwarder_rule_from_nftables(
+                        port=p, target=target_addrs[0], target_port=t_port, protocol=rule_proto,
+                        table_name=table_name, chain_name=chain_name, family=family,
+                        handle=handle, raw_rule=raw_rule_json
+                    )
+                    _merge_or_append_rule(rules, rule_index, (p, p, target_addrs[0], t_port), rule_obj, rule_proto, handle)
+            else:
+                t_port = int(target_port_val) if target_port_val else None
+                rule_obj = _build_xforwarder_range_rule_from_nftables(
+                    start_port=sp, end_port=ep, targets=target_addrs, target_port=t_port,
+                    protocol=rule_proto, table_name=table_name, chain_name=chain_name,
+                    family=family, handle=handle, raw_rule=raw_rule_json
+                )
+                _merge_or_append_rule(rules, rule_index, (sp, ep, tuple(target_addrs), t_port), rule_obj, rule_proto, handle)
+
+        # Single / set ports
         for p in ports:
-            if p in seen_ports or not (1 <= p <= 65535):
+            if not (1 <= p <= 65535):
                 continue
             t_port = int(target_port_val) if target_port_val else p
             if not (1 <= t_port <= 65535):
                 t_port = p
-
             rule_obj = _build_xforwarder_rule_from_nftables(
-                port=p,
-                target=target_addr,
-                target_port=t_port,
-                protocol=rule_proto,
-                table_name=table_name,
-                chain_name=chain_name,
-                family=family,
-                handle=handle,
-                raw_rule=json.dumps(rule_info)
+                port=p, target=target_addrs[0], target_port=t_port, protocol=rule_proto,
+                table_name=table_name, chain_name=chain_name, family=family,
+                handle=handle, raw_rule=raw_rule_json
             )
-            if rule_obj:
-                rules.append(rule_obj)
-                seen_ports.add(p)
+            _merge_or_append_rule(rules, rule_index, (p, p, target_addrs[0], t_port), rule_obj, rule_proto, handle)
 
     return rules
 
@@ -283,10 +520,10 @@ def parse_nftables_json(data: dict) -> List[Dict[str, Any]]:
 def parse_nftables_text(content: str) -> List[Dict[str, Any]]:
     """
     Parses textual NFTables ruleset (e.g. from 'nft -a list ruleset' or '/etc/nftables.conf').
-    Tracks table/chain nesting and extracts DNAT rules with handles.
+    Tracks table/chain nesting and extracts single-port, range, and `dport != { ... }` DNAT rules.
     """
     rules: List[Dict[str, Any]] = []
-    seen_ports: Set[int] = set()
+    rule_index: Dict[Any, int] = {}
 
     current_family = "ip"
     current_table = ""
@@ -331,14 +568,25 @@ def parse_nftables_text(content: str) -> List[Dict[str, Any]]:
         if line.startswith("#") or current_table in MANAGED_TABLES:
             continue
 
-        # Check if line contains a DNAT action
+        # Check if line contains a DNAT target or jhash map target
+        targets: List[str] = []
+        raw_t_port = None
         dnat_match = DNAT_TARGET_REGEX.search(line)
-        if not dnat_match:
-            continue
+        if dnat_match:
+            t_single = (dnat_match.group(1) or dnat_match.group(2) or dnat_match.group(3) or "").strip().strip("[]")
+            if t_single.lower() == "jhash":
+                jhash_match = DNAT_JHASH_MAP_REGEX.search(line)
+                if jhash_match:
+                    for pair in jhash_match.group(1).split(","):
+                        if ":" in pair:
+                            cand = pair.split(":", 1)[1].strip().strip("[]")
+                            if _is_valid_target(cand):
+                                targets.append(cand)
+            elif t_single and _is_valid_target(t_single):
+                targets = [t_single]
+                raw_t_port = dnat_match.group(4)
 
-        target = (dnat_match.group(1) or dnat_match.group(2) or dnat_match.group(3) or "").strip().strip("[]")
-        raw_t_port = dnat_match.group(4)
-        if not target:
+        if not targets:
             continue
 
         # Extract handle if present
@@ -355,9 +603,48 @@ def parse_nftables_text(content: str) -> List[Dict[str, Any]]:
         elif "udp dport" in lower_line or "ip protocol udp" in lower_line or "meta l4proto udp" in lower_line:
             proto = "udp"
 
-        # Extract listening port(s)
-        extracted_ports: List[int] = []
+        tbl = current_table or "nat"
+        chn = current_chain or "prerouting"
+        t_port_int = int(raw_t_port) if raw_t_port else None
 
+        # 1. Negated exclusion set (`dport != { 22, 443, 1001 }`) or single (`dport != 22`)
+        neg_set_match = DPORT_NEGATED_SET_REGEX.search(line)
+        neg_single_match = DPORT_NEGATED_SINGLE_REGEX.search(line) if not neg_set_match else None
+        if neg_set_match or neg_single_match:
+            excluded_ports: Set[int] = set()
+            if neg_set_match:
+                p_ovr = neg_set_match.group(1)
+                if p_ovr and p_ovr.lower() in ("tcp", "udp"):
+                    proto = p_ovr.lower()
+                excluded_ports = _parse_port_tokens(neg_set_match.group(2), expand_limit=1000)
+            else:
+                p_ovr = neg_single_match.group(1)
+                if p_ovr and p_ovr.lower() in ("tcp", "udp"):
+                    proto = p_ovr.lower()
+                sp = int(neg_single_match.group(2))
+                ep = int(neg_single_match.group(3)) if neg_single_match.group(3) else sp
+                if 1 <= sp <= ep <= 65535 and (ep - sp) <= 1000:
+                    excluded_ports.update(range(sp, ep + 1))
+
+            for sp, ep in _invert_excluded_ports_to_ranges(excluded_ports):
+                if sp == ep:
+                    t_p = t_port_int if (t_port_int and 1 <= t_port_int <= 65535) else sp
+                    rule_obj = _build_xforwarder_rule_from_nftables(
+                        port=sp, target=targets[0], target_port=t_p, protocol=proto,
+                        table_name=tbl, chain_name=chn, family=current_family,
+                        handle=handle, raw_rule=line
+                    )
+                    _merge_or_append_rule(rules, rule_index, (sp, sp, targets[0], t_p), rule_obj, proto, handle)
+                else:
+                    rule_obj = _build_xforwarder_range_rule_from_nftables(
+                        start_port=sp, end_port=ep, targets=targets, target_port=t_port_int,
+                        protocol=proto, table_name=tbl, chain_name=chn, family=current_family,
+                        handle=handle, raw_rule=line
+                    )
+                    _merge_or_append_rule(rules, rule_index, (sp, ep, tuple(targets), t_port_int), rule_obj, proto, handle)
+            continue
+
+        # 2. Positive port range (`tcp dport 10000-20000` or `9000-9003`)
         range_match = DPORT_RANGE_REGEX.search(line)
         if range_match:
             proto_override = range_match.group(1)
@@ -366,68 +653,55 @@ def parse_nftables_text(content: str) -> List[Dict[str, Any]]:
             try:
                 start_p = int(range_match.group(2))
                 end_p = int(range_match.group(3))
-                if 1 <= start_p <= end_p <= 65535 and (end_p - start_p) <= 100:
-                    extracted_ports.extend(range(start_p, end_p + 1))
             except ValueError:
-                pass
+                start_p = end_p = 0
+            if 1 <= start_p < end_p <= 65535:
+                if (end_p - start_p) <= 100 and t_port_int:
+                    for p in range(start_p, end_p + 1):
+                        rule_obj = _build_xforwarder_rule_from_nftables(
+                            port=p, target=targets[0], target_port=t_port_int, protocol=proto,
+                            table_name=tbl, chain_name=chn, family=current_family,
+                            handle=handle, raw_rule=line
+                        )
+                        _merge_or_append_rule(rules, rule_index, (p, p, targets[0], t_port_int), rule_obj, proto, handle)
+                else:
+                    rule_obj = _build_xforwarder_range_rule_from_nftables(
+                        start_port=start_p, end_port=end_p, targets=targets, target_port=t_port_int,
+                        protocol=proto, table_name=tbl, chain_name=chn, family=current_family,
+                        handle=handle, raw_rule=line
+                    )
+                    _merge_or_append_rule(rules, rule_index, (start_p, end_p, tuple(targets), t_port_int), rule_obj, proto, handle)
+                continue
 
-        if not extracted_ports:
-            set_match = DPORT_SET_REGEX.search(line)
-            if set_match:
-                proto_override = set_match.group(1)
+        # 3. Multiport sets & single ports
+        extracted_ports: List[int] = []
+        set_match = DPORT_SET_REGEX.search(line)
+        if set_match:
+            proto_override = set_match.group(1)
+            if proto_override and proto_override.lower() in ("tcp", "udp"):
+                proto = proto_override.lower()
+            extracted_ports = sorted(_parse_port_tokens(set_match.group(2), expand_limit=100))
+        else:
+            dport_match = DPORT_REGEX.search(line)
+            if dport_match:
+                proto_override = dport_match.group(1)
                 if proto_override and proto_override.lower() in ("tcp", "udp"):
                     proto = proto_override.lower()
-                for token in set_match.group(2).split(","):
-                    token = token.strip()
-                    if "-" in token:
-                        parts = token.split("-")
-                        try:
-                            sp, ep = int(parts[0].strip()), int(parts[1].strip())
-                            if 1 <= sp <= ep <= 65535 and (ep - sp) <= 100:
-                                extracted_ports.extend(range(sp, ep + 1))
-                        except ValueError:
-                            pass
-                    else:
-                        try:
-                            p = int(token)
-                            if 1 <= p <= 65535:
-                                extracted_ports.append(p)
-                        except ValueError:
-                            pass
-            else:
-                dport_match = DPORT_REGEX.search(line)
-                if dport_match:
-                    proto_override = dport_match.group(1)
-                    if proto_override and proto_override.lower() in ("tcp", "udp"):
-                        proto = proto_override.lower()
-                    try:
-                        p = int(dport_match.group(2))
-                        if 1 <= p <= 65535:
-                            extracted_ports.append(p)
-                    except ValueError:
-                        pass
+                try:
+                    p = int(dport_match.group(2))
+                    if 1 <= p <= 65535:
+                        extracted_ports.append(p)
+                except ValueError:
+                    pass
 
         for p in extracted_ports:
-            if p in seen_ports:
-                continue
-            target_port = int(raw_t_port) if raw_t_port else p
-            if not (1 <= target_port <= 65535):
-                target_port = p
-
+            target_port = t_port_int if (t_port_int and 1 <= t_port_int <= 65535) else p
             rule_obj = _build_xforwarder_rule_from_nftables(
-                port=p,
-                target=target,
-                target_port=target_port,
-                protocol=proto,
-                table_name=current_table or "nat",
-                chain_name=current_chain or "prerouting",
-                family=current_family,
-                handle=handle,
-                raw_rule=line
+                port=p, target=targets[0], target_port=target_port, protocol=proto,
+                table_name=tbl, chain_name=chn, family=current_family,
+                handle=handle, raw_rule=line
             )
-            if rule_obj:
-                rules.append(rule_obj)
-                seen_ports.add(p)
+            _merge_or_append_rule(rules, rule_index, (p, p, targets[0], target_port), rule_obj, proto, handle)
 
     return rules
 
@@ -477,10 +751,13 @@ def parse_iptables_text(content: str) -> List[Dict[str, Any]]:
 def get_live_nftables_rules() -> List[Dict[str, Any]]:
     """
     Queries the running Linux kernel for active NFTables (and iptables) rules.
-    Uses 'nft -j list ruleset' and 'nft -a list ruleset'.
+    Uses 'nft -a list ruleset' and 'nft -j list ruleset'.
     """
     rules: List[Dict[str, Any]] = []
-    seen_ports: Set[int] = set()
+    seen_specs: Set[str] = set()
+
+    def _rule_spec(r: Dict[str, Any]) -> str:
+        return str(r.get("port_range") or r.get("port") or "")
 
     # 1. Try 'nft -a list ruleset' (text with handles - highest fidelity for deconfliction)
     if shutil.which("nft"):
@@ -490,12 +767,11 @@ def get_live_nftables_rules() -> List[Dict[str, Any]]:
                 capture_output=True, text=True, timeout=3.0
             )
             if res_a.returncode == 0 and res_a.stdout.strip():
-                text_rules = parse_nftables_text(res_a.stdout)
-                for r in text_rules:
-                    p = r["port"]
-                    if p not in seen_ports:
+                for r in parse_nftables_text(res_a.stdout):
+                    spec = _rule_spec(r)
+                    if spec and spec not in seen_specs:
                         rules.append(r)
-                        seen_ports.add(p)
+                        seen_specs.add(spec)
         except Exception as e:
             logger.debug(f"nft -a list ruleset error: {e}")
 
@@ -509,12 +785,11 @@ def get_live_nftables_rules() -> List[Dict[str, Any]]:
             if res_j.returncode == 0 and res_j.stdout.strip():
                 try:
                     data = json.loads(res_j.stdout)
-                    json_rules = parse_nftables_json(data)
-                    for r in json_rules:
-                        p = r["port"]
-                        if p not in seen_ports:
+                    for r in parse_nftables_json(data):
+                        spec = _rule_spec(r)
+                        if spec and spec not in seen_specs:
                             rules.append(r)
-                            seen_ports.add(p)
+                            seen_specs.add(spec)
                 except Exception:
                     pass
         except Exception as e:
@@ -528,12 +803,11 @@ def get_live_nftables_rules() -> List[Dict[str, Any]]:
                 capture_output=True, text=True, timeout=2.0
             )
             if res_ipt.returncode == 0 and res_ipt.stdout.strip():
-                ipt_rules = parse_iptables_text(res_ipt.stdout)
-                for r in ipt_rules:
-                    p = r["port"]
-                    if p not in seen_ports:
+                for r in parse_iptables_text(res_ipt.stdout):
+                    spec = _rule_spec(r)
+                    if spec and spec not in seen_specs:
                         rules.append(r)
-                        seen_ports.add(p)
+                        seen_specs.add(spec)
         except Exception as e:
             logger.debug(f"iptables-save error: {e}")
 
@@ -550,6 +824,7 @@ def find_candidate_nftables_files() -> List[str]:
         "/etc/nftables.conf.bak*",
         "/etc/sysconfig/nftables.conf",
         "/etc/nftables/*.nft",
+        "/etc/nftables.d/*.nft",
         "/etc/nftables.conf.d/*.nft",
         "/etc/iptables/rules.v4",
         "/etc/iptables.rules"
@@ -564,43 +839,46 @@ def find_candidate_nftables_files() -> List[str]:
 def discover_importable_nftables_rules(existing_rules: Optional[List[Dict[str, Any]]] = None) -> List[Dict[str, Any]]:
     """
     Scans live kernel rules and persistent files for NFTables forwarding rules.
-    Returns rules for ports that are NOT yet in existing_rules.
+    Returns rules whose port/range does not overlap existing_rules.
     """
-    configured_ports: Set[int] = set()
+    configured_bounds: List[Tuple[int, int]] = []
     if existing_rules:
         for r in existing_rules:
-            if "port" in r:
-                try:
-                    configured_ports.add(int(r["port"]))
-                except (ValueError, TypeError):
-                    pass
+            sp, ep, _ = get_rule_port_bounds(r)
+            if sp is not None and ep is not None:
+                configured_bounds.append((sp, ep))
 
     discovered_rules: List[Dict[str, Any]] = []
-    discovered_ports: Set[int] = set()
+    discovered_bounds: List[Tuple[int, int]] = []
+
+    def _conflicts_existing_or_discovered(r: Dict[str, Any]) -> bool:
+        sp, ep, _ = get_rule_port_bounds(r)
+        if sp is None or ep is None:
+            return True
+        if any(ports_overlap(sp, ep, bs, be) for bs, be in configured_bounds):
+            return True
+        if any(ports_overlap(sp, ep, bs, be) for bs, be in discovered_bounds):
+            return True
+        return False
 
     # 1. Live kernel rules (highest priority)
-    live_rules = get_live_nftables_rules()
-    for r in live_rules:
-        p = r.get("port")
-        if p and p not in configured_ports and p not in discovered_ports:
+    for r in get_live_nftables_rules():
+        if not _conflicts_existing_or_discovered(r):
+            sp, ep, _ = get_rule_port_bounds(r)
             discovered_rules.append(r)
-            discovered_ports.add(p)
+            discovered_bounds.append((sp, ep))
 
     # 2. Config files
     for path in find_candidate_nftables_files():
         try:
             with open(path, "r", encoding="utf-8", errors="ignore") as f:
                 content = f.read()
-            if "iptables" in path:
-                file_rules = parse_iptables_text(content)
-            else:
-                file_rules = parse_nftables_text(content)
-
+            file_rules = parse_iptables_text(content) if "iptables" in path else parse_nftables_text(content)
             for r in file_rules:
-                p = r.get("port")
-                if p and p not in configured_ports and p not in discovered_ports:
+                if not _conflicts_existing_or_discovered(r):
+                    sp, ep, _ = get_rule_port_bounds(r)
                     discovered_rules.append(r)
-                    discovered_ports.add(p)
+                    discovered_bounds.append((sp, ep))
         except Exception as e:
             logger.warning(f"Error reading NFTables candidate file {path}: {e}")
 
@@ -657,49 +935,55 @@ def backup_legacy_nftables() -> Optional[str]:
 
 def deactivate_legacy_rules(imported_rules: List[Dict[str, Any]]) -> Tuple[int, List[str]]:
     """
-    Safely deletes the imported DNAT rules from legacy external tables
+    Safely deletes imported DNAT rules from legacy external tables via exact handles
     to guarantee zero collision with XForwarder's managed tables.
     Returns (deactivated_count, list_of_log_messages).
     """
     deactivated = 0
     logs: List[str] = []
+    deleted_handles: Set[Tuple[str, str, str, int]] = set()
 
-    # Map ports to rules to assist with live lookup if handle is missing
-    ports_needing_lookup: Set[int] = set()
+    # Map specs to rules to assist with live lookup if handle is missing
+    specs_needing_lookup: Set[str] = set()
     for r in imported_rules:
-        if not r.get("_meta", {}).get("handle"):
-            p = r.get("port")
-            if p:
-                ports_needing_lookup.add(int(p))
+        meta = r.get("_meta", {})
+        if not meta.get("handle") and not meta.get("handles"):
+            spec = str(r.get("port_range") or r.get("port") or "")
+            if spec:
+                specs_needing_lookup.add(spec)
 
-    # If any rule lacked a handle, try to discover live handles in the kernel
-    live_handles: Dict[int, Dict[str, Any]] = {}
-    if ports_needing_lookup and shutil.which("nft"):
+    # If any rule lacked a handle, query live handles in the kernel
+    live_handles: Dict[str, Dict[str, Any]] = {}
+    if specs_needing_lookup and shutil.which("nft"):
         try:
-            live_rules = get_live_nftables_rules()
-            for lr in live_rules:
-                lp = lr.get("port")
-                lh = lr.get("_meta", {}).get("handle")
-                if lp in ports_needing_lookup and lh:
-                    live_handles[lp] = lr.get("_meta", {})
+            for lr in get_live_nftables_rules():
+                spec = str(lr.get("port_range") or lr.get("port") or "")
+                lmeta = lr.get("_meta", {})
+                if spec in specs_needing_lookup and (lmeta.get("handle") or lmeta.get("handles")):
+                    live_handles[spec] = lmeta
         except Exception:
             pass
 
     for r in imported_rules:
         meta = r.get("_meta", {})
-        port = r.get("port")
-        if not port:
+        port_label = r.get("port_range") or r.get("port")
+        spec_key = str(port_label or "")
+        if not spec_key:
             continue
 
-        handle = meta.get("handle")
+        handles = list(meta.get("handles") or [])
+        if not handles and meta.get("handle") is not None:
+            handles.append(meta.get("handle"))
         table = meta.get("table", "")
         chain = meta.get("chain", "")
         family = meta.get("family", "ip")
 
-        # Supplement with live handle if discovered
-        if not handle and port in live_handles:
-            live_meta = live_handles[port]
-            handle = live_meta.get("handle")
+        # Supplement with live handles if discovered
+        if not handles and spec_key in live_handles:
+            live_meta = live_handles[spec_key]
+            handles = list(live_meta.get("handles") or [])
+            if not handles and live_meta.get("handle") is not None:
+                handles.append(live_meta.get("handle"))
             table = live_meta.get("table", table)
             chain = live_meta.get("chain", chain)
             family = live_meta.get("family", family)
@@ -707,63 +991,86 @@ def deactivate_legacy_rules(imported_rules: List[Dict[str, Any]]) -> Tuple[int, 
         # Sanitize arguments strictly
         if family not in ("ip", "ip6", "inet"):
             continue
-
         if table and not re.match(r"^[a-zA-Z0-9_\-]+$", table):
             continue
         if chain and not re.match(r"^[a-zA-Z0-9_\-]+$", chain):
             continue
 
-        # 1. Handle-based deletion in NFTables (atomic & non-disruptive)
-        if handle and table and chain and shutil.which("nft"):
-            try:
-                cmd = ["nft", "delete", "rule", family, table, chain, "handle", str(int(handle))]
-                res = subprocess.run(cmd, capture_output=True, text=True, timeout=2.0)
-                if res.returncode == 0:
-                    deactivated += 1
-                    logs.append(f"Deactivated legacy rule for port {port} via handle {handle} in {family} {table}/{chain}")
+        # 1. Handle-based deletion in NFTables (atomic, deduplicated per kernel handle)
+        if handles and table and chain and shutil.which("nft"):
+            for h in handles:
+                try:
+                    h_int = int(h)
+                except (ValueError, TypeError):
                     continue
-                else:
-                    logs.append(f"Warning: nft delete rule returned {res.returncode} for port {port}: {res.stderr.strip()}")
-            except Exception as e:
-                logs.append(f"Error deactivating nft handle {handle}: {e}")
+                h_key = (family, table, chain, h_int)
+                if h_key in deleted_handles:
+                    continue
+                deleted_handles.add(h_key)
+                try:
+                    cmd = ["nft", "delete", "rule", family, table, chain, "handle", str(h_int)]
+                    res = subprocess.run(cmd, capture_output=True, text=True, timeout=2.0)
+                    if res.returncode == 0:
+                        deactivated += 1
+                        logs.append(f"Deactivated legacy rule for {spec_key} via handle {h_int} in {family} {table}/{chain}")
+                    else:
+                        logs.append(f"Warning: nft delete rule returned {res.returncode} for {spec_key}: {res.stderr.strip()}")
+                except Exception as e:
+                    logs.append(f"Error deactivating nft handle {h_int}: {e}")
+            continue
 
-        # 2. Iptables fallback deletion
-        if shutil.which("iptables") and port:
+        # 2. Iptables fallback deletion (single ports only)
+        if shutil.which("iptables") and not r.get("port_range") and r.get("port"):
+            p_single = r["port"]
             try:
                 check_cmd = ["iptables", "-t", "nat", "-S", "PREROUTING"]
                 res_s = subprocess.run(check_cmd, capture_output=True, text=True, timeout=2.0)
                 if res_s.returncode == 0:
                     for line in res_s.stdout.splitlines():
-                        if f"--dport {port}" in line and "-j DNAT" in line:
+                        if f"--dport {p_single}" in line and "-j DNAT" in line:
                             del_args = line.replace("-A PREROUTING", "-D PREROUTING").split()
                             del_cmd = ["iptables", "-t", "nat"] + del_args
                             subprocess.run(del_cmd, capture_output=True, timeout=2.0)
                             deactivated += 1
-                            logs.append(f"Deactivated matching legacy iptables rule for port {port}")
+                            logs.append(f"Deactivated matching legacy iptables rule for port {p_single}")
                             break
             except Exception as e:
-                logs.append(f"Error deactivating iptables rule for port {port}: {e}")
+                logs.append(f"Error deactivating iptables rule for port {p_single}: {e}")
 
     return deactivated, logs
 
 
-def deactivate_legacy_rules_for_ports(ports: Set[int]) -> Tuple[int, List[str]]:
+def deactivate_legacy_rules_for_ports(ports: Set[Union[int, str]]) -> Tuple[int, List[str]]:
     """
-    Deactivates any active unmanaged kernel DNAT rules for the specified ports.
-    Used during unified import to ensure HAProxy ports do not suffer kernel hook interference.
+    Deactivates any active unmanaged kernel DNAT rules matching the specified ports or ranges.
     """
     if not ports:
         return 0, []
 
+    port_keys = {str(p) for p in ports}
+    parsed_targets: List[Tuple[int, int]] = []
+    for p in ports:
+        sp, ep, _ = get_rule_port_bounds({"port_range": str(p)} if "-" in str(p) else {"port": p})
+        if sp is not None and ep is not None:
+            parsed_targets.append((sp, ep))
+
     mock_rules: List[Dict[str, Any]] = []
-    live = get_live_nftables_rules()
-    for lr in live:
-        if lr.get("port") in ports:
+    for lr in get_live_nftables_rules():
+        spec = str(lr.get("port_range") or lr.get("port") or "")
+        lsp, lep, _ = get_rule_port_bounds(lr)
+        overlaps = (
+            lsp is not None and lep is not None
+            and any(ports_overlap(lsp, lep, ts, te) for ts, te in parsed_targets)
+        )
+        if spec in port_keys or lr.get("port") in ports or overlaps:
             mock_rules.append(lr)
 
     if not mock_rules:
-        # Create minimal port stubs for iptables fallback
-        mock_rules = [{"port": p, "_meta": {}} for p in ports]
+        for p in ports:
+            if isinstance(p, int) or str(p).isdigit():
+                mock_rules.append({"port": int(p), "_meta": {}})
+            else:
+                mock_rules.append({"port_range": str(p), "_meta": {}})
 
     return deactivate_legacy_rules(mock_rules)
 
@@ -771,12 +1078,12 @@ def deactivate_legacy_rules_for_ports(ports: Set[int]) -> Tuple[int, List[str]]:
 def import_nftables_rules_into_config(
     config_path: str,
     deactivate_legacy: bool = True
-) -> Tuple[int, List[int], List[str]]:
+) -> Tuple[int, List[Any], List[str]]:
     """
     Discovers unimported NFTables rules and atomically merges them into config_path.
     If deactivate_legacy is True, automatically backs up the old ruleset and deactivates
     the imported rules to prevent port collisions.
-    Returns (imported_count, list_of_imported_ports, log_messages).
+    Returns (imported_count, list_of_imported_ports_or_ranges, log_messages).
     """
     logs: List[str] = []
     if not os.path.exists(config_path):
@@ -803,12 +1110,12 @@ def import_nftables_rules_into_config(
         deact_count, deact_logs = deactivate_legacy_rules(importable)
         logs.extend(deact_logs)
 
-    imported_ports: List[int] = []
+    imported_ports: List[Any] = []
     for r in importable:
         # Clean private _meta before persisting to config.json
         clean_rule = {k: v for k, v in r.items() if not k.startswith("_")}
         rules.append(clean_rule)
-        imported_ports.append(clean_rule["port"])
+        imported_ports.append(clean_rule.get("port_range") or clean_rule["port"])
 
     cfg["rules"] = rules
 
@@ -833,33 +1140,24 @@ def discover_all_relay_rules(existing_rules: Optional[List[Dict[str, Any]]] = No
     Unified discovery scanning both HAProxy configurations and active NFTables rules.
     Returns structured results with per-source metrics.
     """
-    configured_ports: Set[int] = set()
-    if existing_rules:
-        for r in existing_rules:
-            if "port" in r:
-                try:
-                    configured_ports.add(int(r["port"]))
-                except (ValueError, TypeError):
-                    pass
-
     # 1. HAProxy rules
     from core.haproxy_parser import discover_importable_rules as discover_haproxy
     ha_rules = discover_haproxy(existing_rules)
     for r in ha_rules:
         r["_source"] = "haproxy"
 
-    ha_ports = {r["port"] for r in ha_rules if "port" in r}
+    ha_ports = {r.get("port_range") or r["port"] for r in ha_rules if "port" in r or "port_range" in r}
 
-    # 2. NFTables rules (exclude already found HAProxy ports to avoid double discovery)
+    # 2. NFTables rules (exclude overlapping HAProxy ports to avoid double discovery)
     all_known = list(existing_rules or []) + ha_rules
     nft_rules = discover_importable_nftables_rules(all_known)
     for r in nft_rules:
         r["_source"] = "nftables"
 
-    nft_ports = {r["port"] for r in nft_rules if "port" in r}
+    nft_ports = {r.get("port_range") or r["port"] for r in nft_rules if "port" in r or "port_range" in r}
 
     combined = ha_rules + nft_rules
-    combined_ports = sorted(list(ha_ports | nft_ports))
+    combined_ports = sorted(list(ha_ports | nft_ports), key=lambda x: (int(str(x).split("-")[0]), str(x)))
 
     return {
         "available": bool(combined),

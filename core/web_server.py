@@ -30,6 +30,7 @@ if BASE_DIR not in sys.path:
 from core.config_manager import (
     load_config, save_config, load_state, update_state_rules,
     get_config_path, get_state_file_path, validate_rule,
+    get_rule_port_bounds, ports_overlap,
     export_config_data, import_config_data, is_valid_target,
     is_port_in_use_by_external_service, migrate_and_normalize_config,
     CONFIG_PATH, LEGACY_CONFIG_PATH, LOCAL_CONFIG_PATH,
@@ -773,15 +774,29 @@ class XForwarderWebHandler(BaseHTTPRequestHandler):
 
             cfg = load_config()
             rules = cfg.get("rules", [])
-            rule_id = str(body.get("id") or f"rule-{body['port']}")
+            rule_label = body.get("port_range") or body["port"]
+            rule_id = str(body.get("id") or f"rule-{rule_label}")
             body["id"] = rule_id
 
+            new_start, new_end, _ = get_rule_port_bounds(body)
+            web_port = int(cfg.get("web", {}).get("port", 8090) or 8090)
+            if new_start is not None and new_end is not None and new_start <= web_port <= new_end:
+                self.send_json({
+                    "ok": False,
+                    "error": f"Port / range {rule_label} overlaps the XForwarder Web Dashboard port ({web_port})"
+                }, 409)
+                return
+
             for r in rules:
-                if r.get("id") != rule_id and r.get("port") == body["port"]:
-                    self.send_json({"ok": False, "error": f"Port {body['port']} is already used by rule '{r.get('id')}'"}, 409)
+                if r.get("id") == rule_id:
+                    continue
+                ex_start, ex_end, _ = get_rule_port_bounds(r)
+                if new_start is not None and ex_start is not None and ports_overlap(new_start, new_end, ex_start, ex_end):
+                    ex_label = r.get("port_range") or r.get("port")
+                    self.send_json({"ok": False, "error": f"Port / range {rule_label} overlaps with existing rule '{r.get('id')}' ({ex_label})"}, 409)
                     return
 
-            if is_port_in_use_by_external_service(body["port"], rule_id, rules):
+            if not body.get("port_range") and is_port_in_use_by_external_service(body["port"], rule_id, rules):
                 self.send_json({
                     "ok": False,
                     "error": f"Port {body['port']} is already bound by an external system service (e.g. web server, SSH, or proxy)!"
