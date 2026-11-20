@@ -30,9 +30,9 @@
     "semantic_hash": ""
   },
   ".agents/rules/03-networking-and-kernel.md": {
-    "mtime": 1795185946.4720497,
-    "seen": 1795186044.1401846,
-    "ast_hash": "d15dfb0bca8e4b04b1939941cd2369f2",
+    "mtime": 1795196068.6609755,
+    "seen": 1795196173.0252316,
+    "ast_hash": "496dd87b9d4d234435ffed20923e5428",
     "semantic_hash": ""
   },
   ".agents/rules/04-web-dashboard-and-security.md": {
@@ -72,9 +72,9 @@
     "semantic_hash": ""
   },
   "AGENTS.md": {
-    "mtime": 1795185963.2021608,
-    "seen": 1795186044.1402054,
-    "ast_hash": "f9017270121dec9038946d9ed650d147",
+    "mtime": 1795196064.9100568,
+    "seen": 1795196173.0252512,
+    "ast_hash": "ba133e572f11494f1894826e37b071ed",
     "semantic_hash": ""
   },
   "README.md": {
@@ -144,9 +144,9 @@
     "semantic_hash": ""
   },
   ".agents/session-state.json": {
-    "mtime": 1795185968.076355,
-    "seen": 1795186044.1401024,
-    "ast_hash": "347165aa39403101be6b2d9df58ca1b3",
+    "mtime": 1795196072.2363725,
+    "seen": 1795196173.0251474,
+    "ast_hash": "5c349455c8064745d0e49ec5e5cac80e",
     "semantic_hash": ""
   },
   ".agents/AGENTS.md": {
@@ -378,9 +378,9 @@
     "semantic_hash": ""
   },
   "tests/test_nftables_parser.py": {
-    "mtime": 1795195081.0250015,
-    "seen": 1795195201.566911,
-    "ast_hash": "1b6018f3e2ae7e7708cb561fc4a536d2",
+    "mtime": 1795196125.0499687,
+    "seen": 1795196173.0251734,
+    "ast_hash": "602b2f9ed91932a5df8c950ddc27b91c",
     "semantic_hash": ""
   },
   ".agents/experiences/011-nftables-active-rules-auto-discovery-and-deconfliction.md": {
@@ -438,9 +438,9 @@
     "semantic_hash": ""
   },
   "core/config_manager.py": {
-    "mtime": 1795195054.7536042,
-    "seen": 1795195201.5668867,
-    "ast_hash": "cf3c8f096737b18aec015f3bde8c0b67",
+    "mtime": 1795196054.2473106,
+    "seen": 1795196173.0251503,
+    "ast_hash": "0c322a78014ea22b298e1896b4df7933",
     "semantic_hash": ""
   },
   "core/firewall.py": {
