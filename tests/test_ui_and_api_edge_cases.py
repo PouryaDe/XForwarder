@@ -519,7 +519,7 @@ class TestUIAndAPIEdgeCases(unittest.TestCase):
         self.assertIn('class="ram-full"', html)
         self.assertIn('class="ram-short"', html)
         self.assertIn('Security & Access', html)
-        self.assertIn('class="btn-text">Logout<', html)
+        self.assertIn('id="btnSidebarLogout"', html)
 
         # 2. JS responsive metric injection & drawer auto-close
         self.assertIn('<span class="ram-full">', js)
@@ -1775,7 +1775,7 @@ class TestUIAndAPIEdgeCases(unittest.TestCase):
             self.assertIn("net_rx_rate_mb", mocked_stats)
             self.assertIn("net_tx_rate_mb", mocked_stats)
 
-        # 3. HTML topbar pill elements
+        # 3. HTML telemetry pill elements & mobile drawer controls
         html_path = os.path.join(REPO_ROOT, "web", "index.html")
         with open(html_path, "r", encoding="utf-8") as f:
             html = f.read()
@@ -1785,7 +1785,7 @@ class TestUIAndAPIEdgeCases(unittest.TestCase):
         self.assertIn('id="loadPill"', html)
         self.assertIn('id="trafficPill"', html)
         self.assertIn('id="connsPill"', html)
-        self.assertIn('id="topbarActions"', html)
+        self.assertIn('id="btnToggleSidebar"', html)
         self.assertIn('id="ovTrafficText"', html)
         self.assertIn("0.00 MB/s", html)
 
@@ -2812,6 +2812,55 @@ class TestUIAndAPIEdgeCases(unittest.TestCase):
                 }, mode="replace")
             self.assertTrue(ok_imp, err_imp)
             self.assertEqual(res_imp.get("imported_count"), 1)
+
+    def test_clean_page_headers_dedicated_updates_and_hashless_routing(self):
+        """Verifies topbar removal, page-header typography across all 6 sections,
+        dedicated #sectionUpdates page separation, and hash-free path routing."""
+        web_dir = os.path.join(REPO_ROOT, "web")
+        with open(os.path.join(web_dir, "index.html"), "r", encoding="utf-8") as f:
+            html = f.read()
+        with open(os.path.join(web_dir, "js", "modules", "navigation.js"), "r", encoding="utf-8") as f:
+            nav_js = f.read()
+        with open(os.path.join(web_dir, "js", "modules", "api.js"), "r", encoding="utf-8") as f:
+            api_js = f.read()
+        with open(os.path.join(web_dir, "css", "layout.css"), "r", encoding="utf-8") as f:
+            layout_css = f.read()
+        with open(os.path.join(REPO_ROOT, "core", "web_server.py"), "r", encoding="utf-8") as f:
+            ws_py = f.read()
+
+        # 1. Topbar removed; mobile-only drawer bar retained
+        self.assertNotIn('<header class="topbar">', html)
+        self.assertNotIn('id="breadcrumbSection"', html)
+        self.assertIn('class="mobile-drawer-bar"', html)
+
+        # 2. Dedicated Updates section & sidebar nav item outside #sectionSecurity
+        self.assertIn('id="navItemUpdates"', html)
+        self.assertIn('id="sectionUpdates"', html)
+        sec_start = html.index('id="sectionSecurity"')
+        upd_start = html.index('id="sectionUpdates"')
+        self.assertLess(sec_start, upd_start)
+        self.assertLess(upd_start, html.index('id="cardSystemUpdate"'))
+        self.assertNotIn('id="cardSystemUpdate"', html[sec_start:upd_start])
+
+        # 3. Clean page-header with h1.page-title & p.page-subtitle on all 6 sections
+        self.assertEqual(html.count('<h1 class="page-title"'), 6)
+        self.assertEqual(html.count('<p class="page-subtitle"'), 6)
+        self.assertIn('.page-title {', layout_css)
+        self.assertIn('--font-page-title', layout_css)
+
+        # 4. Hash-free path routing in navigation.js & BASE_PATH stripping in api.js
+        self.assertIn('"updates"', nav_js)
+        self.assertIn('getSectionFromLocation', nav_js)
+        self.assertIn('popstate', nav_js)
+        self.assertIn('history.pushState', nav_js)
+        self.assertNotIn('hashchange', nav_js)
+        self.assertNotIn('window.location.hash !==', nav_js)
+        self.assertIn('SECTION_SUFFIX_RE', api_js)
+        self.assertIn('export const BASE_PATH', api_js)
+
+        # 5. Server section-prefixed static asset fallback in web_server.py
+        self.assertIn('"updates"', ws_py)
+        self.assertIn('first_seg, rest_rel = static_rel.split("/", 1)', ws_py)
 
 
 if __name__ == "__main__":

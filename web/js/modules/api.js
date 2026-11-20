@@ -4,9 +4,14 @@
 
 import { showToast } from "./utils.js";
 
-// Dynamically compute base API prefix (supports custom security secret paths)
-const cleanPath = window.location.pathname.replace(/\/index\.html?$/i, "").replace(/\/+$/, "");
-export const API_BASE = cleanPath ? `${cleanPath}/api` : "/api";
+// Valid SPA section path segments (hash-free clean URL routing)
+export const VALID_SECTIONS = ["rules", "overview", "services", "security", "updates", "logs"];
+const SECTION_SUFFIX_RE = /\/(rules|overview|services|security|updates|logs)$/i;
+
+// Dynamically compute base path & API prefix (supports custom security secret paths & section subpaths)
+const rawCleanPath = window.location.pathname.replace(/\/index\.html?$/i, "").replace(/\/+$/, "");
+export const BASE_PATH = rawCleanPath.replace(SECTION_SUFFIX_RE, "");
+export const API_BASE = BASE_PATH ? `${BASE_PATH}/api` : "/api";
 
 // Global fetch interceptor: guarantees credentials: "same-origin" and X-Session-Token header across ALL modules
 if (typeof window !== "undefined" && typeof window.fetch === "function") {

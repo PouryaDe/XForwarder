@@ -33,10 +33,9 @@ export const TRANSLATIONS = {
         "nav.rules": "Port Matrix",
         "nav.overview": "Overview & Health",
         "nav.services": "Relay Services",
+        "nav.updates": "System Updates",
         "nav.security": "Security & Access",
         "nav.logs": "Logs & Probes",
-        "nav.breadcrumb_root": "Dashboard",
-        "topbar.logout": "Logout",
         "user.admin": "Administrator",
         "user.role": "Administrator",
 
@@ -104,6 +103,8 @@ export const TRANSLATIONS = {
         "rules.traffic_cycle_tooltip": "Billing Cycle Traffic: ↑ {tx} · ↓ {rx} (Click for details & reset)",
 
         // Section 2: Overview & Health
+        "overview.title": "Overview & Health",
+        "overview.desc": "Live server telemetry, daily bandwidth accounting, tunnel topology, and 30-day packet loss analytics.",
         "overview.cpu": "CPU & Load",
         "overview.cpu_load": "Processor Load",
         "overview.memory": "Memory",
@@ -226,6 +227,8 @@ export const TRANSLATIONS = {
         "services.scan_prompt": "Click \"Scan Server\" to check for unmanaged HAProxy and NFTables forwarding rules.",
 
         // Section 4: Security & Access
+        "security.title": "Security & Access",
+        "security.desc": "Export sanitized configuration backups, import rules, and manage dashboard administrator credentials.",
         "security.backup_title": "Backup & Migration",
         "security.backup_sub": "Export or import routing rules and server parameters",
         "security.backup_desc": "Safely backup or restore your forwarding rules and operational parameters. Exported files are cryptographically sanitized to exclude administrative passwords.",
@@ -253,7 +256,11 @@ export const TRANSLATIONS = {
         "security.update_latest": "Update to Latest",
         "security.update_note": "Updates automatically backup active configuration (config.json.bak), migrate schema structures, and preserve all custom ports and credentials with zero data loss.",
 
-        // Section 5: Logs & Probes
+        // Section 5: System Updates
+        "updates.title": "System Updates",
+        "updates.desc": "Check GitHub releases, automatically migrate schemas, and upgrade relay services.",
+
+        // Section 6: Logs & Probes
         "logs.title": "Real-time Failover & Probe Logs",
         "logs.desc": "Live timeline of socket health checks, priority transitions, and failover triggers.",
         "logs.copy": "Copy Logs",
@@ -464,10 +471,9 @@ export const TRANSLATIONS = {
         "nav.rules": "ماتریس پورت‌ها",
         "nav.overview": "نمای کلی و سلامت",
         "nav.services": "سرویس‌های رله",
+        "nav.updates": "به‌روزرسانی سیستم",
         "nav.security": "امنیت و دسترسی",
         "nav.logs": "لاگ‌ها و پروب‌ها",
-        "nav.breadcrumb_root": "داشبورد",
-        "topbar.logout": "خروج",
         "user.admin": "مدیر سیستم",
         "user.role": "مدیر سیستم",
 
@@ -535,6 +541,8 @@ export const TRANSLATIONS = {
         "rules.traffic_cycle_tooltip": "ترافیک دوره جاری: ارسال ↑ {tx} · دریافت ↓ {rx} (برای جزئیات و صفر کردن کلیک کنید)",
 
         // Section 2: Overview & Health
+        "overview.title": "نمای کلی و سلامت",
+        "overview.desc": "پایش لحظه‌ای منابع سرور، آمار مصرف روزانه پهنای باند، توپولوژی تونل‌ها و تحلیل ۳۰ روزه افت بسته.",
         "overview.cpu": "پردازنده و بار سیستم",
         "overview.cpu_load": "بار پردازنده",
         "overview.memory": "حافظه رم",
@@ -657,6 +665,8 @@ export const TRANSLATIONS = {
         "services.scan_prompt": "برای بررسی قوانین مدیریت‌نشده HAProxy و NFTables روی «اسکن سرور» کلیک کنید.",
 
         // Section 4: Security & Access
+        "security.title": "امنیت و دسترسی",
+        "security.desc": "پشتیبان‌گیری امن از تنظیمات، درون‌ریزی قوانین و مدیریت اطلاعات ورود مدیر سیستم.",
         "security.backup_title": "پشتیبان‌گیری و مهاجرت",
         "security.backup_sub": "خروجی گرفتن و درون‌ریزی قوانین مسیریابی و تنظیمات سرور",
         "security.backup_desc": "تهیه فایل پشتیبان مطمئن از قوانین فوروارد. فایل‌های خروجی برای حفظ امنیت فاقد رمز عبور مدیر هستند.",
@@ -684,7 +694,11 @@ export const TRANSLATIONS = {
         "security.update_latest": "ارتقا به آخرین نسخه",
         "security.update_note": "به‌روزرسانی‌ها به طور خودکار فایل پشتیبان تهیه کرده و داده‌ها را با صفر درصد قطعی حفظ می‌کنند.",
 
-        // Section 5: Logs & Probes
+        // Section 5: System Updates
+        "updates.title": "به‌روزرسانی سیستم",
+        "updates.desc": "بررسی نسخه‌های جدید گیت‌هاب، مهاجرت خودکار ساختار تنظیمات و ارتقای ایمن سرویس‌های رله.",
+
+        // Section 6: Logs & Probes
         "logs.title": "لاگ‌های زنده پروب و تغییر مسیر",
         "logs.desc": "خط زمانی زنده بررسی سلامت سوکت‌ها، تغییر اولویت‌ها و تحریک فیل‌اور.",
         "logs.copy": "کپی لاگ‌ها",
@@ -1020,22 +1034,6 @@ export function applyI18nToDOM() {
             el.label = t(key);
         }
     });
-
-    // 5. Update dynamic titles & breadcrumbs
-    const breadcrumbRoot = document.querySelector(".breadcrumb-root");
-    if (breadcrumbRoot) {
-        breadcrumbRoot.textContent = t("nav.breadcrumb_root");
-    }
-
-    const breadcrumbCurrent = document.getElementById("breadcrumbSection");
-    if (breadcrumbCurrent) {
-        const activeNav = document.querySelector(".nav-item.active[data-section]");
-        if (activeNav) {
-            const sec = activeNav.getAttribute("data-section");
-            const navKey = `nav.${sec}`;
-            breadcrumbCurrent.textContent = t(navKey);
-        }
-    }
 }
 
 /**
@@ -1047,17 +1045,11 @@ export function updateLangToggleUI() {
     const nextLabel = isFa ? "English" : "فارسی";
     const nextTitle = isFa ? "Switch to English" : "تغییر زبان به فارسی";
 
-    const topbarLang = document.getElementById("topbarLangName");
-    if (topbarLang) topbarLang.textContent = nextLabel;
-
     const sidebarLang = document.getElementById("sidebarLangLabel");
     if (sidebarLang) sidebarLang.textContent = nextLabel;
 
     const loginLang = document.getElementById("loginLangName");
     if (loginLang) loginLang.textContent = nextLabel;
-
-    const btnLangToggle = document.getElementById("btnLangToggle");
-    if (btnLangToggle) btnLangToggle.title = nextTitle;
 
     const btnSidebarLang = document.getElementById("btnSidebarLangToggle");
     if (btnSidebarLang) btnSidebarLang.title = nextTitle;
@@ -1093,11 +1085,6 @@ export function initI18n(onLangChangeCallback) {
 
     if (onLangChangeCallback) {
         onLanguageChanged(onLangChangeCallback);
-    }
-
-    const btnLangToggle = document.getElementById("btnLangToggle");
-    if (btnLangToggle) {
-        btnLangToggle.onclick = (e) => toggleLanguage(e);
     }
 
     const btnSidebarLang = document.getElementById("btnSidebarLangToggle");

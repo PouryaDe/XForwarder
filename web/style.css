@@ -109,6 +109,7 @@
 
     /* Typography */
     --font-display: 'Bricolage Grotesque', 'Vazirmatn', system-ui, -apple-system, sans-serif;
+    --font-page-title: 'Inter', 'Hanken Grotesk', 'Vazirmatn', system-ui, -apple-system, sans-serif;
     --font-sans: 'Hanken Grotesk', 'Vazirmatn', system-ui, -apple-system, sans-serif;
     --font-body: var(--font-sans);
     --font-mono: 'JetBrains Mono', ui-monospace, 'Cascadia Mono', 'SFMono-Regular', Menlo, Consolas, monospace;
@@ -1207,35 +1208,73 @@ input:-webkit-autofill:active {
 .main-wrapper {
     flex: 1;
     min-width: 0;
-    padding: 8px 14px 64px;
+    padding: 20px 18px 64px;
     max-width: 1400px;
     margin: 0 auto;
     width: 100%;
 }
 
-/* ── Topbar (Floating Ovira Glass Header) ── */
-.topbar {
-    display: flex;
-    justify-content: space-between;
+/* ── Mobile-Only Drawer Trigger Bar (Hidden on Desktop) ── */
+.mobile-drawer-bar {
+    display: none;
     align-items: center;
-    padding: 12px 18px;
-    background: var(--glass);
-    backdrop-filter: blur(20px) saturate(1.3);
-    -webkit-backdrop-filter: blur(20px) saturate(1.3);
-    border: 1px solid var(--line);
-    border-radius: var(--r-lg);
-    margin-bottom: 20px;
-    box-shadow: var(--card-shadow);
-    min-width: 0;
     gap: 12px;
+    margin-bottom: 14px;
 }
 
-.topbar-left {
+.mobile-brand-label {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -0.02em;
+}
+
+/* ── Page Title Header (Clean Display Heading + Muted Subtitle) ── */
+.page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin: 2px 0 22px 0;
+    padding: 0 2px;
+}
+
+.page-header-text {
+    min-width: 0;
+    flex: 1 1 320px;
+}
+
+.page-title {
+    font-family: var(--font-page-title);
+    font-size: clamp(1.7rem, 2.35vw, 2.08rem);
+    font-weight: 700;
+    line-height: 1.14;
+    letter-spacing: -0.03em;
+    color: var(--ink);
+    margin: 0;
+}
+
+.page-subtitle {
+    font-family: var(--font-sans);
+    font-size: 0.93rem;
+    font-weight: 400;
+    color: var(--ink-3);
+    line-height: 1.48;
+    margin: 6px 0 0 0;
+}
+
+.page-header-actions {
     display: flex;
     align-items: center;
-    gap: 12px;
-    min-width: 0;
-    flex-shrink: 1;
+    gap: 8px;
+    flex-wrap: wrap;
+    flex-shrink: 0;
+}
+
+.updates-page-shell {
+    max-width: 780px;
+    width: 100%;
 }
 
 .btn-hamburger {
@@ -1257,34 +1296,6 @@ input:-webkit-autofill:active {
 .btn-hamburger:hover {
     background: var(--raise-3);
     border-color: var(--line-strong);
-}
-
-.breadcrumb-container {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 0.92rem;
-    min-width: 0;
-    white-space: nowrap;
-}
-.breadcrumb-root { color: var(--ink-3); font-weight: 500; flex-shrink: 0; }
-.breadcrumb-sep { color: var(--ink-3); flex-shrink: 0; }
-.breadcrumb-current {
-    font-family: var(--font-display);
-    color: var(--ink);
-    font-weight: 650;
-    letter-spacing: -0.02em;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-.session-controls,
-.topbar-actions {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    flex-shrink: 0;
 }
 
 .sys-metrics {
@@ -4624,28 +4635,13 @@ input:-webkit-autofill:active {
     }
 }
 
-/* Compact Laptop Viewport (<= 1280px): Auto-condensation & icon-only actions */
+/* Compact Laptop Viewport (<= 1280px): Auto-condensation */
 @media (max-width: 1280px) {
     .ram-full {
         display: none !important;
     }
     .ram-short {
         display: inline !important;
-    }
-    .user-pill .user-label {
-        display: none !important;
-    }
-    .topbar .btn-sm .btn-text {
-        display: none !important;
-    }
-    .topbar .btn-sm {
-        width: 36px;
-        height: 36px;
-        min-width: 36px;
-        min-height: 36px;
-        padding: 0;
-        border-radius: 10px;
-        justify-content: center;
     }
 }
 
@@ -4656,6 +4652,7 @@ input:-webkit-autofill:active {
         gap: 0;
     }
 
+    .mobile-drawer-bar { display: flex; }
     .btn-hamburger { display: inline-flex; }
     .btn-sidebar-close { display: inline-flex; }
 
@@ -4823,6 +4820,7 @@ input:-webkit-autofill:active {
         min-width: 120px;
     }
 
+    .page-header,
     .panel-header {
         flex-direction: column;
         align-items: stretch;
@@ -8216,7 +8214,6 @@ input#formCategory::-webkit-list-button {
 /* Ensure language toggle button ALWAYS displays "فارسی" in Vazirmatn font regardless of current mode */
 .lang-toggle-btn,
 .lang-toggle-btn span,
-#topbarLangName,
 #sidebarLangLabel,
 #loginLangName {
     font-family: 'Vazirmatn', -apple-system, BlinkMacSystemFont, 'Segoe UI', Tahoma, Arial, sans-serif !important;
@@ -8341,24 +8338,19 @@ input#formCategory::-webkit-list-button {
     }
 }
 
-/* 6. Topbar in RTL */
-[dir="rtl"] .topbar {
+/* 6. Page Header & Mobile Drawer Bar in RTL */
+[dir="rtl"] .page-title {
+    font-family: 'Vazirmatn', system-ui, sans-serif;
+    letter-spacing: 0;
+    font-weight: 800;
+}
+
+[dir="rtl"] .page-subtitle {
+    line-height: 1.65;
+}
+
+[dir="rtl"] .mobile-drawer-bar {
     flex-direction: row;
-}
-
-[dir="rtl"] .topbar-actions {
-    margin-right: auto !important;
-    margin-left: 0 !important;
-}
-
-[dir="rtl"] .breadcrumb-container {
-    margin-right: 12px;
-    margin-left: 0;
-}
-
-[dir="rtl"] .breadcrumb-sep {
-    transform: scaleX(-1);
-    display: inline-block;
 }
 
 /* 7. Login Screen in RTL */

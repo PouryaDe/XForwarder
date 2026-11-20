@@ -3,16 +3,35 @@
  */
 
 import { t } from "./i18n.js";
+import { BASE_PATH } from "./api.js";
 import { updateNavIndicator } from "./effects.js";
 
-export const SECTIONS = ["rules", "overview", "services", "security", "logs"];
+export const SECTIONS = ["rules", "overview", "services", "security", "updates", "logs"];
+
+export function getSectionFromLocation() {
+    const pathParts = String(window.location.pathname || "")
+        .replace(/\/index\.html?$/i, "")
+        .replace(/\/+$/, "")
+        .split("/")
+        .filter(Boolean);
+    const lastPart = (pathParts[pathParts.length - 1] || "").toLowerCase();
+    if (SECTIONS.includes(lastPart)) {
+        return lastPart;
+    }
+    // One-time fallback if a legacy bookmark uses a hash; immediately normalized without #
+    const legacyHash = (window.location.hash || "").replace("#", "").toLowerCase().trim();
+    if (legacyHash && SECTIONS.includes(legacyHash)) {
+        return legacyHash;
+    }
+    return "rules";
+}
 
 export function initNavigation() {
     const navItems = document.querySelectorAll(".nav-item[data-section]");
     navItems.forEach(item => {
         item.addEventListener("click", () => {
             const section = item.getAttribute("data-section");
-            switchSection(section);
+            switchSection(section, { pushHistory: true });
             closeMobileSidebar();
         });
     });
@@ -32,17 +51,12 @@ export function initNavigation() {
         backdrop.addEventListener("click", closeMobileSidebar);
     }
 
-    // Support URL hash routing on initial load and popstate/hashchange
-    const hash = (window.location.hash || "").replace("#", "").toLowerCase().trim();
-    if (hash && SECTIONS.includes(hash)) {
-        switchSection(hash);
-    }
+    // Initialize section from clean URL pathname (no # hash in URL)
+    const initialSection = getSectionFromLocation();
+    switchSection(initialSection, { replaceHistory: true });
 
-    window.addEventListener("hashchange", () => {
-        const currentHash = (window.location.hash || "").replace("#", "").toLowerCase().trim();
-        if (currentHash && SECTIONS.includes(currentHash)) {
-            switchSection(currentHash);
-        }
+    window.addEventListener("popstate", () => {
+        switchSection(getSectionFromLocation(), { pushHistory: false, replaceHistory: false });
     });
 
     window.addEventListener("xfwd:langchange", () => {
@@ -54,13 +68,16 @@ export function initNavigation() {
     requestAnimationFrame(updateNavIndicator);
 }
 
-export function switchSection(sectionId) {
+export function switchSection(sectionId, options = {}) {
     if (!sectionId) return;
     let sec = String(sectionId).toLowerCase().trim();
     if (sec.startsWith("section")) {
         sec = sec.replace(/^section/, "").toLowerCase();
     }
     if (!SECTIONS.includes(sec)) sec = "rules";
+
+    const pushHistory = Boolean(options.pushHistory);
+    const replaceHistory = Boolean(options.replaceHistory);
 
     // Deactivate nav items
     const navItems = document.querySelectorAll(".sidebar-nav .nav-item, .nav-item[data-section]");
@@ -88,23 +105,16 @@ export function switchSection(sectionId) {
         }
     });
 
-    // Update breadcrumb
-    const breadcrumb = document.getElementById("breadcrumbSection") || document.getElementById("breadcrumbCurrent");
-    if (breadcrumb) {
-        const titles = {
-            rules: "Port Matrix",
-            overview: "Overview & Health",
-            services: "Relay Services",
-            security: "Security & Access",
-            logs: "Logs & Probes"
-        };
-        breadcrumb.innerText = t(`nav.${sec}`, {}, titles[sec] || "Dashboard");
-    }
-
-    // Sync URL hash
-    if (window.location.hash !== `#${sec}`) {
+    // Sync clean path URL without # hash
+    const targetPath = `${BASE_PATH || ""}/${sec}${window.location.search || ""}`;
+    const currentFull = `${window.location.pathname || "/"}${window.location.search || ""}${window.location.hash || ""}`;
+    if (currentFull !== targetPath && (pushHistory || replaceHistory || window.location.hash)) {
         try {
-            history.replaceState(null, "", `#${sec}`);
+            if (pushHistory) {
+                history.pushState({ section: sec }, "", targetPath);
+            } else {
+                history.replaceState({ section: sec }, "", targetPath);
+            }
         } catch (_) {}
     }
 
@@ -117,7 +127,7 @@ export function switchSection(sectionId) {
             window.loadOverviewTrafficChart();
         }
     }
-    if (sec === "security" && typeof window.fetchSystemVersionInfo === "function") {
+    if (sec === "updates" && typeof window.fetchSystemVersionInfo === "function") {
         window.fetchSystemVersionInfo(false);
     }
 }

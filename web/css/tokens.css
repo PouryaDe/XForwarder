@@ -109,6 +109,7 @@
 
     /* Typography */
     --font-display: 'Bricolage Grotesque', 'Vazirmatn', system-ui, -apple-system, sans-serif;
+    --font-page-title: 'Inter', 'Hanken Grotesk', 'Vazirmatn', system-ui, -apple-system, sans-serif;
     --font-sans: 'Hanken Grotesk', 'Vazirmatn', system-ui, -apple-system, sans-serif;
     --font-body: var(--font-sans);
     --font-mono: 'JetBrains Mono', ui-monospace, 'Cascadia Mono', 'SFMono-Regular', Menlo, Consolas, monospace;

@@ -3289,28 +3289,13 @@
     }
 }
 
-/* Compact Laptop Viewport (<= 1280px): Auto-condensation & icon-only actions */
+/* Compact Laptop Viewport (<= 1280px): Auto-condensation */
 @media (max-width: 1280px) {
     .ram-full {
         display: none !important;
     }
     .ram-short {
         display: inline !important;
-    }
-    .user-pill .user-label {
-        display: none !important;
-    }
-    .topbar .btn-sm .btn-text {
-        display: none !important;
-    }
-    .topbar .btn-sm {
-        width: 36px;
-        height: 36px;
-        min-width: 36px;
-        min-height: 36px;
-        padding: 0;
-        border-radius: 10px;
-        justify-content: center;
     }
 }
 
@@ -3321,6 +3306,7 @@
         gap: 0;
     }
 
+    .mobile-drawer-bar { display: flex; }
     .btn-hamburger { display: inline-flex; }
     .btn-sidebar-close { display: inline-flex; }
 
@@ -3488,6 +3474,7 @@
         min-width: 120px;
     }
 
+    .page-header,
     .panel-header {
         flex-direction: column;
         align-items: stretch;

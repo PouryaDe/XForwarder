@@ -183,8 +183,7 @@ class TestI18nAndRTL(unittest.TestCase):
                       "Head pre-hydration must set dir='rtl'")
 
     def test_language_toggle_buttons_in_html(self):
-        """Verify language toggle buttons exist in Topbar, Sidebar, and Login screen."""
-        self.assertIn('id="btnLangToggle"', self.index_html_content, "Topbar language toggle button must exist")
+        """Verify language toggle buttons exist in Sidebar and Login screen."""
         self.assertIn('id="btnSidebarLangToggle"', self.index_html_content, "Sidebar language toggle button must exist")
         self.assertIn('id="btnLoginLangToggle"', self.index_html_content, "Login language toggle button must exist")
 
@@ -263,8 +262,8 @@ class TestI18nAndRTL(unittest.TestCase):
 
         # Language toggle button must always display Vazirmatn for "فارسی"
         self.assertIn('.lang-toggle-btn,', self.rtl_css_content)
-        self.assertIn('#topbarLangName,', self.rtl_css_content)
         self.assertIn('#sidebarLangLabel,', self.rtl_css_content)
+        self.assertIn('#loginLangName', self.rtl_css_content)
 
     def test_rtl_alignment_rules_and_navigation(self):
         """Verify complete RTL directional alignment across sidebar menus, modals, selects, and tables."""

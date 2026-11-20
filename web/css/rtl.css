@@ -148,7 +148,6 @@
 /* Ensure language toggle button ALWAYS displays "فارسی" in Vazirmatn font regardless of current mode */
 .lang-toggle-btn,
 .lang-toggle-btn span,
-#topbarLangName,
 #sidebarLangLabel,
 #loginLangName {
     font-family: 'Vazirmatn', -apple-system, BlinkMacSystemFont, 'Segoe UI', Tahoma, Arial, sans-serif !important;
@@ -273,24 +272,19 @@
     }
 }
 
-/* 6. Topbar in RTL */
-[dir="rtl"] .topbar {
+/* 6. Page Header & Mobile Drawer Bar in RTL */
+[dir="rtl"] .page-title {
+    font-family: 'Vazirmatn', system-ui, sans-serif;
+    letter-spacing: 0;
+    font-weight: 800;
+}
+
+[dir="rtl"] .page-subtitle {
+    line-height: 1.65;
+}
+
+[dir="rtl"] .mobile-drawer-bar {
     flex-direction: row;
-}
-
-[dir="rtl"] .topbar-actions {
-    margin-right: auto !important;
-    margin-left: 0 !important;
-}
-
-[dir="rtl"] .breadcrumb-container {
-    margin-right: 12px;
-    margin-left: 0;
-}
-
-[dir="rtl"] .breadcrumb-sep {
-    transform: scaleX(-1);
-    display: inline-block;
 }
 
 /* 7. Login Screen in RTL */

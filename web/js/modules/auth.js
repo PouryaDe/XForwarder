@@ -517,7 +517,6 @@ export function initAuth(onLoginSuccess, onLogout) {
     const capsLockWarning = document.getElementById("capsLockWarning");
     const loginForm = document.getElementById("loginForm");
     const btnLogin = document.getElementById("btnLogin");
-    const btnLogout = document.getElementById("btnLogout");
 
     if (btnToggleLoginPwd && loginPasswordInput && eyeIconLogin) {
         setupPasswordToggle(btnToggleLoginPwd, loginPasswordInput, eyeIconLogin);
@@ -559,9 +558,6 @@ export function initAuth(onLoginSuccess, onLogout) {
         });
     }
 
-    if (btnLogout) {
-        btnLogout.addEventListener("click", () => handleLogout(onLogout));
-    }
     const btnSidebarLogout = document.getElementById("btnSidebarLogout");
     if (btnSidebarLogout) {
         btnSidebarLogout.addEventListener("click", () => handleLogout(onLogout));
