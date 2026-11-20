@@ -279,10 +279,6 @@
     font-weight: 800;
 }
 
-[dir="rtl"] .page-subtitle {
-    line-height: 1.65;
-}
-
 [dir="rtl"] .mobile-drawer-bar {
     flex-direction: row;
 }
@@ -890,7 +886,8 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    color: var(--accent-cyan);
+    color: currentColor;
+    opacity: 0.85;
 }
 
 .sidebar-footer-toggles .sidebar-lang-toggle,

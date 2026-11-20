@@ -50,7 +50,7 @@ export function toggleTheme(e) {
 export function updateThemeToggleUI() {
     const current = document.documentElement.getAttribute("data-theme") || "dark";
     const isDark = current === "dark";
-    const labelText = isDark ? "Light Mode" : "Dark Mode";
+    const labelText = isDark ? "Light" : "Dark";
     const titleText = isDark ? "Switch to Light Mode" : "Switch to Dark Mode";
 
     const labels = document.querySelectorAll(".theme-toggle-label");

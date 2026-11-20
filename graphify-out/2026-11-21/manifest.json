@@ -6,9 +6,9 @@
     "semantic_hash": ""
   },
   "core/web_server.py": {
-    "mtime": 1795198690.985011,
-    "seen": 1795198898.4347155,
-    "ast_hash": "b5c81af8b6b968060ff3459b322e9538",
+    "mtime": 1795209102.7225027,
+    "seen": 1795209861.8295455,
+    "ast_hash": "2d3c7f760b35a663d3a84409102fba5a",
     "semantic_hash": ""
   },
   "web/app.js": {
@@ -84,9 +84,9 @@
     "semantic_hash": ""
   },
   "web/index.html": {
-    "mtime": 1795206420.505231,
-    "seen": 1795207068.0941138,
-    "ast_hash": "ca454fb424801b51a4685219e335f3d2",
+    "mtime": 1795209272.2010233,
+    "seen": 1795209861.8296306,
+    "ast_hash": "1ea66c29d13aaf04b7e2c3818d304b14",
     "semantic_hash": ""
   },
   "xforwarder.sh": {
@@ -288,9 +288,9 @@
     "semantic_hash": ""
   },
   "tests/test_ui_and_api_edge_cases.py": {
-    "mtime": 1795206634.5784664,
-    "seen": 1795207068.0940444,
-    "ast_hash": "85f0aa84dfeafe22ab79427738f5459d",
+    "mtime": 1795209747.649055,
+    "seen": 1795209861.8295667,
+    "ast_hash": "cc08bd885536101e9c8fe42f09ad0443",
     "semantic_hash": ""
   },
   "tests/test_network_interfaces.py": {
@@ -474,15 +474,15 @@
     "semantic_hash": ""
   },
   "web/js/modules/api.js": {
-    "mtime": 1792857219.2236657,
-    "seen": 1792857512.8179798,
-    "ast_hash": "db50fdd66f2f3baf903a333299a8163f",
+    "mtime": 1795209105.667412,
+    "seen": 1795209861.8295689,
+    "ast_hash": "c07a3ffc4ddefa6011317f280f6ad4b5",
     "semantic_hash": ""
   },
   "web/js/modules/auth.js": {
-    "mtime": 1795178518.749672,
-    "seen": 1795179650.8238852,
-    "ast_hash": "b544f16e6dc735532a140dfa2bc4fd0b",
+    "mtime": 1795209114.2529528,
+    "seen": 1795209861.8295698,
+    "ast_hash": "ccb7e9481c59fb5f49848565f5bcc417",
     "semantic_hash": ""
   },
   "web/js/modules/import_export.js": {
@@ -498,9 +498,9 @@
     "semantic_hash": ""
   },
   "web/js/modules/navigation.js": {
-    "mtime": 1795178428.7582798,
-    "seen": 1795179650.8238955,
-    "ast_hash": "8ed6d2d57c7edb01f1b59b8bcd530a84",
+    "mtime": 1795209108.5284004,
+    "seen": 1795209861.8295746,
+    "ast_hash": "d3e08c8dc81411185a5c430a429a7c00",
     "semantic_hash": ""
   },
   "web/js/modules/quality.js": {
@@ -618,15 +618,15 @@
     "semantic_hash": ""
   },
   "web/js/modules/i18n.js": {
-    "mtime": 1795206623.0608,
-    "seen": 1795207068.0940514,
-    "ast_hash": "a33744bfd7179d2d45c847eec35c6046",
+    "mtime": 1795209245.3957877,
+    "seen": 1795209861.8295715,
+    "ast_hash": "87c1d09ca92f6b0ac4ee4b5a6547964c",
     "semantic_hash": ""
   },
   "tests/test_i18n_and_rtl.py": {
-    "mtime": 1795180756.602995,
-    "seen": 1795180788.4341228,
-    "ast_hash": "cf3540b20250a749ca1d5659ddf36afc",
+    "mtime": 1795209665.485469,
+    "seen": 1795209861.8295517,
+    "ast_hash": "731998a4aaa35c1e8de4a6f8966c224e",
     "semantic_hash": ""
   },
   "tests/test_traffic_aware_failover.py": {

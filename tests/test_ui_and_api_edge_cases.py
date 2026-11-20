@@ -933,7 +933,7 @@ class TestUIAndAPIEdgeCases(unittest.TestCase):
         self.assertIn(".btn-danger {", css)
         self.assertIn("color: var(--bad);", css)
 
-        # 4. Priority, Brand & Avatar Elements
+        # 4. Priority, Brand & Simplified Sidebar User Elements
         self.assertIn(".add-prio-btn {", css)
         self.assertIn(".preset-chip {", css)
         self.assertIn(".btn-path-test {", css)
@@ -941,10 +941,8 @@ class TestUIAndAPIEdgeCases(unittest.TestCase):
         self.assertIn(".logo-orb {", css)
         self.assertIn(".logo-orb svg {", css)
         self.assertIn(".brand-badge {", css)
-        self.assertIn(".user-avatar {", css)
-        self.assertIn(".user-avatar svg {", css)
         self.assertIn(".sidebar-user {", css)
-        self.assertIn(".user-meta .user-role {", css)
+        self.assertIn(".user-meta .user-name {", css)
         self.assertIn("-webkit-font-smoothing: antialiased;", css)
 
     def test_system_version_and_update_apis(self):
@@ -2842,11 +2840,17 @@ class TestUIAndAPIEdgeCases(unittest.TestCase):
         self.assertLess(upd_start, html.index('id="cardSystemUpdate"'))
         self.assertNotIn('id="cardSystemUpdate"', html[sec_start:upd_start])
 
-        # 3. Clean page-header with h1.page-title & p.page-subtitle on all 6 sections
+        # 3. Clean page-header with h1.page-title on all 6 sections (without subtitle clutter)
         self.assertEqual(html.count('<h1 class="page-title"'), 6)
-        self.assertEqual(html.count('<p class="page-subtitle"'), 6)
+        self.assertNotIn('<p class="page-subtitle"', html)
         self.assertIn('.page-title {', layout_css)
         self.assertIn('--font-page-title', layout_css)
+        # Simplified sidebar footer & horizontal service rows
+        self.assertNotIn('class="user-avatar"', html)
+        self.assertNotIn('class="user-role"', html)
+        self.assertIn('id="sidebarLangLabel">FA<', html)
+        self.assertIn('id="themeToggleLabel">Light<', html)
+        self.assertEqual(html.count('service-row-card'), 3)
 
         # 4. Hash-free path routing in navigation.js & BASE_PATH stripping in api.js
         self.assertIn('"updates"', nav_js)

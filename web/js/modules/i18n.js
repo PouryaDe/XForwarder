@@ -195,8 +195,8 @@ export const TRANSLATIONS = {
         "services.binary_version": "Binary Version",
         "services.reload_mechanism": "Reload Mechanism",
         "services.active_bindings": "Active Bindings",
-        "services.reload_haproxy": "Reload HAProxy",
-        "services.restart_haproxy": "Restart HAProxy",
+        "services.reload_haproxy": "Reload",
+        "services.restart_haproxy": "Restart",
         "services.nftables_title": "NFTables Kernel DNAT",
         "services.nftables_sub": "Layer-3 Kernel Tunnel Forwarding",
         "services.nftables_desc": "High-speed kernel DNAT over GRE, IPIP, FakeTCP, or AmneziaWG tunnels. Zero interference with system firewall.",
@@ -204,13 +204,13 @@ export const TRANSLATIONS = {
         "services.kernel_status": "Kernel Status",
         "services.flush_safety": "Flush Safety",
         "services.flush_safety_val": "Never executes flush ruleset",
-        "services.sync_nftables": "Sync NFTables Table",
-        "services.restart_nftables": "Restart NFTables",
+        "services.sync_nftables": "Sync",
+        "services.restart_nftables": "Restart",
         "services.nginx_title": "Nginx Stream Proxy Engine",
         "services.nginx_sub": "Layer-4 High-Throughput Stream Forwarder",
         "services.nginx_desc": "High-concurrency stream TCP/UDP proxy with epoll multi-accept architecture. Managed dynamically by XForwarder.",
-        "services.reload_nginx": "Reload Nginx",
-        "services.restart_nginx": "Restart Nginx",
+        "services.reload_nginx": "Reload",
+        "services.restart_nginx": "Restart",
         "services.name_all": "All Relay Services & Daemons",
         "services.name_engine": "XForwarder Core Failover Engine",
         "services.name_haproxy": "HAProxy Relay Service",
@@ -439,8 +439,8 @@ export const TRANSLATIONS = {
         "common.testing": "Testing...",
         "common.copied": "Copied to clipboard!",
         "common.copy_fail": "Failed to copy to clipboard",
-        "theme.light": "Light Mode",
-        "theme.dark": "Dark Mode"
+        "theme.light": "Light",
+        "theme.dark": "Dark"
     },
     fa: {
         // App & Brand
@@ -633,8 +633,8 @@ export const TRANSLATIONS = {
         "services.binary_version": "نسخه برنامه",
         "services.reload_mechanism": "روش بارگذاری مجدد",
         "services.active_bindings": "پورت‌های فعال متصل",
-        "services.reload_haproxy": "بارگذاری مجدد HAProxy",
-        "services.restart_haproxy": "راه‌اندازی مجدد HAProxy",
+        "services.reload_haproxy": "ریلود",
+        "services.restart_haproxy": "ریستارت",
         "services.nftables_title": "دی‌نت هسته NFTables",
         "services.nftables_sub": "فورواردینگ لایه ۳ تونل در سطح هسته",
         "services.nftables_desc": "فورواردینگ پرسرعت روی تونل‌های GRE، IPIP، FakeTCP یا AmneziaWG بدون تداخل با فایروال سیستم.",
@@ -642,13 +642,13 @@ export const TRANSLATIONS = {
         "services.kernel_status": "وضعیت هسته",
         "services.flush_safety": "ایمنی دستورات",
         "services.flush_safety_val": "هرگز دستور حذف کل قوانین فایروال اجرا نمی‌شود",
-        "services.sync_nftables": "همگام‌سازی جدول NFTables",
-        "services.restart_nftables": "راه‌اندازی مجدد NFTables",
+        "services.sync_nftables": "همگام‌سازی",
+        "services.restart_nftables": "ریستارت",
         "services.nginx_title": "موتور پروکسی جریان Nginx",
         "services.nginx_sub": "فورواردینگ با کارایی بالا در لایه ۴",
         "services.nginx_desc": "پروکسی همزمان TCP/UDP با معماری چندگانه epoll، مدیریت‌شده به صورت پویا توسط XForwarder.",
-        "services.reload_nginx": "بارگذاری مجدد Nginx",
-        "services.restart_nginx": "راه‌اندازی مجدد Nginx",
+        "services.reload_nginx": "ریلود",
+        "services.restart_nginx": "ریستارت",
         "services.name_all": "تمامی سرویس‌ها و دیمون‌های رله",
         "services.name_engine": "موتور هسته فیل‌اور XForwarder",
         "services.name_haproxy": "سرویس رله HAProxy",
@@ -1042,14 +1042,15 @@ export function applyI18nToDOM() {
 export function updateLangToggleUI() {
     const lang = getCurrentLang();
     const isFa = (lang === "fa");
-    const nextLabel = isFa ? "English" : "فارسی";
+    const nextShortLabel = isFa ? "EN" : "FA";
+    const nextLoginLabel = isFa ? "English" : "فارسی";
     const nextTitle = isFa ? "Switch to English" : "تغییر زبان به فارسی";
 
     const sidebarLang = document.getElementById("sidebarLangLabel");
-    if (sidebarLang) sidebarLang.textContent = nextLabel;
+    if (sidebarLang) sidebarLang.textContent = nextShortLabel;
 
     const loginLang = document.getElementById("loginLangName");
-    if (loginLang) loginLang.textContent = nextLabel;
+    if (loginLang) loginLang.textContent = nextLoginLabel;
 
     const btnSidebarLang = document.getElementById("btnSidebarLangToggle");
     if (btnSidebarLang) btnSidebarLang.title = nextTitle;
@@ -1057,12 +1058,10 @@ export function updateLangToggleUI() {
     const btnLoginLang = document.getElementById("btnLoginLangToggle");
     if (btnLoginLang) btnLoginLang.title = nextTitle;
 
-    // Update Theme Toggle button labels based on current active language & theme
+    // Update Theme Toggle button labels concisely as Light / Dark
     const isDark = (document.documentElement.getAttribute("data-theme") === "dark");
     const themeLabels = document.querySelectorAll(".theme-toggle-label");
-    const themeLabelText = isFa
-        ? (isDark ? "حالت روشن" : "حالت تاریک")
-        : (isDark ? "Light Mode" : "Dark Mode");
+    const themeLabelText = isDark ? "Light" : "Dark";
     themeLabels.forEach(el => { el.textContent = themeLabelText; });
 
     const btnTheme = document.getElementById("btnThemeToggle");
