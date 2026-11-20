@@ -423,7 +423,8 @@ class TrafficCollector:
         self,
         ports: Optional[List[int]] = None,
         tunnel_ifaces: Optional[List[str]] = None,
-        haproxy_sock: str = "/run/haproxy/admin.sock"
+        haproxy_sock: str = "/run/haproxy/admin.sock",
+        port_range_map: Optional[Dict[int, int]] = None
     ) -> Dict[str, Any]:
         """
         Executes one collection cycle:
@@ -474,10 +475,11 @@ class TrafficCollector:
                 _record_delta("tunnel_type", "direct_ipv6", rx_delta, tx_delta)
 
             # 2. Process Ports (NFTables source - Kernel Tunnel DNAT)
-            for port, stats in raw_nft.items():
-                if ports is not None and port not in ports:
+            for raw_port, stats in raw_nft.items():
+                target_port = (port_range_map or {}).get(raw_port, raw_port)
+                if ports is not None and target_port not in ports and raw_port not in ports:
                     continue
-                key = f"port:{port}:nftables"
+                key = f"port:{raw_port}:nftables"
                 prev = self._last_counters.get(key)
                 rx_delta = stats["rx_bytes"] - prev["rx_bytes"] if prev and stats["rx_bytes"] >= prev["rx_bytes"] else stats["rx_bytes"]
                 tx_delta = stats["tx_bytes"] - prev["tx_bytes"] if prev and stats["tx_bytes"] >= prev["tx_bytes"] else stats["tx_bytes"]
@@ -488,8 +490,8 @@ class TrafficCollector:
 
                 self._last_counters[key] = {"rx_bytes": stats["rx_bytes"], "tx_bytes": stats["tx_bytes"]}
 
-                _record_delta("port", str(port), rx_delta, tx_delta)
-                _record_delta("port_path", f"{port}:nftables", rx_delta, tx_delta)
+                _record_delta("port", str(target_port), rx_delta, tx_delta)
+                _record_delta("port_path", f"{target_port}:nftables", rx_delta, tx_delta)
                 _record_delta("method", "nftables", rx_delta, tx_delta)
                 _record_delta("tunnel_type", "tunnel_dnat", rx_delta, tx_delta)
 
@@ -497,9 +499,14 @@ class TrafficCollector:
             for iface, stats in raw_net_dev.items():
                 if tunnel_ifaces is not None and iface not in tunnel_ifaces:
                     continue
-                # Skip loopback or primary wan if not specified
-                if iface in ("lo", "docker0"):
-                    continue
+                if tunnel_ifaces is None:
+                    lower_if = iface.lower().strip()
+                    if lower_if in ("lo", "gre0", "gretap0", "erspan0", "tunl0", "sit0", "ip6tnl0", "ip6gre0", "ip6erspan0", "dummy0", "teql0"):
+                        continue
+                    if lower_if.startswith(("docker", "veth", "virbr", "br-", "eth", "ens", "enp", "eno", "em", "wl")):
+                        continue
+                    if os.path.exists(f"/sys/class/net/{iface}/device"):
+                        continue
 
                 key = f"tunnel:{iface}"
                 prev = self._last_counters.get(key)

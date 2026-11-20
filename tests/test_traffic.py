@@ -413,6 +413,41 @@ class TestTrafficSubsystem(unittest.TestCase):
         self.assertIn("method:nftables", type_keys)
         self.assertIn("tunnel_type:gre", type_keys)
 
+    def test_physical_wan_excluded_from_tunnels_and_split_range_rollup(self):
+        """Verifies eth0 physical NIC is excluded when tunnel_ifaces=None (no 2x double count)
+        and split-range NFTables counters roll up to their parent canonical rule port."""
+        collector = TrafficCollector(db_path=self.db_path)
+        range_map = {1000: 1000, 1002: 1000, 2054: 1000}
+
+        with patch("core.traffic.read_haproxy_port_stats", return_value={}), \
+             patch("core.traffic.read_nftables_port_stats", return_value={
+                 1002: {"rx_bytes": 1000, "tx_bytes": 2000},
+                 2054: {"rx_bytes": 5000, "tx_bytes": 10000},
+             }), \
+             patch("core.traffic.read_proc_net_dev", return_value={
+                 "eth0": {"rx_bytes": 90000, "tx_bytes": 90000},
+                 "backhaul1": {"rx_bytes": 10000, "tx_bytes": 3000},
+             }):
+            collector.collect_cycle(ports=[1000], port_range_map=range_map)
+
+        with patch("core.traffic.read_haproxy_port_stats", return_value={}), \
+             patch("core.traffic.read_nftables_port_stats", return_value={
+                 1002: {"rx_bytes": 1500, "tx_bytes": 3000},
+                 2054: {"rx_bytes": 7000, "tx_bytes": 14000},
+             }), \
+             patch("core.traffic.read_proc_net_dev", return_value={
+                 "eth0": {"rx_bytes": 150000, "tx_bytes": 150000},
+                 "backhaul1": {"rx_bytes": 15000, "tx_bytes": 4000},
+             }):
+            collector.collect_cycle(ports=[1000], port_range_map=range_map)
+
+        summary = get_traffic_summary(period="24h", db_path=self.db_path)
+        self.assertNotIn("tunnel:eth0", summary["entities"])
+        self.assertIn("tunnel:backhaul1", summary["entities"])
+        self.assertIn("port:1000", summary["entities"])
+        self.assertEqual(summary["entities"]["port:1000"]["rx_bytes"], 2500)
+        self.assertEqual(summary["entities"]["port:1000"]["tx_bytes"], 5000)
+
 
 if __name__ == "__main__":
     unittest.main()

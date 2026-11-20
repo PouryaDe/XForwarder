@@ -1,8 +1,8 @@
 {
   "core/engine.py": {
-    "mtime": 1795201769.794446,
-    "seen": 1795201847.3119028,
-    "ast_hash": "deaf3bb77eb2a8597f7fc636eaa73e40",
+    "mtime": 1795216091.6473405,
+    "seen": 1795216190.1719403,
+    "ast_hash": "6873515ece6a862b4db5d0289bb436aa",
     "semantic_hash": ""
   },
   "core/web_server.py": {
@@ -288,9 +288,9 @@
     "semantic_hash": ""
   },
   "tests/test_ui_and_api_edge_cases.py": {
-    "mtime": 1795212876.2759304,
-    "seen": 1795213080.1579604,
-    "ast_hash": "2fc8073c90b4fbf93ddbf64490cf22d8",
+    "mtime": 1795216098.739563,
+    "seen": 1795216190.1719732,
+    "ast_hash": "7b2c2312b467b45b6397dbc313c9e521",
     "semantic_hash": ""
   },
   "tests/test_network_interfaces.py": {
@@ -414,15 +414,15 @@
     "semantic_hash": ""
   },
   "core/traffic.py": {
-    "mtime": 1795184358.6058142,
-    "seen": 1795185105.3091714,
-    "ast_hash": "4174836ef2bff9669232984aa948ecfa",
+    "mtime": 1795216087.8175008,
+    "seen": 1795216190.171952,
+    "ast_hash": "ad198d2df1217b321795d50b4a195a90",
     "semantic_hash": ""
   },
   "tests/test_traffic.py": {
-    "mtime": 1792793859.236118,
-    "seen": 1792793950.06834,
-    "ast_hash": "530be91fe0b24cb4b4661d78df8a9540",
+    "mtime": 1795216095.2036247,
+    "seen": 1795216190.1719713,
+    "ast_hash": "65c142716ff2c5759af24dd7aaef4b87",
     "semantic_hash": ""
   },
   ".agents/experiences/014-per-port-and-per-tunnel-traffic-accounting-and-delta-engine.md": {
@@ -468,9 +468,9 @@
     "semantic_hash": ""
   },
   "core/system_info.py": {
-    "mtime": 1792806303.1807218,
-    "seen": 1792809162.2790804,
-    "ast_hash": "8c61c1cc8e4c22a7556e1492cf84e5cd",
+    "mtime": 1795216080.3443465,
+    "seen": 1795216190.171951,
+    "ast_hash": "2e133fb6dc25ef1b7f7392adfd5a0e7d",
     "semantic_hash": ""
   },
   "web/js/modules/api.js": {

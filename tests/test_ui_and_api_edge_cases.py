@@ -1773,6 +1773,19 @@ class TestUIAndAPIEdgeCases(unittest.TestCase):
             self.assertIn("net_rx_rate_mb", mocked_stats)
             self.assertIn("net_tx_rate_mb", mocked_stats)
 
+        # Verify virtual tunnel interfaces (backhaul1, ipip*) do NOT double-count alongside eth0
+        tunnel_netdev_mock = (
+            "Inter-|   Receive                                                |  Transmit\n"
+            " face |bytes    packets errs drop fifo frame compressed multicast|bytes    packets errs drop fifo colls carrier compressed\n"
+            "  eth0: 104857600 1000 0 0 0 0 0 0 104857600 1000 0 0 0 0 0 0\n"
+            "backhaul1: 104857600 1000 0 0 0 0 0 0 10485760 100 0 0 0 0 0 0\n"
+        )
+        with patch("os.path.exists", side_effect=lambda p: p == "/proc/net/dev"), \
+             patch("builtins.open", side_effect=lambda *a, **kw: __import__("io").StringIO(tunnel_netdev_mock)):
+            no_double = get_system_stats()
+            self.assertEqual(no_double["net_rx_mb"], 100.0)
+            self.assertEqual(no_double["net_tx_mb"], 100.0)
+
         # 3. HTML telemetry pill elements & mobile drawer controls
         html_path = os.path.join(REPO_ROOT, "web", "index.html")
         with open(html_path, "r", encoding="utf-8") as f:

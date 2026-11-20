@@ -1459,7 +1459,21 @@ class XForwarderEngine:
                     if self._traffic_collector and (now_ts - self._last_traffic_cycle >= 30.0):
                         try:
                             rule_ports_list = [int(r["port"]) for r in rules if r.get("port")]
-                            self._traffic_collector.collect_cycle(ports=rule_ports_list)
+                            prot_ports = get_protected_ports(self.config)
+                            port_range_map: Dict[int, int] = {}
+                            for r in rules:
+                                r_port = r.get("port")
+                                if not r_port:
+                                    continue
+                                r_port_int = int(r_port)
+                                s_p, e_p = get_rule_port_bounds(r)
+                                excl = set(r.get("excluded_ports") or [])
+                                if excl:
+                                    for sub_s, _ in split_port_interval_excluding(s_p, e_p, excl | prot_ports):
+                                        port_range_map[sub_s] = r_port_int
+                                elif r.get("port_range"):
+                                    port_range_map[s_p] = r_port_int
+                            self._traffic_collector.collect_cycle(ports=rule_ports_list, port_range_map=port_range_map)
                             self._last_traffic_cycle = now_ts
                         except Exception:
                             pass

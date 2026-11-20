@@ -45,6 +45,20 @@ DEFAULT_IGNORED_INTERFACES = frozenset({
 })
 
 
+VIRTUAL_TUNNEL_PREFIXES = (
+    "gre", "ipip", "tunl", "awg", "wg", "ftcp", "sit",
+    "ip6tnl", "ip6gre", "gnv", "vxlan", "tun", "tap", "backhaul"
+)
+
+
+def is_virtual_tunnel_interface(ifname: str) -> bool:
+    """Returns True for virtual overlay/tunnel interfaces that traverse a physical NIC."""
+    if not ifname:
+        return False
+    lower = ifname.lower().strip()
+    return lower.startswith(VIRTUAL_TUNNEL_PREFIXES)
+
+
 def is_ignored_interface(ifname: str) -> bool:
     """Returns True if the interface is a system loopback, default kernel fallback tunnel, or container bridge."""
     if not ifname:
@@ -163,27 +177,44 @@ def get_system_stats() -> dict:
     stats["tcp_connections"] = tcp_count
     stats["udp_connections"] = udp_count
 
-    # 4. Total Network Traffic & Live Speed (RX & TX in MB, excluding loopback)
+    # 4. Total Network Traffic & Live Speed (RX & TX in MB, avoiding physical + tunnel double counting)
     if os.path.exists("/proc/net/dev"):
         try:
-            total_rx_bytes = 0
-            total_tx_bytes = 0
+            phys_rx_bytes = 0
+            phys_tx_bytes = 0
+            phys_count = 0
+            virt_rx_bytes = 0
+            virt_tx_bytes = 0
             with open("/proc/net/dev", "r", encoding="utf-8") as f:
                 for line in f:
                     if ":" not in line:
                         continue
                     iface, data = line.split(":", 1)
-                    if is_ignored_interface(iface.strip()):
+                    iface_clean = iface.strip()
+                    if is_ignored_interface(iface_clean):
                         continue
                     fields = data.split()
                     if len(fields) >= 9:
                         try:
                             rx_b = int(fields[0])
                             tx_b = int(fields[8])
-                            total_rx_bytes += rx_b
-                            total_tx_bytes += tx_b
+                            if is_virtual_tunnel_interface(iface_clean):
+                                virt_rx_bytes += rx_b
+                                virt_tx_bytes += tx_b
+                            else:
+                                phys_rx_bytes += rx_b
+                                phys_tx_bytes += tx_b
+                                phys_count += 1
                         except (ValueError, IndexError):
                             continue
+
+            # Prefer physical NIC totals so virtual tunnel traffic is not double-counted alongside WAN RX/TX
+            if phys_count > 0:
+                total_rx_bytes = phys_rx_bytes
+                total_tx_bytes = phys_tx_bytes
+            else:
+                total_rx_bytes = virt_rx_bytes
+                total_tx_bytes = virt_tx_bytes
 
             # Convert cumulative transfer strictly to Megabytes (1 MB = 1024 * 1024 bytes)
             stats["net_rx_mb"] = round(total_rx_bytes / (1024 * 1024), 2)
