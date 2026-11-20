@@ -1223,8 +1223,8 @@ input:-webkit-autofill:active {
     gap: 16px;
     flex-wrap: wrap;
     min-height: 72px;
-    margin: 0 0 28px 0;
-    padding: 10px 2px 24px 2px;
+    margin: 0 0 32px 0;
+    padding: 26px 2px 40px 2px;
     border-bottom: 1px solid var(--line);
 }
 

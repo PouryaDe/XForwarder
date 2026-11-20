@@ -2879,7 +2879,7 @@ class TestUIAndAPIEdgeCases(unittest.TestCase):
         self.assertIn('data-i18n="overview.title">Overview<', html)
         self.assertIn('id="navUpdateDot"', html)
         self.assertIn('.nav-update-dot {', layout_css)
-        self.assertIn('padding: 10px 2px 24px 2px;', layout_css)
+        self.assertIn('padding: 26px 2px 40px 2px;', layout_css)
         self.assertIn('border-bottom: 1px solid var(--line);', layout_css)
         self.assertIn('.page-header-actions .btn {', layout_css)
         with open(os.path.join(web_dir, "js", "modules", "system.js"), "r", encoding="utf-8") as f:
