@@ -1327,52 +1327,6 @@
                     </div>
                 </div>
                 <div class="overview-grid settings-grid">
-                    <!-- Configuration Backup & Migration Card -->
-                    <div class="overview-card">
-                        <div class="overview-card-header">
-                            <div class="overview-card-title">
-                                <div class="stat-icon icon-cyan" style="width:36px;height:36px;">
-                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                        stroke-width="2">
-                                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                                        <polyline points="7 10 12 15 17 10" />
-                                        <line x1="12" y1="15" x2="12" y2="3" />
-                                    </svg>
-                                </div>
-                                <div>
-                                    <h3 data-i18n="security.backup_title">Backup &amp; Migration</h3>
-                                    <span class="overview-card-sub" data-i18n="security.backup_sub">Export or import routing rules and server
-                                        parameters</span>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="overview-card-body">
-                            <p class="section-desc" style="margin-bottom:18px;" data-i18n="security.backup_desc">Safely backup or restore your forwarding
-                                rules and operational parameters. Exported files are cryptographically sanitized to
-                                exclude administrative passwords.</p>
-                            <div class="settings-btn-grid">
-                                <button type="button" class="btn btn-secondary" id="btnExportConfigSec">
-                                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                        stroke-width="2">
-                                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                                        <polyline points="7 10 12 15 17 10" />
-                                        <line x1="12" y1="15" x2="12" y2="3" />
-                                    </svg>
-                                    <span data-i18n="security.export_btn">Export Backup JSON</span>
-                                </button>
-                                <button type="button" class="btn btn-primary" id="btnOpenImportModalSec">
-                                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                        stroke-width="2">
-                                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                                        <polyline points="17 8 12 3 7 8" />
-                                        <line x1="12" y1="3" x2="12" y2="15" />
-                                    </svg>
-                                    <span data-i18n="security.import_btn">Import Config</span>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-
                     <!-- Administrator Credentials Card -->
                     <div class="overview-card">
                         <div class="overview-card-header">
@@ -1418,6 +1372,52 @@
                                 <button type="submit" class="btn btn-primary" id="btnSaveSecurityInline" data-i18n="security.update_btn">Update
                                     Credentials</button>
                             </form>
+                        </div>
+                    </div>
+
+                    <!-- Configuration Backup & Migration Card -->
+                    <div class="overview-card">
+                        <div class="overview-card-header">
+                            <div class="overview-card-title">
+                                <div class="stat-icon icon-cyan" style="width:36px;height:36px;">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                        stroke-width="2">
+                                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                                        <polyline points="7 10 12 15 17 10" />
+                                        <line x1="12" y1="15" x2="12" y2="3" />
+                                    </svg>
+                                </div>
+                                <div>
+                                    <h3 data-i18n="security.backup_title">Backup &amp; Migration</h3>
+                                    <span class="overview-card-sub" data-i18n="security.backup_sub">Export or import routing rules and server
+                                        parameters</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="overview-card-body">
+                            <p class="section-desc" style="margin-bottom:18px;" data-i18n="security.backup_desc">Safely backup or restore your forwarding
+                                rules and operational parameters. Exported files are cryptographically sanitized to
+                                exclude administrative passwords.</p>
+                            <div class="settings-btn-grid">
+                                <button type="button" class="btn btn-secondary" id="btnExportConfigSec">
+                                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                        stroke-width="2">
+                                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                                        <polyline points="7 10 12 15 17 10" />
+                                        <line x1="12" y1="15" x2="12" y2="3" />
+                                    </svg>
+                                    <span data-i18n="security.export_btn">Export Backup JSON</span>
+                                </button>
+                                <button type="button" class="btn btn-primary" id="btnOpenImportModalSec">
+                                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                        stroke-width="2">
+                                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                                        <polyline points="17 8 12 3 7 8" />
+                                        <line x1="12" y1="3" x2="12" y2="15" />
+                                    </svg>
+                                    <span data-i18n="security.import_btn">Import Config</span>
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -1629,52 +1629,67 @@
 
                 <div class="form-row">
                     <div class="form-group flex-1">
-                        <label for="formPort" data-i18n="modal.inbound_port">Inbound Port / Range</label>
-                        <input type="text" id="formPort" class="form-control font-mono" placeholder="e.g. 2023, 10000-20000, or != 22,443" data-i18n-placeholder="modal.port_placeholder" required autocomplete="off">
+                        <label for="formPort" class="label-with-tip">
+                            <span data-i18n="modal.inbound_port">Inbound Port</span>
+                            <span class="xfwd-info-tip" tabindex="0" data-tip="Single port (443), range (10000-20000), or != 22,443 for All-Except." data-i18n-tip="modal.tip_inbound_port" aria-label="Info">
+                                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                            </span>
+                        </label>
+                        <input type="text" id="formPort" class="form-control font-mono" placeholder="443, 1000-20000, or != 22" data-i18n-placeholder="modal.port_placeholder" required autocomplete="off">
                         <div id="portRangeHint" class="range-info-note" style="display:none;">
-                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
-                            <span data-i18n="modal.range_hint_nft_only">NFTables 1:1 range mode — forwards exact port or a fixed target port.</span>
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                            <span data-i18n="modal.range_hint_nft_only">NFTables 1:1 range mode</span>
                         </div>
                     </div>
                     <div class="form-group flex-1">
-                        <label for="formProto" data-i18n="modal.proto">Transport Protocol</label>
+                        <label for="formProto" data-i18n="modal.proto">Protocol</label>
                         <select id="formProto" class="form-control">
-                            <option data-i18n="modal.proto_both" value="both">TCP + UDP (Recommended)</option>
+                            <option data-i18n="modal.proto_both" value="both">TCP + UDP</option>
                             <option value="tcp" data-i18n="modal.proto_tcp">TCP Only</option>
                             <option value="udp" data-i18n="modal.proto_udp">UDP Only</option>
                         </select>
                     </div>
                 </div>
 
-                <div class="form-group" style="margin-bottom: 14px;">
-                    <label for="exclTagText">
-                        <span data-i18n="modal.excluded_ports">Exclude Ports (!= All-Except)</span>
-                        <span style="font-size:0.75rem; color:var(--text-muted); font-weight:normal;" data-i18n="modal.excluded_ports_opt">(Optional · NFTables only · SSH &amp; panel port auto-protected)</span>
-                    </label>
-                    <div class="tag-input-box" id="exclTagInputBox">
-                        <div class="tag-chips" id="exclTagChips"></div>
-                        <input type="text" id="exclTagText" class="tag-inline-input font-mono" placeholder="Add port + Space or , (e.g. 22 443 1001)" data-i18n-placeholder="modal.excluded_placeholder" autocomplete="off">
+                <div class="form-row">
+                    <div class="form-group flex-1">
+                        <label for="exclTagText" class="label-with-tip">
+                            <span data-i18n="modal.excluded_ports">Exclude Ports</span>
+                            <span class="xfwd-info-tip" tabindex="0" data-tip="Optional (NFTables only). SSH & panel ports are auto-protected. Example: 22, 443, 1001" data-i18n-tip="modal.tip_excluded_ports" aria-label="Info">
+                                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                            </span>
+                        </label>
+                        <div class="tag-input-box" id="exclTagInputBox">
+                            <div class="tag-chips" id="exclTagChips"></div>
+                            <input type="text" id="exclTagText" class="tag-inline-input font-mono" placeholder="22, 443 (Space or ,)" data-i18n-placeholder="modal.excluded_placeholder" autocomplete="off">
+                        </div>
+                        <input type="hidden" id="formExcludedPorts" value="">
                     </div>
-                    <input type="hidden" id="formExcludedPorts" value="">
-                </div>
 
-                <div class="form-group" style="margin-bottom: 16px;">
-                    <label for="formCategory"><span data-i18n="modal.category">Category / Group</span> <span style="font-size:0.75rem; color:var(--text-muted); font-weight:normal;" data-i18n="modal.category_opt">(Optional - for grouping ports with divider lines)</span></label>
-                    <div class="input-with-icon">
-                        <svg class="input-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
-                        </svg>
-                        <input type="text" id="formCategory" class="form-control" placeholder="e.g. Tehran Tunnels, VIP Users, Games (leave empty for none)" data-i18n-placeholder="modal.category_placeholder" maxlength="48" autocomplete="off">
-                        <datalist id="categoryDatalist"></datalist>
+                    <div class="form-group flex-1">
+                        <label for="formCategory" class="label-with-tip">
+                            <span data-i18n="modal.category">Category</span>
+                            <span class="xfwd-info-tip" tabindex="0" data-tip="Optional group name to organize ports with divider lines. Example: Tehran Tunnels, VIP" data-i18n-tip="modal.tip_category" aria-label="Info">
+                                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                            </span>
+                        </label>
+                        <div class="input-with-icon">
+                            <svg class="input-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+                            </svg>
+                            <input type="text" id="formCategory" class="form-control" placeholder="e.g. Tehran Tunnels, VIP" data-i18n-placeholder="modal.category_placeholder" maxlength="48" autocomplete="off">
+                            <datalist id="categoryDatalist"></datalist>
+                        </div>
                     </div>
                 </div>
 
                 <div class="destinations-section">
                     <div class="destinations-section-header">
-                        <div>
-                            <span class="destinations-label" data-i18n="modal.failover_chain">Failover Priority Chain</span>
-                            <span class="destinations-sub" data-i18n="modal.failover_chain_sub">Traffic cascades in order from Priority 1 to 2, 3, etc. on
-                                failure</span>
+                        <div class="label-with-tip">
+                            <span class="destinations-label" data-i18n="modal.failover_chain">Failover Chain</span>
+                            <span class="xfwd-info-tip" tabindex="0" data-tip="Traffic cascades from Priority #1 to #2, #3 on failure. Drag cards to reorder." data-i18n-tip="modal.tip_failover_chain" aria-label="Info">
+                                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                            </span>
                         </div>
                     </div>
 
@@ -1684,12 +1699,12 @@
                     </div>
 
                     <button type="button" class="btn btn-secondary btn-block add-prio-btn" id="btnAddDestination">
-                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="2">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2.2">
                             <line x1="12" y1="5" x2="12" y2="19" />
                             <line x1="5" y1="12" x2="19" y2="12" />
                         </svg>
-                        <span data-i18n="modal.add_priority">+ Add Another Failover Priority</span>
+                        <span data-i18n="modal.add_priority">Add Failover Priority</span>
                     </button>
                 </div>
 

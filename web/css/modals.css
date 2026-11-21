@@ -105,14 +105,111 @@ select option {
     }
 }
 
-/* Priority Box in Modal */
+/* Priority Box in Modal (Compact) */
 .priority-box {
     border: 1px solid var(--border-color);
     border-radius: 12px;
-    padding: 16px;
-    margin-bottom: 12px;
+    padding: 12px 14px;
+    margin-bottom: 10px;
     background: var(--bg-surface);
     position: relative;
+}
+
+.priority-box .form-group {
+    margin-bottom: 8px;
+}
+
+.dest-meta-row {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+}
+
+.dest-meta-row .dest-iface-group,
+.dest-meta-row .dest-comment-group {
+    flex: 1 1 0;
+    min-width: 0;
+}
+
+@media (max-width: 640px) {
+    .dest-meta-row {
+        flex-direction: column;
+        gap: 0;
+    }
+    .dest-meta-row .dest-iface-group,
+    .dest-meta-row .dest-comment-group {
+        width: 100%;
+    }
+}
+
+/* Hover Info Tooltip Icon */
+.label-with-tip {
+    display: inline-flex !important;
+    align-items: center;
+    gap: 6px;
+}
+
+.xfwd-info-tip {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: rgba(150, 150, 150, 0.12);
+    border: 1px solid var(--line);
+    color: var(--text-muted);
+    cursor: help;
+    flex-shrink: 0;
+    transition: color var(--fast) var(--ease), border-color var(--fast) var(--ease), background var(--fast) var(--ease);
+}
+
+.xfwd-info-tip:hover,
+.xfwd-info-tip:focus-visible {
+    color: var(--accent-text);
+    border-color: var(--accent);
+    background: var(--accent-wash);
+    outline: none;
+}
+
+.xfwd-info-tip::after {
+    content: attr(data-tip);
+    position: absolute;
+    bottom: calc(100% + 8px);
+    left: 50%;
+    transform: translateX(-50%) translateY(4px);
+    width: max-content;
+    max-width: 240px;
+    padding: 7px 10px;
+    border-radius: 8px;
+    background: var(--raise-3, #172425);
+    border: 1px solid var(--line-strong);
+    color: var(--ink, #e9f3ee);
+    font-family: var(--font-sans);
+    font-size: 0.74rem;
+    font-weight: 500;
+    line-height: 1.45;
+    text-align: start;
+    white-space: normal;
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.45);
+    opacity: 0;
+    pointer-events: none;
+    z-index: 9999;
+    transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.xfwd-info-tip:hover::after,
+.xfwd-info-tip:focus-visible::after {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+}
+
+[data-theme="light"] .xfwd-info-tip::after {
+    background: #14221d;
+    color: #f6f5ee;
+    border-color: rgba(0, 107, 74, 0.35);
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.18);
 }
 
 /* Hide native datalist arrow on category input */
@@ -436,46 +533,137 @@ input#formCategory::-webkit-list-button {
     box-shadow: none !important;
 }
 
-.iface-tags-wrap {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-    margin-top: 6px;
-    direction: ltr;
+/* Outbound Interface Multi-Select Checklist Dropdown */
+.iface-multiselect {
+    position: relative;
+    width: 100%;
 }
 
-.iface-tag-chip {
+.iface-select-trigger {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    width: 100%;
+    cursor: pointer;
+    text-align: left;
+    padding-right: 12px !important;
+}
+
+.iface-trigger-text {
     display: inline-flex;
     align-items: center;
-    gap: 6px;
-    padding: 5px 10px;
-    border-radius: 8px;
-    font-size: 0.75rem;
-    font-weight: 600;
+    gap: 7px;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 0.84rem;
+}
+
+.iface-trigger-auto {
+    color: var(--text-secondary);
+}
+
+.iface-trigger-text small {
+    color: var(--text-muted);
     font-family: var(--font-mono);
+    font-size: 0.74rem;
+}
+
+.iface-chevron {
+    flex-shrink: 0;
+    color: var(--text-muted);
+    transition: transform 0.18s ease;
+}
+
+.iface-multiselect.open .iface-chevron {
+    transform: rotate(180deg);
+}
+
+.iface-dropdown-menu {
+    display: none;
+    position: absolute;
+    top: calc(100% + 5px);
+    left: 0;
+    right: 0;
+    max-height: 210px;
+    overflow-y: auto;
+    padding: 6px;
+    border-radius: 10px;
+    background: var(--raise-2, #101a1b);
+    border: 1px solid var(--line-strong);
+    box-shadow: 0 14px 34px rgba(0, 0, 0, 0.52);
+    z-index: 1200;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.iface-multiselect.open .iface-dropdown-menu {
+    display: flex;
+}
+
+[data-theme="light"] .iface-dropdown-menu {
+    background: var(--raise, #f6f5ee);
+    box-shadow: 0 12px 28px rgba(20, 30, 20, 0.18);
+}
+
+.iface-option {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    padding: 7px 9px;
+    border-radius: 7px;
+    border: 1px solid transparent;
+    background: transparent;
+    color: var(--text-primary);
+    font-size: 0.8rem;
     cursor: pointer;
-    background: var(--raise-2);
-    border: 1px solid var(--line);
-    color: var(--ink-2);
-    transition: all var(--fast) var(--ease);
+    text-align: left;
+    transition: background var(--fast) var(--ease), border-color var(--fast) var(--ease);
 }
 
-.iface-tag-chip:hover {
-    border-color: color-mix(in srgb, var(--accent) 45%, var(--line));
-    color: var(--ink-1);
+.iface-option:hover {
+    background: rgba(150, 150, 150, 0.08);
 }
 
-.iface-tag-chip.is-selected {
+.iface-option.is-checked {
     background: var(--accent-wash);
-    border-color: var(--accent);
+    border-color: color-mix(in srgb, var(--accent) 45%, transparent);
     color: var(--accent-text);
-    box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 14%, transparent);
 }
 
-.iface-tag-chip small {
-    font-weight: 400;
-    font-size: 0.69rem;
-    opacity: 0.78;
+.iface-checkbox {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 15px;
+    height: 15px;
+    border-radius: 4px;
+    border: 1.5px solid var(--line-strong);
+    background: rgba(0, 0, 0, 0.18);
+    color: var(--accent-ink, #001a0f);
+    flex-shrink: 0;
+}
+
+.iface-option.is-checked .iface-checkbox {
+    background: var(--accent);
+    border-color: var(--accent);
+}
+
+[data-theme="light"] .iface-checkbox {
+    background: rgba(255, 255, 255, 0.7);
+}
+
+.iface-opt-name {
+    font-weight: 600;
+}
+
+.iface-opt-ip {
+    margin-left: auto;
+    font-size: 0.72rem;
+    color: var(--text-muted);
 }
 
 .iface-dot {
@@ -483,6 +671,7 @@ input#formCategory::-webkit-list-button {
     height: 6px;
     border-radius: 50%;
     background: var(--ink-3);
+    flex-shrink: 0;
 }
 
 .iface-dot.is-up {
@@ -492,17 +681,6 @@ input#formCategory::-webkit-list-button {
 
 .iface-dot.is-down {
     background: #f43f5e;
-}
-
-[data-theme="light"] .iface-tag-chip {
-    background: var(--raise);
-    border-color: var(--line-strong);
-}
-
-[data-theme="light"] .iface-tag-chip.is-selected {
-    background: var(--accent-wash);
-    border-color: var(--accent-text);
-    color: var(--accent-text);
 }
 
 .priority-header {

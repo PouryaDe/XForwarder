@@ -272,9 +272,11 @@ function ensureNetworkInterfacesLoaded() {
                 setLastNetwork(net);
                 document.querySelectorAll("#destinationsContainer .dest-iface-group").forEach(grp => {
                     const hidden = grp.querySelector(".dest-tunnel-iface");
-                    const wrap = grp.querySelector(".iface-tags-wrap");
+                    const menu = grp.querySelector(".iface-dropdown-menu");
+                    const triggerText = grp.querySelector(".iface-trigger-text");
                     const prevVal = (hidden && hidden.value) || "";
-                    if (wrap) wrap.innerHTML = buildTunnelIfaceTagsHtml(prevVal);
+                    if (menu) menu.innerHTML = buildTunnelIfaceMenuHtml(prevVal);
+                    if (triggerText) triggerText.innerHTML = buildTunnelIfaceTriggerHtml(prevVal);
                 });
             }
         })
@@ -322,19 +324,48 @@ function getAvailableServerInterfaces() {
     return entries;
 }
 
-function buildTunnelIfaceTagsHtml(selectedVal = "") {
+function buildTunnelIfaceTriggerHtml(selectedVal = "") {
     const cur = String(selectedVal || "").trim();
-    const autoLabel = escapeHtml(t("modal.tunnel_iface_auto_tag", {}, "Auto"));
-    let html = `<button type="button" class="iface-tag-chip ${!cur ? "is-selected" : ""}" data-iface="">${autoLabel}</button>`;
+    if (!cur) {
+        return `<span class="iface-trigger-auto">${escapeHtml(t("modal.tunnel_iface_auto", {}, "Auto (Kernel Route)"))}</span>`;
+    }
+    const list = getAvailableServerInterfaces();
+    const match = list.find(item => item.name === cur);
+    const up = match ? match.up : true;
+    const ip = match && match.ip ? ` <small>${escapeHtml(match.ip)}</small>` : "";
+    return `<span class="iface-dot ${up ? "is-up" : "is-down"}"></span><span class="iface-trigger-name font-mono">${escapeHtml(cur)}</span>${ip}`;
+}
+
+function buildTunnelIfaceMenuHtml(selectedVal = "") {
+    const cur = String(selectedVal || "").trim();
+    const autoLabel = escapeHtml(t("modal.tunnel_iface_auto", {}, "Auto (Kernel Route)"));
+    const checkSvg = `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>`;
+    let html = `
+        <button type="button" class="iface-option ${!cur ? "is-checked" : ""}" data-iface="">
+            <span class="iface-checkbox">${!cur ? checkSvg : ""}</span>
+            <span class="iface-opt-name">${autoLabel}</span>
+        </button>`;
     const list = getAvailableServerInterfaces();
     let foundSelected = !cur;
     list.forEach(item => {
         const isSel = Boolean(cur && cur === item.name);
         if (isSel) foundSelected = true;
-        html += `<button type="button" class="iface-tag-chip ${isSel ? "is-selected" : ""}" data-iface="${escapeHtml(item.name)}" title="${escapeHtml(item.label)}"><span class="iface-dot ${item.up ? "is-up" : "is-down"}"></span><span>${escapeHtml(item.name)}</span>${item.ip ? `<small>${escapeHtml(item.ip)}</small>` : ""}</button>`;
+        html += `
+        <button type="button" class="iface-option ${isSel ? "is-checked" : ""}" data-iface="${escapeHtml(item.name)}" title="${escapeHtml(item.label)}">
+            <span class="iface-checkbox">${isSel ? checkSvg : ""}</span>
+            <span class="iface-dot ${item.up ? "is-up" : "is-down"}"></span>
+            <span class="iface-opt-name font-mono">${escapeHtml(item.name)}</span>
+            ${item.ip ? `<small class="iface-opt-ip font-mono">${escapeHtml(item.ip)}</small>` : ""}
+        </button>`;
     });
     if (cur && !foundSelected) {
-        html += `<button type="button" class="iface-tag-chip is-selected" data-iface="${escapeHtml(cur)}" title="Saved interface"><span class="iface-dot is-up"></span><span>${escapeHtml(cur)}</span><small>saved</small></button>`;
+        html += `
+        <button type="button" class="iface-option is-checked" data-iface="${escapeHtml(cur)}" title="Saved interface">
+            <span class="iface-checkbox">${checkSvg}</span>
+            <span class="iface-dot is-up"></span>
+            <span class="iface-opt-name font-mono">${escapeHtml(cur)}</span>
+            <small class="iface-opt-ip font-mono">saved</small>
+        </button>`;
     }
     return html;
 }
@@ -464,23 +495,47 @@ export function renderDestinationRow(dest, index, totalCount) {
                 <input type="text" inputmode="numeric" class="form-control dest-port" placeholder="${isRangeRule ? escapeHtml(t("modal.dest_port_range_placeholder", {}, "Same range or single port")) : "Default"}" value="${escapeHtml(port)}">
             </div>
         </div>
-        <div class="form-group dest-iface-group" style="margin-bottom:10px; display:${type === "nftables" ? "block" : "none"};">
-            <label>${escapeHtml(t("modal.tunnel_iface", {}, "Tunnel / Outbound Interface (Optional · NFTables)"))}</label>
-            <input type="hidden" class="dest-tunnel-iface" value="${escapeHtml(dest.tunnel_iface || "")}">
-            <div class="iface-tags-wrap">${buildTunnelIfaceTagsHtml(dest.tunnel_iface || "")}</div>
-        </div>
-        <div class="form-group" style="margin-bottom:10px;">
-            <label>${escapeHtml(t("modal.comment_label"))}</label>
-            <input type="text" class="form-control dest-comment" placeholder="e.g. ${isPrimary ? 'Foreign Server 1 - Primary IPv6' : 'Backup Tunnel Node ' + prio}" value="${escapeHtml(comment)}">
+        <div class="dest-meta-row">
+            <div class="form-group dest-iface-group" style="display:${type === "nftables" ? "block" : "none"};">
+                <label class="label-with-tip">
+                    <span>${escapeHtml(t("modal.tunnel_iface", {}, "Outbound Interface"))}</span>
+                    <span class="xfwd-info-tip" tabindex="0" data-tip="${escapeHtml(t("modal.tip_outbound_iface", {}, "Optional (NFTables). Bind probes & routing to a specific tunnel or WAN interface."))}" aria-label="Info">
+                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                    </span>
+                </label>
+                <input type="hidden" class="dest-tunnel-iface" value="${escapeHtml(dest.tunnel_iface || "")}">
+                <div class="iface-multiselect">
+                    <button type="button" class="form-control iface-select-trigger">
+                        <span class="iface-trigger-text">${buildTunnelIfaceTriggerHtml(dest.tunnel_iface || "")}</span>
+                        <svg class="iface-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="6 9 12 15 18 9"/></svg>
+                    </button>
+                    <div class="iface-dropdown-menu">${buildTunnelIfaceMenuHtml(dest.tunnel_iface || "")}</div>
+                </div>
+            </div>
+            <div class="form-group dest-comment-group">
+                <label class="label-with-tip">
+                    <span>${escapeHtml(t("modal.comment_label", {}, "Label"))}</span>
+                    <span class="xfwd-info-tip" tabindex="0" data-tip="${escapeHtml(t("modal.tip_comment", {}, "Optional note for this path. Example: Foreign Server 1 - IPv6"))}" aria-label="Info">
+                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                    </span>
+                </label>
+                <input type="text" class="form-control dest-comment" placeholder="${escapeHtml(t("modal.comment_placeholder", {}, "e.g. Foreign Node 1"))}" value="${escapeHtml(comment)}">
+            </div>
         </div>
         <div class="dest-extra-row" style="flex-wrap: wrap; gap: 10px;">
-            <label class="dest-toggle-label" title="Enable only if remote destination (e.g. Xray/V2Ray with acceptProxyProtocol) is configured to receive PROXY Protocol headers.">
+            <label class="dest-toggle-label">
                 <input type="checkbox" class="dest-proxy-proto" ${dest.proxy_protocol ? "checked" : ""}>
-                <span>${escapeHtml(t("modal.send_proxy_v2"))}</span>
+                <span>${escapeHtml(t("modal.send_proxy_v2", {}, "PROXY v2"))}</span>
+                <span class="xfwd-info-tip" tabindex="0" data-tip="${escapeHtml(t("modal.tip_proxy_v2", {}, "Send PROXY Protocol v2 header. Enable only if upstream expects it."))}" aria-label="Info">
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                </span>
             </label>
-            <label class="dest-toggle-label" title="Mid Server: Ping to this node is a partial hop. The engine strictly anchors on Priority 1 unless Priority 1 fails, has packet loss, or exceeds 150ms.">
+            <label class="dest-toggle-label">
                 <input type="checkbox" class="dest-is-relay" ${dest.is_relay ? "checked" : ""}>
-                <span>${escapeHtml(t("modal.mid_server"))}</span>
+                <span>${escapeHtml(t("modal.mid_server", {}, "Mid Server"))}</span>
+                <span class="xfwd-info-tip" tabindex="0" data-tip="${escapeHtml(t("modal.tip_mid_server", {}, "Partial hop node: anchors on Priority #1 unless #1 fails, has loss, or exceeds 150ms."))}" aria-label="Info">
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                </span>
             </label>
             <div class="dest-test-group">
                 <button type="button" class="btn-test-dest" id="btnTestDest_${index}" onclick="testModalDestination(${index})">
@@ -768,16 +823,40 @@ export function initRuleModal(fetchStatusCallback) {
 
     if (destContainer) {
         destContainer.addEventListener("click", (ev) => {
-            const chip = ev.target.closest(".iface-tag-chip");
-            if (!chip) return;
-            const grp = chip.closest(".dest-iface-group");
-            if (!grp) return;
+            const trigger = ev.target.closest(".iface-select-trigger");
+            if (trigger) {
+                ev.stopPropagation();
+                const ms = trigger.closest(".iface-multiselect");
+                if (!ms) return;
+                const wasOpen = ms.classList.contains("open");
+                document.querySelectorAll(".iface-multiselect.open").forEach(el => el.classList.remove("open"));
+                if (!wasOpen) ms.classList.add("open");
+                return;
+            }
+            const opt = ev.target.closest(".iface-option");
+            if (!opt) return;
+            ev.stopPropagation();
+            const grp = opt.closest(".dest-iface-group");
+            const ms = opt.closest(".iface-multiselect");
+            if (!grp || !ms) return;
             const hidden = grp.querySelector(".dest-tunnel-iface");
-            if (hidden) hidden.value = chip.dataset.iface || "";
-            grp.querySelectorAll(".iface-tag-chip").forEach(c => c.classList.remove("is-selected"));
-            chip.classList.add("is-selected");
+            const menu = grp.querySelector(".iface-dropdown-menu");
+            const triggerText = grp.querySelector(".iface-trigger-text");
+            const clickedVal = opt.dataset.iface || "";
+            const prevVal = (hidden && hidden.value) || "";
+            const nextVal = (clickedVal && clickedVal === prevVal) ? "" : clickedVal;
+            if (hidden) hidden.value = nextVal;
+            if (menu) menu.innerHTML = buildTunnelIfaceMenuHtml(nextVal);
+            if (triggerText) triggerText.innerHTML = buildTunnelIfaceTriggerHtml(nextVal);
+            ms.classList.remove("open");
         });
     }
+
+    document.addEventListener("click", (ev) => {
+        if (!ev.target.closest(".iface-multiselect")) {
+            document.querySelectorAll(".iface-multiselect.open").forEach(el => el.classList.remove("open"));
+        }
+    });
 
     if (exclTagBox && exclTagText) {
         exclTagBox.addEventListener("click", () => exclTagText.focus());

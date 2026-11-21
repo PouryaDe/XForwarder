@@ -658,7 +658,7 @@ class TestUIAndAPIEdgeCases(unittest.TestCase):
             js = f.read()
 
         # HTML select option
-        self.assertIn('value="both">TCP + UDP (Recommended)', html)
+        self.assertIn('value="both">TCP + UDP', html)
 
         # JS formatProtoBadge returns TCP + UDP
         self.assertIn('return "TCP + UDP"', js)
@@ -2800,7 +2800,7 @@ class TestUIAndAPIEdgeCases(unittest.TestCase):
             eng.sync_firewall_and_proxies()
         self.assertIn('oifname "my_tun1" masquerade', captured_nft["ruleset"])
         self.assertIn("dest-tunnel-iface", modal_js)
-        self.assertIn("buildTunnelIfaceTagsHtml", modal_js)
+        self.assertIn("buildTunnelIfaceMenuHtml", modal_js)
         self.assertIn("renderExcludedTagChips", modal_js)
         self.assertIn("test-pill", modal_js)
 

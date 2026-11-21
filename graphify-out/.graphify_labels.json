@@ -21,7 +21,6 @@
   "32": "Python Core Standards (`core/engine.py` & `core/web_server.py`)",
   "34": "TestTrafficAwareFailover",
   "35": "escapeHtml",
-  "36": "TestToggleDestination",
   "38": "TestNginxStreamEngine",
   "43": "Experience 002: Atomic File Persistence and Tmp Renaming",
   "44": "TestEngineProbes",
