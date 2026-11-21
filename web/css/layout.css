@@ -554,7 +554,9 @@
 }
 
 .updates-page-shell {
-    max-width: 780px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
     width: 100%;
 }
 

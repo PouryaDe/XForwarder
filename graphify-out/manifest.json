@@ -84,9 +84,9 @@
     "semantic_hash": ""
   },
   "web/index.html": {
-    "mtime": 1795212849.2640598,
-    "seen": 1795213080.1580274,
-    "ast_hash": "cfd70ff406f76b404a91b57a6143fcb6",
+    "mtime": 1795264863.9004452,
+    "seen": 1795264989.362884,
+    "ast_hash": "51433489016ed4cfebddf0b35dcf97a5",
     "semantic_hash": ""
   },
   "xforwarder.sh": {
@@ -528,9 +528,9 @@
     "semantic_hash": ""
   },
   "web/js/modules/stats.js": {
-    "mtime": 1793243830.672922,
-    "seen": 1793243907.2273579,
-    "ast_hash": "a18f19968b6c3805662380fd44f79370",
+    "mtime": 1795264868.4227698,
+    "seen": 1795264989.362834,
+    "ast_hash": "1038ebff6f8f9d943d71ffd183637f7a",
     "semantic_hash": ""
   },
   "web/js/modules/system.js": {
@@ -618,9 +618,9 @@
     "semantic_hash": ""
   },
   "web/js/modules/i18n.js": {
-    "mtime": 1795212873.4053977,
-    "seen": 1795213080.1579664,
-    "ast_hash": "0446be95f179bbd8bd8420166fc27e57",
+    "mtime": 1795264206.7644007,
+    "seen": 1795264294.1611502,
+    "ast_hash": "08dc3b0b5bc66c3ffcf9be6c37188b28",
     "semantic_hash": ""
   },
   "tests/test_i18n_and_rtl.py": {

@@ -684,6 +684,12 @@ export function renderNetworkTopology(network) {
         return true;
     });
 
+    const netActiveTunnelsBadge = document.getElementById("netActiveTunnelsBadge");
+    if (netActiveTunnelsBadge) {
+        netActiveTunnelsBadge.textContent = tunnels.length === 1 ? "1 Tunnel" : `${tunnels.length} Tunnels`;
+        netActiveTunnelsBadge.classList.toggle("badge-active", tunnels.length > 0);
+    }
+
     if (tunnelGrid) {
         if (tunnels.length === 0) {
             tunnelGrid.innerHTML = `
@@ -751,12 +757,12 @@ export function renderNetworkTopology(network) {
                         </div>
                         <div class="tunnel-body">
                             <div class="tunnel-ip-row">
-                                <span class="tunnel-label">Interface IP:</span>
+                                <span class="tunnel-label">Local</span>
                                 <span class="tunnel-val">${escapeHtml(t.ip)}</span>
                             </div>
                             ${t.peer_ip ? `
                             <div class="tunnel-ip-row">
-                                <span class="tunnel-label">Peer Endpoint:</span>
+                                <span class="tunnel-label">Peer</span>
                                 <span class="tunnel-val text-cyan">${escapeHtml(t.peer_ip)}</span>
                             </div>` : ""}
                         </div>

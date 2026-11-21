@@ -1262,7 +1262,9 @@ input:-webkit-autofill:active {
 }
 
 .updates-page-shell {
-    max-width: 780px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
     width: 100%;
 }
 
@@ -1891,23 +1893,21 @@ input:-webkit-autofill:active {
     border: 1px solid rgba(251, 113, 133, 0.25);
 }
 
-/* ── Server Network & Relay Engines 2-Column Responsive Grid ── */
+/* ── Server Network & Relay Engines Compact Responsive Stack ── */
 .topology-engines-grid {
-    display: grid;
-    grid-template-columns: minmax(0, 1.25fr) minmax(0, 0.75fr);
-    gap: 18px;
-    align-items: stretch;
-    margin-bottom: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin-bottom: 20px;
 }
 
 /* Base styling shared by both cards */
 .network-card,
 .engines-card,
 .services-status-bar {
-    padding: 18px 20px;
+    padding: 15px 18px;
     display: flex;
     flex-direction: column;
-    justify-content: space-between;
     margin-bottom: 0;
 }
 
@@ -1923,9 +1923,10 @@ input:-webkit-autofill:active {
     justify-content: space-between;
     align-items: center;
     gap: 12px;
-    padding-bottom: 12px;
+    padding-bottom: 10px;
     border-bottom: 1px solid var(--border-color);
     margin-bottom: 12px;
+    flex-wrap: wrap;
 }
 
 .engines-title-group {
@@ -1956,22 +1957,21 @@ input:-webkit-autofill:active {
 }
 
 .engines-list {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    flex: 1;
-    justify-content: center;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
 }
 
 .engine-item {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 12px;
+    gap: 10px;
     padding: 9px 12px;
     background: var(--bg-surface);
     border: 1px solid var(--border-color);
     border-radius: 10px;
+    min-width: 0;
     transition: all 0.2s ease;
 }
 
@@ -2026,13 +2026,10 @@ input:-webkit-autofill:active {
 }
 
 .engines-footer {
-    display: flex;
+    display: inline-flex;
     align-items: center;
     gap: 6px;
-    margin-top: 12px;
-    padding-top: 10px;
-    border-top: 1px solid var(--border-color);
-    font-size: 0.73rem;
+    font-size: 0.74rem;
     color: var(--text-muted);
     font-weight: 500;
 }
@@ -2199,9 +2196,10 @@ input:-webkit-autofill:active {
     justify-content: space-between;
     align-items: center;
     gap: 12px;
-    padding-bottom: 12px;
+    padding-bottom: 10px;
     border-bottom: 1px solid var(--border-color);
     margin-bottom: 12px;
+    flex-wrap: wrap;
 }
 
 .net-title-group {
@@ -2253,13 +2251,13 @@ input:-webkit-autofill:active {
     display: block;
 }
 
-/* Server Host Public/WAN IPs Box */
+/* Server Host Public/WAN IPs Inline Box */
 .server-wan-box {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    margin-bottom: 14px;
-    width: 100%;
+    display: inline-flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
 }
 
 .server-wan-header {
@@ -2381,19 +2379,19 @@ input:-webkit-autofill:active {
     color: var(--text-muted);
 }
 
-/* ── Tunnel Interfaces Grid ── */
+/* ── Tunnel Interfaces Adaptive Grid ── */
 .tunnel-grid {
-    margin-top: 16px;
+    margin-top: 0;
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
-    gap: 12px;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 245px), 1fr));
+    gap: 10px;
 }
 
 .tunnel-card {
     background: var(--raise-2);
     border: 1px solid var(--line);
-    border-radius: 14px;
-    padding: 14px 16px;
+    border-radius: 12px;
+    padding: 11px 13px;
     transition: background var(--fast) var(--ease), border-color var(--fast) var(--ease);
 }
 
@@ -2406,7 +2404,8 @@ input:-webkit-autofill:active {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 10px;
+    gap: 8px;
+    margin-bottom: 8px;
 }
 
 .tunnel-title-row {
@@ -2464,20 +2463,21 @@ input:-webkit-autofill:active {
 .tunnel-body {
     display: flex;
     flex-direction: column;
-    gap: 5px;
-    margin-bottom: 12px;
+    gap: 3px;
+    margin-bottom: 8px;
 }
 
 .tunnel-ip-row {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    font-size: 0.82rem;
+    font-size: 0.79rem;
+    gap: 8px;
 }
 
 .tunnel-label {
     color: var(--text-muted);
-    font-size: 0.76rem;
+    font-size: 0.73rem;
 }
 
 .tunnel-val {
@@ -2490,7 +2490,7 @@ input:-webkit-autofill:active {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding-top: 10px;
+    padding-top: 8px;
     border-top: 1px solid var(--border-color);
 }
 
@@ -4140,6 +4140,7 @@ input:-webkit-autofill:active {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 22px;
     margin-bottom: 24px;
+    align-items: start;
 }
 
 .overview-card {
@@ -4832,14 +4833,17 @@ input:-webkit-autofill:active {
     }
 
     .topology-engines-grid {
+        gap: 14px;
+    }
+
+    .engines-list {
         grid-template-columns: 1fr;
-        gap: 16px;
     }
 
     .network-card-header {
         flex-direction: column;
         align-items: stretch;
-        gap: 12px;
+        gap: 10px;
     }
 
     .server-wan-box {
@@ -5578,6 +5582,188 @@ input:-webkit-autofill:active {
     filter: grayscale(0.5);
     box-shadow: none !important;
     pointer-events: none;
+}
+
+/* Redesigned System Updates Page Layout */
+.updates-hero-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 18px;
+    flex-wrap: wrap;
+}
+
+.updates-hero-icon {
+    width: 42px;
+    height: 42px;
+    flex-shrink: 0;
+}
+
+.updates-title-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.updates-hero-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.updates-telemetry-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 14px;
+}
+
+.update-stat-tile {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 14px 16px;
+    border-radius: 12px;
+    background: rgba(150, 150, 150, 0.05);
+    border: 1px solid var(--border-color);
+    min-width: 0;
+    transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+.update-stat-tile:hover {
+    background: rgba(150, 150, 150, 0.08);
+    border-color: var(--line-strong);
+}
+
+.update-tile-label {
+    font-size: 0.74rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--text-secondary);
+}
+
+.update-tile-value {
+    font-size: 0.92rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    line-height: 1.35;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+}
+
+.updates-info-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 20px;
+    align-items: stretch;
+}
+
+.update-pipeline-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.update-step-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 11px 14px;
+    border-radius: 10px;
+    background: rgba(150, 150, 150, 0.04);
+    border: 1px solid var(--border-color);
+}
+
+.update-step-num {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    background: rgba(52, 224, 161, 0.12);
+    border: 1px solid rgba(52, 224, 161, 0.28);
+    color: var(--accent-mint, var(--accent));
+    font-size: 0.76rem;
+    font-weight: 700;
+    flex-shrink: 0;
+}
+
+[data-theme="light"] .update-step-num {
+    background: rgba(0, 107, 74, 0.1);
+    border-color: rgba(0, 107, 74, 0.24);
+    color: var(--accent-text);
+}
+
+.update-step-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+.update-step-text strong {
+    font-size: 0.85rem;
+    font-weight: 650;
+    color: var(--text-primary);
+}
+
+.update-step-text span {
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+    line-height: 1.45;
+}
+
+.updates-safety-note {
+    margin: 0 0 16px 0;
+    font-size: 0.84rem;
+    line-height: 1.6;
+}
+
+.updates-guarantees-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.update-guarantee-pill {
+    display: inline-flex;
+    align-items: center;
+    padding: 6px 12px;
+    border-radius: 999px;
+    font-size: 0.76rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    background: rgba(150, 150, 150, 0.07);
+    border: 1px solid var(--border-color);
+}
+
+@media (max-width: 1200px) {
+    .updates-telemetry-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 1024px) {
+    .updates-info-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 640px) {
+    .updates-telemetry-grid {
+        grid-template-columns: 1fr;
+    }
+    .updates-hero-actions {
+        width: 100%;
+    }
+    .updates-hero-actions .btn {
+        flex: 1 1 auto;
+        justify-content: center;
+    }
 }
 
 /* ──────────────────────────────────────────────────────────────────────────
@@ -9080,6 +9266,18 @@ input#formCategory::-webkit-list-button {
 [dir="rtl"] #updateConfirmView ul {
     padding-right: 22px !important;
     padding-left: 0 !important;
+}
+
+[dir="rtl"] .update-tile-value.font-mono,
+[dir="rtl"] .update-step-num {
+    direction: ltr !important;
+    unicode-bidi: embed !important;
+}
+
+[dir="rtl"] .update-tile-label,
+[dir="rtl"] .update-tile-value,
+[dir="rtl"] .update-step-text {
+    text-align: right !important;
 }
 
 /* 12. Tables & Disruption Logs in RTL */

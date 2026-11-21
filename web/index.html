@@ -929,73 +929,27 @@
                     </div>
                 </div>
 
-                <!-- Topology & Relay Engines Grid (2 Balanced Columns, Zero-Waste Responsive Layout) -->
+                <!-- Topology & Relay Engines Stack (Compact, Zero-Waste Responsive Layout) -->
                 <div class="topology-engines-grid">
-                    <!-- Column 1: Server Network & Tunnel Topology Card -->
-                    <div class="network-card" id="networkCard">
-                        <div class="network-card-header">
-                            <div class="net-title-group">
-                                <div class="stat-icon icon-cyan" style="width:36px;height:36px;">
-                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                        stroke-width="2">
-                                        <circle cx="12" cy="12" r="10" />
-                                        <line x1="2" y1="12" x2="22" y2="12" />
-                                        <path
-                                             d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
-                                    </svg>
-                                </div>
-                                <div>
-                                    <div class="net-header-title">
-                                        <h3 data-i18n="overview.net_title">Server Network & Tunnel Topology</h3>
-                                        <span class="net-pill-badge" id="netActiveTunnelsBadge">0 Tunnels</span>
-                                    </div>
-                                    <span class="net-subtitle" data-i18n="overview.net_sub">Server WAN public addresses, active tunnel interfaces, and latency</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Server Host WAN IPs Section -->
-                        <div class="server-wan-box">
-                            <div class="server-wan-header">
-                                <div style="display:flex; align-items:center; gap:6px;">
-                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                        stroke-width="2">
-                                        <rect x="2" y="2" width="20" height="8" rx="2" ry="2" />
-                                        <rect x="2" y="14" width="20" height="8" rx="2" ry="2" />
-                                        <line x1="6" y1="6" x2="6.01" y2="6" />
-                                        <line x1="6" y1="18" x2="6.01" y2="18" />
-                                    </svg>
-                                    <span data-i18n="overview.server_ips">Server Host IP(s):</span>
-                                    <span class="wan-iface-tag" id="wanIfaceTag">eth0</span>
-                                </div>
-                            </div>
-                            <div class="server-ips-list" id="serverIpsList">
-                                <span class="ip-pill-loading" data-i18n="overview.detecting">Detecting...</span>
-                            </div>
-                        </div>
-
-                        <!-- Tunnel Interfaces List / Grid -->
-                        <div class="tunnel-grid" id="tunnelGrid">
-                            <!-- Dynamically populated via app.js -->
-                        </div>
-                    </div>
-
-                    <!-- Column 2: Relay Engines Card -->
+                    <!-- Relay Engines Compact Strip -->
                     <div class="engines-card" id="servicesStatusBar">
                         <div class="engines-card-header">
                             <div class="engines-title-group">
-                                <div class="stat-icon icon-emerald" style="width:36px;height:36px;">
-                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <div class="stat-icon icon-emerald" style="width:32px;height:32px;">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                         <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
                                     </svg>
                                 </div>
-                                <div>
-                                    <div class="engines-header-title">
-                                        <h3 data-i18n="overview.engines_title">Relay Engines</h3>
-                                        <span class="stat-badge badge-active" id="topRelayActiveBadge" data-i18n="overview.all_active">ALL ACTIVE</span>
-                                    </div>
-                                    <span class="engines-subtitle" data-i18n="overview.engines_sub">Kernel NAT & user-space stream proxies</span>
+                                <div class="engines-header-title">
+                                    <h3 data-i18n="overview.engines_title">Relay Engines</h3>
+                                    <span class="stat-badge badge-active" id="topRelayActiveBadge" data-i18n="overview.all_active">ALL ACTIVE</span>
                                 </div>
+                            </div>
+                            <div class="engines-footer">
+                                <span class="engines-footer-icon">
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                                </span>
+                                <span class="engines-footer-text" data-i18n="overview.zero_collision">Zero-Collision Isolation Active</span>
                             </div>
                         </div>
 
@@ -1006,10 +960,7 @@
                                     <div class="engine-sub-icon icon-amber">
                                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
                                     </div>
-                                    <div class="engine-info">
-                                        <span class="engine-name" data-i18n="overview.nft_name">NFTables DNAT</span>
-                                        <span class="engine-desc" data-i18n="overview.nft_desc">Kernel Layer-3 Tunnel Forwarding</span>
-                                    </div>
+                                    <span class="engine-name" data-i18n="overview.nft_name">NFTables DNAT</span>
                                 </div>
                                 <div class="svc-status-pill">
                                     <span class="svc-pill-dot dot-checking" id="svcDotNft"></span>
@@ -1023,10 +974,7 @@
                                     <div class="engine-sub-icon icon-emerald">
                                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
                                     </div>
-                                    <div class="engine-info">
-                                        <span class="engine-name" data-i18n="overview.haproxy_name">HAProxy Relay</span>
-                                        <span class="engine-desc" data-i18n="overview.haproxy_desc">Layer-4 Direct TCP/UDP Stream</span>
-                                    </div>
+                                    <span class="engine-name" data-i18n="overview.haproxy_name">HAProxy Relay</span>
                                 </div>
                                 <div class="svc-status-pill">
                                     <span class="svc-pill-dot dot-checking" id="svcDotHaproxy"></span>
@@ -1040,10 +988,7 @@
                                     <div class="engine-sub-icon icon-cyan">
                                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"/><rect x="2" y="14" width="20" height="8" rx="2" ry="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg>
                                     </div>
-                                    <div class="engine-info">
-                                        <span class="engine-name" data-i18n="overview.nginx_name">Nginx Stream</span>
-                                        <span class="engine-desc" data-i18n="overview.nginx_desc">High-Concurrency TCP/UDP Proxy</span>
-                                    </div>
+                                    <span class="engine-name" data-i18n="overview.nginx_name">Nginx Stream</span>
                                 </div>
                                 <div class="svc-status-pill">
                                     <span class="svc-pill-dot dot-checking" id="svcDotNginx"></span>
@@ -1051,13 +996,39 @@
                                 </div>
                             </div>
                         </div>
+                    </div>
 
-                        <!-- Bottom Zero-Collision Guard -->
-                        <div class="engines-footer">
-                            <span class="engines-footer-icon">
-                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-                            </span>
-                            <span class="engines-footer-text" data-i18n="overview.zero_collision">Zero-Collision Isolation Active</span>
+                    <!-- Server Network & Tunnel Topology Card -->
+                    <div class="network-card" id="networkCard">
+                        <div class="network-card-header">
+                            <div class="net-title-group">
+                                <div class="stat-icon icon-cyan" style="width:32px;height:32px;">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                        stroke-width="2">
+                                        <circle cx="12" cy="12" r="10" />
+                                        <line x1="2" y1="12" x2="22" y2="12" />
+                                        <path
+                                             d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+                                    </svg>
+                                </div>
+                                <div class="net-header-title">
+                                    <h3 data-i18n="overview.net_title">Server Network &amp; Tunnel Topology</h3>
+                                    <span class="net-pill-badge" id="netActiveTunnelsBadge">0 Tunnels</span>
+                                </div>
+                            </div>
+
+                            <!-- Inline Host WAN IPs -->
+                            <div class="server-wan-box">
+                                <span class="wan-iface-tag" id="wanIfaceTag">eth0</span>
+                                <div class="server-ips-list" id="serverIpsList">
+                                    <span class="ip-pill-loading" data-i18n="overview.detecting">Detecting...</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Tunnel Interfaces Adaptive Grid -->
+                        <div class="tunnel-grid" id="tunnelGrid">
+                            <!-- Dynamically populated via stats.js -->
                         </div>
                     </div>
                 </div>
@@ -1357,7 +1328,7 @@
                 </div>
                 <div class="overview-grid settings-grid">
                     <!-- Configuration Backup & Migration Card -->
-                    <div class="overview-card" style="grid-column: 1 / -1;">
+                    <div class="overview-card">
                         <div class="overview-card-header">
                             <div class="overview-card-title">
                                 <div class="stat-icon icon-cyan" style="width:36px;height:36px;">
@@ -1376,10 +1347,10 @@
                             </div>
                         </div>
                         <div class="overview-card-body">
-                            <p class="section-desc" style="margin-bottom:14px;" data-i18n="security.backup_desc">Safely backup or restore your forwarding
+                            <p class="section-desc" style="margin-bottom:18px;" data-i18n="security.backup_desc">Safely backup or restore your forwarding
                                 rules and operational parameters. Exported files are cryptographically sanitized to
                                 exclude administrative passwords.</p>
-                            <div class="settings-btn-grid" style="max-width: 480px;">
+                            <div class="settings-btn-grid">
                                 <button type="button" class="btn btn-secondary" id="btnExportConfigSec">
                                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                                         stroke-width="2">
@@ -1460,12 +1431,12 @@
                     </div>
                 </div>
                 <div class="updates-page-shell">
-                    <!-- System & Software Updates Card -->
-                    <div class="overview-card" id="cardSystemUpdate">
-                        <div class="overview-card-header">
+                    <!-- System & Software Updates Hero Card -->
+                    <div class="overview-card updates-hero-card" id="cardSystemUpdate">
+                        <div class="overview-card-header updates-hero-header">
                             <div class="overview-card-title">
-                                <div class="stat-icon icon-cyan" style="width:36px;height:36px;">
-                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                <div class="stat-icon icon-cyan updates-hero-icon">
+                                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                                         stroke-width="2">
                                         <polyline points="8 17 12 21 16 17" />
                                         <line x1="12" y1="12" x2="12" y2="21" />
@@ -1473,37 +1444,16 @@
                                     </svg>
                                 </div>
                                 <div>
-                                    <h3 data-i18n="security.updates_title">System &amp; Software Updates</h3>
+                                    <div class="updates-title-row">
+                                        <h3 data-i18n="security.updates_title">System &amp; Software Updates</h3>
+                                        <span class="stat-badge badge-active" id="badgeUpdateStatus" data-i18n="status.checking">CHECKING</span>
+                                    </div>
                                     <span class="overview-card-sub" data-i18n="security.updates_sub">Check GitHub releases, auto-migrate schema &amp; upgrade services</span>
                                 </div>
                             </div>
-                            <span class="stat-badge badge-active" id="badgeUpdateStatus" data-i18n="status.checking">CHECKING</span>
-                        </div>
-                        <div class="overview-card-body">
-                            <div class="overview-info-list" style="margin-bottom:16px;">
-                                <div class="info-item">
-                                    <span class="info-label" data-i18n="security.installed_version">Installed Version</span>
-                                    <span class="info-value font-mono text-emerald" id="valInstalledVersion">v1.5.0</span>
-                                </div>
-                                <div class="info-item">
-                                    <span class="info-label" data-i18n="security.local_commit">Local Git Commit</span>
-                                    <span class="info-value font-mono" id="valLocalCommit" data-i18n="status.checking">Checking...</span>
-                                </div>
-                                <div class="info-item">
-                                    <span class="info-label" data-i18n="security.remote_commit">Latest GitHub Commit</span>
-                                    <span class="info-value font-mono" id="valRemoteCommit" data-i18n="status.checking">Checking...</span>
-                                </div>
-                                <div class="info-item">
-                                    <span class="info-label" data-i18n="security.last_checked">Last Checked</span>
-                                    <span class="info-value" id="valLastChecked" data-i18n="security.never">Never</span>
-                                </div>
-                            </div>
-
-                            <div id="updateStatusNotice" class="update-notice" style="display:none; margin-bottom:14px; padding:10px 14px; border-radius:8px; font-size:0.82rem;"></div>
-
-                            <div class="settings-btn-grid">
+                            <div class="updates-hero-actions">
                                 <button type="button" class="btn btn-secondary" id="btnCheckUpdates">
-                                    <svg id="iconCheckUpdates" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <svg id="iconCheckUpdates" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                         <path d="M23 4v6h-6" />
                                         <path d="M1 20v-6h6" />
                                         <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
@@ -1511,7 +1461,7 @@
                                     <span data-i18n="security.check_updates">Check for Updates</span>
                                 </button>
                                 <button type="button" class="btn btn-primary" id="btnTriggerUpdate" disabled="disabled" title="Check for updates first">
-                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                         <polyline points="8 17 12 21 16 17" />
                                         <line x1="12" y1="12" x2="12" y2="21" />
                                         <path d="M20.88 18.09A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.29" />
@@ -1519,9 +1469,99 @@
                                     <span id="btnTriggerUpdateText" data-i18n="security.update_latest">Update to Latest</span>
                                 </button>
                             </div>
-                            <p class="section-desc" style="margin-top:12px; margin-bottom:0; font-size:0.75rem;" data-i18n="security.update_note">
-                                Updates automatically backup active configuration (<code class="font-mono">config.json.bak</code>), migrate schema structures, and preserve all custom ports and credentials with zero data loss.
-                            </p>
+                        </div>
+                        <div class="overview-card-body">
+                            <div id="updateStatusNotice" class="update-notice" style="display:none; margin-bottom:18px; padding:12px 16px; border-radius:10px; font-size:0.84rem;"></div>
+
+                            <div class="updates-telemetry-grid">
+                                <div class="update-stat-tile">
+                                    <span class="update-tile-label" data-i18n="security.installed_version">Installed Version</span>
+                                    <span class="update-tile-value font-mono text-emerald" id="valInstalledVersion">v1.5.0</span>
+                                </div>
+                                <div class="update-stat-tile">
+                                    <span class="update-tile-label" data-i18n="security.local_commit">Local Git Commit</span>
+                                    <span class="update-tile-value font-mono" id="valLocalCommit" data-i18n="status.checking">Checking...</span>
+                                </div>
+                                <div class="update-stat-tile">
+                                    <span class="update-tile-label" data-i18n="security.remote_commit">Latest GitHub Commit</span>
+                                    <span class="update-tile-value font-mono" id="valRemoteCommit" data-i18n="status.checking">Checking...</span>
+                                </div>
+                                <div class="update-stat-tile">
+                                    <span class="update-tile-label" data-i18n="security.last_checked">Last Checked</span>
+                                    <span class="update-tile-value" id="valLastChecked" data-i18n="security.never">Never</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Upgrade Lifecycle & Guarantees Grid -->
+                    <div class="updates-info-grid">
+                        <div class="overview-card">
+                            <div class="overview-card-header">
+                                <div class="overview-card-title">
+                                    <div class="stat-icon icon-emerald" style="width:36px;height:36px;">
+                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+                                        </svg>
+                                    </div>
+                                    <div>
+                                        <h3 data-i18n="updates.pipeline_title">Automated Upgrade Pipeline</h3>
+                                        <span class="overview-card-sub" data-i18n="updates.pipeline_sub">Zero-downtime execution sequence</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="overview-card-body">
+                                <div class="update-pipeline-list">
+                                    <div class="update-step-item">
+                                        <span class="update-step-num font-mono">01</span>
+                                        <div class="update-step-text">
+                                            <strong data-i18n="updates.step1_title">Atomic Configuration Snapshot</strong>
+                                            <span data-i18n="updates.step1_desc">Creates a timestamped backup of active rules and auth before pulling code.</span>
+                                        </div>
+                                    </div>
+                                    <div class="update-step-item">
+                                        <span class="update-step-num font-mono">02</span>
+                                        <div class="update-step-text">
+                                            <strong data-i18n="updates.step2_title">Idempotent Schema Migration</strong>
+                                            <span data-i18n="updates.step2_desc">Normalizes config structures while preserving custom ports and credentials.</span>
+                                        </div>
+                                    </div>
+                                    <div class="update-step-item">
+                                        <span class="update-step-num font-mono">03</span>
+                                        <div class="update-step-text">
+                                            <strong data-i18n="updates.step3_title">Decoupled Service Reload</strong>
+                                            <span data-i18n="updates.step3_desc">Executes via isolated systemd-run unit to prevent active session drops.</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="overview-card">
+                            <div class="overview-card-header">
+                                <div class="overview-card-title">
+                                    <div class="stat-icon icon-indigo" style="width:36px;height:36px;">
+                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                                            <polyline points="9 12 11 14 15 10" />
+                                        </svg>
+                                    </div>
+                                    <div>
+                                        <h3 data-i18n="updates.safety_title">Release Integrity &amp; Data Safety</h3>
+                                        <span class="overview-card-sub" data-i18n="updates.safety_sub">Backward compatibility guarantees</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="overview-card-body">
+                                <p class="section-desc updates-safety-note" data-i18n="security.update_note">
+                                    Updates automatically backup active configuration (<code class="font-mono">config.json.bak</code>), migrate schema structures, and preserve all custom ports and credentials with zero data loss.
+                                </p>
+                                <div class="updates-guarantees-pills">
+                                    <span class="update-guarantee-pill" data-i18n="updates.pill_backup">Auto Backup (.bak)</span>
+                                    <span class="update-guarantee-pill" data-i18n="updates.pill_rules">Rules &amp; Ports Preserved</span>
+                                    <span class="update-guarantee-pill" data-i18n="updates.pill_auth">PBKDF2 Auth Retained</span>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>

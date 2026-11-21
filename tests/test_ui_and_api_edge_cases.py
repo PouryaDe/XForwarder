@@ -693,9 +693,10 @@ class TestUIAndAPIEdgeCases(unittest.TestCase):
         self.assertIn('class="engine-item" id="svcPillHaproxy"', html)
         self.assertIn('class="engine-item" id="svcPillNginx"', html)
 
-        # CSS has grid and responsive collapse
+        # CSS has compact stack, 3-column engines strip, and adaptive tunnel grid
         self.assertIn(".topology-engines-grid", css)
-        self.assertIn("grid-template-columns: minmax(0, 1.25fr) minmax(0, 0.75fr)", css)
+        self.assertIn("grid-template-columns: repeat(3, minmax(0, 1fr))", css)
+        self.assertIn("grid-template-columns: repeat(auto-fit, minmax(min(100%, 245px), 1fr))", css)
         self.assertIn(".engine-item", css)
 
     def test_validate_rule_haproxy_requires_ipv6(self):

@@ -1,7 +1,7 @@
 # Graph Report - Forward-Manager  (2026-11-21)
 
 ## Corpus Check
-- 107 files · ~150,242 words
+- 107 files · ~150,532 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 14 file(s) not represented in the graph (top: .css 7, .service 4, (none) 2)
 
@@ -11,7 +11,7 @@
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `026b6878`
+- Built from commit: `9be62838`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -425,17 +425,17 @@ Nodes (3): initTheme(), toggleTheme(), updateThemeToggleUI()
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `XForwarderEngine` connect `XForwarderEngine` to `.test_engine_wake_event_sets_and_clears`, `TestXForwarderMigration`, `.test_haproxy_performance_options_rendered`, `engine.py`, `session-state.py`, `.test_haproxy_single_core_omits_nbthread_and_cpumap`, `.test_haproxy_multicore_renders_both_nbthread_and_cpumap`, `.test_haproxy_syntax_validation_real_error_fails`, `TrafficCollector`, `.test_nginx_stream_sync_firewall_udp_and_proxy_protocol`, `TestTrafficAwareFailover`, `TestToggleDestination`, `TestNginxStreamEngine`, `TestEngineProbes`, `⚡ Core Rules & Constraints`, `TestFastFailoverAndAntiFlap`, `web_server.py`, `TestTargetMetricCache`, `import_config_data`, `engine.py`, `web_server.py`, `config_manager.py`, `TestPerformanceAndOptimizations`, `.test_haproxy_performance_fallback_on_old_binary`, `.test_nftables_dual_stack_rules_generation`?**
+- **Why does `⚡ Core Rules & Constraints` connect `⚡ Core Rules & Constraints` to `import_config_data`, `escapeHtml`, `config_manager.py`, `⚡ Core Rules & Constraints`, `read_haproxy_backend_health`, `LossMonitorScheduler`, `nftables_parser.py`, `import_nftables_rules_into_config`, `rules.js`, `parse_ping_replies`, `engine.py`?**
   _High betweenness centrality (0.196) - this node is a cross-community bridge._
 - **Are the 11 inferred relationships involving `XForwarderEngine` (e.g. with `2. Root Cause / Core Dynamics` and `TrafficCollector`) actually correct?**
   _`XForwarderEngine` has 11 INFERRED edges - model-reasoned connections that need verification._
 - **Should `.do_GET` be split into smaller, more focused modules?**
   _Cohesion score 0.0855614973262032 - nodes in this community are weakly interconnected._
-- **Why does `⚡ Core Rules & Constraints` connect `⚡ Core Rules & Constraints` to `import_config_data`, `escapeHtml`, `config_manager.py`, `⚡ Core Rules & Constraints`, `read_haproxy_backend_health`, `LossMonitorScheduler`, `nftables_parser.py`, `import_nftables_rules_into_config`, `rules.js`, `parse_ping_replies`, `engine.py`?**
-  _High betweenness centrality (0.172) - this node is a cross-community bridge._
+- **Why does `XForwarderEngine` connect `XForwarderEngine` to `.test_engine_wake_event_sets_and_clears`, `TestXForwarderMigration`, `.test_haproxy_performance_options_rendered`, `engine.py`, `session-state.py`, `.test_haproxy_single_core_omits_nbthread_and_cpumap`, `.test_haproxy_multicore_renders_both_nbthread_and_cpumap`, `.test_haproxy_syntax_validation_real_error_fails`, `TrafficCollector`, `.test_nginx_stream_sync_firewall_udp_and_proxy_protocol`, `TestTrafficAwareFailover`, `TestToggleDestination`, `TestNginxStreamEngine`, `TestEngineProbes`, `⚡ Core Rules & Constraints`, `TestFastFailoverAndAntiFlap`, `web_server.py`, `TestTargetMetricCache`, `import_config_data`, `engine.py`, `web_server.py`, `config_manager.py`, `TestPerformanceAndOptimizations`, `.test_haproxy_performance_fallback_on_old_binary`, `.test_nftables_dual_stack_rules_generation`?**
+  _High betweenness centrality (0.176) - this node is a cross-community bridge._
 - **Should `🌐 XForwarder` be split into smaller, more focused modules?**
   _Cohesion score 0.14285714285714285 - nodes in this community are weakly interconnected._
 - **Why does `TestUIAndAPIEdgeCases` connect `TestUIAndAPIEdgeCases` to `.test_services_status_api_and_dom`, `.do_GET`, `.test_nftables_destination_must_be_ip_address`, `.test_installer_nginx_ipv6_and_dpkg_recovery_guards`, `.test_rules_view_toggle_and_category_assets`, `.test_restart_services_action_logic`, `.test_frontend_css_no_hover_motion_transforms`, `.test_frontend_js_latency_and_priority_shortening`, `.test_service_restart_dom_and_ui_wiring`, `TestXForwarderSecurity`, `.test_overview_relay_engines_alignment_and_responsive`, `.test_validate_rule_arbitrary_priorities`, `.test_topology_and_engines_grid_layout`, `.test_service_restart_edge_cases_and_failures`, `.test_nova_admin_design_system_and_login_cleanup`, `.test_system_version_and_update_apis`, `.test_validate_rule_destination_defaults_port_if_missing`, `.test_copy_port_and_category_json_and_import_modal`, `.test_clean_page_headers_dedicated_updates_and_hashless_routing`, `.test_frontend_css_no_hover_borders_and_subtle_transitions`, `.test_drag_and_drop_priority_reordering_integrity`, `.test_packet_loss_diagnostic_tool_elements`, `.test_static_assets_integrity`, `.test_rule_category_and_created_at_validation`, `.test_security_settings_responsive_layout_and_info_item_wrapping`, `.test_isolated_ping_latency_and_packet_loss_badges_and_v1_4_0_standards`, `.test_full_responsive_system_integrity`, `XForwarderEngine`, `.test_latency_badge_classification_edge_cases`, `.test_override_endpoint_flushes_conntrack`, `web_server.py`, `config_manager.py`, `.test_system_update_dom_and_ui_wiring`, `get_traffic_summary`, `.test_pre_auth_flicker_prevention`, `.test_validate_rule_invalid_characters_rejected`, `.test_login_form_event_prevention_and_auth_integrity`, `.test_version_detection_with_commit_file_and_fallback`, `.test_switch_logs_modal_and_event_persistence`, `.test_cli_ovira_mint_tui_design_and_safety_guards`, `.test_topbar_extended_system_metrics_and_api`, `.test_get_update_status_parsing_and_ansi_cleaning`, `.test_session_token_header_authentication_flow`, `.test_ui_proxy_protocol_and_test_target_dom`, `.test_ovira_login_split_screen_and_controls_integrity`, `.test_static_asset_cache_control_and_versioning`, `.test_dark_theme_tokens_and_restrained_highlights`, `.test_dark_and_light_theme_button_color_harmonization`, `.test_validate_rule_empty_destinations_rejected`, `.test_nftables_dual_stack_rules_generation`, `.test_get_remote_version_info_rate_limit_fallback`, `.test_service_restart_api_endpoints`?**
-  _High betweenness centrality (0.104) - this node is a cross-community bridge._
+  _High betweenness centrality (0.120) - this node is a cross-community bridge._
 - **Should `TestXForwarderMigration` be split into smaller, more focused modules?**
   _Cohesion score 0.08 - nodes in this community are weakly interconnected._

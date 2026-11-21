@@ -808,6 +808,18 @@
     padding-left: 0 !important;
 }
 
+[dir="rtl"] .update-tile-value.font-mono,
+[dir="rtl"] .update-step-num {
+    direction: ltr !important;
+    unicode-bidi: embed !important;
+}
+
+[dir="rtl"] .update-tile-label,
+[dir="rtl"] .update-tile-value,
+[dir="rtl"] .update-step-text {
+    text-align: right !important;
+}
+
 /* 12. Tables & Disruption Logs in RTL */
 [dir="rtl"] table,
 [dir="rtl"] th,

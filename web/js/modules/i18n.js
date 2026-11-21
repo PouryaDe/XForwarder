@@ -259,6 +259,19 @@ export const TRANSLATIONS = {
         // Section 5: System Updates
         "updates.title": "System Updates",
         "updates.desc": "Check GitHub releases, automatically migrate schemas, and upgrade relay services.",
+        "updates.pipeline_title": "Automated Upgrade Pipeline",
+        "updates.pipeline_sub": "Zero-downtime execution sequence",
+        "updates.step1_title": "Atomic Configuration Snapshot",
+        "updates.step1_desc": "Creates a timestamped backup of active rules and auth before pulling code.",
+        "updates.step2_title": "Idempotent Schema Migration",
+        "updates.step2_desc": "Normalizes config structures while preserving custom ports and credentials.",
+        "updates.step3_title": "Decoupled Service Reload",
+        "updates.step3_desc": "Executes via isolated systemd-run unit to prevent active session drops.",
+        "updates.safety_title": "Release Integrity & Data Safety",
+        "updates.safety_sub": "Backward compatibility guarantees",
+        "updates.pill_backup": "Auto Backup (.bak)",
+        "updates.pill_rules": "Rules & Ports Preserved",
+        "updates.pill_auth": "PBKDF2 Auth Retained",
 
         // Section 6: Logs & Probes
         "logs.title": "Real-time Failover & Probe Logs",
@@ -697,6 +710,19 @@ export const TRANSLATIONS = {
         // Section 5: System Updates
         "updates.title": "به‌روزرسانی سیستم",
         "updates.desc": "بررسی نسخه‌های جدید گیت‌هاب، مهاجرت خودکار ساختار تنظیمات و ارتقای ایمن سرویس‌های رله.",
+        "updates.pipeline_title": "روند ارتقای خودکار",
+        "updates.pipeline_sub": "ترتیب اجرای بدون قطعی",
+        "updates.step1_title": "نسخه پشتیبان اتمیک از تنظیمات",
+        "updates.step1_desc": "ایجاد بکاپ زمان‌دار از قوانین فعال و اطلاعات ورود پیش از دریافت کد جدید.",
+        "updates.step2_title": "مهاجرت خودکار ساختار (Schema)",
+        "updates.step2_desc": "همگام‌سازی ساختار فایل تنظیمات با حفظ کامل پورت‌های اختصاصی و رمزها.",
+        "updates.step3_title": "راه‌اندازی مجدد ایزوله سرویس‌ها",
+        "updates.step3_desc": "اجرا در واحد مستقل systemd-run جهت جلوگیری از قطع نشست‌های فعال.",
+        "updates.safety_title": "یکپارچگی نسخه و امنیت داده‌ها",
+        "updates.safety_sub": "تضمین سازگاری با نسخه‌های قبلی",
+        "updates.pill_backup": "بکاپ خودکار (.bak)",
+        "updates.pill_rules": "حفظ قوانین و پورت‌ها",
+        "updates.pill_auth": "حفظ رمزنگاری PBKDF2",
 
         // Section 6: Logs & Probes
         "logs.title": "لاگ‌های زنده پروب و تغییر مسیر",
