@@ -3,7 +3,7 @@
 // ============================================================================
 
 import { API_BASE } from "./api.js";
-import { showToast, escapeHtml, copyJsonToClipboard } from "./utils.js";
+import { showToast, escapeHtml, copyJsonToClipboard, getRuleId } from "./utils.js";
 import { currentRules } from "./state.js";
 
 let currentImportConfig = null;
@@ -48,7 +48,7 @@ export function getSanitizedRuleForExport(rule) {
 
 export function copyRuleJson(ruleId) {
     if (!Array.isArray(currentRules)) return;
-    const rule = currentRules.find(r => String(r.id || `rule-${r.port}`) === String(ruleId));
+    const rule = currentRules.find(r => getRuleId(r) === String(ruleId));
     if (!rule) {
         showToast("Port rule not found", "error");
         return;

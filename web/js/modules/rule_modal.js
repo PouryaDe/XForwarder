@@ -3,7 +3,7 @@
 // ============================================================================
 
 import { API_BASE } from "./api.js";
-import { escapeHtml, showToast } from "./utils.js";
+import { escapeHtml, showToast, getRuleId } from "./utils.js";
 import { currentRules, lastNetwork, setLastNetwork } from "./state.js";
 import { updateCategoryDatalist } from "./rules.js";
 import { t } from "./i18n.js";
@@ -185,7 +185,7 @@ export function openAddRuleModal() {
 
 export function openEditRuleModal(ruleId) {
     currentEditingRuleId = String(ruleId);
-    const rule = (currentRules || []).find(r => String(r.id || `rule-${r.port}`) === currentEditingRuleId);
+    const rule = (currentRules || []).find(r => getRuleId(r) === currentEditingRuleId);
     if (!rule) {
         showToast("Rule not found", "error");
         return;
@@ -204,7 +204,7 @@ export function openEditRuleModal(ruleId) {
     updateCategoryDatalist(currentRules);
 
     const ruleIdInput = document.getElementById("editRuleId") || document.getElementById("ruleId");
-    if (ruleIdInput) ruleIdInput.value = rule.id || `rule-${rule.port_range || rule.port}`;
+    if (ruleIdInput) ruleIdInput.value = getRuleId(rule);
 
     const portInput = document.getElementById("formPort");
     if (portInput) portInput.value = rule.port_range || rule.port || "1-65535";

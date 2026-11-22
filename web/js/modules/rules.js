@@ -3,7 +3,7 @@
 // ============================================================================
 
 import { API_BASE } from "./api.js";
-import { escapeHtml, safeInlineArg, formatLatencyBadge, formatLoss50Badge, formatLoss50Inline, formatConciseReason, formatProtoBadge, formatBytes, showToast, askConfirm } from "./utils.js";
+import { escapeHtml, safeInlineArg, encodeInlineParam, getRuleId, formatLatencyBadge, formatLoss50Badge, formatLoss50Inline, formatConciseReason, formatProtoBadge, formatBytes, showToast, askConfirm } from "./utils.js";
 import { currentRules, lastRuntime, lastTrafficData, lastLatestLoss } from "./state.js";
 import { t } from "./i18n.js";
 
@@ -77,7 +77,7 @@ export async function deleteCategoryRules(catKey, fetchStatusCallback) {
     );
     if (!confirmed) return;
 
-    const ruleIds = categoryRules.map(r => r.id || `rule-${r.port_range || r.port}`).filter(Boolean);
+    const ruleIds = categoryRules.map(r => getRuleId(r)).filter(Boolean);
     try {
         const res = await fetch(`${API_BASE}/rules/bulk-delete`, {
             method: "POST",
@@ -144,8 +144,8 @@ export function sortRulesList(rulesList, sortMode, rulesState) {
         }
 
         if (sortMode === "health") {
-            const rStateA = rulesState ? (rulesState[String(a.id || `rule-${a.port}`)] || {}) : {};
-            const rStateB = rulesState ? (rulesState[String(b.id || `rule-${b.port}`)] || {}) : {};
+            const rStateA = rulesState ? (rulesState[getRuleId(a)] || {}) : {};
+            const rStateB = rulesState ? (rulesState[getRuleId(b)] || {}) : {};
             const statA = (rStateA.dest_stats && rStateA.dest_stats[`prio_${a.active_priority || 1}`]) || {};
             const statB = (rStateB.dest_stats && rStateB.dest_stats[`prio_${b.active_priority || 1}`]) || {};
 
@@ -197,7 +197,7 @@ export function computeRulesFingerprint(filteredRules, rulesState) {
         `len:${filteredRules.length}`
     ];
     filteredRules.forEach(r => {
-        const id = String(r.id || `rule-${r.port}`);
+        const id = getRuleId(r);
         const st = rulesState[id] || {};
         const activePrio = r.active_priority || 1;
         const ds = (st.dest_stats && st.dest_stats[`prio_${activePrio}`]) || {};
@@ -265,7 +265,7 @@ export async function handlePathDrop(e, ruleId, toIndex) {
 
     if (fromRuleId !== ruleId || fromIndex === toIndex) return;
 
-    const rule = (currentRules || []).find(r => String(r.id || `rule-${r.port}`) === ruleId);
+    const rule = (currentRules || []).find(r => getRuleId(r) === ruleId);
     if (!rule || !rule.destinations) return;
 
     const dests = [...rule.destinations].sort((a, b) => (a.priority || 1) - (b.priority || 1));
@@ -296,8 +296,8 @@ export async function handlePathDrop(e, ruleId, toIndex) {
 }
 
 export function renderRuleCard(rule, rulesState) {
-    const ruleId = String(rule.id || `rule-${rule.port}`);
-    const encodedId = encodeURIComponent(ruleId);
+    const ruleId = getRuleId(rule);
+    const encodedId = encodeInlineParam(ruleId);
     const rState = (rulesState && rulesState[ruleId]) ? rulesState[ruleId] : {};
     const destStats = rState.dest_stats || {};
     const activePriority = rule.active_priority || 1;
@@ -498,8 +498,8 @@ export function renderRuleCard(rule, rulesState) {
 }
 
 export function renderRuleListRow(rule, rulesState) {
-    const ruleId = String(rule.id || `rule-${rule.port}`);
-    const encodedId = encodeURIComponent(ruleId);
+    const ruleId = getRuleId(rule);
+    const encodedId = encodeInlineParam(ruleId);
     const rState = (rulesState && rulesState[ruleId]) ? rulesState[ruleId] : {};
     const destStats = rState.dest_stats || {};
     const activePriority = rule.active_priority || 1;
@@ -640,8 +640,8 @@ export function renderRules(rules, runtime) {
     const rulesState = (runtime && runtime.rules_state) ? runtime.rules_state : {};
 
     const filtered = rules.filter(rule => {
-        const ruleId = String(rule.id || `rule-${rule.port}`).toLowerCase();
-        const portStr = String(rule.port || "");
+        const ruleId = getRuleId(rule).toLowerCase();
+        const portStr = String(rule.port_range || rule.port || "");
         const protoStr = String(rule.protocol || "both").toLowerCase();
         const protoSearchStr = protoStr === "both" ? "tcp udp both tcp+udp" : protoStr;
         const catStr = String(rule.category || "").toLowerCase();
@@ -660,7 +660,7 @@ export function renderRules(rules, runtime) {
             if (!matchesBasic && !matchesDest) return false;
         }
 
-        const rState = rulesState[String(rule.id || `rule-${rule.port}`)] || {};
+        const rState = rulesState[getRuleId(rule)] || {};
         const destStats = rState.dest_stats || {};
         const activePriority = rule.active_priority || 1;
         const activeStat = destStats[`prio_${activePriority}`] || {};
@@ -805,7 +805,7 @@ export async function handleOverrideChange(ruleId, val, fetchStatusCallback) {
         timestamp: Date.now()
     });
 
-    const rule = (currentRules || []).find(x => String(x.id || `rule-${x.port}`) === ruleId);
+    const rule = (currentRules || []).find(x => getRuleId(x) === ruleId);
     if (rule) {
         rule.force_override = prioVal;
         if (prioVal > 0) {
@@ -862,7 +862,7 @@ export async function toggleDestinationEnabled(event, ruleId, prio, fetchStatusC
         event.stopPropagation();
         event.preventDefault();
     }
-    const rule = (currentRules || []).find(r => String(r.id || `rule-${r.port}`) === ruleId);
+    const rule = (currentRules || []).find(r => getRuleId(r) === ruleId);
     if (!rule || !Array.isArray(rule.destinations)) return;
 
     const dest = rule.destinations.find(d => (d.priority || 1) === prio);
@@ -1037,10 +1037,10 @@ export function openSwitchLogsModal(targetRuleId = "all", port = "") {
         select.innerHTML = '<option value="all">All Port Rules</option>';
         if (Array.isArray(currentRules)) {
             currentRules.forEach(r => {
-                const rid = String(r.id || `rule-${r.port}`);
+                const rid = getRuleId(r);
                 const opt = document.createElement("option");
                 opt.value = rid;
-                opt.textContent = `Port :${r.port} (${rid})`;
+                opt.textContent = `Port :${r.port_range || r.port} (${rid})`;
                 if (rid === targetRuleId) opt.selected = true;
                 select.appendChild(opt);
             });

@@ -174,6 +174,55 @@ def _safe_flush_port_conntrack(port: Any) -> None:
         pass
 
 
+def _get_rule_effective_id(rule: Dict[str, Any]) -> str:
+    """Returns canonical rule ID, deriving a deterministic fallback for range/exclusion/port rules."""
+    raw_id = str(rule.get("id") or "").strip()
+    if raw_id:
+        return raw_id
+    excl = rule.get("excluded_ports")
+    if isinstance(excl, list) and excl:
+        return f"rule-excl-{'-'.join(str(p) for p in excl[:5])}"
+    label = str(rule.get("port_range") or rule.get("port") or "").strip()
+    return f"rule-{label}" if label else ""
+
+
+def _get_rule_all_ids(rule: Dict[str, Any]) -> List[str]:
+    """Collects explicit and derived rule IDs for matching and runtime state cleanup."""
+    ids: List[str] = []
+    raw_id = str(rule.get("id") or "").strip()
+    if raw_id:
+        ids.append(raw_id)
+    excl = rule.get("excluded_ports")
+    prange = str(rule.get("port_range") or "").strip()
+    port = rule.get("port")
+    if isinstance(excl, list) and excl:
+        ids.append(f"rule-excl-{'-'.join(str(p) for p in excl[:5])}")
+        ids.append(f"rule-!={','.join(str(p) for p in excl[:4])}")
+    if prange:
+        ids.append(f"rule-{prange}")
+    if port is not None and str(port).strip():
+        ids.append(f"rule-{port}")
+    return [i for i in dict.fromkeys(ids) if i]
+
+
+def _rule_matches_target_id(rule: Dict[str, Any], target_id: str) -> bool:
+    """Matches a rule by explicit ID or, when explicit ID is missing/empty, by fallback IDs."""
+    target = unquote(str(target_id or "")).strip()
+    if not target:
+        return False
+    raw_id = str(rule.get("id") or "").strip()
+    if raw_id:
+        return raw_id == target
+    candidates = set(_get_rule_all_ids(rule))
+    prange = str(rule.get("port_range") or "").strip()
+    port = rule.get("port")
+    if prange:
+        candidates.add(prange)
+    if port is not None and str(port).strip():
+        candidates.add(str(port).strip())
+    return target in candidates
+
+
 # Backward compatibility aliases for engine imports
 try:
     from engine import XForwarderEngine
@@ -472,7 +521,7 @@ class XForwarderWebHandler(BaseHTTPRequestHandler):
                 rules_list = cfg.get("rules", []) if isinstance(cfg, dict) else []
                 rule_dest_targets: Dict[str, Dict[str, str]] = {}
                 for r in rules_list:
-                    rid = str(r.get("id", f"rule-{r.get('port')}"))
+                    rid = _get_rule_effective_id(r)
                     r_port = str(r.get("port", ""))
                     d_map = {}
                     for d in r.get("destinations", []):
@@ -865,10 +914,9 @@ class XForwarderWebHandler(BaseHTTPRequestHandler):
             matched_rule = None
             matched_rule_id = rule_id
             for r in cfg.get("rules", []):
-                r_id = str(r.get("id") or f"rule-{r.get('port')}")
-                if r.get("id") == rule_id or r_id == rule_id or str(r.get("port")) == rule_id:
+                if _rule_matches_target_id(r, rule_id):
                     matched_rule = r
-                    matched_rule_id = r.get("id") or r_id
+                    matched_rule_id = _get_rule_effective_id(r) or rule_id
                     r["force_override"] = override_prio
                     if override_prio > 0:
                         r["active_priority"] = override_prio
@@ -998,10 +1046,9 @@ class XForwarderWebHandler(BaseHTTPRequestHandler):
             matched_rule_id = rule_id
 
             for r in cfg.get("rules", []):
-                r_id = str(r.get("id") or f"rule-{r.get('port')}")
-                if r.get("id") == rule_id or r_id == rule_id or str(r.get("port")) == rule_id:
+                if _rule_matches_target_id(r, rule_id):
                     found_rule = r
-                    matched_rule_id = r.get("id") or r_id
+                    matched_rule_id = _get_rule_effective_id(r) or rule_id
                     for d in r.get("destinations", []):
                         if int(d.get("priority", 1)) == target_prio:
                             found_dest = d
@@ -1111,17 +1158,21 @@ class XForwarderWebHandler(BaseHTTPRequestHandler):
             if not isinstance(raw_ids, list) or len(raw_ids) == 0:
                 self.send_json({"ok": False, "error": "rule_ids list required"}, 400)
                 return
-            del_ids = {str(rid).strip() for rid in raw_ids if str(rid).strip()}
+            del_ids = {unquote(str(rid)).strip() for rid in raw_ids if str(rid).strip()}
             if not del_ids:
                 self.send_json({"ok": False, "error": "No valid rule IDs"}, 400)
                 return
             cfg = load_config()
             orig_rules = cfg.get("rules", [])
-            remaining = [r for r in orig_rules if str(r.get("id", "")).strip() not in del_ids]
+            removed_rules = [r for r in orig_rules if any(_rule_matches_target_id(r, did) for did in del_ids)]
+            remaining = [r for r in orig_rules if not any(_rule_matches_target_id(r, did) for did in del_ids)]
             removed_count = len(orig_rules) - len(remaining)
             cfg["rules"] = remaining
             if save_config(cfg):
-                remove_state_rules(list(del_ids))
+                cleanup_ids = list(del_ids)
+                for rr in removed_rules:
+                    cleanup_ids.extend(_get_rule_all_ids(rr))
+                remove_state_rules(list(dict.fromkeys(cleanup_ids)))
                 sync_ok, sync_errors = sync_rules_and_notify(max_retries=2)
                 self.send_json({
                     "ok": True,
@@ -1356,15 +1407,25 @@ class XForwarderWebHandler(BaseHTTPRequestHandler):
             return
 
         if subpath.startswith("/api/rule/"):
-            rule_id = subpath.split("/api/rule/")[1].strip()
+            rule_id = unquote(subpath.split("/api/rule/", 1)[1]).strip()
+            if not rule_id:
+                self.send_json({"ok": False, "error": "Rule ID required"}, 400)
+                return
             cfg = load_config()
-            cfg["rules"] = [r for r in cfg.get("rules", []) if r.get("id") != rule_id]
+            orig_rules = cfg.get("rules", [])
+            removed_rules = [r for r in orig_rules if _rule_matches_target_id(r, rule_id)]
+            cfg["rules"] = [r for r in orig_rules if not _rule_matches_target_id(r, rule_id)]
+            removed_count = len(orig_rules) - len(cfg["rules"])
             if save_config(cfg):
-                remove_state_rules([rule_id])
+                cleanup_ids = [rule_id]
+                for rr in removed_rules:
+                    cleanup_ids.extend(_get_rule_all_ids(rr))
+                remove_state_rules(list(dict.fromkeys(cleanup_ids)))
                 sync_ok, sync_errors = sync_rules_and_notify(max_retries=2)
                 self.send_json({
                     "ok": True,
                     "deleted": rule_id,
+                    "deleted_count": removed_count,
                     "sync_ok": sync_ok,
                     "sync_errors": sync_errors
                 })

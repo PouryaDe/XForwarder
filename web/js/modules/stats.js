@@ -2,7 +2,7 @@
 // XForwarder Web UI - Host Telemetry & Topology Renderer (Native ES Module)
 // ============================================================================
 
-import { formatBytes, formatTrafficMB, formatEngineVersion, escapeHtml, showToast } from "./utils.js";
+import { formatBytes, formatTrafficMB, formatEngineVersion, escapeHtml, showToast, getRuleId } from "./utils.js";
 import { lastTrafficData } from "./state.js";
 import { t } from "./i18n.js";
 
@@ -583,7 +583,7 @@ export function renderStats(rules, runtime, traffic) {
             if (dest.type === "nftables" || dest.type === "nftables_dsr" || dest.type === "nftables_dsr_relay") nftablesCount++;
         }
 
-        const rId = String(r.id || `rule-${r.port}`);
+        const rId = getRuleId(r);
         const rState = rulesState[rId] || {};
         const destStats = rState.dest_stats || {};
         const activeStat = destStats[`prio_${activePrio}`] || {};

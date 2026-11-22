@@ -3212,6 +3212,69 @@ stream {
         self.assertIn(".rule-category-section.is-collapsed .rule-category-body", style_css)
         self.assertIn('subpath == "/api/rules/bulk-delete"', ws_py)
 
+    def test_delete_port_range_and_encoded_rule_ids(self):
+        """Verifies single and bulk rule deletion handles port ranges, missing IDs, and URL-encoded IDs."""
+        import io
+        from core.web_server import XForwarderWebHandler
+
+        def make_handler(method_path, payload_obj=None):
+            h = MagicMock()
+            h.headers = {"Host": "127.0.0.1:8080", "Origin": "http://127.0.0.1:8080"}
+            h.is_authenticated.return_value = True
+            h.check_origin.return_value = True
+            h.resolve_path.return_value = (True, method_path, "")
+            if payload_obj is not None:
+                raw = json.dumps(payload_obj).encode("utf-8")
+                h.headers["Content-Length"] = str(len(raw))
+                h.rfile = io.BytesIO(raw)
+            return h
+
+        base_rules = [
+            {"id": "rule-10000-20000", "port": 10000, "port_range": "10000-20000", "protocol": "both", "destinations": []},
+            {"id": "rule-!=22,443", "port": 1, "port_range": "1-65535", "excluded_ports": [22, 443], "protocol": "both", "destinations": []},
+            {"id": "Imported NFTables 8000-9000 (8000-8089)", "port": 8000, "port_range": "8000-8089", "protocol": "tcp", "destinations": []},
+            {"port": 30000, "port_range": "30000-31000", "protocol": "both", "destinations": []},
+        ]
+        state_store = {"cfg": {"web": {"port": 8080}, "rules": [dict(r) for r in base_rules]}}
+
+        def fake_load():
+            return {"web": {"port": 8080}, "rules": [dict(r) for r in state_store["cfg"]["rules"]]}
+
+        def fake_save(new_cfg):
+            state_store["cfg"] = new_cfg
+            return True
+
+        with patch("core.web_server.load_config", side_effect=fake_load), \
+             patch("core.web_server.save_config", side_effect=fake_save), \
+             patch("core.web_server.remove_state_rules") as mock_rm_state, \
+             patch("core.web_server.sync_rules_and_notify", return_value=(True, [])):
+
+            # 1. URL-encoded excluded-ports ID (`!=` and `,`)
+            h1 = make_handler("/api/rule/rule-%21%3D22%2C443")
+            XForwarderWebHandler.do_DELETE(h1)
+            self.assertEqual(h1.send_json.call_args[0][0]["deleted"], "rule-!=22,443")
+            self.assertEqual(h1.send_json.call_args[0][0]["deleted_count"], 1)
+            self.assertNotIn("rule-!=22,443", [r.get("id") for r in state_store["cfg"]["rules"]])
+
+            # 2. URL-encoded imported NFTables range ID with spaces & parentheses
+            h2 = make_handler("/api/rule/Imported%20NFTables%208000-9000%20%288000-8089%29")
+            XForwarderWebHandler.do_DELETE(h2)
+            self.assertEqual(h2.send_json.call_args[0][0]["deleted_count"], 1)
+            self.assertNotIn("Imported NFTables 8000-9000 (8000-8089)", [r.get("id") for r in state_store["cfg"]["rules"]])
+
+            # 3. Missing-ID range rule deleted via derived fallback ID (`rule-30000-31000` or stale `rule-30000`)
+            h3 = make_handler("/api/rule/rule-30000-31000")
+            XForwarderWebHandler.do_DELETE(h3)
+            self.assertEqual(h3.send_json.call_args[0][0]["deleted_count"], 1)
+            self.assertEqual(len(state_store["cfg"]["rules"]), 1)
+
+            # 4. Remaining explicit range rule deleted via bulk-delete
+            h4 = make_handler("/api/rules/bulk-delete", {"rule_ids": ["rule-10000-20000"]})
+            XForwarderWebHandler.do_POST(h4)
+            self.assertEqual(h4.send_json.call_args[0][0]["deleted_count"], 1)
+            self.assertEqual(state_store["cfg"]["rules"], [])
+            self.assertTrue(mock_rm_state.called)
+
 
 if __name__ == "__main__":
     unittest.main()

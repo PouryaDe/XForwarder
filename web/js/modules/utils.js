@@ -42,6 +42,20 @@ export function escapeHtml(str) {
         .replace(/'/g, "&#039;");
 }
 
+export function encodeInlineParam(val) {
+    return encodeURIComponent(String(val ?? "")).replace(/'/g, "%27");
+}
+
+export function getRuleId(rule) {
+    if (!rule) return "";
+    if (rule.id && String(rule.id).trim()) return String(rule.id).trim();
+    if (Array.isArray(rule.excluded_ports) && rule.excluded_ports.length > 0) {
+        return `rule-excl-${rule.excluded_ports.slice(0, 5).join("-")}`;
+    }
+    const spec = rule.port_range || rule.port;
+    return (spec !== undefined && spec !== null && String(spec).trim()) ? `rule-${spec}` : "";
+}
+
 export function safeInlineArg(str) {
     if (!str) return "''";
     const escaped = String(str)
