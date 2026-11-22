@@ -3140,39 +3140,39 @@ stream {
 
         # 1. Section exists with clean header
         self.assertIn('id="sectionTraffic"', html)
-        self.assertIn('data-i18n="traffic_section.title">Traffic Stats</h1>', html)
+        self.assertIn('data-i18n="traffic_section.title">Network</h1>', html)
 
-        # 2. Daily traffic and network quality cards reside in sectionTraffic, not sectionOverview
+        # 2. Daily traffic card resides in sectionOverview; network quality card resides in sectionTraffic
         sec_overview_idx = html.index('id="sectionOverview"')
         sec_traffic_idx = html.index('id="sectionTraffic"')
         card_traffic_idx = html.index('id="cardDailyTrafficAnalytics"')
         card_loss_idx = html.index('id="cardNetworkQualityMonitor"')
-        self.assertLess(sec_overview_idx, sec_traffic_idx)
-        self.assertLess(sec_traffic_idx, card_traffic_idx)
+        self.assertLess(sec_overview_idx, card_traffic_idx)
+        self.assertLess(card_traffic_idx, sec_traffic_idx)
         self.assertLess(sec_traffic_idx, card_loss_idx)
 
-        # Ensure cards do not appear within sectionOverview markup
+        # Ensure network quality card does not appear within sectionOverview markup
         overview_chunk = html[sec_overview_idx:sec_traffic_idx]
-        self.assertNotIn('id="cardDailyTrafficAnalytics"', overview_chunk)
+        self.assertIn('id="cardDailyTrafficAnalytics"', overview_chunk)
         self.assertNotIn('id="cardNetworkQualityMonitor"', overview_chunk)
 
         # 3. Sidebar navigation item
         self.assertIn('id="navItemTraffic"', html)
         self.assertIn('data-section="traffic"', html)
-        self.assertIn('data-i18n="nav.traffic">Traffic Stats</span>', html)
+        self.assertIn('data-i18n="nav.traffic">Network</span>', html)
 
         # 4. statCardLoss triggers switchSection('traffic')
         self.assertIn('onclick="switchSection(\'traffic\');"', html)
 
-        # 5. navigation.js triggers metric loading for traffic section
+        # 5. navigation.js triggers metric loading for traffic/network section
         self.assertIn('sec === "traffic" || sec === "overview"', nav_js)
         self.assertIn('"traffic"', nav_js)
 
         # 6. i18n dictionaries cover both keys in EN and FA
-        self.assertIn('"nav.traffic": "Traffic Stats"', i18n_js)
-        self.assertIn('"nav.traffic": "آمار ترافیک"', i18n_js)
-        self.assertIn('"traffic_section.title": "Traffic & Network Analytics"', i18n_js)
-        self.assertIn('"traffic_section.title": "آمار ترافیک و کیفیت شبکه"', i18n_js)
+        self.assertIn('"nav.traffic": "Network"', i18n_js)
+        self.assertIn('"nav.traffic": "شبکه"', i18n_js)
+        self.assertIn('"traffic_section.title": "Network"', i18n_js)
+        self.assertIn('"traffic_section.title": "کیفیت شبکه"', i18n_js)
 
         # 7. traffic.js handles range and excluded ports formatting
         self.assertIn('pLabel = exclList.length > 0 ? `!={${exclList.join(", ")}}` : (r.port_range || r.port)', traffic_js)

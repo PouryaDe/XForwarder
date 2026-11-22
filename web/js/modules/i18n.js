@@ -32,7 +32,7 @@ export const TRANSLATIONS = {
         "nav.main": "MAIN NAVIGATION",
         "nav.rules": "Ports",
         "nav.overview": "Overview",
-        "nav.traffic": "Traffic Stats",
+        "nav.traffic": "Network",
         "nav.services": "Services",
         "nav.updates": "Updates",
         "nav.security": "Security",
@@ -40,9 +40,9 @@ export const TRANSLATIONS = {
         "user.admin": "Administrator",
         "user.role": "Administrator",
 
-        // Traffic Analytics Section
-        "traffic_section.title": "Traffic & Network Analytics",
-        "traffic_section.sub": "Hourly traffic accounting across forwarded ports and 30-day packet loss timeline.",
+        // Network Quality & Diagnostics Section
+        "traffic_section.title": "Network",
+        "traffic_section.sub": "30-day packet loss timeline, live probe diagnostics, and route quality.",
 
         // Service Warning Banner
         "services_warning.title": "Core Relay Packages Missing",
@@ -512,7 +512,7 @@ export const TRANSLATIONS = {
         "nav.main": "منوی اصلی",
         "nav.rules": "پورت‌ها",
         "nav.overview": "نمای کلی",
-        "nav.traffic": "آمار ترافیک",
+        "nav.traffic": "شبکه",
         "nav.services": "سرویس‌ها",
         "nav.updates": "آپدیت",
         "nav.security": "امنیت",
@@ -520,9 +520,9 @@ export const TRANSLATIONS = {
         "user.admin": "مدیر سیستم",
         "user.role": "مدیر سیستم",
 
-        // Traffic Analytics Section
-        "traffic_section.title": "آمار ترافیک و کیفیت شبکه",
-        "traffic_section.sub": "گزارش ساعتی پهنای باند پورت‌ها و خط زمانی ۳۰ روزه کیفیت شبکه و پکت‌لاس.",
+        // Network Quality & Diagnostics Section
+        "traffic_section.title": "کیفیت شبکه",
+        "traffic_section.sub": "خط زمانی ۳۰ روزه پکت‌لاس، وضعیت پایداری مسیرها و تست زنده کیفیت شبکه.",
 
         // Service Warning Banner
         "services_warning.title": "پکیج‌های هسته رله نصب نیستند",

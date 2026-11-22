@@ -320,11 +320,9 @@
 
                 <button class="nav-item" data-section="traffic" id="navItemTraffic">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <line x1="18" y1="20" x2="18" y2="10" />
-                        <line x1="12" y1="20" x2="12" y2="4" />
-                        <line x1="6" y1="20" x2="6" y2="14" />
+                        <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
                     </svg>
-                    <span class="nav-label" data-i18n="nav.traffic">Traffic Stats</span>
+                    <span class="nav-label" data-i18n="nav.traffic">Network</span>
                 </button>
 
                 <button class="nav-item" data-section="services" id="navItemServices">
@@ -953,15 +951,6 @@
                         </div>
                     </div>
                 </div>
-            </section>
-
-            <!-- SECTION 2.5: Traffic & Network Analytics -->
-            <section class="dashboard-section" id="sectionTraffic" style="display:none;">
-                <div class="page-header">
-                    <div class="page-header-text">
-                        <h1 class="page-title" data-i18n="traffic_section.title">Traffic Stats</h1>
-                    </div>
-                </div>
 
                 <!-- Daily Traffic & Bandwidth Analytics Card (Full Width Interactive Chart) -->
                 <div class="overview-card full-width-card" id="cardDailyTrafficAnalytics" style="margin-top: 18px; margin-bottom: 20px;">
@@ -1051,6 +1040,15 @@
                                 <span data-i18n="overview.ticks_now">Now</span>
                             </div>
                         </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SECTION 2.5: Network Quality & Diagnostics -->
+            <section class="dashboard-section" id="sectionTraffic" style="display:none;">
+                <div class="page-header">
+                    <div class="page-header-text">
+                        <h1 class="page-title" data-i18n="traffic_section.title">Network</h1>
                     </div>
                 </div>
 
