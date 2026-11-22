@@ -6952,6 +6952,7 @@ select option {
     color: var(--text-muted);
     cursor: help;
     flex-shrink: 0;
+    z-index: 10;
     transition: color var(--fast) var(--ease), border-color var(--fast) var(--ease), background var(--fast) var(--ease);
 }
 
@@ -6961,6 +6962,7 @@ select option {
     border-color: var(--accent);
     background: var(--accent-wash);
     outline: none;
+    z-index: 10000;
 }
 
 #ruleForm .form-group {
@@ -6993,7 +6995,7 @@ select option {
     box-shadow: 0 10px 28px rgba(0, 0, 0, 0.45);
     opacity: 0;
     pointer-events: none;
-    z-index: 9999;
+    z-index: 100000;
     transition: opacity 0.15s ease, transform 0.15s ease;
 }
 
@@ -7003,8 +7005,25 @@ select option {
     transform: translateY(0);
 }
 
-/* Right-column tooltips align to right edge; bottom-row tooltips open upward */
+/* Stacking context elevation for hovered tooltips */
+.priority-box:has(.xfwd-info-tip:hover),
+.priority-box:has(.xfwd-info-tip:focus-visible) {
+    z-index: 50;
+}
+
+.form-group:has(.xfwd-info-tip:hover),
+.form-group:has(.xfwd-info-tip:focus-visible),
+.label-with-tip:has(.xfwd-info-tip:hover),
+.label-with-tip:has(.xfwd-info-tip:focus-visible) {
+    z-index: 60;
+}
+
+/* Right-column and right-aligned tooltips align to right edge; expand inwards to the left */
 .form-row > .form-group:last-child .xfwd-info-tip::after,
+.dest-meta-row > .form-group:last-child .xfwd-info-tip::after,
+.dest-dsr-row > .form-group:last-child .xfwd-info-tip::after,
+.dest-form-row > .form-group:last-child .xfwd-info-tip::after,
+.dest-snat-ip-group .xfwd-info-tip::after,
 .dest-comment-group .xfwd-info-tip::after {
     left: auto;
     right: -4px;
@@ -7027,6 +7046,10 @@ select option {
 }
 
 [dir="rtl"] .form-row > .form-group:last-child .xfwd-info-tip::after,
+[dir="rtl"] .dest-meta-row > .form-group:last-child .xfwd-info-tip::after,
+[dir="rtl"] .dest-dsr-row > .form-group:last-child .xfwd-info-tip::after,
+[dir="rtl"] .dest-form-row > .form-group:last-child .xfwd-info-tip::after,
+[dir="rtl"] .dest-snat-ip-group .xfwd-info-tip::after,
 [dir="rtl"] .dest-comment-group .xfwd-info-tip::after {
     right: auto;
     left: -4px;
@@ -7037,6 +7060,53 @@ select option {
     color: #f6f5ee;
     border-color: rgba(0, 107, 74, 0.35);
     box-shadow: 0 10px 24px rgba(0, 0, 0, 0.18);
+}
+
+/* Ingress & Spoof IP Suggestions */
+.dest-spoof-suggestions {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 6px;
+}
+
+.dest-spoof-suggestions .suggestion-hint {
+    color: var(--text-muted);
+    font-size: 0.72rem;
+    font-weight: 500;
+}
+
+.ip-chip {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 7px;
+    border-radius: 6px;
+    background: rgba(52, 224, 161, 0.08);
+    border: 1px solid rgba(52, 224, 161, 0.25);
+    color: var(--accent);
+    font-size: 0.73rem;
+    font-family: var(--font-mono);
+    cursor: pointer;
+    line-height: 1.3;
+    transition: background 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
+}
+
+.ip-chip:hover {
+    background: rgba(52, 224, 161, 0.18);
+    border-color: var(--accent);
+    transform: translateY(-1px);
+}
+
+[data-theme="light"] .ip-chip {
+    background: rgba(0, 107, 74, 0.08);
+    border-color: rgba(0, 107, 74, 0.25);
+    color: #006b4a;
+}
+
+[data-theme="light"] .ip-chip:hover {
+    background: rgba(0, 107, 74, 0.16);
+    border-color: #006b4a;
 }
 
 /* Hide native datalist arrow on category input */

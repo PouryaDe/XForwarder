@@ -451,6 +451,41 @@ function addExcludedTokens(rawText, triggerRangeFill = true) {
     return true;
 }
 
+function getDetectedServerIps() {
+    const net = lastNetwork || {};
+    const list = [];
+    const seen = new Set();
+
+    (Array.isArray(net.server_ips) ? net.server_ips : []).forEach(sObj => {
+        const ip = String((sObj && sObj.ip) || "").trim();
+        if (!ip || seen.has(ip)) return;
+        seen.add(ip);
+        list.push({
+            ip,
+            iface: String((sObj && sObj.interface) || "WAN").trim(),
+            isPrimary: Boolean(sObj && sObj.is_primary),
+            version: sObj && sObj.version === 6 ? 6 : 4
+        });
+    });
+
+    return list;
+}
+
+if (typeof window !== "undefined") {
+    window.fillDestSpoofIp = function (btn, ip) {
+        if (!btn || !ip) return;
+        const group = btn.closest(".dest-spoof-ip-group");
+        if (!group) return;
+        const input = group.querySelector(".dest-spoof-ip");
+        if (input) {
+            input.value = ip;
+            input.dispatchEvent(new Event("input", { bubbles: true }));
+            input.dispatchEvent(new Event("change", { bubbles: true }));
+            input.focus();
+        }
+    };
+}
+
 export function renderDestinationRow(dest, index, totalCount) {
     const prio = index + 1;
     const isPrimary = prio === 1;
@@ -473,16 +508,34 @@ export function renderDestinationRow(dest, index, totalCount) {
     div.ondragend = (e) => handleModalPrioDragEnd(e);
 
     const targetPlaceholder = type === "haproxy"
-        ? "2001:4ba0:cafe:84e::1 (IPv6 only)"
+        ? "2001:db8:cafe::1 (IPv6 only)"
         : (type === "nftables_dsr_relay"
-            ? "5.199.136.72 (Exit Server IP)"
-            : (isNftablesType(type) ? "10.88.1.2 (IPv4) or 2001:db8::2 (IPv6)" : "1.2.3.4 or 2001:db8::1"));
+            ? "198.51.100.10 (Exit Server IP)"
+            : (isNftablesType(type) ? "10.88.1.2 (IPv4) or 2001:db8::2 (IPv6)" : "192.0.2.1 or 2001:db8::1"));
     const showOutIface = (type === "nftables" || type === "nftables_dsr");
     const showDsrRow = (type === "nftables_dsr" || type === "nftables_dsr_relay");
     const isDsrRelay = (type === "nftables_dsr_relay");
     const spoofLabelText = isDsrRelay
         ? t("modal.spoof_ip", {}, "Iran / Spoof IP")
         : t("modal.spoof_ip_opt", {}, "Ingress IP (Optional)");
+
+    const detectedServerIps = getDetectedServerIps();
+    const spoofDatalistId = `destSpoofIpList_${index}_${Math.random().toString(36).substr(2, 6)}`;
+    const snatDatalistId = `destSnatIpList_${index}_${Math.random().toString(36).substr(2, 6)}`;
+    const serverIpDatalistOptionsHtml = detectedServerIps.map(s =>
+        `<option value="${escapeHtml(s.ip)}">${escapeHtml(s.ip)} (${escapeHtml(s.iface)}${s.isPrimary ? ` · ${escapeHtml(t("common.primary", {}, "Primary"))}` : ""})</option>`
+    ).join("");
+
+    const spoofQuickChipsHtml = detectedServerIps.length > 0
+        ? `<div class="dest-spoof-suggestions">
+            <span class="suggestion-hint">${escapeHtml(t("modal.suggested_ip", {}, "Suggested:"))}</span>
+            ${detectedServerIps.map(s => `
+                <button type="button" class="ip-chip font-mono" title="${escapeHtml(s.iface)}${s.isPrimary ? " (Primary WAN)" : ""}" onclick="window.fillDestSpoofIp(this, '${escapeHtml(s.ip)}')">
+                    ${escapeHtml(s.ip)}
+                </button>
+            `).join("")}
+           </div>`
+        : "";
 
     div.innerHTML = `
         <div class="priority-header">
@@ -534,7 +587,11 @@ export function renderDestinationRow(dest, index, totalCount) {
                         <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
                     </span>
                 </label>
-                <input type="text" class="form-control font-mono dest-spoof-ip" placeholder="${isDsrRelay ? "185.215.229.193 (Required)" : "Auto (WAN Interface)"}" value="${escapeHtml(dest.spoof_ip || "")}">
+                <input type="text" list="${spoofDatalistId}" class="form-control font-mono dest-spoof-ip" placeholder="${isDsrRelay ? "198.51.100.25 (Required)" : "Auto (WAN Interface)"}" value="${escapeHtml(dest.spoof_ip || "")}">
+                <datalist id="${spoofDatalistId}">
+                    ${serverIpDatalistOptionsHtml}
+                </datalist>
+                ${spoofQuickChipsHtml}
             </div>
             <div class="form-group flex-1 dest-ingress-iface-group" style="display:${isDsrRelay ? "block" : "none"};">
                 <label class="label-with-tip">
@@ -559,7 +616,10 @@ export function renderDestinationRow(dest, index, totalCount) {
                         <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
                     </span>
                 </label>
-                <input type="text" class="form-control font-mono dest-snat-ip" placeholder="Auto (WAN IP)" value="${escapeHtml(dest.snat_ip || "")}">
+                <input type="text" list="${snatDatalistId}" class="form-control font-mono dest-snat-ip" placeholder="Auto (WAN IP)" value="${escapeHtml(dest.snat_ip || "")}">
+                <datalist id="${snatDatalistId}">
+                    ${serverIpDatalistOptionsHtml}
+                </datalist>
             </div>
         </div>
         <div class="dest-meta-row">
@@ -662,18 +722,18 @@ export function handleDestTypeChange(selectEl) {
             : t("modal.spoof_ip_opt", {}, "Ingress IP (Optional)");
     }
     if (spoofInput) {
-        spoofInput.placeholder = isDsrRelay ? "185.215.229.193 (Required)" : "Auto (WAN Interface)";
+        spoofInput.placeholder = isDsrRelay ? "198.51.100.25 (Required)" : "Auto (WAN Interface)";
         spoofInput.required = isDsrRelay;
     }
     if (!targetInput) return;
     if (val === "haproxy") {
-        targetInput.placeholder = "2001:4ba0:cafe:84e::1 (IPv6 only)";
+        targetInput.placeholder = "2001:db8:cafe::1 (IPv6 only)";
     } else if (val === "nftables_dsr_relay") {
-        targetInput.placeholder = "5.199.136.72 (Exit Server IP)";
+        targetInput.placeholder = "198.51.100.10 (Exit Server IP)";
     } else if (isNftablesType(val)) {
         targetInput.placeholder = "10.88.1.2 (IPv4) or 2001:db8::2 (IPv6)";
     } else {
-        targetInput.placeholder = "1.2.3.4 or 2001:db8::1";
+        targetInput.placeholder = "192.0.2.1 or 2001:db8::1";
     }
 }
 
