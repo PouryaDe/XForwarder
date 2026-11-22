@@ -14,6 +14,89 @@ let searchQuery = "";
 let draggedPathInfo = null;
 let lastRenderedRulesFingerprint = null;
 const pendingOverrides = new Map();
+let collapsedCategories = new Set();
+try {
+    const savedCollapsed = JSON.parse(localStorage.getItem("xfwd_collapsed_cats") || "[]");
+    if (Array.isArray(savedCollapsed)) collapsedCategories = new Set(savedCollapsed.map(String));
+} catch (_) {
+    collapsedCategories = new Set();
+}
+
+function saveCollapsedCategories() {
+    try {
+        localStorage.setItem("xfwd_collapsed_cats", JSON.stringify(Array.from(collapsedCategories)));
+    } catch (_) {}
+}
+
+function getEyeIconSvg(isCollapsed) {
+    if (isCollapsed) {
+        return `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>`;
+    }
+    return `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`;
+}
+
+export function toggleCategoryVisibility(catKey, btnEl) {
+    const key = String(catKey || "");
+    const willCollapse = !collapsedCategories.has(key);
+    if (willCollapse) {
+        collapsedCategories.add(key);
+    } else {
+        collapsedCategories.delete(key);
+    }
+    saveCollapsedCategories();
+    const section = btnEl ? btnEl.closest(".rule-category-section") : null;
+    if (section) {
+        section.classList.toggle("is-collapsed", willCollapse);
+    }
+    if (btnEl) {
+        btnEl.innerHTML = getEyeIconSvg(willCollapse);
+        const tipText = willCollapse
+            ? t("rules.toggle_cat_show", {}, "Show category ports")
+            : t("rules.toggle_cat_hide", {}, "Hide category ports");
+        btnEl.title = tipText;
+        btnEl.setAttribute("aria-expanded", willCollapse ? "false" : "true");
+    }
+}
+
+export async function deleteCategoryRules(catKey, fetchStatusCallback) {
+    if (!Array.isArray(currentRules)) return;
+    const isUncat = (catKey === "__uncategorized__");
+    const categoryRules = currentRules.filter(r => {
+        const cat = (r.category || "").trim();
+        return isUncat ? !cat : cat === catKey;
+    });
+    if (categoryRules.length === 0) {
+        showToast("No rules found in this category", "warning");
+        return;
+    }
+    const catName = isUncat ? t("rules.uncategorized", {}, "Uncategorized") : catKey;
+    const confirmed = await askConfirm(
+        t("confirm.delete_category_title", {}, "Delete Category Ports?"),
+        t("confirm.delete_category_msg", { count: categoryRules.length, cat: catName }, `Delete all ${categoryRules.length} ports in '${catName}'? Forwarding on these ports will stop immediately.`),
+        { confirmText: t("confirm.delete_category_btn", {}, "Delete All"), variant: "danger" }
+    );
+    if (!confirmed) return;
+
+    const ruleIds = categoryRules.map(r => r.id || `rule-${r.port_range || r.port}`).filter(Boolean);
+    try {
+        const res = await fetch(`${API_BASE}/rules/bulk-delete`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ rule_ids: ruleIds })
+        });
+        const data = await res.json().catch(() => ({}));
+        if (res.ok && data.ok) {
+            collapsedCategories.delete(String(catKey));
+            saveCollapsedCategories();
+            showToast(`Deleted ${data.deleted_count || ruleIds.length} ports from '${catName}'`, "success");
+            if (fetchStatusCallback) await fetchStatusCallback();
+        } else {
+            showToast(data.error || "Failed to delete category rules", "error");
+        }
+    } catch (e) {
+        showToast("Network error while deleting category", "error");
+    }
+}
 
 function getPrioTagClass(prio) {
     if (prio === 1) return "prio-tag-1";
@@ -659,10 +742,17 @@ export function renderRules(rules, runtime) {
             const groupRules = groups.get(catKey);
             const isUncat = catKey === "__uncategorized__";
             const catTitle = isUncat ? t("rules.uncategorized", {}, "General / Uncategorized") : escapeHtml(catKey);
+            const isCollapsed = collapsedCategories.has(String(catKey));
+            const toggleTip = isCollapsed
+                ? t("rules.toggle_cat_show", {}, "Show category ports")
+                : t("rules.toggle_cat_hide", {}, "Hide category ports");
+            const copyTip = t("rules.copy_category_json_tooltip", { cat: catTitle }, `Copies all '${catTitle}' ports as JSON`);
+            const deleteTip = t("rules.delete_category_tooltip", { cat: catTitle }, `Delete all ports in '${catTitle}'`);
+            const encodedCat = encodeURIComponent(catKey);
             const itemsHtml = groupRules.map(r => currentViewMode === "list" ? renderRuleListRow(r, rulesState) : renderRuleCard(r, rulesState)).join("");
 
             return `
-                <div class="rule-category-section">
+                <div class="rule-category-section${isCollapsed ? " is-collapsed" : ""}">
                     <div class="rule-category-header">
                         <div class="rule-category-title-group">
                             <span class="rule-category-icon">
@@ -674,16 +764,30 @@ export function renderRules(rules, runtime) {
                             <span class="rule-category-count">${t("rules.ports_count", { count: groupRules.length }, `${groupRules.length} Port${groupRules.length === 1 ? '' : 's'}`)}</span>
                         </div>
                         <div class="rule-category-line"></div>
-                        <button type="button" class="btn-category-copy" onclick="copyCategoryJson(decodeURIComponent('${encodeURIComponent(catKey)}'))" title="${escapeHtml(t("rules.copy_category_json_tooltip", { cat: catTitle }, `Copy all ports in category '${catTitle}' as JSON`))}">
-                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
-                                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
-                            </svg>
-                            <span>${escapeHtml(t("rules.copy_category_json", {}, "Copy Category JSON"))}</span>
-                        </button>
+                        <div class="rule-category-actions">
+                            <button type="button" class="btn-cat-action is-toggle" onclick="toggleCategoryVisibility(decodeURIComponent('${encodedCat}'), this)" title="${escapeHtml(toggleTip)}" aria-expanded="${isCollapsed ? "false" : "true"}">
+                                ${getEyeIconSvg(isCollapsed)}
+                            </button>
+                            <button type="button" class="btn-cat-action is-copy" onclick="copyCategoryJson(decodeURIComponent('${encodedCat}'))" title="${escapeHtml(copyTip)}" aria-label="${escapeHtml(copyTip)}">
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                                </svg>
+                            </button>
+                            <button type="button" class="btn-cat-action is-delete" onclick="deleteCategoryRules(decodeURIComponent('${encodedCat}'))" title="${escapeHtml(deleteTip)}" aria-label="${escapeHtml(deleteTip)}">
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="3 6 5 6 21 6"/>
+                                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                                </svg>
+                            </button>
+                        </div>
                     </div>
-                    <div class="${currentViewMode === 'list' ? 'rules-list-container' : 'rules-container'}">
-                        ${itemsHtml}
+                    <div class="rule-category-body">
+                        <div class="rule-category-body-inner">
+                            <div class="${currentViewMode === 'list' ? 'rules-list-container' : 'rules-container'}">
+                                ${itemsHtml}
+                            </div>
+                        </div>
                     </div>
                 </div>
             `;

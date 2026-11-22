@@ -3177,6 +3177,40 @@ stream {
         # 7. traffic.js handles range and excluded ports formatting
         self.assertIn('pLabel = exclList.length > 0 ? `!={${exclList.join(", ")}}` : (r.port_range || r.port)', traffic_js)
 
+    def test_dsr_labels_and_category_actions_ui(self):
+        """Verifies shortened DSR labels (UP/Spoof), icon-only category copy with tooltip,
+        category hide/show eye toggle with collapse CSS, and bulk-delete endpoint."""
+        web_dir = os.path.join(REPO_ROOT, "web")
+        with open(os.path.join(web_dir, "js", "modules", "rule_modal.js"), "r", encoding="utf-8") as f:
+            modal_js = f.read()
+        with open(os.path.join(web_dir, "js", "modules", "traffic.js"), "r", encoding="utf-8") as f:
+            traffic_js = f.read()
+        with open(os.path.join(web_dir, "js", "modules", "rules.js"), "r", encoding="utf-8") as f:
+            rules_js = f.read()
+        with open(os.path.join(web_dir, "app.js"), "r", encoding="utf-8") as f:
+            app_js = f.read()
+        with open(os.path.join(web_dir, "style.css"), "r", encoding="utf-8") as f:
+            style_css = f.read()
+        with open(os.path.join(REPO_ROOT, "core", "web_server.py"), "r", encoding="utf-8") as f:
+            ws_py = f.read()
+
+        self.assertIn(">NFTables DSR (UP)<", modal_js)
+        self.assertIn(">NFTables DSR (Spoof)<", modal_js)
+        self.assertIn(">NFTables DSR (UP)<", traffic_js)
+        self.assertIn(">NFTables DSR (Spoof)<", traffic_js)
+
+        self.assertIn("btn-cat-action is-toggle", rules_js)
+        self.assertIn("btn-cat-action is-copy", rules_js)
+        self.assertIn("btn-cat-action is-delete", rules_js)
+        self.assertIn("toggleCategoryVisibility", rules_js)
+        self.assertIn("deleteCategoryRules", rules_js)
+        self.assertNotIn('<span>${escapeHtml(t("rules.copy_category_json"', rules_js)
+
+        self.assertIn("window.toggleCategoryVisibility", app_js)
+        self.assertIn("window.deleteCategoryRules", app_js)
+        self.assertIn(".rule-category-section.is-collapsed .rule-category-body", style_css)
+        self.assertIn('subpath == "/api/rules/bulk-delete"', ws_py)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -1106,6 +1106,32 @@ class XForwarderWebHandler(BaseHTTPRequestHandler):
                 "sync_errors": sync_errors
             })
 
+        elif subpath == "/api/rules/bulk-delete":
+            raw_ids = body.get("rule_ids") if isinstance(body, dict) else None
+            if not isinstance(raw_ids, list) or len(raw_ids) == 0:
+                self.send_json({"ok": False, "error": "rule_ids list required"}, 400)
+                return
+            del_ids = {str(rid).strip() for rid in raw_ids if str(rid).strip()}
+            if not del_ids:
+                self.send_json({"ok": False, "error": "No valid rule IDs"}, 400)
+                return
+            cfg = load_config()
+            orig_rules = cfg.get("rules", [])
+            remaining = [r for r in orig_rules if str(r.get("id", "")).strip() not in del_ids]
+            removed_count = len(orig_rules) - len(remaining)
+            cfg["rules"] = remaining
+            if save_config(cfg):
+                remove_state_rules(list(del_ids))
+                sync_ok, sync_errors = sync_rules_and_notify(max_retries=2)
+                self.send_json({
+                    "ok": True,
+                    "deleted_count": removed_count,
+                    "sync_ok": sync_ok,
+                    "sync_errors": sync_errors
+                })
+            else:
+                self.send_json({"ok": False, "error": "Save failed"}, 500)
+
         elif subpath == "/api/config/import":
             if isinstance(body, dict) and "config" in body:
                 imported_raw = body["config"]

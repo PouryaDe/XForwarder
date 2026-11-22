@@ -2630,6 +2630,58 @@
     color: var(--ink);
 }
 
+.rule-category-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+}
+
+.btn-cat-action {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    border-radius: 8px;
+    background: var(--raise-2);
+    border: 1px solid var(--line);
+    color: var(--ink-2);
+    cursor: pointer;
+    transition: all var(--fast) var(--ease);
+}
+
+.btn-cat-action:hover {
+    background: var(--accent-wash);
+    border-color: color-mix(in srgb, var(--accent) 40%, transparent);
+    color: var(--accent-text);
+}
+
+.btn-cat-action.is-delete:hover {
+    background: color-mix(in srgb, var(--bad) 14%, transparent);
+    border-color: color-mix(in srgb, var(--bad) 45%, transparent);
+    color: var(--bad);
+}
+
+.rule-category-body {
+    display: grid;
+    grid-template-rows: 1fr;
+    opacity: 1;
+    transition: grid-template-rows 0.28s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.22s ease;
+}
+
+.rule-category-body-inner {
+    overflow: hidden;
+    min-height: 0;
+}
+
+.rule-category-section.is-collapsed .rule-category-body {
+    grid-template-rows: 0fr;
+    opacity: 0;
+    pointer-events: none;
+}
+
 /* ── Compact List View ── */
 .rules-list-container {
     display: flex;

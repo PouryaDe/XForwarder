@@ -99,8 +99,8 @@ function buildDestTypeOptionsHtml(selectedType, isRange) {
         : String(selectedType || "haproxy").toLowerCase();
     const nftOpts = `
         <option value="nftables" ${sel === "nftables" ? "selected" : ""}>NFTables (Kernel DNAT)</option>
-        <option value="nftables_dsr" ${sel === "nftables_dsr" ? "selected" : ""}>NFTables DSR (Upload-Only)</option>
-        <option value="nftables_dsr_relay" ${sel === "nftables_dsr_relay" ? "selected" : ""}>NFTables DSR Relay (Spoof)</option>
+        <option value="nftables_dsr" ${sel === "nftables_dsr" ? "selected" : ""}>NFTables DSR (UP)</option>
+        <option value="nftables_dsr_relay" ${sel === "nftables_dsr_relay" ? "selected" : ""}>NFTables DSR (Spoof)</option>
     `;
     if (isRange) return nftOpts;
     return `

@@ -46,6 +46,8 @@ import {
     handleOverrideChange,
     toggleDestinationEnabled,
     deleteRule,
+    toggleCategoryVisibility,
+    deleteCategoryRules,
     initRulesViewControls,
     openSwitchLogsModal,
     closeSwitchLogsModal,
@@ -123,6 +125,8 @@ window.switchSection = switchSection;
 window.loadNetworkQualityMetrics = loadNetworkQualityMetrics;
 window.copyRuleJson = copyRuleJson;
 window.copyCategoryJson = copyCategoryJson;
+window.toggleCategoryVisibility = toggleCategoryVisibility;
+window.deleteCategoryRules = (catKey) => deleteCategoryRules(catKey, fetchStatus);
 window.openImportModal = openImportModal;
 window.closeImportModal = closeImportModal;
 window.openTrafficModal = openTrafficModal;
