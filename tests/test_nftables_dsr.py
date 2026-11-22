@@ -259,8 +259,8 @@ class TestNFTablesDSRMethods(unittest.TestCase):
             self.assertIn('iifname "tun1" ip daddr 185.215.229.193 tcp dport 1001 dnat to 5.199.136.72:1001', rs)
             self.assertIn('oifname "eth0" ip daddr 5.199.136.72 snat to 81.180.93.42', rs)
             self.assertIn("tcp flags syn tcp option maxseg size set rt mtu", rs)
-            self.assertIn("tcp flags syn ip daddr 5.199.136.72 tcp option maxseg size set 1380", rs)
-            self.assertIn("tcp flags syn ip saddr 5.199.136.72 tcp option maxseg size set 1380", rs)
+            self.assertIn("tcp flags syn ip daddr 5.199.136.72 tcp option maxseg size > 1340 tcp option maxseg size set 1340", rs)
+            self.assertIn("tcp flags syn ip saddr 5.199.136.72 tcp option maxseg size > 1340 tcp option maxseg size set 1340", rs)
 
     def test_coexistence_standard_nftables_with_dsr_and_dsr_relay(self):
         """Standard nftables DNAT, nftables_dsr, and nftables_dsr_relay coexist in table xfwd_orchestrator without collision."""
@@ -359,8 +359,8 @@ class TestNFTablesDSRMethods(unittest.TestCase):
             self.assertIn('iifname "tun1" tcp dport 1002 ip daddr set 185.215.229.193', rs)
             self.assertIn('iifname "tun1" ip daddr 185.215.229.193 tcp dport 1002 dnat to 5.199.136.72:1002', rs)
             self.assertIn('oifname "eth0" ip daddr 5.199.136.72 snat to 81.180.93.42', rs)
-            self.assertIn("tcp flags syn ip daddr 5.199.136.72 tcp option maxseg size set 1380", rs)
-            self.assertIn("tcp flags syn ip saddr 5.199.136.72 tcp option maxseg size set 1380", rs)
+            self.assertIn("tcp flags syn ip daddr 5.199.136.72 tcp option maxseg size > 1340 tcp option maxseg size set 1340", rs)
+            self.assertIn("tcp flags syn ip saddr 5.199.136.72 tcp option maxseg size > 1340 tcp option maxseg size set 1340", rs)
 
     def test_ipv6_and_malformed_config_defense_in_depth(self):
         with tempfile.TemporaryDirectory() as tmp:
