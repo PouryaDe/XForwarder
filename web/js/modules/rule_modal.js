@@ -1156,7 +1156,6 @@ export function initRuleModal(fetchStatusCallback) {
         });
     }
 
-    const destContainer = document.getElementById("destinationsContainer");
     if (destContainer) {
         destContainer.addEventListener("input", (ev) => {
             if (!ev.target || !ev.target.classList || !ev.target.classList.contains("dest-port")) return;
