@@ -2451,6 +2451,8 @@ input:-webkit-autofill:active {
 }
 
 .tunnel-card {
+    display: flex;
+    flex-direction: column;
     background: var(--raise-2);
     border: 1px solid var(--line);
     border-radius: 12px;
@@ -2553,6 +2555,7 @@ input:-webkit-autofill:active {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    margin-top: auto;
     padding-top: 8px;
     border-top: 1px solid var(--border-color);
 }
@@ -4285,8 +4288,8 @@ input:-webkit-autofill:active {
 }
 
 .rule-list-path-pill.is-active {
-    border-color: rgba(110, 231, 183, 0.45);
-    background: rgba(110, 231, 183, 0.08);
+    border-color: color-mix(in srgb, var(--accent) 45%, transparent);
+    background: var(--accent-wash);
 }
 
 .rule-list-path-pill.is-failover {
@@ -7357,9 +7360,9 @@ select option {
     align-items: center;
     padding: 2px 7px;
     border-radius: 6px;
-    background: rgba(52, 224, 161, 0.08);
-    border: 1px solid rgba(52, 224, 161, 0.25);
-    color: var(--accent);
+    background: var(--accent-wash);
+    border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
+    color: var(--accent-text);
     font-size: 0.73rem;
     font-family: var(--font-mono);
     cursor: pointer;
@@ -7368,20 +7371,20 @@ select option {
 }
 
 .ip-chip:hover {
-    background: rgba(52, 224, 161, 0.18);
+    background: color-mix(in srgb, var(--accent) 20%, transparent);
     border-color: var(--accent);
     transform: translateY(-1px);
 }
 
 [data-theme="light"] .ip-chip {
-    background: rgba(0, 107, 74, 0.08);
-    border-color: rgba(0, 107, 74, 0.25);
-    color: #006b4a;
+    background: rgba(91, 61, 245, 0.08);
+    border-color: rgba(91, 61, 245, 0.26);
+    color: #5b3df5;
 }
 
 [data-theme="light"] .ip-chip:hover {
-    background: rgba(0, 107, 74, 0.16);
-    border-color: #006b4a;
+    background: rgba(91, 61, 245, 0.16);
+    border-color: #5b3df5;
 }
 
 /* Hide native datalist arrow on category input */

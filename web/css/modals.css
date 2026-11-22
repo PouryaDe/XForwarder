@@ -292,9 +292,9 @@ select option {
     align-items: center;
     padding: 2px 7px;
     border-radius: 6px;
-    background: rgba(52, 224, 161, 0.08);
-    border: 1px solid rgba(52, 224, 161, 0.25);
-    color: var(--accent);
+    background: var(--accent-wash);
+    border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
+    color: var(--accent-text);
     font-size: 0.73rem;
     font-family: var(--font-mono);
     cursor: pointer;
@@ -303,20 +303,20 @@ select option {
 }
 
 .ip-chip:hover {
-    background: rgba(52, 224, 161, 0.18);
+    background: color-mix(in srgb, var(--accent) 20%, transparent);
     border-color: var(--accent);
     transform: translateY(-1px);
 }
 
 [data-theme="light"] .ip-chip {
-    background: rgba(0, 107, 74, 0.08);
-    border-color: rgba(0, 107, 74, 0.25);
-    color: #006b4a;
+    background: rgba(91, 61, 245, 0.08);
+    border-color: rgba(91, 61, 245, 0.26);
+    color: #5b3df5;
 }
 
 [data-theme="light"] .ip-chip:hover {
-    background: rgba(0, 107, 74, 0.16);
-    border-color: #006b4a;
+    background: rgba(91, 61, 245, 0.16);
+    border-color: #5b3df5;
 }
 
 /* Hide native datalist arrow on category input */

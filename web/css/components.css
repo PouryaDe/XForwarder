@@ -947,6 +947,8 @@
 }
 
 .tunnel-card {
+    display: flex;
+    flex-direction: column;
     background: var(--raise-2);
     border: 1px solid var(--line);
     border-radius: 12px;
@@ -1049,6 +1051,7 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
+    margin-top: auto;
     padding-top: 8px;
     border-top: 1px solid var(--border-color);
 }
@@ -2781,8 +2784,8 @@
 }
 
 .rule-list-path-pill.is-active {
-    border-color: rgba(110, 231, 183, 0.45);
-    background: rgba(110, 231, 183, 0.08);
+    border-color: color-mix(in srgb, var(--accent) 45%, transparent);
+    background: var(--accent-wash);
 }
 
 .rule-list-path-pill.is-failover {
