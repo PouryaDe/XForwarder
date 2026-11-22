@@ -3005,8 +3005,8 @@ stream {
         self.assertLess(upd_start, html.index('id="cardSystemUpdate"'))
         self.assertNotIn('id="cardSystemUpdate"', html[sec_start:upd_start])
 
-        # 3. Clean page-header with h1.page-title on all 6 sections (without subtitle clutter)
-        self.assertEqual(html.count('<h1 class="page-title"'), 6)
+        # 3. Clean page-header with h1.page-title on all 7 sections (without subtitle clutter)
+        self.assertEqual(html.count('<h1 class="page-title"'), 7)
         self.assertNotIn('<p class="page-subtitle"', html)
         self.assertIn('.page-title {', layout_css)
         self.assertIn('--font-page-title', layout_css)
@@ -3047,6 +3047,7 @@ stream {
 
         # 4. Hash-free path routing in navigation.js & BASE_PATH stripping in api.js
         self.assertIn('"updates"', nav_js)
+        self.assertIn('"traffic"', nav_js)
         self.assertIn('getSectionFromLocation', nav_js)
         self.assertIn('popstate', nav_js)
         self.assertIn('history.pushState', nav_js)
@@ -3057,6 +3058,7 @@ stream {
 
         # 5. Server section-prefixed static asset fallback in web_server.py
         self.assertIn('"updates"', ws_py)
+        self.assertIn('"traffic"', ws_py)
         self.assertIn('first_seg, rest_rel = static_rel.split("/", 1)', ws_py)
 
     def test_nftables_multihop_forwarding_and_modal_destination_validation(self):
@@ -3122,6 +3124,58 @@ stream {
         # Wildcard excluded-ports rule MUST contain iifname "eth0"
         self.assertIn('iifname "eth0" tcp dport != { 22, 443, 8090 } dnat to 10.80.15.2', dnat_str)
         self.assertIn('iifname "eth0" udp dport != { 22, 443, 8090 } dnat to 10.80.15.2', dnat_str)
+
+    def test_dedicated_traffic_section_architecture_and_navigation(self):
+        """Verifies dedicated #sectionTraffic page separation, sidebar navigation,
+        statCardLoss click routing, and i18n translation coverage across languages."""
+        web_dir = os.path.join(REPO_ROOT, "web")
+        with open(os.path.join(web_dir, "index.html"), "r", encoding="utf-8") as f:
+            html = f.read()
+        with open(os.path.join(web_dir, "js", "modules", "navigation.js"), "r", encoding="utf-8") as f:
+            nav_js = f.read()
+        with open(os.path.join(web_dir, "js", "modules", "i18n.js"), "r", encoding="utf-8") as f:
+            i18n_js = f.read()
+        with open(os.path.join(web_dir, "js", "modules", "traffic.js"), "r", encoding="utf-8") as f:
+            traffic_js = f.read()
+
+        # 1. Section exists with clean header
+        self.assertIn('id="sectionTraffic"', html)
+        self.assertIn('data-i18n="traffic_section.title">Traffic Stats</h1>', html)
+
+        # 2. Daily traffic and network quality cards reside in sectionTraffic, not sectionOverview
+        sec_overview_idx = html.index('id="sectionOverview"')
+        sec_traffic_idx = html.index('id="sectionTraffic"')
+        card_traffic_idx = html.index('id="cardDailyTrafficAnalytics"')
+        card_loss_idx = html.index('id="cardNetworkQualityMonitor"')
+        self.assertLess(sec_overview_idx, sec_traffic_idx)
+        self.assertLess(sec_traffic_idx, card_traffic_idx)
+        self.assertLess(sec_traffic_idx, card_loss_idx)
+
+        # Ensure cards do not appear within sectionOverview markup
+        overview_chunk = html[sec_overview_idx:sec_traffic_idx]
+        self.assertNotIn('id="cardDailyTrafficAnalytics"', overview_chunk)
+        self.assertNotIn('id="cardNetworkQualityMonitor"', overview_chunk)
+
+        # 3. Sidebar navigation item
+        self.assertIn('id="navItemTraffic"', html)
+        self.assertIn('data-section="traffic"', html)
+        self.assertIn('data-i18n="nav.traffic">Traffic Stats</span>', html)
+
+        # 4. statCardLoss triggers switchSection('traffic')
+        self.assertIn('onclick="switchSection(\'traffic\');"', html)
+
+        # 5. navigation.js triggers metric loading for traffic section
+        self.assertIn('sec === "traffic" || sec === "overview"', nav_js)
+        self.assertIn('"traffic"', nav_js)
+
+        # 6. i18n dictionaries cover both keys in EN and FA
+        self.assertIn('"nav.traffic": "Traffic Stats"', i18n_js)
+        self.assertIn('"nav.traffic": "آمار ترافیک"', i18n_js)
+        self.assertIn('"traffic_section.title": "Traffic & Network Analytics"', i18n_js)
+        self.assertIn('"traffic_section.title": "آمار ترافیک و کیفیت شبکه"', i18n_js)
+
+        # 7. traffic.js handles range and excluded ports formatting
+        self.assertIn('pLabel = exclList.length > 0 ? `!={${exclList.join(", ")}}` : (r.port_range || r.port)', traffic_js)
 
 
 if __name__ == "__main__":

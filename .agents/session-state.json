@@ -1,9 +1,15 @@
 {
-  "last_updated": "2026-11-22T06:33:00+03:30",
-  "active_task": "None",
+  "last_updated": "2026-11-22T09:40:00+03:30",
+  "active_task": "Port range traffic accounting and dedicated Traffic Stats section",
   "active_spec": null,
-  "phase": "Idle",
-  "completed_milestones": [],
+  "phase": "Completed",
+  "completed_milestones": [
+    "Fixed per-port and port-range traffic collection with split sub-interval and wildcard exclusion rollup to parent canonical port",
+    "Separated Daily Traffic and Network Quality timeline charts into dedicated Traffic Stats section (#sectionTraffic)",
+    "Added full bilingual EN/FA localization, sidebar navigation item, and direct telemetry links for Traffic Stats",
+    "Enhanced traffic summary and timeseries query handlers to resolve port-range strings (e.g. 8000-9000) and exclusion labels",
+    "Added comprehensive unit tests for traffic rollup, range querying, and dedicated UI section"
+  ],
   "next_steps": [],
-  "notes": "Fixed UI single destination port validation bug (_invalidPortInput) and removed iifname wan_iface restriction on standard NFTables DNAT rules to restore seamless multi-hop tunnel packet forwarding across intermediate relays."
+  "notes": "All unit tests and verify-all checks pass with 0 regressions. Clean code, standard library only, Vanilla ES6+ frontend."
 }

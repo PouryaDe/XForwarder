@@ -32,12 +32,17 @@ export const TRANSLATIONS = {
         "nav.main": "MAIN NAVIGATION",
         "nav.rules": "Ports",
         "nav.overview": "Overview",
+        "nav.traffic": "Traffic Stats",
         "nav.services": "Services",
         "nav.updates": "Updates",
         "nav.security": "Security",
         "nav.logs": "Logs",
         "user.admin": "Administrator",
         "user.role": "Administrator",
+
+        // Traffic Analytics Section
+        "traffic_section.title": "Traffic & Network Analytics",
+        "traffic_section.sub": "Hourly traffic accounting across forwarded ports and 30-day packet loss timeline.",
 
         // Service Warning Banner
         "services_warning.title": "Core Relay Packages Missing",
@@ -507,12 +512,17 @@ export const TRANSLATIONS = {
         "nav.main": "منوی اصلی",
         "nav.rules": "پورت‌ها",
         "nav.overview": "نمای کلی",
+        "nav.traffic": "آمار ترافیک",
         "nav.services": "سرویس‌ها",
         "nav.updates": "آپدیت",
         "nav.security": "امنیت",
         "nav.logs": "لاگ‌ها",
         "user.admin": "مدیر سیستم",
         "user.role": "مدیر سیستم",
+
+        // Traffic Analytics Section
+        "traffic_section.title": "آمار ترافیک و کیفیت شبکه",
+        "traffic_section.sub": "گزارش ساعتی پهنای باند پورت‌ها و خط زمانی ۳۰ روزه کیفیت شبکه و پکت‌لاس.",
 
         // Service Warning Banner
         "services_warning.title": "پکیج‌های هسته رله نصب نیستند",

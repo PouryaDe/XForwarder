@@ -414,7 +414,7 @@ class XForwarderWebHandler(BaseHTTPRequestHandler):
         candidate_file = os.path.normpath(os.path.join(WEB_DIR, static_rel))
         if not os.path.isfile(candidate_file) and "/" in static_rel and not subpath.startswith("/api/"):
             first_seg, rest_rel = static_rel.split("/", 1)
-            if first_seg.lower() in ("rules", "overview", "services", "updates", "security", "logs") and rest_rel:
+            if first_seg.lower() in ("rules", "overview", "traffic", "services", "updates", "security", "logs") and rest_rel:
                 candidate_file = os.path.normpath(os.path.join(WEB_DIR, rest_rel))
         if os.path.isfile(candidate_file) and not subpath.startswith("/api/"):
             try:

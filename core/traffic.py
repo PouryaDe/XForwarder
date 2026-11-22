@@ -689,6 +689,11 @@ def reset_traffic_counter(
 
     clean_type = entity_type.strip().lower()
     clean_id = entity_id.strip()
+    if clean_type == "port" and clean_id and clean_id.lower() != "all":
+        if clean_id.startswith("!="):
+            clean_id = "1"
+        elif "-" in clean_id:
+            clean_id = clean_id.split("-")[0].strip()
 
     try:
         conn = sqlite3.connect(path, timeout=5.0)
@@ -864,6 +869,11 @@ def get_traffic_summary(
 
             clean_etype = entity_type.strip().lower() if entity_type else ""
             clean_eid = entity_id.strip() if entity_id else ""
+            if clean_etype == "port" and clean_eid and clean_eid.lower() != "all":
+                if clean_eid.startswith("!="):
+                    clean_eid = "1"
+                elif "-" in clean_eid:
+                    clean_eid = clean_eid.split("-")[0].strip()
 
             if clean_etype and clean_etype != "all":
                 query += " AND entity_type = ?"
@@ -880,6 +890,13 @@ def get_traffic_summary(
 
             cursor.execute(query, params)
             rows = cursor.fetchall()
+
+            summary["total_port_rx"] = 0
+            summary["total_port_tx"] = 0
+            summary["total_port_bytes"] = 0
+            summary["total_tunnel_rx"] = 0
+            summary["total_tunnel_tx"] = 0
+            summary["total_tunnel_bytes"] = 0
 
             for etype, eid, p_start, rx, tx, tot in rows:
                 key = f"{etype}:{eid}"
@@ -899,6 +916,7 @@ def get_traffic_summary(
                         "cycle_rx": 0,
                         "cycle_tx": 0,
                         "cycle_bytes": 0,
+                        "cycle_total": 0,
                         "reset_timestamp": r_ts,
                         "_offset_rx": off_rx,
                         "_offset_tx": off_tx
@@ -913,6 +931,15 @@ def get_traffic_summary(
                 summary["total_tx"] += tx
                 summary["total_bytes"] += tot
 
+                if etype == "port":
+                    summary["total_port_rx"] += rx
+                    summary["total_port_tx"] += tx
+                    summary["total_port_bytes"] += tot
+                elif etype == "tunnel":
+                    summary["total_tunnel_rx"] += rx
+                    summary["total_tunnel_tx"] += tx
+                    summary["total_tunnel_bytes"] += tot
+
             # Compute cycle values after all bucket rows are aggregated
             for key, e_entry in summary["entities"].items():
                 c_rx = max(0, e_entry["rx_bytes"] - e_entry["_offset_rx"])
@@ -920,12 +947,22 @@ def get_traffic_summary(
                 e_entry["cycle_rx"] = c_rx
                 e_entry["cycle_tx"] = c_tx
                 e_entry["cycle_bytes"] = c_rx + c_tx
+                e_entry["cycle_total"] = c_rx + c_tx
                 del e_entry["_offset_rx"]
                 del e_entry["_offset_tx"]
 
                 summary["cycle_rx"] += c_rx
                 summary["cycle_tx"] += c_tx
                 summary["cycle_bytes"] += (c_rx + c_tx)
+
+            # Populate convenience lookup dictionaries for ports and tunnels
+            summary["ports"] = {}
+            summary["tunnels"] = {}
+            for key, e_entry in summary["entities"].items():
+                if e_entry["entity_type"] == "port":
+                    summary["ports"][e_entry["entity_id"]] = e_entry
+                elif e_entry["entity_type"] == "tunnel":
+                    summary["tunnels"][e_entry["entity_id"]] = e_entry
 
             # If a specific entity was requested, reflect that entity's stats directly in top-level fields
             if clean_etype and clean_eid and clean_eid.lower() != "all":
@@ -1085,12 +1122,23 @@ def get_traffic_timeseries(
 
             clean_etype = entity_type.strip().lower() if entity_type else ""
             clean_eid = entity_id.strip() if entity_id else ""
+            if clean_etype == "port" and clean_eid and clean_eid.lower() != "all":
+                if clean_eid.startswith("!="):
+                    clean_eid = "1"
+                elif "-" in clean_eid:
+                    clean_eid = clean_eid.split("-")[0].strip()
 
             if clean_etype and clean_etype != "all":
                 query += " AND entity_type = ?"
                 params.append(clean_etype)
             else:
-                query += " AND entity_type IN ('port', 'tunnel')"
+                # Group by forwarded ports to prevent double counting tunnels with ports in the timeline chart
+                cursor.execute("SELECT count(*) FROM traffic_hourly WHERE period_start >= ? AND entity_type = 'port';", (cutoff_ts,))
+                has_ports = bool((cursor.fetchone() or [0])[0] > 0)
+                if has_ports:
+                    query += " AND entity_type = 'port'"
+                else:
+                    query += " AND entity_type = 'tunnel'"
 
             if clean_eid and clean_eid.lower() != "all":
                 query += " AND entity_id = ?"

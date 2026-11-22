@@ -25,7 +25,9 @@ export function populateTrafficEntitySelect(selectedType, selectedId) {
                 .sort((a, b) => (Number(a.port) || 0) - (Number(b.port) || 0))
                 .map(r => {
                     const cat = r.category ? ` [${r.category}]` : "";
-                    return `<option value="port:${r.port}">Port :${escapeHtml(r.port)}${escapeHtml(cat)}</option>`;
+                    const exclList = Array.isArray(r.excluded_ports) ? r.excluded_ports : [];
+                    const pLabel = exclList.length > 0 ? `!={${exclList.join(", ")}}` : (r.port_range || r.port);
+                    return `<option value="port:${r.port}">Port :${escapeHtml(pLabel)}${escapeHtml(cat)}</option>`;
                 })
                 .join("");
         } else {
@@ -298,8 +300,11 @@ export async function loadTrafficModalData() {
             titleEl.textContent = "Global Traffic & Bandwidth Analytics";
             if (subEl) subEl.textContent = "Aggregated usage across all forwarded ports and kernel tunnels";
         } else if (entityType === "port") {
-            titleEl.textContent = `Port :${entityId} Bandwidth Analytics`;
-            if (subEl) subEl.textContent = `Traffic accounting for forwarded port ${entityId} (HAProxy / NFTables / Nginx)`;
+            const matchedRule = currentRules && currentRules.find(r => String(r.port) === String(entityId) || String(r.id) === `rule-${entityId}`);
+            const exclList = matchedRule && Array.isArray(matchedRule.excluded_ports) ? matchedRule.excluded_ports : [];
+            const displayPortLabel = exclList.length > 0 ? `!={${exclList.join(", ")}}` : (matchedRule && matchedRule.port_range ? matchedRule.port_range : entityId);
+            titleEl.textContent = `Port :${displayPortLabel} Bandwidth Analytics`;
+            if (subEl) subEl.textContent = `Traffic accounting for forwarded port ${displayPortLabel} (HAProxy / NFTables / Nginx)`;
         } else if (entityType === "method") {
             const methodLabelMap = {
                 haproxy: "Direct IPv6 (HAProxy Relay)",

@@ -1629,11 +1629,14 @@ class XForwarderEngine:
                                 if act_d and is_nftables_type(act_d.get("type")):
                                     port_method_map[r_port_int] = str(act_d.get("type")).lower().strip()
                                 s_p, e_p, _ = get_rule_port_bounds(r)
-                                excl = set(r.get("excluded_ports") or [])
-                                if excl and s_p is not None and e_p is not None:
-                                    for sub_s, _ in split_port_interval_excluding(s_p, e_p, excl | prot_ports):
-                                        port_range_map[sub_s] = r_port_int
-                                elif r.get("port_range") and s_p is not None:
+                                web_port = int((self.config.get("web") or {}).get("port", 8090) or 8090)
+                                # Map split sub-intervals and wildcard exclusions to canonical rule port
+                                safe_intervals = self._resolve_safe_nft_intervals(r, prot_ports, web_port)
+                                for sub_s, _ in safe_intervals:
+                                    port_range_map[sub_s] = r_port_int
+                                if self._build_nft_excl_expr(r, prot_ports):
+                                    port_range_map[1] = r_port_int
+                                elif s_p is not None:
                                     port_range_map[s_p] = r_port_int
                             self._traffic_collector.collect_cycle(
                                 ports=rule_ports_list,

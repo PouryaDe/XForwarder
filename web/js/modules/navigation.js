@@ -6,7 +6,7 @@ import { t } from "./i18n.js";
 import { BASE_PATH } from "./api.js";
 import { updateNavIndicator } from "./effects.js";
 
-export const SECTIONS = ["overview", "rules", "services", "security", "updates", "logs"];
+export const SECTIONS = ["overview", "rules", "traffic", "services", "security", "updates", "logs"];
 
 export function getSectionFromLocation() {
     const pathParts = String(window.location.pathname || "")
@@ -119,7 +119,7 @@ export function switchSection(sectionId, options = {}) {
     }
 
     // Section specific triggers
-    if (sec === "overview") {
+    if (sec === "traffic" || sec === "overview") {
         if (typeof window.loadNetworkQualityMetrics === "function") {
             window.loadNetworkQualityMetrics();
         }

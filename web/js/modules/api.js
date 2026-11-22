@@ -5,8 +5,8 @@
 import { showToast } from "./utils.js";
 
 // Valid SPA section path segments (hash-free clean URL routing)
-export const VALID_SECTIONS = ["rules", "overview", "services", "security", "updates", "logs"];
-const SECTION_SUFFIX_RE = /\/(rules|overview|services|security|updates|logs)$/i;
+export const VALID_SECTIONS = ["rules", "overview", "traffic", "services", "security", "updates", "logs"];
+const SECTION_SUFFIX_RE = /\/(rules|overview|traffic|services|security|updates|logs)$/i;
 
 // Dynamically compute base path & API prefix (supports custom security secret paths & section subpaths)
 const rawCleanPath = window.location.pathname.replace(/\/index\.html?$/i, "").replace(/\/+$/, "");

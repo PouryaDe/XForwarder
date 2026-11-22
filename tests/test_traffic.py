@@ -448,6 +448,127 @@ class TestTrafficSubsystem(unittest.TestCase):
         self.assertEqual(summary["entities"]["port:1000"]["rx_bytes"], 2500)
         self.assertEqual(summary["entities"]["port:1000"]["tx_bytes"], 5000)
 
+        # Verify summary convenience dictionaries for ports and tunnels
+        self.assertIn("ports", summary)
+        self.assertIn("tunnels", summary)
+        self.assertIn("1000", summary["ports"])
+        self.assertIn("backhaul1", summary["tunnels"])
+        self.assertEqual(summary["ports"]["1000"]["total_bytes"], 7500)
+        self.assertEqual(summary["ports"]["1000"]["cycle_total"], 7500)
+        self.assertEqual(summary["tunnels"]["backhaul1"]["total_bytes"], 6000)
+
+    def test_split_range_subintervals_and_port_range_rollup(self):
+        """Verifies that when a wide port range (e.g. 8000-9000) is split across web_port 8090,
+        sub-intervals (8000-8089 and 8091-9000) both roll up into parent rule port 8000."""
+        collector = TrafficCollector(db_path=self.db_path)
+        range_map = {8000: 8000, 8091: 8000}
+
+        # Baseline
+        with patch("core.traffic.read_haproxy_port_stats", return_value={}), \
+             patch("core.traffic.read_nftables_port_stats", return_value={
+                 8000: {"rx_bytes": 1000, "tx_bytes": 2000},
+                 8091: {"rx_bytes": 3000, "tx_bytes": 4000},
+             }), \
+             patch("core.traffic.read_proc_net_dev", return_value={}):
+            collector.collect_cycle(ports=[8000], port_range_map=range_map)
+
+        # Traffic delta (+1000 rx / +1000 tx on lower subinterval, +2000 rx / +2000 tx on upper subinterval)
+        with patch("core.traffic.read_haproxy_port_stats", return_value={}), \
+             patch("core.traffic.read_nftables_port_stats", return_value={
+                 8000: {"rx_bytes": 2000, "tx_bytes": 3000},
+                 8091: {"rx_bytes": 5000, "tx_bytes": 6000},
+             }), \
+             patch("core.traffic.read_proc_net_dev", return_value={}):
+            res = collector.collect_cycle(ports=[8000], port_range_map=range_map)
+            self.assertGreater(res["entities_updated"], 0)
+
+        summary = get_traffic_summary(period="24h", db_path=self.db_path)
+        self.assertIn("port:8000", summary["entities"])
+        self.assertIn("8000", summary["ports"])
+        # Combined rx: 1000 + 2000 = 3000, combined tx: 1000 + 2000 = 3000, total: 6000
+        self.assertEqual(summary["ports"]["8000"]["rx_bytes"], 3000)
+        self.assertEqual(summary["ports"]["8000"]["tx_bytes"], 3000)
+        self.assertEqual(summary["ports"]["8000"]["total_bytes"], 6000)
+        self.assertEqual(summary["total_port_bytes"], 6000)
+
+    def test_query_traffic_by_port_range_and_exclusion_label(self):
+        """Verifies querying summary, timeseries, and baseline reset using port range notation (8000-9000)
+        or exclusion label (!={22,8090}) seamlessly resolves to the base port entity."""
+        collector = TrafficCollector(db_path=self.db_path)
+        range_map = {8000: 8000, 1: 1}
+
+        # Baseline
+        with patch("core.traffic.read_haproxy_port_stats", return_value={}), \
+             patch("core.traffic.read_nftables_port_stats", return_value={
+                 8000: {"rx_bytes": 1000, "tx_bytes": 2000},
+                 1: {"rx_bytes": 500, "tx_bytes": 500},
+             }), \
+             patch("core.traffic.read_proc_net_dev", return_value={}):
+            collector.collect_cycle(ports=[8000, 1], port_range_map=range_map)
+
+        # Delta
+        with patch("core.traffic.read_haproxy_port_stats", return_value={}), \
+             patch("core.traffic.read_nftables_port_stats", return_value={
+                 8000: {"rx_bytes": 3000, "tx_bytes": 6000},
+                 1: {"rx_bytes": 1500, "tx_bytes": 1500},
+             }), \
+             patch("core.traffic.read_proc_net_dev", return_value={}):
+            collector.collect_cycle(ports=[8000, 1], port_range_map=range_map)
+
+        # 1. Query summary with range string "8000-9000"
+        sum_range = get_traffic_summary(period="24h", entity_type="port", entity_id="8000-9000", db_path=self.db_path)
+        self.assertIn("port:8000", sum_range["entities"])
+        self.assertEqual(sum_range["entities"]["port:8000"]["rx_bytes"], 2000)
+        self.assertEqual(sum_range["entities"]["port:8000"]["tx_bytes"], 4000)
+
+        # 2. Query summary with exclusion label "!={22, 8090}"
+        sum_excl = get_traffic_summary(period="24h", entity_type="port", entity_id="!={22, 8090}", db_path=self.db_path)
+        self.assertIn("port:1", sum_excl["entities"])
+        self.assertEqual(sum_excl["entities"]["port:1"]["rx_bytes"], 1000)
+        self.assertEqual(sum_excl["entities"]["port:1"]["tx_bytes"], 1000)
+
+        # 3. Query timeseries with range string "8000-9000"
+        ts_range = get_traffic_timeseries(period="24h", entity_type="port", entity_id="8000-9000", db_path=self.db_path)
+        self.assertGreater(len(ts_range), 0)
+        self.assertEqual(ts_range[0]["total_bytes"], 6000)
+
+        # 4. Reset counter with range string "8000-9000"
+        reset_res = reset_traffic_counter(entity_type="port", entity_id="8000-9000", wipe_history=False, db_path=self.db_path)
+        self.assertTrue(reset_res.get("success") or reset_res.get("ok"))
+        self.assertEqual(reset_res["entity_id"], "8000")
+
+        # After baseline offset reset, cycle traffic drops to 0 while historical total remains
+        sum_after = get_traffic_summary(period="24h", entity_type="port", entity_id="8000", db_path=self.db_path)
+        self.assertEqual(sum_after["entities"]["port:8000"]["cycle_bytes"], 0)
+        self.assertEqual(sum_after["entities"]["port:8000"]["total_bytes"], 6000)
+
+    def test_wildcard_exclusion_rule_nft_traffic_rollup(self):
+        """Verifies that cnt_in_1_excl counter output rolls up to port:1."""
+        collector = TrafficCollector(db_path=self.db_path)
+        range_map = {1: 1}
+
+        # Baseline
+        with patch("core.traffic.read_haproxy_port_stats", return_value={}), \
+             patch("core.traffic.read_nftables_port_stats", return_value={
+                 1: {"rx_bytes": 1000, "tx_bytes": 1000},
+             }), \
+             patch("core.traffic.read_proc_net_dev", return_value={}):
+            collector.collect_cycle(ports=[1], port_range_map=range_map)
+
+        # Delta (+5000 rx, +5000 tx)
+        with patch("core.traffic.read_haproxy_port_stats", return_value={}), \
+             patch("core.traffic.read_nftables_port_stats", return_value={
+                 1: {"rx_bytes": 6000, "tx_bytes": 6000},
+             }), \
+             patch("core.traffic.read_proc_net_dev", return_value={}):
+            collector.collect_cycle(ports=[1], port_range_map=range_map)
+
+        summary = get_traffic_summary(period="24h", db_path=self.db_path)
+        self.assertIn("port:1", summary["entities"])
+        self.assertEqual(summary["ports"]["1"]["rx_bytes"], 5000)
+        self.assertEqual(summary["ports"]["1"]["tx_bytes"], 5000)
+        self.assertEqual(summary["ports"]["1"]["total_bytes"], 10000)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -357,7 +357,10 @@ export function renderRuleCard(rule, rulesState) {
     }).join('');
 
     const portKey = String(rule.port || "");
-    const pTraffic = (lastTrafficData && lastTrafficData.ports) ? lastTrafficData.ports[portKey] : null;
+    const rangeStart = rule.port_range ? String(rule.port_range).split("-")[0].trim() : "";
+    const pTraffic = (lastTrafficData && lastTrafficData.ports)
+        ? (lastTrafficData.ports[portKey] || (rangeStart ? lastTrafficData.ports[rangeStart] : null) || (rule.port_range ? lastTrafficData.ports[String(rule.port_range)] : null))
+        : null;
     const trafficPillHtml = pTraffic ? `
         <span class="traffic-pill-badge" onclick="openTrafficModal('port', '${escapeHtml(portKey)}')" title="${escapeHtml(t("rules.traffic_cycle_tooltip", { tx: formatBytes(pTraffic.cycle_tx), rx: formatBytes(pTraffic.cycle_rx) }, `Billing Cycle Traffic: ↑ ${formatBytes(pTraffic.cycle_tx)} · ↓ ${formatBytes(pTraffic.cycle_rx)} (Click for details & reset)`))}">
             <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
@@ -498,7 +501,10 @@ export function renderRuleListRow(rule, rulesState) {
     }).join("");
 
     const portKey = String(rule.port || "");
-    const pTraffic = (lastTrafficData && lastTrafficData.ports) ? lastTrafficData.ports[portKey] : null;
+    const rangeStart = rule.port_range ? String(rule.port_range).split("-")[0].trim() : "";
+    const pTraffic = (lastTrafficData && lastTrafficData.ports)
+        ? (lastTrafficData.ports[portKey] || (rangeStart ? lastTrafficData.ports[rangeStart] : null) || (rule.port_range ? lastTrafficData.ports[String(rule.port_range)] : null))
+        : null;
     const trafficPillHtml = pTraffic ? `
         <span class="traffic-pill-badge" onclick="openTrafficModal('port', '${escapeHtml(portKey)}')" title="${escapeHtml(t("rules.traffic_cycle_tooltip", { tx: formatBytes(pTraffic.cycle_tx), rx: formatBytes(pTraffic.cycle_rx) }, `Billing Cycle Traffic: ↑ ${formatBytes(pTraffic.cycle_tx)} · ↓ ${formatBytes(pTraffic.cycle_rx)} (Click for details & reset)`))}">
             <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>

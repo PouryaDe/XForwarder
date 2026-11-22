@@ -318,6 +318,15 @@
                     <span class="nav-badge" id="navRulesCount">0</span>
                 </button>
 
+                <button class="nav-item" data-section="traffic" id="navItemTraffic">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="20" x2="18" y2="10" />
+                        <line x1="12" y1="20" x2="12" y2="4" />
+                        <line x1="6" y1="20" x2="6" y2="14" />
+                    </svg>
+                    <span class="nav-label" data-i18n="nav.traffic">Traffic Stats</span>
+                </button>
+
                 <button class="nav-item" data-section="services" id="navItemServices">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
@@ -818,7 +827,7 @@
                         </div>
                     </div>
 
-                    <div class="stat-card stat-card-clickable" id="statCardLoss" onclick="document.getElementById('cardNetworkQualityMonitor')?.scrollIntoView({behavior:'smooth'});" style="cursor:pointer;" title="Click to view Network Quality &amp; Disruption History">
+                    <div class="stat-card stat-card-clickable" id="statCardLoss" onclick="switchSection('traffic');" style="cursor:pointer;" title="Click to view Network Quality &amp; Disruption History">
                         <div class="stat-icon icon-emerald" id="statLossIcon">
                             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
@@ -836,97 +845,6 @@
                 <div style="display:none;" id="statCardTraffic" aria-hidden="true">
                     <span id="statTrafficTotal">0 B</span>
                     <span id="statTrafficSubtext">↓ 0 B &middot; ↑ 0 B</span>
-                </div>
-
-                <!-- Daily Traffic & Bandwidth Analytics Card (Full Width Interactive Chart) -->
-                <div class="overview-card full-width-card" id="cardDailyTrafficAnalytics" style="margin-top: 18px; margin-bottom: 20px;">
-                    <div class="overview-card-header" style="flex-wrap: wrap; gap: 12px;">
-                        <div class="overview-card-title">
-                            <div class="stat-icon icon-cyan" style="width:36px;height:36px;">
-                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <line x1="18" y1="20" x2="18" y2="10" />
-                                    <line x1="12" y1="20" x2="12" y2="4" />
-                                    <line x1="6" y1="20" x2="6" y2="14" />
-                                </svg>
-                            </div>
-                            <div>
-                                <div style="display:flex; align-items:center; gap:8px;">
-                                    <h3 data-i18n="overview.daily_traffic_title">Daily Traffic &amp; Bandwidth Usage</h3>
-                                    <span class="net-pill-badge" id="ovTrafficRangeBadge" data-i18n="overview.past_24h">Past 24 Hours</span>
-                                </div>
-                                <span class="overview-card-sub" data-i18n="overview.daily_traffic_sub">Hourly traffic accounting across all forwarded ports and kernel tunnels &middot; SQLite WAL</span>
-                            </div>
-                        </div>
-                        <div class="metrics-header-controls" style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
-                            <div class="metrics-range-tabs" id="ovTrafficRangeTabs">
-                                <button type="button" class="btn-range-tab active" id="btnOvTraffic24h" data-range="24h" data-i18n="overview.24h">24 Hours</button>
-                                <button type="button" class="btn-range-tab" id="btnOvTraffic7d" data-range="7d" data-i18n="overview.7d">7 Days</button>
-                            </div>
-                            <button type="button" class="btn btn-secondary btn-sm" onclick="openTrafficModal('all', 'all')" title="Open detailed granular traffic modal with breakdown & resets">
-                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <circle cx="11" cy="11" r="8"></circle>
-                                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-                                </svg>
-                                <span data-i18n="overview.full_analytics">Full Analytics</span>
-                            </button>
-                            <button type="button" class="btn btn-secondary btn-sm" id="btnRefreshOvTraffic" title="Refresh traffic data now" style="padding: 0 10px;">
-                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <polyline points="23 4 23 10 17 10"></polyline>
-                                    <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
-                                </svg>
-                            </button>
-                        </div>
-                    </div>
-
-                    <div class="overview-card-body">
-                        <!-- KPI Summary Cards Row -->
-                        <div class="metrics-kpi-grid">
-                            <div class="metrics-kpi-card">
-                                <span class="kpi-label" data-i18n="overview.traffic_total">24h Total Traffic</span>
-                                <span class="kpi-value text-cyan font-mono" id="ovTrafficCardTotal">0 B</span>
-                                <span class="kpi-sub" id="ovTrafficCardSub" data-i18n="overview.traffic_total_sub">All active ports &amp; tunnels</span>
-                            </div>
-                            <div class="metrics-kpi-card">
-                                <span class="kpi-label" data-i18n="overview.download_rx">Download (RX)</span>
-                                <span class="kpi-value text-cyan font-mono" id="ovTrafficCardRx">↓ 0 B</span>
-                                <span class="kpi-sub" data-i18n="overview.download_rx_sub">Client inbound stream</span>
-                            </div>
-                            <div class="metrics-kpi-card">
-                                <span class="kpi-label" data-i18n="overview.upload_tx">Upload (TX)</span>
-                                <span class="kpi-value text-mint font-mono" id="ovTrafficCardTx">↑ 0 B</span>
-                                <span class="kpi-sub" data-i18n="overview.upload_tx_sub">Exit server response stream</span>
-                            </div>
-                            <div class="metrics-kpi-card">
-                                <span class="kpi-label" data-i18n="overview.peak_hourly">Peak Hourly Usage</span>
-                                <span class="kpi-value font-mono" id="ovTrafficCardPeak">0 B/h</span>
-                                <span class="kpi-sub" id="ovTrafficCardPeakTime" data-i18n="overview.peak_hourly_sub">Peak throughput window</span>
-                            </div>
-                        </div>
-
-                        <!-- Hourly Interactive Stacked Bar Chart -->
-                        <div class="ov-traffic-chart-section" style="margin-top: 18px;">
-                            <div class="ov-traffic-chart-header" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:8px;">
-                                <span class="timeline-title" style="font-size:0.82rem; font-weight:600; color:var(--text-primary);"><span data-i18n="overview.chart_title">Hourly Bandwidth Distribution</span> (<span id="ovTrafficChartRangeTitle">Past 24 Hours</span>)</span>
-                                <div class="timeline-legend" style="display:flex; gap:12px; font-size:0.75rem; color:var(--text-muted);">
-                                    <span class="legend-item" style="display:inline-flex; align-items:center; gap:4px;"><span class="legend-dot" style="width:8px; height:8px; border-radius:2px; background:var(--accent-mint); display:inline-block;"></span> <span data-i18n="overview.legend_tx">Upload (TX)</span></span>
-                                    <span class="legend-item" style="display:inline-flex; align-items:center; gap:4px;"><span class="legend-dot" style="width:8px; height:8px; border-radius:2px; background:var(--accent-cyan); display:inline-block;"></span> <span data-i18n="overview.legend_rx">Download (RX)</span></span>
-                                </div>
-                            </div>
-                            <div class="ov-traffic-bars-container" id="ovTrafficBarsContainer">
-                                <div style="display:flex;align-items:center;justify-content:center;height:100%;width:100%;color:var(--text-muted);font-size:0.8rem;gap:8px;">
-                                    <span class="btn-spinner" style="width:14px;height:14px;display:inline-block;"></span>
-                                    <span>Loading hourly traffic chart...</span>
-                                </div>
-                            </div>
-                            <div class="timeline-ticks" id="ovTrafficTimelineTicks" style="display:flex; justify-content:space-between; font-size:0.72rem; color:var(--text-muted); margin-top:8px; padding:0 8px; font-family:var(--font-mono); user-select:none;">
-                                <span data-i18n="overview.ticks_24h">24h ago</span>
-                                <span data-i18n="overview.ticks_18h">18h ago</span>
-                                <span data-i18n="overview.ticks_12h">12h ago</span>
-                                <span data-i18n="overview.ticks_6h">6h ago</span>
-                                <span data-i18n="overview.ticks_now">Now</span>
-                            </div>
-                        </div>
-                    </div>
                 </div>
 
                 <!-- Topology & Relay Engines Stack (Compact, Zero-Waste Responsive Layout) -->
@@ -1029,6 +947,106 @@
                         <!-- Tunnel Interfaces Adaptive Grid -->
                         <div class="tunnel-grid" id="tunnelGrid">
                             <!-- Dynamically populated via stats.js -->
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SECTION 2.5: Traffic & Network Analytics -->
+            <section class="dashboard-section" id="sectionTraffic" style="display:none;">
+                <div class="page-header">
+                    <div class="page-header-text">
+                        <h1 class="page-title" data-i18n="traffic_section.title">Traffic Stats</h1>
+                    </div>
+                </div>
+
+                <!-- Daily Traffic & Bandwidth Analytics Card (Full Width Interactive Chart) -->
+                <div class="overview-card full-width-card" id="cardDailyTrafficAnalytics" style="margin-top: 18px; margin-bottom: 20px;">
+                    <div class="overview-card-header" style="flex-wrap: wrap; gap: 12px;">
+                        <div class="overview-card-title">
+                            <div class="stat-icon icon-cyan" style="width:36px;height:36px;">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <line x1="18" y1="20" x2="18" y2="10" />
+                                    <line x1="12" y1="20" x2="12" y2="4" />
+                                    <line x1="6" y1="20" x2="6" y2="14" />
+                                </svg>
+                            </div>
+                            <div>
+                                <div style="display:flex; align-items:center; gap:8px;">
+                                    <h3 data-i18n="overview.daily_traffic_title">Daily Traffic &amp; Bandwidth Usage</h3>
+                                    <span class="net-pill-badge" id="ovTrafficRangeBadge" data-i18n="overview.past_24h">Past 24 Hours</span>
+                                </div>
+                                <span class="overview-card-sub" data-i18n="overview.daily_traffic_sub">Hourly traffic accounting across all forwarded ports and kernel tunnels &middot; SQLite WAL</span>
+                            </div>
+                        </div>
+                        <div class="metrics-header-controls" style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                            <div class="metrics-range-tabs" id="ovTrafficRangeTabs">
+                                <button type="button" class="btn-range-tab active" id="btnOvTraffic24h" data-range="24h" data-i18n="overview.24h">24 Hours</button>
+                                <button type="button" class="btn-range-tab" id="btnOvTraffic7d" data-range="7d" data-i18n="overview.7d">7 Days</button>
+                            </div>
+                            <button type="button" class="btn btn-secondary btn-sm" onclick="openTrafficModal('all', 'all')" title="Open detailed granular traffic modal with breakdown & resets">
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <circle cx="11" cy="11" r="8"></circle>
+                                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                                </svg>
+                                <span data-i18n="overview.full_analytics">Full Analytics</span>
+                            </button>
+                            <button type="button" class="btn btn-secondary btn-sm" id="btnRefreshOvTraffic" title="Refresh traffic data now" style="padding: 0 10px;">
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="23 4 23 10 17 10"></polyline>
+                                    <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="overview-card-body">
+                        <!-- KPI Summary Cards Row -->
+                        <div class="metrics-kpi-grid">
+                            <div class="metrics-kpi-card">
+                                <span class="kpi-label" data-i18n="overview.traffic_total">24h Total Traffic</span>
+                                <span class="kpi-value text-cyan font-mono" id="ovTrafficCardTotal">0 B</span>
+                                <span class="kpi-sub" id="ovTrafficCardSub" data-i18n="overview.traffic_total_sub">All active ports &amp; tunnels</span>
+                            </div>
+                            <div class="metrics-kpi-card">
+                                <span class="kpi-label" data-i18n="overview.download_rx">Download (RX)</span>
+                                <span class="kpi-value text-cyan font-mono" id="ovTrafficCardRx">↓ 0 B</span>
+                                <span class="kpi-sub" data-i18n="overview.download_rx_sub">Client inbound stream</span>
+                            </div>
+                            <div class="metrics-kpi-card">
+                                <span class="kpi-label" data-i18n="overview.upload_tx">Upload (TX)</span>
+                                <span class="kpi-value text-mint font-mono" id="ovTrafficCardTx">↑ 0 B</span>
+                                <span class="kpi-sub" data-i18n="overview.upload_tx_sub">Exit server response stream</span>
+                            </div>
+                            <div class="metrics-kpi-card">
+                                <span class="kpi-label" data-i18n="overview.peak_hourly">Peak Hourly Usage</span>
+                                <span class="kpi-value font-mono" id="ovTrafficCardPeak">0 B/h</span>
+                                <span class="kpi-sub" id="ovTrafficCardPeakTime" data-i18n="overview.peak_hourly_sub">Peak throughput window</span>
+                            </div>
+                        </div>
+
+                        <!-- Hourly Interactive Stacked Bar Chart -->
+                        <div class="ov-traffic-chart-section" style="margin-top: 18px;">
+                            <div class="ov-traffic-chart-header" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:8px;">
+                                <span class="timeline-title" style="font-size:0.82rem; font-weight:600; color:var(--text-primary);"><span data-i18n="overview.chart_title">Hourly Bandwidth Distribution</span> (<span id="ovTrafficChartRangeTitle">Past 24 Hours</span>)</span>
+                                <div class="timeline-legend" style="display:flex; gap:12px; font-size:0.75rem; color:var(--text-muted);">
+                                    <span class="legend-item" style="display:inline-flex; align-items:center; gap:4px;"><span class="legend-dot" style="width:8px; height:8px; border-radius:2px; background:var(--accent-mint); display:inline-block;"></span> <span data-i18n="overview.legend_tx">Upload (TX)</span></span>
+                                    <span class="legend-item" style="display:inline-flex; align-items:center; gap:4px;"><span class="legend-dot" style="width:8px; height:8px; border-radius:2px; background:var(--accent-cyan); display:inline-block;"></span> <span data-i18n="overview.legend_rx">Download (RX)</span></span>
+                                </div>
+                            </div>
+                            <div class="ov-traffic-bars-container" id="ovTrafficBarsContainer">
+                                <div style="display:flex;align-items:center;justify-content:center;height:100%;width:100%;color:var(--text-muted);font-size:0.8rem;gap:8px;">
+                                    <span class="btn-spinner" style="width:14px;height:14px;display:inline-block;"></span>
+                                    <span>Loading hourly traffic chart...</span>
+                                </div>
+                            </div>
+                            <div class="timeline-ticks" id="ovTrafficTimelineTicks" style="display:flex; justify-content:space-between; font-size:0.72rem; color:var(--text-muted); margin-top:8px; padding:0 8px; font-family:var(--font-mono); user-select:none;">
+                                <span data-i18n="overview.ticks_24h">24h ago</span>
+                                <span data-i18n="overview.ticks_18h">18h ago</span>
+                                <span data-i18n="overview.ticks_12h">12h ago</span>
+                                <span data-i18n="overview.ticks_6h">6h ago</span>
+                                <span data-i18n="overview.ticks_now">Now</span>
+                            </div>
                         </div>
                     </div>
                 </div>
