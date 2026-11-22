@@ -804,7 +804,7 @@ class TestUIAndAPIEdgeCases(unittest.TestCase):
         self.assertNotIn('class="stat-number text-amber" id="statActiveNftables"', html)
 
         # 3. Path box active indicator uses left accent border, not neon blur halo
-        self.assertIn("border-left: 3px solid var(--accent-emerald);", css)
+        self.assertIn("border-left: 3px solid var(--accent);", css)
         self.assertNotIn("box-shadow: 0 0 16px -4px rgba(16, 185, 129, 0.25);", css)
 
         # 4. Latency threshold in app.js reserves amber warning for > 150ms or loss > 0%
@@ -882,7 +882,7 @@ class TestUIAndAPIEdgeCases(unittest.TestCase):
         self.assertIn("--accent-2: #5b8cff;", css)
         self.assertIn("--warn: #ffb648;", css)
         self.assertIn("--bad: #ff6b57;", css)
-        self.assertIn("--blob-a: rgba(91, 61, 245, 0.18);", css)
+        self.assertIn("--blob-a: rgba(91, 61, 245, 0.09);", css)
         self.assertIn("@keyframes xfwd-grad-shift", css)
 
         # Light Theme
@@ -890,7 +890,7 @@ class TestUIAndAPIEdgeCases(unittest.TestCase):
         self.assertIn("--raise: #fbfbfd;", css)
         self.assertIn("--accent: #6c52ff;", css)
         self.assertIn("--accent-text: #5b3df5;", css)
-        self.assertIn("--blob-a: rgba(91, 61, 245, 0.16);", css)
+        self.assertIn("--blob-a: rgba(91, 61, 245, 0.10);", css)
 
         # 4. Glossy Mint Primary Button & Bore Tunnel Split Login
         self.assertIn("linear-gradient(to bottom, color-mix(in srgb, var(--accent) 86%, white), var(--accent))", css)
@@ -3010,7 +3010,7 @@ stream {
         self.assertEqual(html.count('<h1 class="page-title"'), 7)
         self.assertNotIn('<p class="page-subtitle"', html)
         self.assertIn('.page-title {', layout_css)
-        self.assertIn('--font-page-title', layout_css)
+        self.assertIn('--font-display', layout_css)
         # Simplified sidebar footer & horizontal service rows & favicon + inline toast
         self.assertNotIn('class="user-avatar"', html)
         self.assertNotIn('class="user-role"', html)

@@ -77,9 +77,9 @@
     --accent-rose: var(--bad);
 
     /* Ambient Drifting Blobs, Dot Matrix & Grain */
-    --blob-a: rgba(91, 61, 245, 0.18);
-    --blob-b: rgba(91, 140, 255, 0.13);
-    --blob-c: rgba(139, 116, 255, 0.10);
+    --blob-a: rgba(91, 61, 245, 0.09);
+    --blob-b: rgba(91, 140, 255, 0.07);
+    --blob-c: rgba(139, 116, 255, 0.05);
     --blob-1: var(--blob-a);
     --blob-2: var(--blob-b);
     --blob-3: var(--blob-c);
@@ -175,9 +175,9 @@
     --accent-amber: var(--warn);
     --accent-rose: var(--bad);
 
-    --blob-a: rgba(91, 61, 245, 0.16);
-    --blob-b: rgba(91, 140, 255, 0.14);
-    --blob-c: rgba(139, 116, 255, 0.10);
+    --blob-a: rgba(91, 61, 245, 0.10);
+    --blob-b: rgba(91, 140, 255, 0.08);
+    --blob-c: rgba(139, 116, 255, 0.06);
     --blob-1: var(--blob-a);
     --blob-2: var(--blob-b);
     --blob-3: var(--blob-c);
@@ -1270,22 +1270,19 @@ input:-webkit-autofill:active {
 }
 
 .page-title {
-    font-family: var(--font-page-title);
+    font-family: var(--font-display);
     font-size: clamp(1.7rem, 2.35vw, 2.08rem);
     font-weight: 700;
     line-height: 1.15;
     letter-spacing: -0.03em;
-    background: linear-gradient(120deg, #b9a8ff 0%, #8b74ff 34%, #5b8cff 70%, #38cfff 100%);
-    background-size: 220% 220%;
-    -webkit-background-clip: text;
-    background-clip: text;
-    -webkit-text-fill-color: transparent;
-    color: transparent;
-    animation: xfwd-grad-shift 6s ease infinite;
+    color: var(--ink);
     margin: 0;
 }
 
-.brand-title,
+.brand-title {
+    color: var(--ink);
+}
+
 .login-heading-gradient {
     background: linear-gradient(120deg, #b9a8ff 0%, #8b74ff 34%, #5b8cff 70%, #38cfff 100%);
     background-size: 220% 220%;
@@ -1296,8 +1293,6 @@ input:-webkit-autofill:active {
     animation: xfwd-grad-shift 6s ease infinite;
 }
 
-[data-theme="light"] .page-title,
-[data-theme="light"] .brand-title,
 [data-theme="light"] .login-heading-gradient {
     background: linear-gradient(120deg, #5b3df5 0%, #6c52ff 36%, #3b72f6 72%, #0094d4 100%);
     background-size: 220% 220%;
@@ -1308,8 +1303,6 @@ input:-webkit-autofill:active {
 }
 
 @media (prefers-reduced-motion: reduce) {
-    .page-title,
-    .brand-title,
     .login-heading-gradient {
         animation: none;
     }
@@ -3023,9 +3016,9 @@ input:-webkit-autofill:active {
 }
 
 .path-box.is-active {
-    border-color: color-mix(in srgb, var(--good) 35%, transparent);
-    background: color-mix(in srgb, var(--good) 4%, var(--raise-2));
-    border-left: 3px solid var(--accent-emerald);
+    border-color: color-mix(in srgb, var(--accent) 42%, transparent);
+    background: color-mix(in srgb, var(--accent) 5%, var(--raise-2));
+    border-left: 3px solid var(--accent);
 }
 
 .path-box.is-failover {
@@ -5886,17 +5879,17 @@ input:-webkit-autofill:active {
     min-width: 28px;
     height: 28px;
     border-radius: 8px;
-    background: rgba(52, 224, 161, 0.12);
-    border: 1px solid rgba(52, 224, 161, 0.28);
-    color: var(--accent-mint, var(--accent));
+    background: var(--accent-wash);
+    border: 1px solid color-mix(in srgb, var(--accent) 28%, transparent);
+    color: var(--accent-text);
     font-size: 0.76rem;
     font-weight: 700;
     flex-shrink: 0;
 }
 
 [data-theme="light"] .update-step-num {
-    background: rgba(0, 107, 74, 0.1);
-    border-color: rgba(0, 107, 74, 0.24);
+    background: var(--accent-wash);
+    border-color: color-mix(in srgb, var(--accent-text) 24%, transparent);
     color: var(--accent-text);
 }
 
@@ -5977,25 +5970,25 @@ input:-webkit-autofill:active {
     display: inline-flex;
     align-items: center;
     gap: 5px;
-    background: rgba(110, 231, 183, 0.08);
-    border: 1px solid rgba(110, 231, 183, 0.22);
+    background: var(--accent-wash);
+    border: 1px solid color-mix(in srgb, var(--accent) 28%, transparent);
     border-radius: 8px;
     padding: 3px 8px;
     font-size: 0.76rem;
     font-family: 'JetBrains Mono', monospace;
-    color: var(--accent-mint);
+    color: var(--accent-text);
     cursor: pointer;
     transition: all 0.2s ease;
     user-select: none;
 }
 
 .traffic-pill-badge:hover {
-    background: rgba(110, 231, 183, 0.16);
-    box-shadow: 0 0 10px rgba(110, 231, 183, 0.25);
+    background: color-mix(in srgb, var(--accent) 20%, transparent);
+    box-shadow: 0 0 10px var(--accent-glow);
 }
 
 .traffic-pill-badge svg {
-    color: var(--accent-mint);
+    color: var(--accent-text);
     opacity: 0.85;
 }
 

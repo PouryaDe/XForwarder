@@ -77,9 +77,9 @@
     --accent-rose: var(--bad);
 
     /* Ambient Drifting Blobs, Dot Matrix & Grain */
-    --blob-a: rgba(91, 61, 245, 0.18);
-    --blob-b: rgba(91, 140, 255, 0.13);
-    --blob-c: rgba(139, 116, 255, 0.10);
+    --blob-a: rgba(91, 61, 245, 0.09);
+    --blob-b: rgba(91, 140, 255, 0.07);
+    --blob-c: rgba(139, 116, 255, 0.05);
     --blob-1: var(--blob-a);
     --blob-2: var(--blob-b);
     --blob-3: var(--blob-c);
@@ -175,9 +175,9 @@
     --accent-amber: var(--warn);
     --accent-rose: var(--bad);
 
-    --blob-a: rgba(91, 61, 245, 0.16);
-    --blob-b: rgba(91, 140, 255, 0.14);
-    --blob-c: rgba(139, 116, 255, 0.10);
+    --blob-a: rgba(91, 61, 245, 0.10);
+    --blob-b: rgba(91, 140, 255, 0.08);
+    --blob-c: rgba(139, 116, 255, 0.06);
     --blob-1: var(--blob-a);
     --blob-2: var(--blob-b);
     --blob-3: var(--blob-c);

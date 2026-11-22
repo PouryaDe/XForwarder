@@ -1512,9 +1512,9 @@
 }
 
 .path-box.is-active {
-    border-color: color-mix(in srgb, var(--good) 35%, transparent);
-    background: color-mix(in srgb, var(--good) 4%, var(--raise-2));
-    border-left: 3px solid var(--accent-emerald);
+    border-color: color-mix(in srgb, var(--accent) 42%, transparent);
+    background: color-mix(in srgb, var(--accent) 5%, var(--raise-2));
+    border-left: 3px solid var(--accent);
 }
 
 .path-box.is-failover {
@@ -4375,17 +4375,17 @@
     min-width: 28px;
     height: 28px;
     border-radius: 8px;
-    background: rgba(52, 224, 161, 0.12);
-    border: 1px solid rgba(52, 224, 161, 0.28);
-    color: var(--accent-mint, var(--accent));
+    background: var(--accent-wash);
+    border: 1px solid color-mix(in srgb, var(--accent) 28%, transparent);
+    color: var(--accent-text);
     font-size: 0.76rem;
     font-weight: 700;
     flex-shrink: 0;
 }
 
 [data-theme="light"] .update-step-num {
-    background: rgba(0, 107, 74, 0.1);
-    border-color: rgba(0, 107, 74, 0.24);
+    background: var(--accent-wash);
+    border-color: color-mix(in srgb, var(--accent-text) 24%, transparent);
     color: var(--accent-text);
 }
 
@@ -4466,25 +4466,25 @@
     display: inline-flex;
     align-items: center;
     gap: 5px;
-    background: rgba(110, 231, 183, 0.08);
-    border: 1px solid rgba(110, 231, 183, 0.22);
+    background: var(--accent-wash);
+    border: 1px solid color-mix(in srgb, var(--accent) 28%, transparent);
     border-radius: 8px;
     padding: 3px 8px;
     font-size: 0.76rem;
     font-family: 'JetBrains Mono', monospace;
-    color: var(--accent-mint);
+    color: var(--accent-text);
     cursor: pointer;
     transition: all 0.2s ease;
     user-select: none;
 }
 
 .traffic-pill-badge:hover {
-    background: rgba(110, 231, 183, 0.16);
-    box-shadow: 0 0 10px rgba(110, 231, 183, 0.25);
+    background: color-mix(in srgb, var(--accent) 20%, transparent);
+    box-shadow: 0 0 10px var(--accent-glow);
 }
 
 .traffic-pill-badge svg {
-    color: var(--accent-mint);
+    color: var(--accent-text);
     opacity: 0.85;
 }
 
