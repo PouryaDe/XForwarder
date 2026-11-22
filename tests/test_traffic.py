@@ -542,6 +542,13 @@ class TestTrafficSubsystem(unittest.TestCase):
         self.assertEqual(sum_after["entities"]["port:8000"]["cycle_bytes"], 0)
         self.assertEqual(sum_after["entities"]["port:8000"]["total_bytes"], 6000)
 
+        # 5. Edge cases: hyphenated tunnel names and non-numeric port IDs must not be mangled
+        from core.traffic import _normalize_traffic_entity_id
+        self.assertEqual(_normalize_traffic_entity_id("tunnel", "gre-tehran-1"), "gre-tehran-1")
+        self.assertEqual(_normalize_traffic_entity_id("port", "port-custom"), "port-custom")
+        self.assertEqual(_normalize_traffic_entity_id("port", "8000-9000"), "8000")
+        self.assertEqual(_normalize_traffic_entity_id("port", "!={22, 8090}"), "1")
+
     def test_wildcard_exclusion_rule_nft_traffic_rollup(self):
         """Verifies that cnt_in_1_excl counter output rolls up to port:1."""
         collector = TrafficCollector(db_path=self.db_path)

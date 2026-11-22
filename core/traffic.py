@@ -670,6 +670,19 @@ def get_traffic_resets(db_path: Optional[str] = None) -> Dict[str, Dict[str, Any
     return resets
 
 
+def _normalize_traffic_entity_id(entity_type: str, entity_id: str) -> str:
+    """Resolves port-range strings (e.g. '8000-9000') and exclusion labels ('!={...}') to canonical DB port IDs."""
+    clean_id = entity_id.strip() if entity_id else ""
+    if entity_type == "port" and clean_id and clean_id.lower() != "all":
+        if clean_id.startswith("!="):
+            return "1"
+        if "-" in clean_id:
+            start_part = clean_id.split("-")[0].strip()
+            if start_part.isdigit():
+                return start_part
+    return clean_id
+
+
 def reset_traffic_counter(
     entity_type: str,
     entity_id: str,
@@ -688,12 +701,7 @@ def reset_traffic_counter(
     now = time.time()
 
     clean_type = entity_type.strip().lower()
-    clean_id = entity_id.strip()
-    if clean_type == "port" and clean_id and clean_id.lower() != "all":
-        if clean_id.startswith("!="):
-            clean_id = "1"
-        elif "-" in clean_id:
-            clean_id = clean_id.split("-")[0].strip()
+    clean_id = _normalize_traffic_entity_id(clean_type, entity_id)
 
     try:
         conn = sqlite3.connect(path, timeout=5.0)
@@ -868,12 +876,7 @@ def get_traffic_summary(
             params: List[Any] = [cutoff_ts]
 
             clean_etype = entity_type.strip().lower() if entity_type else ""
-            clean_eid = entity_id.strip() if entity_id else ""
-            if clean_etype == "port" and clean_eid and clean_eid.lower() != "all":
-                if clean_eid.startswith("!="):
-                    clean_eid = "1"
-                elif "-" in clean_eid:
-                    clean_eid = clean_eid.split("-")[0].strip()
+            clean_eid = _normalize_traffic_entity_id(clean_etype, entity_id or "")
 
             if clean_etype and clean_etype != "all":
                 query += " AND entity_type = ?"
@@ -1121,12 +1124,7 @@ def get_traffic_timeseries(
             params: List[Any] = [cutoff_ts]
 
             clean_etype = entity_type.strip().lower() if entity_type else ""
-            clean_eid = entity_id.strip() if entity_id else ""
-            if clean_etype == "port" and clean_eid and clean_eid.lower() != "all":
-                if clean_eid.startswith("!="):
-                    clean_eid = "1"
-                elif "-" in clean_eid:
-                    clean_eid = clean_eid.split("-")[0].strip()
+            clean_eid = _normalize_traffic_entity_id(clean_etype, entity_id or "")
 
             if clean_etype and clean_etype != "all":
                 query += " AND entity_type = ?"
