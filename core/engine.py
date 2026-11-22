@@ -1366,12 +1366,16 @@ class XForwarderEngine:
                             nft_dnat_rules.append(
                                 f'        {in_match}{ip_kw} daddr {spoof_ip} {p_name} dport {listen_spec} dnat to {dnat_target}'
                             )
-                    # Scope 1380 MSS clamping specifically to DSR relay target so normal rt mtu tunnels stay unaffected
+                    # Scope 1380 MSS clamping specifically to DSR relay target (both SYN and SYN-ACK)
+                    # so normal rt mtu tunnels stay unaffected while MTU 1500 clients never exceed tunnel MTU.
                     mss_key = (ip_kw, clean_target)
                     if mss_key not in seen_dsr_mss:
                         seen_dsr_mss.add(mss_key)
                         nft_dsr_mss_rules.append(
                             f'        tcp flags syn {ip_kw} daddr {clean_target} tcp option maxseg size set 1380'
+                        )
+                        nft_dsr_mss_rules.append(
+                            f'        tcp flags syn {ip_kw} saddr {clean_target} tcp option maxseg size set 1380'
                         )
                     snat_key = (wan_iface, ip_kw, clean_target)
                     if snat_key not in seen_snat:
