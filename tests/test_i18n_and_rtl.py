@@ -379,9 +379,10 @@ class TestI18nAndRTL(unittest.TestCase):
         self.assertIn('[dir="rtl"] #updateStatusBanner {', rtl_css)
         self.assertIn('[dir="rtl"] #updateStatusText {', rtl_css)
 
-        # Check inline LTR safeguards in index.html for update modal
+        # Check inline LTR safeguards in index.html for update progress
         self.assertIn('id="updateProgressView" style="display:none; direction:ltr; text-align:left;"', index_html)
-        self.assertIn('id="updateStatusBanner" style="display:flex; align-items:center; justify-content:flex-start; gap:10px;', index_html)
+        self.assertIn('id="updateStatusBanner"', index_html)
+        self.assertIn('direction:ltr; text-align:left;', index_html)
 
     def test_brand_badge_and_ligature_preservation(self):
         """Verify brand-badge and all textual badges receive Vazirmatn font with normal letter-spacing in RTL."""

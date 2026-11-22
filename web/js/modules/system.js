@@ -51,9 +51,16 @@ export function initSystemUpdateManager() {
     }
 
     if (btnTriggerUpdate) {
-        btnTriggerUpdate.addEventListener("click", () => {
-            if (btnTriggerUpdate.disabled) return;
-            openSystemUpdateModal();
+        btnTriggerUpdate.addEventListener("click", async () => {
+            if (btnTriggerUpdate.disabled || updatePollingActive) return;
+            const confirmed = await askConfirm(
+                t("update_modal.title", {}, "XForwarder System Update"),
+                t("update_modal.ready_sub", {}, "Pull latest release from GitHub, execute schema migrations, and reload daemons?"),
+                t("update_modal.start_btn", {}, "Start Update Now")
+            );
+            if (confirmed) {
+                startSystemUpdateProcedure();
+            }
         });
     }
 
@@ -199,13 +206,11 @@ export async function fetchSystemVersionInfo(force = false) {
 export function openSystemUpdateModal() {
     const updateModal = document.getElementById("updateModal");
     const updateConfirmView = document.getElementById("updateConfirmView");
-    const updateProgressView = document.getElementById("updateProgressView");
     const btnCancelUpdateModal = document.getElementById("btnCancelUpdateModal");
     const btnConfirmStartUpdate = document.getElementById("btnConfirmStartUpdate");
     const btnCloseUpdateModal = document.getElementById("btnCloseUpdateModal");
 
     if (updateConfirmView) updateConfirmView.style.display = "block";
-    if (updateProgressView) updateProgressView.style.display = "none";
     if (btnCancelUpdateModal) {
         btnCancelUpdateModal.style.display = "inline-flex";
         btnCancelUpdateModal.textContent = "Cancel";
@@ -223,37 +228,70 @@ export function openSystemUpdateModal() {
 
 export function closeSystemUpdateModal() {
     const updateModal = document.getElementById("updateModal");
-    if (updatePollingActive) return;
     if (updateModal) updateModal.classList.remove("show");
 }
 
+function setInlineUpdateVisualState(state) {
+    const banner = document.getElementById("updateStatusBanner");
+    const bar = document.getElementById("updateProgressBar");
+    const spinner = document.getElementById("updateSpinner");
+    const stateClasses = ["is-running", "is-reloading", "is-success", "is-error"];
+    [banner, bar].forEach((el) => {
+        if (!el) return;
+        el.classList.remove(...stateClasses);
+        el.classList.add(`is-${state}`);
+    });
+    if (spinner) {
+        spinner.style.display = (state === "running" || state === "reloading") ? "block" : "none";
+    }
+}
+
+function renderUpdateConsoleErrors(rawLog, fallbackMessage = "") {
+    const updateConsole = document.getElementById("updateConsole");
+    if (!updateConsole) return;
+    let logHtml = "";
+    if (rawLog) {
+        rawLog.split("\n").forEach((l) => {
+            if (!l.trim()) return;
+            let cls = "text-secondary";
+            if (l.includes("[OK]")) cls = "text-emerald font-bold";
+            else if (l.includes("[ERROR]") || l.includes("Failed") || l.toLowerCase().includes("fatal")) cls = "text-rose font-bold";
+            else if (l.includes("[WARN]")) cls = "text-amber";
+            else if (l.includes("[INFO]")) cls = "text-cyan";
+            logHtml += `<div class="log-entry"><span class="log-msg ${cls}">${escapeHtml(l)}</span></div>`;
+        });
+    }
+    if (!logHtml && fallbackMessage) {
+        logHtml = `<div class="log-entry"><span class="log-time text-rose">[ERROR]</span><span class="log-msg text-rose">${escapeHtml(fallbackMessage)}</span></div>`;
+    }
+    updateConsole.innerHTML = logHtml;
+    updateConsole.style.display = "block";
+    updateConsole.scrollTop = updateConsole.scrollHeight;
+}
+
 export async function startSystemUpdateProcedure() {
-    const updateConfirmView = document.getElementById("updateConfirmView");
+    const updateModal = document.getElementById("updateModal");
     const updateProgressView = document.getElementById("updateProgressView");
-    const btnConfirmStartUpdate = document.getElementById("btnConfirmStartUpdate");
-    const btnCancelUpdateModal = document.getElementById("btnCancelUpdateModal");
-    const btnCloseUpdateModal = document.getElementById("btnCloseUpdateModal");
-    const updateStatusBanner = document.getElementById("updateStatusBanner");
+    const btnCheckUpdates = document.getElementById("btnCheckUpdates");
+    const btnTriggerUpdate = document.getElementById("btnTriggerUpdate");
     const updateStatusText = document.getElementById("updateStatusText");
-    const updateSpinner = document.getElementById("updateSpinner");
     const updateConsole = document.getElementById("updateConsole");
 
-    if (updateConfirmView) updateConfirmView.style.display = "none";
-    if (updateProgressView) updateProgressView.style.display = "block";
-    if (btnConfirmStartUpdate) btnConfirmStartUpdate.style.display = "none";
-    if (btnCancelUpdateModal) btnCancelUpdateModal.disabled = true;
-    if (btnCloseUpdateModal) btnCloseUpdateModal.disabled = true;
+    if (updateModal) updateModal.classList.remove("show");
+    if (btnCheckUpdates) btnCheckUpdates.disabled = true;
+    if (btnTriggerUpdate) btnTriggerUpdate.disabled = true;
 
-    if (updateStatusBanner) {
-        updateStatusBanner.style.background = "rgba(56, 189, 248, 0.12)";
-        updateStatusBanner.style.border = "1px solid rgba(56, 189, 248, 0.3)";
-        updateStatusBanner.style.color = "var(--accent-cyan)";
+    if (updateProgressView) {
+        updateProgressView.style.display = "block";
+        updateProgressView.classList.remove("is-open");
+        requestAnimationFrame(() => updateProgressView.classList.add("is-open"));
     }
-    if (updateSpinner) updateSpinner.style.display = "block";
-    if (updateStatusText) updateStatusText.textContent = "Triggering update procedure on server...";
     if (updateConsole) {
-        updateConsole.innerHTML = '<div class="log-entry"><span class="log-time">[INIT]</span><span class="log-msg text-cyan">Connecting to host daemon...</span></div>';
+        updateConsole.style.display = "none";
+        updateConsole.innerHTML = "";
     }
+    setInlineUpdateVisualState("running");
+    if (updateStatusText) updateStatusText.textContent = "Initiating system update...";
 
     updatePollingActive = true;
     updateReconnectTries = 0;
@@ -272,15 +310,11 @@ export async function startSystemUpdateProcedure() {
             throw new Error(data.error || "Server returned " + res.status);
         }
     } catch (err) {
-        if (updateConsole) {
-            updateConsole.innerHTML += `<div class="log-entry"><span class="log-time text-rose">[ERROR]</span><span class="log-msg text-rose">${escapeHtml(err.message)}</span></div>`;
-        }
+        setInlineUpdateVisualState("error");
         if (updateStatusText) updateStatusText.textContent = "Failed to initiate update: " + err.message;
-        if (btnCancelUpdateModal) {
-            btnCancelUpdateModal.disabled = false;
-            btnCancelUpdateModal.textContent = "Close";
-        }
-        if (btnCloseUpdateModal) btnCloseUpdateModal.disabled = false;
+        renderUpdateConsoleErrors("", err.message);
+        if (btnCheckUpdates) btnCheckUpdates.disabled = false;
+        if (btnTriggerUpdate) btnTriggerUpdate.disabled = false;
         updatePollingActive = false;
         return;
     }
@@ -291,12 +325,9 @@ export async function startSystemUpdateProcedure() {
 export function pollUpdateProgress() {
     if (updatePollTimer) clearTimeout(updatePollTimer);
 
-    const updateStatusBanner = document.getElementById("updateStatusBanner");
     const updateStatusText = document.getElementById("updateStatusText");
-    const updateSpinner = document.getElementById("updateSpinner");
-    const updateConsole = document.getElementById("updateConsole");
-    const btnCancelUpdateModal = document.getElementById("btnCancelUpdateModal");
-    const btnCloseUpdateModal = document.getElementById("btnCloseUpdateModal");
+    const btnCheckUpdates = document.getElementById("btnCheckUpdates");
+    const btnTriggerUpdate = document.getElementById("btnTriggerUpdate");
 
     updatePollTimer = setTimeout(async () => {
         try {
@@ -306,10 +337,7 @@ export function pollUpdateProgress() {
 
             if (!res.ok) {
                 if (res.status === 401) {
-                    if (updateConsole) {
-                        updateConsole.innerHTML += `<div class="log-entry"><span class="log-time text-emerald">[DONE]</span><span class="log-msg text-emerald font-bold">Services restarted with updated code! Reloading dashboard...</span></div>`;
-                        updateConsole.scrollTop = updateConsole.scrollHeight;
-                    }
+                    setInlineUpdateVisualState("success");
                     if (updateStatusText) {
                         updateStatusText.innerHTML = "<strong>Update Complete!</strong> Reloading dashboard in 1.2s...";
                     }
@@ -321,91 +349,50 @@ export function pollUpdateProgress() {
             const data = await res.json();
             updateReconnectTries = 0;
 
-            if (data.log && updateConsole) {
-                const lines = data.log.split("\n");
-                let logHtml = "";
-                lines.forEach(l => {
-                    if (!l.trim()) return;
-                    let cls = "text-secondary";
-                    if (l.includes("[OK]")) cls = "text-emerald font-bold";
-                    else if (l.includes("[ERROR]") || l.includes("Failed")) cls = "text-rose font-bold";
-                    else if (l.includes("[WARN]")) cls = "text-amber";
-                    else if (l.includes("[INFO]")) cls = "text-cyan";
-                    logHtml += `<div class="log-entry"><span class="log-msg ${cls}">${escapeHtml(l)}</span></div>`;
-                });
-                updateConsole.innerHTML = logHtml || '<div class="log-entry"><span class="log-msg text-muted">Running update...</span></div>';
-                updateConsole.scrollTop = updateConsole.scrollHeight;
-            }
-
             if (data.status === "completed") {
-                if (updateStatusBanner) {
-                    updateStatusBanner.style.background = "rgba(16, 185, 129, 0.16)";
-                    updateStatusBanner.style.border = "1px solid rgba(16, 185, 129, 0.35)";
-                    updateStatusBanner.style.color = "var(--accent-mint)";
-                }
-                if (updateSpinner) updateSpinner.style.display = "none";
+                setInlineUpdateVisualState("success");
                 if (updateStatusText) {
                     updateStatusText.innerHTML = "<strong>Update Completed Successfully!</strong> Refreshing dashboard in 1.5s...";
                 }
-                if (btnCancelUpdateModal) {
-                    btnCancelUpdateModal.disabled = false;
-                    btnCancelUpdateModal.textContent = "Reload Now";
-                    btnCancelUpdateModal.onclick = () => window.location.reload();
-                }
-                if (btnCloseUpdateModal) btnCloseUpdateModal.disabled = false;
                 updatePollingActive = false;
-
                 setTimeout(() => {
                     window.location.reload();
                 }, 1500);
                 return;
             } else if (data.status === "failed") {
-                if (updateStatusBanner) {
-                    updateStatusBanner.style.background = "rgba(244, 63, 94, 0.16)";
-                    updateStatusBanner.style.border = "1px solid rgba(244, 63, 94, 0.35)";
-                    updateStatusBanner.style.color = "var(--accent-rose)";
-                }
-                if (updateSpinner) updateSpinner.style.display = "none";
+                setInlineUpdateVisualState("error");
                 if (updateStatusText) {
-                    updateStatusText.textContent = "Update encountered an error. Check logs above.";
+                    updateStatusText.textContent = "Update failed. Exact error log shown below:";
                 }
-                if (btnCancelUpdateModal) {
-                    btnCancelUpdateModal.disabled = false;
-                    btnCancelUpdateModal.textContent = "Close";
-                }
-                if (btnCloseUpdateModal) btnCloseUpdateModal.disabled = false;
+                renderUpdateConsoleErrors(data.log || "", "Update job exited with failure status.");
+                if (btnCheckUpdates) btnCheckUpdates.disabled = false;
+                if (btnTriggerUpdate) btnTriggerUpdate.disabled = false;
                 updatePollingActive = false;
                 return;
             } else {
+                setInlineUpdateVisualState("running");
+                const lines = (data.log || "").split("\n").map((l) => l.trim()).filter(Boolean);
+                const lastLine = lines.length ? lines[lines.length - 1].replace(/^\[[^\]]+\]\s*/, "") : "";
                 if (updateStatusText) {
-                    updateStatusText.textContent = "Applying update and restarting services...";
+                    updateStatusText.textContent = lastLine || "Applying update and restarting services...";
                 }
                 pollUpdateProgress();
             }
         } catch (_) {
             updateReconnectTries++;
-            if (updateStatusBanner) {
-                updateStatusBanner.style.background = "rgba(167, 139, 250, 0.16)";
-                updateStatusBanner.style.border = "1px solid rgba(167, 139, 250, 0.35)";
-                updateStatusBanner.style.color = "var(--accent-violet)";
-            }
+            setInlineUpdateVisualState("reloading");
             if (updateStatusText) {
-                updateStatusText.textContent = `Services reloading with new update... Waiting for web panel to resume (Attempt ${updateReconnectTries})...`;
-            }
-            if (updateConsole && updateReconnectTries <= 2) {
-                updateConsole.innerHTML += `<div class="log-entry"><span class="log-time text-violet">[RELOAD]</span><span class="log-msg text-violet">Web daemon reloading with new code...</span></div>`;
-                updateConsole.scrollTop = updateConsole.scrollHeight;
+                updateStatusText.textContent = `Reloading services with new update... Reconnecting (${updateReconnectTries})...`;
             }
 
             if (updateReconnectTries > 30) {
+                setInlineUpdateVisualState("error");
                 if (updateStatusText) {
                     updateStatusText.textContent = "Server reconnection timeout. Please refresh your browser.";
                 }
-                if (btnCancelUpdateModal) {
-                    btnCancelUpdateModal.disabled = false;
-                    btnCancelUpdateModal.textContent = "Reload Page";
-                    btnCancelUpdateModal.onclick = () => window.location.reload();
-                }
+                renderUpdateConsoleErrors("", "Timed out waiting for web service to resume after update.");
+                if (btnCheckUpdates) btnCheckUpdates.disabled = false;
+                if (btnTriggerUpdate) btnTriggerUpdate.disabled = false;
                 updatePollingActive = false;
                 return;
             }
