@@ -482,10 +482,10 @@ input:-webkit-autofill,
 input:-webkit-autofill:hover,
 input:-webkit-autofill:focus,
 input:-webkit-autofill:active {
-    -webkit-box-shadow: 0 0 0 1000px #101a1b inset !important;
-    box-shadow: 0 0 0 1000px #101a1b inset !important;
-    -webkit-text-fill-color: #e9f3ee !important;
-    caret-color: #e9f3ee !important;
+    -webkit-box-shadow: 0 0 0 1000px #121424 inset !important;
+    box-shadow: 0 0 0 1000px #121424 inset !important;
+    -webkit-text-fill-color: var(--ink) !important;
+    caret-color: var(--ink) !important;
     border-color: var(--line-strong) !important;
     transition: background-color 50000s ease-in-out 0s;
 }
@@ -494,10 +494,10 @@ input:-webkit-autofill:active {
 [data-theme="light"] input:-webkit-autofill:hover,
 [data-theme="light"] input:-webkit-autofill:focus,
 [data-theme="light"] input:-webkit-autofill:active {
-    -webkit-box-shadow: 0 0 0 1000px #f6f5ee inset !important;
-    box-shadow: 0 0 0 1000px #f6f5ee inset !important;
-    -webkit-text-fill-color: #0b1713 !important;
-    caret-color: #0b1713 !important;
+    -webkit-box-shadow: 0 0 0 1000px #f4f2ff inset !important;
+    box-shadow: 0 0 0 1000px #f4f2ff inset !important;
+    -webkit-text-fill-color: var(--ink) !important;
+    caret-color: var(--ink) !important;
     border-color: var(--line-strong) !important;
 }
 

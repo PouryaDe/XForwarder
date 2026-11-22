@@ -674,10 +674,10 @@ input:-webkit-autofill,
 input:-webkit-autofill:hover,
 input:-webkit-autofill:focus,
 input:-webkit-autofill:active {
-    -webkit-box-shadow: 0 0 0 1000px #101a1b inset !important;
-    box-shadow: 0 0 0 1000px #101a1b inset !important;
-    -webkit-text-fill-color: #e9f3ee !important;
-    caret-color: #e9f3ee !important;
+    -webkit-box-shadow: 0 0 0 1000px #121424 inset !important;
+    box-shadow: 0 0 0 1000px #121424 inset !important;
+    -webkit-text-fill-color: var(--ink) !important;
+    caret-color: var(--ink) !important;
     border-color: var(--line-strong) !important;
     transition: background-color 50000s ease-in-out 0s;
 }
@@ -686,10 +686,10 @@ input:-webkit-autofill:active {
 [data-theme="light"] input:-webkit-autofill:hover,
 [data-theme="light"] input:-webkit-autofill:focus,
 [data-theme="light"] input:-webkit-autofill:active {
-    -webkit-box-shadow: 0 0 0 1000px #f6f5ee inset !important;
-    box-shadow: 0 0 0 1000px #f6f5ee inset !important;
-    -webkit-text-fill-color: #0b1713 !important;
-    caret-color: #0b1713 !important;
+    -webkit-box-shadow: 0 0 0 1000px #f4f2ff inset !important;
+    box-shadow: 0 0 0 1000px #f4f2ff inset !important;
+    -webkit-text-fill-color: var(--ink) !important;
+    caret-color: var(--ink) !important;
     border-color: var(--line-strong) !important;
 }
 
@@ -1939,9 +1939,9 @@ input:-webkit-autofill:active {
 }
 
 .badge-active {
-    background: rgba(110, 231, 183, 0.14);
-    color: var(--accent-mint);
-    border: 1px solid rgba(110, 231, 183, 0.25);
+    background: var(--accent-wash);
+    color: var(--accent-text);
+    border: 1px solid color-mix(in srgb, var(--accent) 28%, transparent);
 }
 
 .stat-badge.badge-warn {
@@ -3680,9 +3680,9 @@ input:-webkit-autofill:active {
 }
 
 .loss50-pill.loss-good {
-    background: rgba(110, 231, 183, 0.08);
-    color: var(--accent-mint);
-    border: 1px solid rgba(110, 231, 183, 0.2);
+    background: var(--accent-wash);
+    color: var(--accent-text);
+    border: 1px solid color-mix(in srgb, var(--accent) 26%, transparent);
 }
 
 .loss50-pill.loss-warn {
@@ -3698,9 +3698,9 @@ input:-webkit-autofill:active {
 }
 
 [data-theme="light"] .loss50-pill.loss-good {
-    background: rgba(5, 150, 105, 0.08);
-    color: #047857;
-    border-color: rgba(5, 150, 105, 0.25);
+    background: rgba(91, 61, 245, 0.08);
+    color: #5b3df5;
+    border-color: rgba(91, 61, 245, 0.24);
 }
 
 [data-theme="light"] .loss50-pill.loss-warn {

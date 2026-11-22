@@ -435,9 +435,9 @@
 }
 
 .badge-active {
-    background: rgba(110, 231, 183, 0.14);
-    color: var(--accent-mint);
-    border: 1px solid rgba(110, 231, 183, 0.25);
+    background: var(--accent-wash);
+    color: var(--accent-text);
+    border: 1px solid color-mix(in srgb, var(--accent) 28%, transparent);
 }
 
 .stat-badge.badge-warn {
@@ -2176,9 +2176,9 @@
 }
 
 .loss50-pill.loss-good {
-    background: rgba(110, 231, 183, 0.08);
-    color: var(--accent-mint);
-    border: 1px solid rgba(110, 231, 183, 0.2);
+    background: var(--accent-wash);
+    color: var(--accent-text);
+    border: 1px solid color-mix(in srgb, var(--accent) 26%, transparent);
 }
 
 .loss50-pill.loss-warn {
@@ -2194,9 +2194,9 @@
 }
 
 [data-theme="light"] .loss50-pill.loss-good {
-    background: rgba(5, 150, 105, 0.08);
-    color: #047857;
-    border-color: rgba(5, 150, 105, 0.25);
+    background: rgba(91, 61, 245, 0.08);
+    color: #5b3df5;
+    border-color: rgba(91, 61, 245, 0.24);
 }
 
 [data-theme="light"] .loss50-pill.loss-warn {
