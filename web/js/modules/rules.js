@@ -220,7 +220,7 @@ export function renderRuleCard(rule, rulesState) {
     const copyPortSvg = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>`;
 
     const modeButtonsHtml = [
-        `<button type="button" class="btn-mode-pill ${forceOverride === 0 ? 'is-active auto' : ''}" onclick="handleOverrideChange(decodeURIComponent('${encodedId}'), 0)" title="${t("rules.auto_failover", {}, "Auto Failover")}">
+        `<button type="button" class="btn-mode-pill ${forceOverride === 0 ? 'is-active auto' : ''}" data-prio="0" onclick="handleOverrideChange(decodeURIComponent('${encodedId}'), 0)" title="${t("rules.auto_failover", {}, "Auto Failover")}">
             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
             <span>${t("rules.auto_failover", {}, "Auto Failover")}</span>
         </button>`
@@ -229,9 +229,8 @@ export function renderRuleCard(rule, rulesState) {
     sortedDests.forEach(d => {
         const p = d.priority || 1;
         const isForcedThis = (forceOverride === p);
-        const dType = escapeHtml(String(d.type || 'haproxy').toUpperCase());
         modeButtonsHtml.push(`
-            <button type="button" class="btn-mode-pill ${isForcedThis ? 'is-active forced' : ''}" onclick="handleOverrideChange(decodeURIComponent('${encodedId}'), ${p})" title="${t("rules.force_prio", { prio: p }, `Force #${p}`)}">
+            <button type="button" class="btn-mode-pill ${isForcedThis ? 'is-active forced' : ''}" data-prio="${p}" onclick="handleOverrideChange(decodeURIComponent('${encodedId}'), ${p})" title="${t("rules.force_prio", { prio: p }, `Force #${p}`)}">
                 <span class="pill-dot"></span>
                 <span>${t("rules.force_prio", { prio: p }, `Force #${p}`)}</span>
             </button>
@@ -394,12 +393,13 @@ export function renderRuleCard(rule, rulesState) {
                 </div>
             </div>
 
-            <div class="rule-test-bar">
+            <div class="rule-test-bar" data-rule-id="${escapeHtml(ruleId)}" data-mode="${forceOverride > 0 ? 'forced' : 'auto'}">
                 <div class="test-bar-label">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
-                    <span>${escapeHtml(t("rules.forwarding_label", {}, "Forwarding:"))}</span>
+                    <span class="mode-status-dot"></span>
+                    <span>${escapeHtml(t("rules.forwarding_label", {}, "Forwarding"))}</span>
                 </div>
                 <div class="mode-btn-group">
+                    <span class="mode-slider-thumb ${forceOverride > 0 ? 'is-forced' : 'is-auto'}" aria-hidden="true"></span>
                     ${modeButtonsHtml.join('')}
                 </div>
             </div>
@@ -667,6 +667,34 @@ export function renderRules(rules, runtime) {
             `;
         }).join("");
     }
+
+    requestAnimationFrame(() => syncModeSliderThumbs(rulesContainer, false));
+}
+
+function syncModeSliderThumbs(root = document, animate = false) {
+    if (!root || typeof root.querySelectorAll !== "function") return;
+    root.querySelectorAll(".mode-btn-group").forEach(group => {
+        const thumb = group.querySelector(".mode-slider-thumb");
+        const activeBtn = group.querySelector(".btn-mode-pill.is-active");
+        if (!thumb || !activeBtn) {
+            if (thumb) thumb.style.opacity = "0";
+            return;
+        }
+        if (!animate) thumb.classList.add("no-transition");
+        thumb.style.opacity = "1";
+        thumb.style.width = `${activeBtn.offsetWidth}px`;
+        thumb.style.transform = `translateX(${activeBtn.offsetLeft}px)`;
+        thumb.classList.toggle("is-forced", activeBtn.classList.contains("forced"));
+        thumb.classList.toggle("is-auto", activeBtn.classList.contains("auto"));
+        if (!animate) {
+            void thumb.offsetWidth;
+            thumb.classList.remove("no-transition");
+        }
+    });
+}
+
+if (typeof window !== "undefined") {
+    window.addEventListener("resize", () => syncModeSliderThumbs(document, false));
 }
 
 export async function handleOverrideChange(ruleId, val, fetchStatusCallback) {
@@ -683,6 +711,25 @@ export async function handleOverrideChange(ruleId, val, fetchStatusCallback) {
         if (prioVal > 0) {
             rule.active_priority = prioVal;
         }
+    }
+
+    // Smooth in-place segmented pill slide + switching feedback without wiping the DOM
+    let activeBar = null;
+    document.querySelectorAll(".rule-test-bar").forEach(bar => {
+        if (bar.dataset.ruleId === ruleId) activeBar = bar;
+    });
+    if (activeBar) {
+        activeBar.dataset.mode = prioVal > 0 ? "forced" : "auto";
+        activeBar.classList.add("is-switching");
+        activeBar.querySelectorAll(".btn-mode-pill").forEach(btn => {
+            const bPrio = parseInt(btn.dataset.prio || "0", 10);
+            const isMatch = bPrio === prioVal;
+            btn.classList.toggle("is-active", isMatch);
+            btn.classList.toggle("auto", isMatch && prioVal === 0);
+            btn.classList.toggle("forced", isMatch && prioVal > 0);
+        });
+        syncModeSliderThumbs(activeBar, true);
+    } else if (rule) {
         renderRules(currentRules, lastRuntime);
     }
 
@@ -695,12 +742,18 @@ export async function handleOverrideChange(ruleId, val, fetchStatusCallback) {
         const data = await res.json().catch(() => ({}));
         if (res.ok && data.ok) {
             showToast(prioVal > 0 ? `Manually forced Priority #${prioVal}` : "Restored to Automatic Failover");
-            if (typeof fetchStatusCallback === "function") fetchStatusCallback();
+            if (typeof fetchStatusCallback === "function") {
+                setTimeout(() => fetchStatusCallback(), 240);
+            }
         } else {
             showToast(data.error || "Failed to update override mode", "error");
         }
     } catch (_) {
         showToast("Network error updating override mode", "error");
+    } finally {
+        if (activeBar) {
+            setTimeout(() => activeBar.classList.remove("is-switching"), 280);
+        }
     }
 }
 

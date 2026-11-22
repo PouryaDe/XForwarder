@@ -173,12 +173,20 @@ select option {
     outline: none;
 }
 
+#ruleForm .form-group {
+    margin-bottom: 10px;
+}
+
+#ruleForm .form-row {
+    gap: 12px;
+}
+
 .xfwd-info-tip::after {
     content: attr(data-tip);
     position: absolute;
-    bottom: calc(100% + 8px);
-    left: 50%;
-    transform: translateX(-50%) translateY(4px);
+    top: calc(100% + 7px);
+    left: -4px;
+    transform: translateY(-4px);
     width: max-content;
     max-width: 240px;
     padding: 7px 10px;
@@ -202,7 +210,36 @@ select option {
 .xfwd-info-tip:hover::after,
 .xfwd-info-tip:focus-visible::after {
     opacity: 1;
-    transform: translateX(-50%) translateY(0);
+    transform: translateY(0);
+}
+
+/* Right-column tooltips align to right edge; bottom-row tooltips open upward */
+.form-row > .form-group:last-child .xfwd-info-tip::after,
+.dest-comment-group .xfwd-info-tip::after {
+    left: auto;
+    right: -4px;
+}
+
+.dest-extra-row .xfwd-info-tip::after {
+    top: auto;
+    bottom: calc(100% + 7px);
+    transform: translateY(4px);
+}
+
+.dest-extra-row .xfwd-info-tip:hover::after,
+.dest-extra-row .xfwd-info-tip:focus-visible::after {
+    transform: translateY(0);
+}
+
+[dir="rtl"] .xfwd-info-tip::after {
+    left: auto;
+    right: -4px;
+}
+
+[dir="rtl"] .form-row > .form-group:last-child .xfwd-info-tip::after,
+[dir="rtl"] .dest-comment-group .xfwd-info-tip::after {
+    right: auto;
+    left: -4px;
 }
 
 [data-theme="light"] .xfwd-info-tip::after {
@@ -522,14 +559,14 @@ input#formCategory::-webkit-list-button {
 }
 
 .tag-inline-input {
-    flex: 1 1 120px;
-    min-width: 90px;
+    flex: 1 1 56px;
+    min-width: 52px;
     border: none !important;
     outline: none !important;
     background: transparent !important;
     color: var(--ink-1);
-    font-size: 0.85rem;
-    padding: 3px 2px;
+    font-size: 0.8rem;
+    padding: 2px 2px;
     box-shadow: none !important;
 }
 
