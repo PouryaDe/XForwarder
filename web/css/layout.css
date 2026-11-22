@@ -527,14 +527,56 @@
     flex: 1 1 280px;
 }
 
+@keyframes xfwd-grad-shift {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
 .page-title {
     font-family: var(--font-page-title);
     font-size: clamp(1.7rem, 2.35vw, 2.08rem);
     font-weight: 700;
     line-height: 1.15;
     letter-spacing: -0.03em;
-    color: var(--ink);
+    background: linear-gradient(120deg, #b9a8ff 0%, #8b74ff 34%, #5b8cff 70%, #38cfff 100%);
+    background-size: 220% 220%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: transparent;
+    animation: xfwd-grad-shift 6s ease infinite;
     margin: 0;
+}
+
+.brand-title,
+.login-heading-gradient {
+    background: linear-gradient(120deg, #b9a8ff 0%, #8b74ff 34%, #5b8cff 70%, #38cfff 100%);
+    background-size: 220% 220%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: transparent;
+    animation: xfwd-grad-shift 6s ease infinite;
+}
+
+[data-theme="light"] .page-title,
+[data-theme="light"] .brand-title,
+[data-theme="light"] .login-heading-gradient {
+    background: linear-gradient(120deg, #5b3df5 0%, #6c52ff 36%, #3b72f6 72%, #0094d4 100%);
+    background-size: 220% 220%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: transparent;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .page-title,
+    .brand-title,
+    .login-heading-gradient {
+        animation: none;
+    }
 }
 
 .page-header-actions {

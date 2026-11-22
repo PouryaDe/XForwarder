@@ -791,10 +791,10 @@ class TestUIAndAPIEdgeCases(unittest.TestCase):
         with open(js_path, "r", encoding="utf-8") as f:
             js = f.read()
 
-        # 1. Dark theme tokens in :root, [data-theme="dark"] (Ovira Mint Theme)
-        self.assertIn("--ground: #05090a;", css)
-        self.assertIn("--raise: #0a1112;", css)
-        self.assertIn("--accent: #34e0a1;", css)
+        # 1. Dark theme tokens in :root, [data-theme="dark"] (Purple-Indigo Theme)
+        self.assertIn("--ground: #07070b;", css)
+        self.assertIn("--raise: #0b0b14;", css)
+        self.assertIn("--accent: #8b74ff;", css)
         self.assertIn("--bad: #ff6b57;", css)
 
         # 2. Stats numbers in index.html should not have hardcoded glare classes
@@ -874,22 +874,23 @@ class TestUIAndAPIEdgeCases(unittest.TestCase):
         self.assertIn("@keyframes drift-a", css, "Ambient blobs must define drift-a keyframe animation")
         self.assertIn("@media (prefers-reduced-motion: reduce)", css, "Must honor prefers-reduced-motion")
 
-        # 3. Ovira Mint Signature Color Tokens (Dark & Light)
+        # 3. Purple-Indigo Signature Color Tokens (Dark & Light) & Animated Gradient Text
         # Dark Theme
-        self.assertIn("--ground: #05090a;", css)
-        self.assertIn("--raise: #0a1112;", css)
-        self.assertIn("--accent: #34e0a1;", css)
-        self.assertIn("--accent-2: #46d6e6;", css)
+        self.assertIn("--ground: #07070b;", css)
+        self.assertIn("--raise: #0b0b14;", css)
+        self.assertIn("--accent: #8b74ff;", css)
+        self.assertIn("--accent-2: #5b8cff;", css)
         self.assertIn("--warn: #ffb648;", css)
         self.assertIn("--bad: #ff6b57;", css)
-        self.assertIn("--blob-a: rgba(52, 224, 161, 0.12);", css)
+        self.assertIn("--blob-a: rgba(91, 61, 245, 0.18);", css)
+        self.assertIn("@keyframes xfwd-grad-shift", css)
 
         # Light Theme
-        self.assertIn("--ground: #e8e7de;", css)
-        self.assertIn("--raise: #f6f5ee;", css)
-        self.assertIn("--accent: #2fd896;", css)
-        self.assertIn("--accent-text: #006b4a;", css)
-        self.assertIn("--blob-a: rgba(47, 216, 150, 0.22);", css)
+        self.assertIn("--ground: #f1eff9;", css)
+        self.assertIn("--raise: #fbfbfd;", css)
+        self.assertIn("--accent: #6c52ff;", css)
+        self.assertIn("--accent-text: #5b3df5;", css)
+        self.assertIn("--blob-a: rgba(91, 61, 245, 0.16);", css)
 
         # 4. Glossy Mint Primary Button & Bore Tunnel Split Login
         self.assertIn("linear-gradient(to bottom, color-mix(in srgb, var(--accent) 86%, white), var(--accent))", css)
