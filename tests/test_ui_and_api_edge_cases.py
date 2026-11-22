@@ -1331,6 +1331,7 @@ class TestUIAndAPIEdgeCases(unittest.TestCase):
             "btnRestartHaproxy",
             "btnResyncNftables",
             "btnRestartNftables",
+            "btnSyncNginx",
             "btnReloadNginx",
             "btnRestartNginx",
         ):
@@ -1350,7 +1351,7 @@ class TestUIAndAPIEdgeCases(unittest.TestCase):
         with open(os.path.join(web_dir, "js", "modules", "utils.js"), "r", encoding="utf-8") as f:
             utils_js = f.read()
 
-        for action_id in ("haproxy_restart", "nftables_restart", "nginx_sync", "nginx_restart"):
+        for action_id in ("haproxy_restart", "nftables_restart", "nginx_sync", "nginx_pull", "nginx_restart"):
             self.assertIn(action_id, sys_js, f"Missing service restart action in system.js: {action_id}")
         self.assertIn("confirm.restart_btn", utils_js)
         self.assertIn("confirm-icon-primary", utils_js)
@@ -1433,7 +1434,102 @@ class TestUIAndAPIEdgeCases(unittest.TestCase):
             with SESSION_LOCK:
                 ACTIVE_SESSIONS.pop(token, None)
             server.shutdown()
-            server.server_close()
+
+    def test_nginx_pull_bidirectional_sync(self):
+        """Verifies Nginx -> XForwarder sync prunes missing Nginx priorities and imports active Nginx streams."""
+        from core.service_manager import parse_nginx_stream_endpoints, sync_xforwarder_from_nginx
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            cfg_path = os.path.join(tmpdir, "config.json")
+            nginx_conf = os.path.join(tmpdir, "nginx.conf")
+
+            # 1. Empty/missing Nginx removes nginx destinations, renumbers nftables to priority 1, drops nginx-only rules
+            with open(cfg_path, "w", encoding="utf-8") as f:
+                json.dump({
+                    "schema_version": 3,
+                    "rules": [
+                        {
+                            "id": "rule-1000",
+                            "port": 1000,
+                            "protocol": "both",
+                            "active_priority": 1,
+                            "force_override": 1,
+                            "destinations": [
+                                {"priority": 1, "type": "nginx", "target": "5.199.136.72", "port": 1000},
+                                {"priority": 2, "type": "nftables", "target": "5.199.136.72", "port": 1000}
+                            ]
+                        },
+                        {
+                            "id": "rule-2000",
+                            "port": 2000,
+                            "protocol": "tcp",
+                            "active_priority": 1,
+                            "destinations": [
+                                {"priority": 1, "type": "nginx", "target": "1.2.3.4", "port": 2000}
+                            ]
+                        }
+                    ]
+                }, f)
+
+            sync_cb = MagicMock(return_value=(True, []))
+            notify_cb = MagicMock()
+            ok, msg, recon = sync_xforwarder_from_nginx(
+                config_path=cfg_path,
+                nginx_paths=[nginx_conf],  # does not exist => empty
+                sync_rules_func=sync_cb,
+                notify_func=notify_cb
+            )
+            self.assertTrue(ok)
+            self.assertFalse(recon)
+            self.assertIn("removed 2 Nginx destination(s), 1 empty rule(s)", msg)
+            sync_cb.assert_called_once()
+            notify_cb.assert_called_once()
+
+            with open(cfg_path, "r", encoding="utf-8") as f:
+                updated = json.load(f)
+            self.assertEqual(len(updated["rules"]), 1)
+            r1000 = updated["rules"][0]
+            self.assertEqual(r1000["port"], 1000)
+            self.assertEqual(len(r1000["destinations"]), 1)
+            self.assertEqual(r1000["destinations"][0]["type"], "nftables")
+            self.assertEqual(r1000["destinations"][0]["priority"], 1)
+            self.assertEqual(r1000["active_priority"], 1)
+            self.assertEqual(r1000["force_override"], 0)
+
+            # 2. Active Nginx stream config imports new stream rule and ignores http {} block
+            with open(nginx_conf, "w", encoding="utf-8") as f:
+                f.write("""
+http {
+    server { listen 80; }
+}
+stream {
+    upstream backend_443 { server 10.20.30.40:8443; }
+    server {
+        listen 443;
+        listen 443 udp;
+        proxy_pass backend_443;
+    }
+}
+""")
+            parsed = parse_nginx_stream_endpoints([nginx_conf])
+            self.assertEqual(parsed, {443: [("both", "10.20.30.40", 8443)]})
+
+            ok2, msg2, _ = sync_xforwarder_from_nginx(
+                config_path=cfg_path,
+                nginx_paths=[nginx_conf],
+                sync_rules_func=sync_cb,
+                notify_func=notify_cb
+            )
+            self.assertTrue(ok2)
+            self.assertIn("added 1 rule(s)", msg2)
+            with open(cfg_path, "r", encoding="utf-8") as f:
+                updated2 = json.load(f)
+            self.assertEqual(len(updated2["rules"]), 2)
+            r443 = next(r for r in updated2["rules"] if r["port"] == 443)
+            self.assertEqual(r443["protocol"], "both")
+            self.assertEqual(r443["destinations"][0]["type"], "nginx")
+            self.assertEqual(r443["destinations"][0]["target"], "10.20.30.40")
+            self.assertEqual(r443["destinations"][0]["port"], 8443)
 
     def test_session_and_update_state_disk_persistence(self):
         """Verifies session and update state persistence across daemon reloads."""

@@ -6,6 +6,7 @@ Provides granular service restart controls and decoupled update orchestration.
 
 import os
 import sys
+import glob
 import json
 import time
 import shutil
@@ -14,7 +15,7 @@ import subprocess
 import tempfile
 import urllib.request
 import re
-from typing import Dict, Any, Tuple, Optional
+from typing import Dict, Any, Tuple, Optional, List, Set
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 APP_VERSION = "1.5.0"
@@ -409,22 +410,348 @@ def get_update_status(log_path_fn: Optional[Any] = None) -> dict:
     }
 
 
+def _strip_nginx_comments(text: str) -> str:
+    """Strips `#` comments from Nginx configuration lines."""
+    return "\n".join(line.split("#", 1)[0] for line in text.splitlines())
+
+
+def _parse_nginx_listen_directive(arg_str: str) -> Tuple[Optional[int], str]:
+    """Parses `listen [addr:]port [udp|...]` into `(port, 'tcp'|'udp')`."""
+    tokens = arg_str.strip().split()
+    if not tokens:
+        return None, "tcp"
+    proto = "udp" if any(t.lower() == "udp" for t in tokens[1:]) else "tcp"
+    addr_tok = tokens[0].strip()
+    m = re.match(r"^(?:\[[^\]]+\]:|[^:\s]+:)?(\d{1,5})$", addr_tok)
+    if not m:
+        return None, proto
+    p = int(m.group(1))
+    return (p if 1 <= p <= 65535 else None), proto
+
+
+def _parse_nginx_host_port(raw_addr: str) -> Tuple[str, Optional[int]]:
+    """Extracts `(host, port)` from `host:port` or `[ipv6]:port`."""
+    s = raw_addr.strip()
+    m_v6 = re.match(r"^\[([0-9a-fA-F:]+)\]:(\d{1,5})$", s)
+    if m_v6:
+        p = int(m_v6.group(2))
+        return m_v6.group(1), (p if 1 <= p <= 65535 else None)
+    m_v4 = re.match(r"^([^:\s]+):(\d{1,5})$", s)
+    if m_v4:
+        p = int(m_v4.group(2))
+        return m_v4.group(1), (p if 1 <= p <= 65535 else None)
+    return "", None
+
+
+def parse_nginx_stream_endpoints(
+    nginx_paths: Optional[List[str]] = None
+) -> Dict[int, List[Tuple[str, str, int]]]:
+    """
+    Parses active Nginx `stream { server { listen ...; proxy_pass ...; } }` blocks.
+    Returns `{inbound_port: [(protocol, target_host, target_port), ...]}`.
+    Returns `{}` when Nginx is uninstalled or has no stream forwarding entries.
+    """
+    if nginx_paths is None:
+        paths: List[str] = []
+        if os.path.isfile("/etc/nginx/nginx.conf"):
+            paths.append("/etc/nginx/nginx.conf")
+        for pat in (
+            "/etc/nginx/conf.d/*.conf",
+            "/etc/nginx/streams-enabled/*",
+            "/etc/nginx/stream.d/*.conf",
+        ):
+            paths.extend(sorted(glob.glob(pat)))
+    else:
+        paths = [p for p in nginx_paths if os.path.isfile(p)]
+
+    if not paths:
+        return {}
+
+    upstreams: Dict[str, Tuple[str, int]] = {}
+    raw_entries: Dict[Tuple[int, str, int], Set[str]] = {}
+
+    for path in paths:
+        try:
+            with open(path, "r", encoding="utf-8", errors="ignore") as f:
+                cleaned = _strip_nginx_comments(f.read())
+        except Exception:
+            continue
+
+        # Treat standalone files in streams-enabled / stream.d as already inside stream context
+        in_stream_file = ("streams-enabled" in path or "stream.d" in path)
+        depth = 0
+        stream_depth = 0 if in_stream_file else -1
+        http_depth = -1
+        upstream_name = ""
+        upstream_depth = -1
+        in_server = False
+        server_depth = -1
+        cur_listens: List[Tuple[int, str]] = []
+        cur_proxy_raw = ""
+
+        # Tokenize braces and semicolons to handle single-line and multi-line Nginx blocks uniformly
+        tokens = re.findall(r"[{}]|\n|[^;{}\n]+;?", cleaned)
+        for tok in tokens:
+            s = tok.strip()
+            if not s:
+                continue
+            if s == "{":
+                depth += 1
+                continue
+            if s == "}":
+                depth = max(0, depth - 1)
+                if in_server and depth <= server_depth:
+                    if cur_proxy_raw:
+                        tgt_host, tgt_port = _parse_nginx_host_port(cur_proxy_raw)
+                        if not tgt_host and cur_proxy_raw in upstreams:
+                            tgt_host, tgt_port = upstreams[cur_proxy_raw]
+                        if tgt_host and tgt_port:
+                            for lp, lproto in cur_listens:
+                                raw_entries.setdefault((lp, tgt_host, tgt_port), set()).add(lproto)
+                    in_server = False
+                    server_depth = -1
+                    cur_listens = []
+                    cur_proxy_raw = ""
+                if upstream_name and depth <= upstream_depth:
+                    upstream_name = ""
+                    upstream_depth = -1
+                if not in_stream_file and stream_depth >= 0 and depth <= stream_depth:
+                    stream_depth = -1
+                if http_depth >= 0 and depth <= http_depth:
+                    http_depth = -1
+                continue
+
+            stmt = s.rstrip(";").strip()
+            low = stmt.lower()
+            if re.match(r"^stream\b", low):
+                stream_depth = depth
+                continue
+            if re.match(r"^http\b", low):
+                http_depth = depth
+                continue
+            if http_depth >= 0 and stream_depth < 0:
+                continue
+
+            m_up = re.match(r"^upstream\s+(\S+)$", stmt, re.IGNORECASE)
+            if m_up and (stream_depth >= 0 or in_stream_file):
+                upstream_name = m_up.group(1).strip()
+                upstream_depth = depth
+                continue
+
+            if upstream_name:
+                m_srv = re.match(r"^server\s+(\S+)", stmt, re.IGNORECASE)
+                if m_srv and upstream_name not in upstreams:
+                    uh, up = _parse_nginx_host_port(m_srv.group(1))
+                    if uh and up:
+                        upstreams[upstream_name] = (uh, up)
+                continue
+
+            if low == "server" and (stream_depth >= 0 or in_stream_file):
+                in_server = True
+                server_depth = depth
+                cur_listens = []
+                cur_proxy_raw = ""
+                continue
+
+            if in_server:
+                m_listen = re.match(r"^listen\s+(.+)$", stmt, re.IGNORECASE)
+                if m_listen:
+                    lp, lproto = _parse_nginx_listen_directive(m_listen.group(1))
+                    if lp is not None:
+                        cur_listens.append((lp, lproto))
+                    continue
+                m_pass = re.match(r"^proxy_pass\s+(\S+)", stmt, re.IGNORECASE)
+                if m_pass:
+                    cur_proxy_raw = m_pass.group(1).strip()
+
+    grouped: Dict[int, List[Tuple[str, str, int]]] = {}
+    for (lp, thost, tport), protos in sorted(raw_entries.items()):
+        proto = "both" if protos == {"tcp", "udp"} else next(iter(protos))
+        grouped.setdefault(lp, []).append((proto, thost, tport))
+    return grouped
+
+
+def sync_xforwarder_from_nginx(
+    config_path: Optional[str] = None,
+    nginx_paths: Optional[List[str]] = None,
+    sync_rules_func=None,
+    notify_func=None,
+) -> Tuple[bool, str, bool]:
+    """
+    Reconciles XForwarder `config.json` from Nginx stream configs (Nginx -> XForwarder).
+    Removes `nginx` destinations that no longer exist in Nginx (including all when Nginx is empty)
+    and imports missing Nginx stream servers into `config.json` atomically.
+    """
+    try:
+        from core.config_manager import get_config_path, load_config, save_config, validate_rule
+    except ImportError:
+        from config_manager import get_config_path, load_config, save_config, validate_rule
+
+    path = get_config_path(config_path)
+    cfg = load_config(path)
+    nginx_map = parse_nginx_stream_endpoints(nginx_paths=nginx_paths)
+
+    removed_dests = 0
+    removed_rules = 0
+    added_rules = 0
+    new_rules: List[Dict[str, Any]] = []
+    existing_nginx_keys: Set[Tuple[int, str, int]] = set()
+    rules_by_port: Dict[int, Dict[str, Any]] = {}
+
+    for rule in cfg.get("rules", []):
+        if not isinstance(rule, dict):
+            continue
+        r_port = rule.get("port")
+        is_range = bool(rule.get("port_range"))
+        dests = rule.get("destinations", [])
+        if is_range or not isinstance(dests, list):
+            new_rules.append(rule)
+            continue
+
+        kept_dests: List[Dict[str, Any]] = []
+        removed_prios: Set[int] = set()
+        active_set = set()
+        for proto, thost, tport in nginx_map.get(r_port, []):
+            active_set.add((thost.strip("[]"), tport))
+
+        for d in dests:
+            if str(d.get("type", "")).lower() == "nginx":
+                d_host = str(d.get("target", "")).strip().strip("[]")
+                try:
+                    d_port = int(d.get("port") or r_port)
+                except (ValueError, TypeError):
+                    d_port = r_port
+                if (d_host, d_port) in active_set:
+                    kept_dests.append(d)
+                    existing_nginx_keys.add((r_port, d_host, d_port))
+                else:
+                    removed_dests += 1
+                    try:
+                        removed_prios.add(int(d.get("priority", 0)))
+                    except (ValueError, TypeError):
+                        pass
+            else:
+                kept_dests.append(d)
+
+        if not kept_dests:
+            removed_rules += 1
+            continue
+
+        if removed_prios:
+            old_active = rule.get("active_priority", 1)
+            old_force = rule.get("force_override", 0)
+            new_active = None
+            new_force = 0
+            for idx, d in enumerate(kept_dests, start=1):
+                old_p = d.get("priority", idx)
+                d["priority"] = idx
+                if old_p == old_active:
+                    new_active = idx
+                if old_p == old_force and old_force:
+                    new_force = idx
+            if new_active is None:
+                enabled_p = [d["priority"] for d in kept_dests if d.get("enabled", True)]
+                new_active = enabled_p[0] if enabled_p else 1
+            rule["active_priority"] = new_active
+            rule["force_override"] = new_force
+
+        rule["destinations"] = kept_dests
+        new_rules.append(rule)
+        if isinstance(r_port, int):
+            rules_by_port[r_port] = rule
+
+    # Import any active Nginx stream servers missing from XForwarder
+    for lp, entries in sorted(nginx_map.items()):
+        for proto, thost, tport in entries:
+            key = (lp, thost.strip("[]"), tport)
+            if key in existing_nginx_keys:
+                continue
+            existing_rule = rules_by_port.get(lp)
+            if existing_rule is not None:
+                next_prio = len(existing_rule["destinations"]) + 1
+                existing_rule["destinations"].append({
+                    "priority": next_prio,
+                    "type": "nginx",
+                    "target": thost,
+                    "port": tport,
+                    "proxy_protocol": False,
+                    "enabled": True,
+                    "is_relay": False,
+                    "comment": "Synced from Nginx stream"
+                })
+                added_rules += 1
+            else:
+                cand_rule: Dict[str, Any] = {
+                    "id": f"rule-{lp}",
+                    "port": lp,
+                    "protocol": proto,
+                    "active_priority": 1,
+                    "force_override": 0,
+                    "destinations": [
+                        {
+                            "priority": 1,
+                            "type": "nginx",
+                            "target": thost,
+                            "port": tport,
+                            "proxy_protocol": False,
+                            "enabled": True,
+                            "is_relay": False,
+                            "comment": "Synced from Nginx stream"
+                        }
+                    ]
+                }
+                ok, _ = validate_rule(cand_rule)
+                if ok:
+                    new_rules.append(cand_rule)
+                    rules_by_port[lp] = cand_rule
+                    added_rules += 1
+            existing_nginx_keys.add(key)
+
+    if removed_dests == 0 and removed_rules == 0 and added_rules == 0:
+        return True, "XForwarder rules already match Nginx stream configuration", False
+
+    if os.path.exists(path):
+        try:
+            shutil.copy2(path, f"{path}.bak.{int(time.time())}")
+        except Exception:
+            pass
+
+    cfg["rules"] = new_rules
+    if not save_config(cfg, config_path=path):
+        return False, "Failed to save updated configuration after Nginx sync", False
+
+    if sync_rules_func:
+        sync_rules_func()
+    if notify_func:
+        notify_func()
+
+    return (
+        True,
+        f"Synced XForwarder from Nginx: removed {removed_dests} Nginx destination(s), "
+        f"{removed_rules} empty rule(s), added {added_rules} rule(s).",
+        False,
+    )
+
+
 def restart_services_action(service: str, sync_rules_func=None, notify_func=None) -> Tuple[bool, str, bool]:
     """
     Executes controlled service restart or reload.
     Supports: 'all', 'engine', 'web', 'haproxy', 'haproxy_restart',
-              'nginx', 'nginx_sync', 'nginx_restart', 'nftables', 'nftables_restart'.
+              'nginx', 'nginx_sync', 'nginx_pull', 'nginx_restart', 'nftables', 'nftables_restart'.
     Returns: (success: bool, message: str, is_reconnecting: bool)
     """
     valid_services = {
         "all", "engine", "web",
         "haproxy", "haproxy_restart",
-        "nginx", "nginx_sync", "nginx_restart",
+        "nginx", "nginx_sync", "nginx_pull", "nginx_restart",
         "nftables", "nftables_restart"
     }
     svc = str(service or "all").lower().strip()
     if svc not in valid_services:
         return False, f"Invalid service identifier '{service}'. Allowed: {', '.join(sorted(valid_services))}", False
+
+    if svc == "nginx_pull":
+        return sync_xforwarder_from_nginx(sync_rules_func=sync_rules_func, notify_func=notify_func)
 
     has_systemctl = bool(shutil.which("systemctl"))
     if sys.platform == "win32" or not has_systemctl:

@@ -3,7 +3,7 @@
 // ============================================================================
 
 import { API_BASE } from "./api.js";
-import { showToast, escapeHtml, askConfirm } from "./utils.js";
+import { showToast, escapeHtml, askConfirm, askChoice } from "./utils.js";
 import { t } from "./i18n.js";
 
 let updatePollTimer = null;
@@ -449,7 +449,7 @@ export function initServiceRestartControls(fetchStatusCallback) {
         btnRestartNftables.addEventListener("click", () => handleServiceRestart("nftables_restart", fetchStatusCallback));
     }
     if (btnSyncNginx) {
-        btnSyncNginx.addEventListener("click", () => handleServiceRestart("nginx_sync", fetchStatusCallback));
+        btnSyncNginx.addEventListener("click", () => handleNginxSyncChoice(fetchStatusCallback));
     }
     if (btnReloadNginx) {
         btnReloadNginx.addEventListener("click", () => handleServiceRestart("nginx", fetchStatusCallback));
@@ -457,6 +457,23 @@ export function initServiceRestartControls(fetchStatusCallback) {
     if (btnRestartNginx) {
         btnRestartNginx.addEventListener("click", () => handleServiceRestart("nginx_restart", fetchStatusCallback));
     }
+}
+
+/**
+ * Prompts the user to choose bidirectional Nginx sync mode:
+ * - Primary: Apply XForwarder rules onto Nginx (`nginx_sync`)
+ * - Alt: Sync XForwarder priorities from actual Nginx stream config (`nginx_pull`)
+ */
+export async function handleNginxSyncChoice(fetchStatusCallback) {
+    const choice = await askChoice(
+        t("services.nginx_sync_mode_title", {}, "Choose Nginx Sync Direction"),
+        t("services.nginx_sync_mode_msg", {}, "Choose whether to apply XForwarder settings to Nginx config, or update XForwarder's Nginx priorities from the actual Nginx configuration on the server (if Nginx is empty, Nginx priorities in Ports will be removed)."),
+        t("services.nginx_sync_push_btn", {}, "XForwarder → Nginx"),
+        t("services.nginx_sync_pull_btn", {}, "Nginx → XForwarder")
+    );
+    if (!choice) return;
+    const svcAction = choice === "alt" ? "nginx_pull" : "nginx_sync";
+    await dispatchServiceAction(svcAction, t("services.name_nginx", {}, "Nginx Stream Proxy"), false, fetchStatusCallback);
 }
 
 /**
@@ -473,6 +490,7 @@ export async function handleServiceRestart(service, fetchStatusCallback) {
         haproxy_restart: t("services.name_haproxy", {}, "HAProxy Relay Service"),
         nginx: t("services.name_nginx", {}, "Nginx Stream Proxy"),
         nginx_sync: t("services.name_nginx", {}, "Nginx Stream Proxy"),
+        nginx_pull: t("services.name_nginx", {}, "Nginx Stream Proxy"),
         nginx_restart: t("services.name_nginx", {}, "Nginx Stream Proxy"),
         nftables: t("services.name_nftables", {}, "NFTables Table 'xfwd_orchestrator'"),
         nftables_restart: t("services.name_nftables", {}, "NFTables Table 'xfwd_orchestrator'")
@@ -480,7 +498,7 @@ export async function handleServiceRestart(service, fetchStatusCallback) {
     const friendlyName = serviceNames[service] || service;
     const isFullRestart = service === "all" || service === "web";
     const isExplicitRestart = isFullRestart || service === "engine" || String(service).endsWith("_restart");
-    const isSyncOnly = service === "nftables" || service === "nginx_sync";
+    const isSyncOnly = service === "nftables" || service === "nginx_sync" || service === "nginx_pull";
 
     let modalTitle;
     let warnMsg;
@@ -510,6 +528,10 @@ export async function handleServiceRestart(service, fetchStatusCallback) {
     });
     if (!confirmed) return;
 
+    await dispatchServiceAction(service, friendlyName, isExplicitRestart, fetchStatusCallback);
+}
+
+async function dispatchServiceAction(service, friendlyName, isExplicitRestart, fetchStatusCallback) {
     showToast(t("services.restarting_toast", { service: friendlyName }, `Restarting ${friendlyName}...`), "info");
 
     try {

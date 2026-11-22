@@ -333,7 +333,10 @@ export function askConfirm(title, message, options = {}) {
     const modalEl = document.getElementById("confirmModal");
     const btnConfirm = document.getElementById("btnProceedConfirm") || document.getElementById("btnConfirmAction");
     const btnCancel = document.getElementById("btnCancelConfirm");
+    const btnAlt = document.getElementById("btnAltConfirm");
     const iconEl = modalEl ? modalEl.querySelector(".confirm-icon") : null;
+
+    if (btnAlt) btnAlt.style.display = "none";
 
     if (titleEl) titleEl.innerText = title;
     if (msgEl) msgEl.innerText = message;
@@ -396,13 +399,60 @@ export function askConfirm(title, message, options = {}) {
     });
 }
 
+/**
+ * Displays a two-choice confirmation modal (e.g. bidirectional sync direction).
+ * Returns Promise<'primary' | 'alt' | null>.
+ */
+export function askChoice(title, message, primaryText, altText) {
+    const modalEl = document.getElementById("confirmModal");
+    const titleEl = document.getElementById("confirmTitle");
+    const msgEl = document.getElementById("confirmMessage");
+    const btnCancel = document.getElementById("btnCancelConfirm");
+    const btnAlt = document.getElementById("btnAltConfirm");
+    const btnConfirm = document.getElementById("btnProceedConfirm") || document.getElementById("btnConfirmAction");
+    const iconEl = modalEl ? modalEl.querySelector(".confirm-icon") : null;
+
+    if (titleEl) titleEl.textContent = title;
+    if (msgEl) msgEl.textContent = message;
+
+    if (btnConfirm) {
+        btnConfirm.textContent = primaryText;
+        btnConfirm.removeAttribute("data-i18n");
+        btnConfirm.classList.remove("btn-danger");
+        btnConfirm.classList.add("btn-primary");
+    }
+    if (btnAlt) {
+        btnAlt.textContent = altText;
+        btnAlt.style.display = "inline-flex";
+    }
+    if (btnCancel) {
+        btnCancel.textContent = t("confirm.cancel", {}, "Cancel");
+    }
+    if (iconEl) {
+        iconEl.classList.add("confirm-icon-primary");
+        iconEl.innerHTML = CONFIRM_ICON_PRIMARY_SVG;
+    }
+
+    if (confirmResolve) {
+        confirmResolve(null);
+        confirmResolve = null;
+    }
+    if (modalEl) modalEl.classList.add("show");
+
+    return new Promise((resolve) => {
+        confirmResolve = resolve;
+    });
+}
+
 if (typeof document !== "undefined") {
     const bindConfirmModalEvents = () => {
         const btnCancel = document.getElementById("btnCancelConfirm");
+        const btnAlt = document.getElementById("btnAltConfirm");
         const btnConfirm = document.getElementById("btnProceedConfirm") || document.getElementById("btnConfirmAction");
         const modalEl = document.getElementById("confirmModal");
 
         const resetConfirmState = () => {
+            if (btnAlt) btnAlt.style.display = "none";
             if (btnConfirm) {
                 btnConfirm.setAttribute("data-i18n", "confirm.confirm_btn");
             }
@@ -418,7 +468,26 @@ if (typeof document !== "undefined") {
         };
 
         if (btnCancel) {
-            btnCancel.onclick = closeWithCancel;
+            btnCancel.onclick = () => {
+                const isChoice = btnAlt && btnAlt.style.display !== "none";
+                if (modalEl) modalEl.classList.remove("show");
+                resetConfirmState();
+                if (confirmResolve) {
+                    confirmResolve(isChoice ? null : false);
+                    confirmResolve = null;
+                }
+            };
+        }
+
+        if (btnAlt) {
+            btnAlt.onclick = () => {
+                if (modalEl) modalEl.classList.remove("show");
+                resetConfirmState();
+                if (confirmResolve) {
+                    confirmResolve("alt");
+                    confirmResolve = null;
+                }
+            };
         }
 
         if (btnConfirm) {
@@ -426,7 +495,7 @@ if (typeof document !== "undefined") {
                 if (modalEl) modalEl.classList.remove("show");
                 resetConfirmState();
                 if (confirmResolve) {
-                    confirmResolve(true);
+                    confirmResolve(btnAlt && btnAlt.style.display !== "none" ? "primary" : true);
                     confirmResolve = null;
                 }
             };
