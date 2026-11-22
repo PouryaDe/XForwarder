@@ -2762,6 +2762,8 @@ stream {
         self.assertIn("parsePortSpec", modal_js)
         self.assertIn("refreshRangeConstraintUI", modal_js)
         self.assertIn("rule.port_range || rule.port", rules_js)
+        # Verify single priority rule omits priority selection bar (only shown when >= 2 destinations)
+        self.assertIn("sortedDests.length > 1", rules_js)
         # Verify single destination port validation bug fix (only flag when raw input exists but failed parsing)
         self.assertIn("rawDPort && !parsedDPort", modal_js)
 

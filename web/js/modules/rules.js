@@ -226,23 +226,26 @@ export function renderRuleCard(rule, rulesState) {
 
     const copyPortSvg = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>`;
 
-    const modeButtonsHtml = [
-        `<button type="button" class="btn-mode-pill ${forceOverride === 0 ? 'is-active auto' : ''}" data-prio="0" onclick="handleOverrideChange(decodeURIComponent('${encodedId}'), 0)" title="${t("rules.auto_failover", {}, "Auto Failover")}">
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-            <span>${t("rules.auto_failover", {}, "Auto Failover")}</span>
-        </button>`
-    ];
-
-    sortedDests.forEach(d => {
-        const p = d.priority || 1;
-        const isForcedThis = (forceOverride === p);
+    const modeButtonsHtml = [];
+    if (sortedDests.length > 1) {
         modeButtonsHtml.push(`
-            <button type="button" class="btn-mode-pill ${isForcedThis ? 'is-active forced' : ''}" data-prio="${p}" onclick="handleOverrideChange(decodeURIComponent('${encodedId}'), ${p})" title="${t("rules.force_prio", { prio: p }, `Force #${p}`)}">
-                <span class="pill-dot"></span>
-                <span>${t("rules.force_prio", { prio: p }, `Force #${p}`)}</span>
+            <button type="button" class="btn-mode-pill ${forceOverride === 0 ? 'is-active auto' : ''}" data-prio="0" onclick="handleOverrideChange(decodeURIComponent('${encodedId}'), 0)" title="${t("rules.auto_failover", {}, "Auto Failover")}">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+                <span>${t("rules.auto_failover", {}, "Auto Failover")}</span>
             </button>
         `);
-    });
+
+        sortedDests.forEach(d => {
+            const p = d.priority || 1;
+            const isForcedThis = (forceOverride === p);
+            modeButtonsHtml.push(`
+                <button type="button" class="btn-mode-pill ${isForcedThis ? 'is-active forced' : ''}" data-prio="${p}" onclick="handleOverrideChange(decodeURIComponent('${encodedId}'), ${p})" title="${t("rules.force_prio", { prio: p }, `Force #${p}`)}">
+                    <span class="pill-dot"></span>
+                    <span>${t("rules.force_prio", { prio: p }, `Force #${p}`)}</span>
+                </button>
+            `);
+        });
+    }
 
     const pathsHtml = sortedDests.map((dest, destIndex) => {
         const prio = dest.priority || (destIndex + 1);
@@ -400,6 +403,7 @@ export function renderRuleCard(rule, rulesState) {
                 </div>
             </div>
 
+            ${sortedDests.length > 1 ? `
             <div class="rule-test-bar" data-rule-id="${escapeHtml(ruleId)}" data-mode="${forceOverride > 0 ? 'forced' : 'auto'}">
                 <div class="test-bar-label">
                     <span class="mode-status-dot"></span>
@@ -410,6 +414,7 @@ export function renderRuleCard(rule, rulesState) {
                     ${modeButtonsHtml.join('')}
                 </div>
             </div>
+            ` : ''}
 
             <div class="paths-grid">
                 ${pathsHtml}
@@ -540,9 +545,6 @@ export function renderRuleListRow(rule, rulesState) {
                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
                 </button>
                 <button class="btn btn-secondary btn-sm" onclick="deleteRule(decodeURIComponent('${encodedId}'))" title="${escapeHtml(t("rules.delete_rule", {}, "Delete Rule"))}">
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-                </button>
-            </div>
                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
                 </button>
             </div>
