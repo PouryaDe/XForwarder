@@ -1065,12 +1065,26 @@ input:-webkit-autofill:active {
     color: var(--ink-2);
     font-size: 0.80rem;
     font-weight: 550;
+    line-height: 1;
     cursor: pointer;
     transition: all var(--fast) var(--ease);
     box-sizing: border-box;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+}
+
+.sidebar-footer-toggles .theme-toggle-btn svg,
+.sidebar-footer-toggles .sidebar-lang-toggle svg {
+    display: block;
+    flex-shrink: 0;
+}
+
+.sidebar-footer-toggles .theme-toggle-btn > span,
+.sidebar-footer-toggles .sidebar-lang-toggle > span {
+    display: inline-flex;
+    align-items: center;
+    line-height: 1;
 }
 
 .sidebar-footer-toggles .theme-toggle-btn,
@@ -1091,12 +1105,26 @@ input:-webkit-autofill:active {
     color: var(--ink-2);
     font-size: 0.80rem;
     font-weight: 550;
+    line-height: 1;
     cursor: pointer;
     transition: all var(--fast) var(--ease);
     box-sizing: border-box;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+}
+
+.sidebar-footer-toggles .theme-toggle-btn svg,
+.sidebar-footer-toggles .sidebar-lang-toggle svg {
+    display: block;
+    flex-shrink: 0;
+}
+
+.sidebar-footer-toggles .theme-toggle-btn > span,
+.sidebar-footer-toggles .sidebar-lang-toggle > span {
+    display: inline-flex;
+    align-items: center;
+    line-height: 1;
 }
 
 .theme-toggle-btn:hover,
@@ -3943,6 +3971,7 @@ input:-webkit-autofill:active {
 .view-toggle-btn {
     display: inline-flex;
     align-items: center;
+    justify-content: center;
     gap: 6px;
     height: 32px;
     min-height: 32px;
@@ -3953,8 +3982,20 @@ input:-webkit-autofill:active {
     color: var(--ink-2);
     font-size: 0.8rem;
     font-weight: 550;
+    line-height: 1;
     cursor: pointer;
     transition: all var(--fast) var(--ease);
+}
+
+.view-toggle-btn svg {
+    display: block;
+    flex-shrink: 0;
+}
+
+.view-toggle-btn span {
+    display: inline-flex;
+    align-items: center;
+    line-height: 1;
 }
 
 .view-toggle-btn:hover {

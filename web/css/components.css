@@ -2460,6 +2460,7 @@
 .view-toggle-btn {
     display: inline-flex;
     align-items: center;
+    justify-content: center;
     gap: 6px;
     height: 32px;
     min-height: 32px;
@@ -2470,8 +2471,20 @@
     color: var(--ink-2);
     font-size: 0.8rem;
     font-weight: 550;
+    line-height: 1;
     cursor: pointer;
     transition: all var(--fast) var(--ease);
+}
+
+.view-toggle-btn svg {
+    display: block;
+    flex-shrink: 0;
+}
+
+.view-toggle-btn span {
+    display: inline-flex;
+    align-items: center;
+    line-height: 1;
 }
 
 .view-toggle-btn:hover {
