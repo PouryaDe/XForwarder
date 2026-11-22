@@ -703,8 +703,10 @@ install_xforwarder() {
 
     cp -r "$script_dir/core" "$INSTALL_DIR/"
     cp -r "$script_dir/web" "$INSTALL_DIR/"
-    cp "$script_dir/xforwarder.sh" "$INSTALL_DIR/xforwarder.sh"
-    chmod +x "$INSTALL_DIR/xforwarder.sh" "$INSTALL_DIR/core/engine.py" "$INSTALL_DIR/core/web_server.py"
+    cp "$script_dir/xforwarder.sh" "$INSTALL_DIR/xforwarder.sh.tmp.$$"
+    chmod +x "$INSTALL_DIR/xforwarder.sh.tmp.$$"
+    mv -f "$INSTALL_DIR/xforwarder.sh.tmp.$$" "$INSTALL_DIR/xforwarder.sh"
+    chmod +x "$INSTALL_DIR/core/engine.py" "$INSTALL_DIR/core/web_server.py"
 
     # Persist commit metadata for in-panel version tracking
     if command -v git >/dev/null 2>&1 && git -C "$script_dir" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
@@ -891,8 +893,10 @@ update_xforwarder() {
     mkdir -p "$INSTALL_DIR" "$CONFIG_DIR"
     cp -r "$script_dir/core" "$INSTALL_DIR/"
     cp -r "$script_dir/web" "$INSTALL_DIR/"
-    cp "$script_dir/xforwarder.sh" "$INSTALL_DIR/xforwarder.sh"
-    chmod +x "$INSTALL_DIR/xforwarder.sh" "$INSTALL_DIR/core/engine.py" "$INSTALL_DIR/core/web_server.py"
+    cp "$script_dir/xforwarder.sh" "$INSTALL_DIR/xforwarder.sh.tmp.$$"
+    chmod +x "$INSTALL_DIR/xforwarder.sh.tmp.$$"
+    mv -f "$INSTALL_DIR/xforwarder.sh.tmp.$$" "$INSTALL_DIR/xforwarder.sh"
+    chmod +x "$INSTALL_DIR/core/engine.py" "$INSTALL_DIR/core/web_server.py"
 
     # Persist commit metadata for in-panel version tracking
     if command -v git >/dev/null 2>&1 && git -C "$script_dir" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
@@ -1702,6 +1706,7 @@ show_menu() {
 }
 
 # CLI dispatcher
+main() {
 case "${1:-}" in
     install)
         install_xforwarder
@@ -1821,3 +1826,6 @@ case "${1:-}" in
         exit 1
         ;;
 esac
+}
+
+main "$@"
