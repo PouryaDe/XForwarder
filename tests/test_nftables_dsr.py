@@ -345,8 +345,9 @@ class TestNFTablesDSRMethods(unittest.TestCase):
 
             self.assertTrue(ok, f"Sync failed: {errs}")
             rs = captured["ruleset"]
-            # Standard nftables rule keeps normal DNAT + gre1 masquerade + rt mtu
-            self.assertIn('iifname "eth0" tcp dport 443 dnat to 10.88.1.2:443', rs)
+            # Standard nftables rule keeps normal DNAT + gre1 masquerade + rt mtu (omitting iifname for tunnel multi-hop)
+            self.assertIn('tcp dport 443 dnat to 10.88.1.2:443', rs)
+            self.assertNotIn('iifname "eth0" tcp dport 443 dnat to 10.88.1.2:443', rs)
             self.assertIn('oifname "gre1" masquerade', rs)
             self.assertNotIn('oifname "fou0" masquerade', rs)
             self.assertIn("tcp flags syn tcp option maxseg size set rt mtu", rs)

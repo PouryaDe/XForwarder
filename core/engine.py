@@ -1399,13 +1399,18 @@ class XForwarderEngine:
                             )
                 else:
                     for listen_spec in dport_selectors:
+                        # For wildcard excluded-ports rules (dport != { ... }), bind to wan_iface
+                        # to prevent capturing outbound or inter-tunnel traffic across all 65k ports.
+                        # For standard single ports and port ranges, omit iifname so multi-hop tunnel
+                        # packets (e.g. gre*, ipip*, wg*) forward seamlessly without interface drop.
+                        iif_prefix = f'iifname "{wan_iface}" ' if excl_expr else ""
                         if proto in ("tcp", "both"):
                             nft_dnat_rules.append(
-                                f'        iifname "{wan_iface}" tcp dport {listen_spec} dnat to {dnat_target}'
+                                f'        {iif_prefix}tcp dport {listen_spec} dnat to {dnat_target}'
                             )
                         if proto in ("udp", "both"):
                             nft_dnat_rules.append(
-                                f'        iifname "{wan_iface}" udp dport {listen_spec} dnat to {dnat_target}'
+                                f'        {iif_prefix}udp dport {listen_spec} dnat to {dnat_target}'
                             )
 
         errors: List[str] = []

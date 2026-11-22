@@ -724,7 +724,7 @@ export function syncDestinationsFromDom() {
         }
         if (parsedDPort && parsedDPort.rangeStr) {
             destObj.port_range = parsedDPort.rangeStr;
-        } else if (rawDPort) {
+        } else if (rawDPort && !parsedDPort) {
             destObj._invalidPortInput = rawDPort;
         }
         updated.push(destObj);

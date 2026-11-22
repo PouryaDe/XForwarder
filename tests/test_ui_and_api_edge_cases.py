@@ -2762,6 +2762,8 @@ stream {
         self.assertIn("parsePortSpec", modal_js)
         self.assertIn("refreshRangeConstraintUI", modal_js)
         self.assertIn("rule.port_range || rule.port", rules_js)
+        # Verify single destination port validation bug fix (only flag when raw input exists but failed parsing)
+        self.assertIn("rawDPort && !parsedDPort", modal_js)
 
         # 6. Security: range builder rejects hostnames; API POST /api/rule blocks ranges overlapping web_port or existing rules
         from core.nftables_parser import _build_xforwarder_range_rule_from_nftables
@@ -3054,6 +3056,70 @@ stream {
         # 5. Server section-prefixed static asset fallback in web_server.py
         self.assertIn('"updates"', ws_py)
         self.assertIn('first_seg, rest_rel = static_rel.split("/", 1)', ws_py)
+
+    def test_nftables_multihop_forwarding_and_modal_destination_validation(self):
+        """
+        Tests that:
+        1. Single destination ports (e.g. 9101) pass UI modal sync without _invalidPortInput false triggers.
+        2. Standard single port & port range NFTables rules omit iifname so packets arriving from
+           intermediate tunnel interfaces (gre*, ipip*, wg*) forward properly across multi-hop topologies.
+        3. Wildcard excluded-ports rules (!=) retain iifname to avoid trapping internal tunnel traffic.
+        """
+        # 1. UI validation logic check in rule_modal.js
+        with open(os.path.join(REPO_ROOT, "web", "js", "modules", "rule_modal.js"), "r", encoding="utf-8") as f:
+            modal_js = f.read()
+        self.assertIn("else if (rawDPort && !parsedDPort)", modal_js)
+
+        # 2. Multi-hop forwarding ruleset generation
+        eng = XForwarderEngine()
+        captured_nft = {}
+
+        def fake_apply_nftables(dnat_rules, **kwargs):
+            captured_nft["dnat"] = list(dnat_rules)
+            return True, None, "ok"
+
+        # Standard port 9101 relay rule
+        std_rule = {
+            "id": "rule-relay-9101",
+            "port": 9101,
+            "protocol": "both",
+            "active_priority": 1,
+            "destinations": [
+                {"priority": 1, "type": "nftables", "target": "5.199.136.72", "port": 9101, "enabled": True}
+            ]
+        }
+        # Wildcard excluded-ports rule
+        excl_rule = {
+            "id": "rule-excl-wildcard",
+            "port": 1,
+            "port_range": "1-65535",
+            "excluded_ports": [22, 443, 8090],
+            "protocol": "both",
+            "active_priority": 1,
+            "destinations": [
+                {"priority": 1, "type": "nftables", "target": "10.80.15.2", "enabled": True}
+            ]
+        }
+        eng.config = {"web": {"port": 8090}, "rules": [std_rule, excl_rule]}
+        with patch.object(eng, "_detect_wan_interface", return_value="eth0"), \
+             patch("core.engine.apply_nftables", side_effect=fake_apply_nftables), \
+             patch("core.engine.apply_haproxy", return_value=(True, None)), \
+             patch("core.engine.apply_nginx", return_value=(True, None)), \
+             patch.object(eng, "_save_state_file"):
+            ok_sync, errs_sync = eng.sync_firewall_and_proxies()
+
+        self.assertTrue(ok_sync, errs_sync)
+        dnat_str = "\n".join(captured_nft["dnat"])
+
+        # Standard port rule must NOT contain iifname "eth0"
+        self.assertIn("tcp dport 9101 dnat to 5.199.136.72:9101", dnat_str)
+        self.assertIn("udp dport 9101 dnat to 5.199.136.72:9101", dnat_str)
+        self.assertNotIn('iifname "eth0" tcp dport 9101 dnat', dnat_str)
+        self.assertNotIn('iifname "eth0" udp dport 9101 dnat', dnat_str)
+
+        # Wildcard excluded-ports rule MUST contain iifname "eth0"
+        self.assertIn('iifname "eth0" tcp dport != { 22, 443, 8090 } dnat to 10.80.15.2', dnat_str)
+        self.assertIn('iifname "eth0" udp dport != { 22, 443, 8090 } dnat to 10.80.15.2', dnat_str)
 
 
 if __name__ == "__main__":
