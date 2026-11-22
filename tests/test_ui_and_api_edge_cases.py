@@ -1144,7 +1144,7 @@ class TestUIAndAPIEdgeCases(unittest.TestCase):
         self.assertTrue(recon)
 
         # 3. Individual services in mock/fallback mode
-        for svc in ("engine", "haproxy", "haproxy_restart", "nginx", "nginx_restart", "nftables", "nftables_restart"):
+        for svc in ("engine", "haproxy", "haproxy_restart", "nginx", "nginx_sync", "nginx_restart", "nftables", "nftables_restart"):
             ok, msg, recon = restart_services_action(svc)
             self.assertTrue(ok, f"Failed for {svc}: {msg}")
             self.assertFalse(recon)
@@ -1172,6 +1172,15 @@ class TestUIAndAPIEdgeCases(unittest.TestCase):
             self.assertTrue(ok)
             self.assertFalse(recon)
             mock_sub.assert_called_with(["systemctl", "restart", "haproxy"], capture_output=True, text=True, timeout=8.0)
+
+            # Test Nginx Sync (regenerates stream config without destructive restart)
+            mock_sub.reset_mock()
+            sync_nginx_mock = MagicMock(return_value=(True, []))
+            ok, msg, recon = restart_services_action("nginx_sync", sync_rules_func=sync_nginx_mock)
+            self.assertTrue(ok)
+            self.assertFalse(recon)
+            sync_nginx_mock.assert_called_once()
+            self.assertIn("synchronized", msg.lower())
 
             # Test Nginx Restart
             mock_sub.reset_mock()
@@ -1341,7 +1350,7 @@ class TestUIAndAPIEdgeCases(unittest.TestCase):
         with open(os.path.join(web_dir, "js", "modules", "utils.js"), "r", encoding="utf-8") as f:
             utils_js = f.read()
 
-        for action_id in ("haproxy_restart", "nftables_restart", "nginx_restart"):
+        for action_id in ("haproxy_restart", "nftables_restart", "nginx_sync", "nginx_restart"):
             self.assertIn(action_id, sys_js, f"Missing service restart action in system.js: {action_id}")
         self.assertIn("confirm.restart_btn", utils_js)
         self.assertIn("confirm-icon-primary", utils_js)

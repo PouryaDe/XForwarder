@@ -413,13 +413,13 @@ def restart_services_action(service: str, sync_rules_func=None, notify_func=None
     """
     Executes controlled service restart or reload.
     Supports: 'all', 'engine', 'web', 'haproxy', 'haproxy_restart',
-              'nginx', 'nginx_restart', 'nftables', 'nftables_restart'.
+              'nginx', 'nginx_sync', 'nginx_restart', 'nftables', 'nftables_restart'.
     Returns: (success: bool, message: str, is_reconnecting: bool)
     """
     valid_services = {
         "all", "engine", "web",
         "haproxy", "haproxy_restart",
-        "nginx", "nginx_restart",
+        "nginx", "nginx_sync", "nginx_restart",
         "nftables", "nftables_restart"
     }
     svc = str(service or "all").lower().strip()
@@ -435,6 +435,10 @@ def restart_services_action(service: str, sync_rules_func=None, notify_func=None
                 sync_rules_func()
             msg = "NFTables table restarted and synchronized (mock)" if svc == "nftables_restart" else "NFTables ruleset synchronized (mock)"
             return True, msg, False
+        elif svc == "nginx_sync":
+            if sync_rules_func:
+                sync_rules_func()
+            return True, "Nginx stream configuration synchronized (mock)", False
         elif svc in ("haproxy_restart", "nginx_restart", "engine"):
             return True, f"Service '{svc}' restarted successfully (mock)", False
         return True, f"Service '{svc}' reloaded successfully (mock)", False
@@ -473,6 +477,14 @@ def restart_services_action(service: str, sync_rules_func=None, notify_func=None
         if res.returncode == 0:
             return True, "HAProxy relay service restarted successfully", False
         return False, f"HAProxy restart failed: {res.stderr.strip() or res.stdout.strip()}", False
+
+    if svc == "nginx_sync":
+        if sync_rules_func:
+            ok, errs = sync_rules_func()
+            if ok:
+                return True, "Nginx stream configuration synchronized successfully", False
+            return False, f"Failed to synchronize Nginx: {', '.join(errs)}", False
+        return True, "Nginx synchronization requested", False
 
     if svc == "nginx":
         res = subprocess.run(["systemctl", "reload", "nginx"], capture_output=True, text=True, timeout=8.0)

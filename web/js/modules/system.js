@@ -426,6 +426,7 @@ export function initServiceRestartControls(fetchStatusCallback) {
     const btnRestartHaproxy = document.getElementById("btnRestartHaproxy");
     const btnResyncNftables = document.getElementById("btnResyncNftables");
     const btnRestartNftables = document.getElementById("btnRestartNftables");
+    const btnSyncNginx = document.getElementById("btnSyncNginx");
     const btnReloadNginx = document.getElementById("btnReloadNginx");
     const btnRestartNginx = document.getElementById("btnRestartNginx");
 
@@ -446,6 +447,9 @@ export function initServiceRestartControls(fetchStatusCallback) {
     }
     if (btnRestartNftables) {
         btnRestartNftables.addEventListener("click", () => handleServiceRestart("nftables_restart", fetchStatusCallback));
+    }
+    if (btnSyncNginx) {
+        btnSyncNginx.addEventListener("click", () => handleServiceRestart("nginx_sync", fetchStatusCallback));
     }
     if (btnReloadNginx) {
         btnReloadNginx.addEventListener("click", () => handleServiceRestart("nginx", fetchStatusCallback));
@@ -468,6 +472,7 @@ export async function handleServiceRestart(service, fetchStatusCallback) {
         haproxy: t("services.name_haproxy", {}, "HAProxy Relay Service"),
         haproxy_restart: t("services.name_haproxy", {}, "HAProxy Relay Service"),
         nginx: t("services.name_nginx", {}, "Nginx Stream Proxy"),
+        nginx_sync: t("services.name_nginx", {}, "Nginx Stream Proxy"),
         nginx_restart: t("services.name_nginx", {}, "Nginx Stream Proxy"),
         nftables: t("services.name_nftables", {}, "NFTables Table 'xfwd_orchestrator'"),
         nftables_restart: t("services.name_nftables", {}, "NFTables Table 'xfwd_orchestrator'")
@@ -475,7 +480,7 @@ export async function handleServiceRestart(service, fetchStatusCallback) {
     const friendlyName = serviceNames[service] || service;
     const isFullRestart = service === "all" || service === "web";
     const isExplicitRestart = isFullRestart || service === "engine" || String(service).endsWith("_restart");
-    const isSyncOnly = service === "nftables";
+    const isSyncOnly = service === "nftables" || service === "nginx_sync";
 
     let modalTitle;
     let warnMsg;
