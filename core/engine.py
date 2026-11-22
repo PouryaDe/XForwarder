@@ -1195,20 +1195,63 @@ class XForwarderEngine:
         return f"!= {eff_excl[0]}" if len(eff_excl) == 1 else "!= { " + ", ".join(str(p) for p in eff_excl) + " }"
 
     @staticmethod
+    def _detect_dsr_mss(self, wan_iface: str, iface_hint: str = "", ip_kw: str = "ip") -> int:
+        """Calculates safe TCP MSS ceiling for DSR targets from tunnel MTU (defaults to 1340)."""
+        hdr_overhead = 60 if ip_kw == "ip6" else 40
+        ignored = {
+            "lo", wan_iface, "gre0", "gretap0", "erspan0", "tunl0", "sit0",
+            "ip6tnl0", "ip6gre0", "ip6erspan0", "dummy0", "teql0"
+        }
+        candidate_mtus: List[int] = []
+        net_dir = "/sys/class/net"
+        if os.path.isdir(net_dir):
+            if iface_hint and iface_hint not in ignored:
+                try:
+                    with open(os.path.join(net_dir, iface_hint, "mtu"), "r", encoding="utf-8") as f:
+                        mtu = int(f.read().strip())
+                        if 576 <= mtu <= 9000:
+                            candidate_mtus.append(mtu)
+                except Exception:
+                    pass
+            if not candidate_mtus:
+                try:
+                    for name in os.listdir(net_dir):
+                        if name in ignored or name.startswith(("veth", "docker", "br-", "virbr")):
+                            continue
+                        iface_dir = os.path.join(net_dir, name)
+                        try:
+                            with open(os.path.join(iface_dir, "operstate"), "r", encoding="utf-8") as f:
+                                state = f.read().strip().lower()
+                            if state not in ("up", "unknown"):
+                                continue
+                            with open(os.path.join(iface_dir, "mtu"), "r", encoding="utf-8") as f:
+                                mtu = int(f.read().strip())
+                            if 576 <= mtu < 1500:
+                                candidate_mtus.append(mtu)
+                        except Exception:
+                            continue
+                except Exception:
+                    pass
+        if not candidate_mtus:
+            return 1340
+        return max(1200, min(1340, min(candidate_mtus) - hdr_overhead))
+
     def _append_dsr_mss_rules(
+        self,
         nft_dsr_mss_rules: List[str],
         seen_dsr_mss: Set[Tuple[str, str]],
         ip_kw: str,
-        clean_target: str
+        clean_target: str,
+        mss_limit: int = 1340
     ) -> None:
-        """Clamps oversized TCP MSS (> 1340) to 1340 in both directions for DSR targets (safe for MTU >= 1380 tunnels)."""
+        """Clamps oversized TCP MSS in both directions for DSR targets based on tunnel MTU."""
         mss_key = (ip_kw, clean_target)
         if mss_key in seen_dsr_mss:
             return
         seen_dsr_mss.add(mss_key)
         for dir_kw in ("daddr", "saddr"):
             nft_dsr_mss_rules.append(
-                f'        tcp flags syn {ip_kw} {dir_kw} {clean_target} tcp option maxseg size > 1340 tcp option maxseg size set 1340'
+                f'        tcp flags syn {ip_kw} {dir_kw} {clean_target} tcp option maxseg size > {mss_limit} tcp option maxseg size set {mss_limit}'
             )
 
     def sync_firewall_and_proxies(self) -> Tuple[bool, List[str]]:
@@ -1358,8 +1401,9 @@ class XForwarderEngine:
                             nft_raw_rules.append(
                                 f'        iifname "{wan_iface}"{daddr_match} {p_name} dport {listen_spec} notrack {ip_kw} daddr set {clean_target}'
                             )
-                    # Clamp oversized TCP MSS (> 1340) to 1340 on DSR tunnel target to prevent PMTU blackholes
-                    self._append_dsr_mss_rules(nft_dsr_mss_rules, seen_dsr_mss, ip_kw, clean_target)
+                    # Clamp oversized TCP MSS to tunnel-safe ceiling on DSR tunnel target to prevent PMTU blackholes
+                    dsr_mss = self._detect_dsr_mss(wan_iface, raw_t_iface, ip_kw)
+                    self._append_dsr_mss_rules(nft_dsr_mss_rules, seen_dsr_mss, ip_kw, clean_target, dsr_mss)
                 elif dest_type == "nftables_dsr_relay":
                     spoof_ip = str(dest.get("spoof_ip") or "").strip().strip("[]")
                     try:
@@ -1385,9 +1429,10 @@ class XForwarderEngine:
                             nft_dnat_rules.append(
                                 f'        {in_match}{ip_kw} daddr {spoof_ip} {p_name} dport {listen_spec} dnat to {dnat_target}'
                             )
-                    # Scope 1340 MSS clamping (> 1340) to DSR relay target (SYN and SYN-ACK)
-                    # so normal rt mtu tunnels stay unaffected while MTU 1500 clients fit inside MTU >= 1380 tunnels.
-                    self._append_dsr_mss_rules(nft_dsr_mss_rules, seen_dsr_mss, ip_kw, clean_target)
+                    # Scope tunnel-MTU MSS clamping to DSR relay target (SYN and SYN-ACK)
+                    # so normal rt mtu tunnels stay unaffected while MTU 1500 clients fit inside low-MTU tunnels.
+                    dsr_mss = self._detect_dsr_mss(wan_iface, ingress_iface, ip_kw)
+                    self._append_dsr_mss_rules(nft_dsr_mss_rules, seen_dsr_mss, ip_kw, clean_target, dsr_mss)
                     snat_key = (wan_iface, ip_kw, clean_target)
                     if snat_key not in seen_snat:
                         seen_snat.add(snat_key)
