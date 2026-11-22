@@ -28,7 +28,7 @@ if BASE_DIR not in sys.path:
     sys.path.insert(0, BASE_DIR)
 
 from core.config_manager import (
-    load_config, save_config, load_state, update_state_rules,
+    load_config, save_config, load_state, update_state_rules, remove_state_rules,
     get_config_path, get_state_file_path, validate_rule,
     get_rule_port_bounds, ports_overlap, rules_ports_overlap,
     export_config_data, import_config_data, is_valid_target,
@@ -1334,6 +1334,7 @@ class XForwarderWebHandler(BaseHTTPRequestHandler):
             cfg = load_config()
             cfg["rules"] = [r for r in cfg.get("rules", []) if r.get("id") != rule_id]
             if save_config(cfg):
+                remove_state_rules([rule_id])
                 sync_ok, sync_errors = sync_rules_and_notify(max_retries=2)
                 self.send_json({
                     "ok": True,

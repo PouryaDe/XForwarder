@@ -233,6 +233,19 @@ def apply_nginx(nginx_entries: List[str], conf_path: Optional[str] = None) -> Tu
         return True, None
 
     if not nginx_entries:
+        # Rewrite existing nginx.conf with empty stream block so legacy stream servers don't linger on disk
+        if os.path.exists(target_path):
+            empty_nginx = generate_nginx_cfg([])
+            try:
+                with open(target_path, "r", encoding="utf-8", errors="ignore") as f_curr:
+                    curr_txt = f_curr.read()
+                if curr_txt != empty_nginx:
+                    tmp_empty = f"{target_path}.tmp.{os.getpid()}"
+                    with open(tmp_empty, "w", encoding="utf-8") as f_out:
+                        f_out.write(empty_nginx)
+                    os.replace(tmp_empty, target_path)
+            except Exception:
+                pass
         if shutil.which("nginx") and shutil.which("systemctl"):
             try:
                 chk = subprocess.run(["systemctl", "is-active", "--quiet", "nginx"])

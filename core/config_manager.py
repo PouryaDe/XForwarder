@@ -639,8 +639,8 @@ def load_state(state_path: Optional[str] = None) -> dict:
     return {}
 
 
-def update_state_rules(rule_updates: Dict[str, dict], state_path: Optional[str] = None) -> None:
-    """Synchronizes active_priority and force_override in state.json atomically."""
+def _mutate_state_rules(mutator, state_path: Optional[str] = None) -> None:
+    """Atomically loads, mutates, and persists runtime.rules_state in state.json."""
     path = get_state_file_path(state_path)
     s_dir = os.path.dirname(path)
     if not os.path.exists(path) and not os.path.exists(s_dir):
@@ -654,15 +654,32 @@ def update_state_rules(rule_updates: Dict[str, dict], state_path: Optional[str] 
             st = {}
         rt = st.setdefault("runtime", {})
         rs = rt.setdefault("rules_state", {})
-        for r_id, vals in rule_updates.items():
-            r_entry = rs.setdefault(r_id, {})
-            r_entry.update(vals)
+        mutator(rs)
         tmp_p = f"{path}.tmp.{os.getpid()}"
         with open(tmp_p, "w", encoding="utf-8") as tf:
             json.dump(st, tf, indent=2, ensure_ascii=False)
         os.replace(tmp_p, path)
     except Exception:
         pass
+
+
+def update_state_rules(rule_updates: Dict[str, dict], state_path: Optional[str] = None) -> None:
+    """Synchronizes active_priority and force_override in state.json atomically."""
+    def _apply(rs: dict) -> None:
+        for r_id, vals in rule_updates.items():
+            r_entry = rs.setdefault(r_id, {})
+            r_entry.update(vals)
+    _mutate_state_rules(_apply, state_path=state_path)
+
+
+def remove_state_rules(rule_ids: List[str], state_path: Optional[str] = None) -> None:
+    """Purges deleted rule IDs from runtime.rules_state atomically so future rules start clean."""
+    if not rule_ids:
+        return
+    def _purge(rs: dict) -> None:
+        for r_id in rule_ids:
+            rs.pop(r_id, None)
+    _mutate_state_rules(_purge, state_path=state_path)
 
 
 from typing import Dict, Any, Optional, Tuple, List

@@ -1,9 +1,9 @@
 {
-  "last_updated": "2026-11-22T05:36:00+03:30",
+  "last_updated": "2026-11-22T06:20:00+03:30",
   "active_task": "None",
   "active_spec": null,
   "phase": "Idle",
   "completed_milestones": [],
   "next_steps": [],
-  "notes": "Completed named/inline NFTables @map discovery (add element, elements = {...}, # [Category], IPv4/IPv6 concat, JSON maps) and self-healing ping_history schema init in core/metrics.py."
+  "notes": "Implemented full legacy takeover cleanup (NFTables/HAProxy/Nginx archiving & surgical NAT stripping), removed bogus 10.88.1.2 HAProxy placeholder, fixed apply_nginx([]) cleanup, added Nginx stream discovery, and purged deleted rules from state.json."
 }

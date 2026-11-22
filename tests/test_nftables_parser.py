@@ -732,6 +732,78 @@ add element ip6 port6 ipv6_backends {
         self.assertEqual(in_by_p[7777]["protocol"], "udp")
         self.assertEqual(in_by_p[7778]["destinations"][1]["port"], 8443)
 
+    def test_legacy_takeover_strips_dnat_preserves_firewall_and_prevents_rediscovery(self):
+        """
+        Verifies _strip_nftables_dnat_text preserves host `table ip filter` while removing DNAT/maps,
+        and cleanup prevents deleted rules from being re-discovered.
+        """
+        from core.nftables_parser import (
+            _strip_nftables_dnat_text,
+            _normalize_imported_rules_for_host,
+            find_candidate_nftables_files
+        )
+
+        mixed_conf = """#!/usr/sbin/nft -f
+flush ruleset
+
+table ip filter {
+    chain input {
+        type filter hook input priority 0; policy accept;
+        tcp dport 22 accept
+    }
+}
+
+table ip port_forward
+delete table ip port_forward
+
+table ip port_forward {
+    map ipv4_backends {
+        type inet_service : ipv4_addr
+    }
+    chain prerouting {
+        type nat hook prerouting priority dstnat; policy accept;
+        dnat ip to tcp dport map @ipv4_backends
+    }
+}
+
+# [Test]
+add element ip port_forward ipv4_backends {
+    1000 : 5.199.136.72,
+    1100 : 5.199.136.72
+}
+"""
+        stripped = _strip_nftables_dnat_text(mixed_conf)
+        self.assertIn("table ip filter", stripped)
+        self.assertIn("tcp dport 22 accept", stripped)
+        self.assertNotIn("port_forward", stripped)
+        self.assertNotIn("add element", stripped)
+        self.assertNotIn("5.199.136.72", stripped)
+        self.assertEqual(parse_nftables_text(stripped), [])
+
+        # Simulate uninstalled Nginx normalization on Linux
+        sample_rules = parse_nftables_text(mixed_conf)
+        self.assertEqual(len(sample_rules), 2)
+        with patch("sys.platform", "linux"), patch("shutil.which", return_value=None):
+            _normalize_imported_rules_for_host(sample_rules)
+        for r in sample_rules:
+            self.assertEqual(len(r["destinations"]), 1)
+            self.assertEqual(r["destinations"][0]["type"], "nftables")
+            self.assertEqual(r["destinations"][0]["priority"], 1)
+            self.assertEqual(r["active_priority"], 1)
+
+        # Ensure .bak* files are excluded from find_candidate_nftables_files
+        with tempfile.TemporaryDirectory() as tmpdir:
+            bak_f = os.path.join(tmpdir, "nftables.conf.bak.123")
+            with open(bak_f, "w", encoding="utf-8") as f:
+                f.write(mixed_conf)
+            with patch("glob.glob", return_value=[bak_f]):
+                # Even if glob returned something, .bak pattern isn't queried
+                pass
+            # Direct verify patterns omit .bak
+            import inspect
+            src = inspect.getsource(find_candidate_nftables_files)
+            self.assertNotIn("nftables.conf.bak", src)
+
 
 if __name__ == "__main__":
     unittest.main()

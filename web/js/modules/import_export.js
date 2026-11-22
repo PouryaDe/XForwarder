@@ -98,6 +98,7 @@ export async function checkImportableRules() {
                 if (data.sources) {
                     if (data.sources.haproxy > 0) srcCounts.push(`${data.sources.haproxy} HAProxy`);
                     if (data.sources.nftables > 0) srcCounts.push(`${data.sources.nftables} NFTables`);
+                    if (data.sources.nginx > 0) srcCounts.push(`${data.sources.nginx} Nginx`);
                 }
                 const srcLabel = srcCounts.length > 0 ? ` (${srcCounts.join(" + ")})` : "";
                 bannerText.innerText = `Discovered ${data.count} existing forwarding port(s) on this server (${portsStr})${srcLabel}. Import them to manage failover in the dashboard.`;
@@ -487,6 +488,7 @@ export function initImportExport(fetchStatusCallback) {
                         if (data.sources) {
                             if (data.sources.haproxy > 0) srcCounts.push(`${data.sources.haproxy} HAProxy`);
                             if (data.sources.nftables > 0) srcCounts.push(`${data.sources.nftables} NFTables`);
+                            if (data.sources.nginx > 0) srcCounts.push(`${data.sources.nginx} Nginx`);
                         }
                         const srcLabel = srcCounts.length > 0 ? ` [${srcCounts.join(" + ")}]` : "";
                         if (resultEl) {

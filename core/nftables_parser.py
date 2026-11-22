@@ -8,6 +8,7 @@ Provides automatic backup and safe deactivation of legacy rules to eliminate por
 """
 
 import os
+import sys
 import re
 import glob
 import json
@@ -1237,12 +1238,12 @@ def get_live_nftables_rules() -> List[Dict[str, Any]]:
 
 def find_candidate_nftables_files() -> List[str]:
     """
-    Finds persistent NFTables and iptables configuration files on the host filesystem.
+    Finds active persistent NFTables and iptables configuration files on the host filesystem.
+    Excludes .bak* backups so archived snapshots never trigger phantom re-discovery.
     """
     candidates: List[str] = []
     file_patterns = [
         "/etc/nftables.conf",
-        "/etc/nftables.conf.bak*",
         "/etc/sysconfig/nftables.conf",
         "/etc/nftables/*.nft",
         "/etc/nftables.d/*.nft",
@@ -1255,6 +1256,241 @@ def find_candidate_nftables_files() -> List[str]:
             if os.path.isfile(p) and p not in candidates:
                 candidates.append(p)
     return candidates
+
+
+def _strip_nftables_dnat_text(content: str) -> str:
+    """
+    Surgically strips legacy NAT/DNAT tables (`port_forward`, `nat`, chains with `hook dstnat` or `dnat`),
+    their preceding `delete table` lines, and `add element ...` blocks from an `.nft` config file,
+    while strictly preserving non-NAT host firewall tables (`table ip filter`, `table inet filter`, etc.).
+    """
+    lines = content.splitlines()
+    out_lines: List[str] = []
+
+    i = 0
+    n = len(lines)
+    depth = 0
+    in_table = False
+    table_header_re = re.compile(r"^table\s+(ip|ip6|inet)\s+(\S+)\s*\{?", re.IGNORECASE)
+    delete_table_re = re.compile(r"^delete\s+table\s+(ip|ip6|inet)\s+(\S+)", re.IGNORECASE)
+
+    # First pass: determine which table names contain NAT/DNAT logic
+    nat_tables: Set[Tuple[str, str]] = set()
+    cur_t: Optional[Tuple[str, str]] = None
+    cur_buf: List[str] = []
+    d = 0
+    for raw in lines:
+        s = raw.strip()
+        if not s or s.startswith("#"):
+            continue
+        code = s.split("#", 1)[0]
+        if cur_t is None:
+            tm = table_header_re.match(code)
+            if tm:
+                cur_t = (tm.group(1).lower(), tm.group(2).lower())
+                cur_buf = [code]
+                d = code.count("{") - code.count("}")
+                if "}" in code and d <= 0:
+                    joined = "\n".join(cur_buf).lower()
+                    if cur_t[1] in ("nat", "port_forward") or "hook dstnat" in joined or re.search(r"\bdnat\b", joined):
+                        nat_tables.add(cur_t)
+                    cur_t = None
+                    cur_buf = []
+                    d = 0
+        else:
+            cur_buf.append(code)
+            d += code.count("{") - code.count("}")
+            if d <= 0:
+                joined = "\n".join(cur_buf).lower()
+                if cur_t[1] in ("nat", "port_forward") or "hook dstnat" in joined or re.search(r"\bdnat\b", joined):
+                    nat_tables.add(cur_t)
+                cur_t = None
+                cur_buf = []
+                d = 0
+
+    # Second pass: emit lines skipping NAT tables, their delete headers, and their add/create element blocks
+    skip_elem_depth: Optional[int] = None
+    skip_table_depth: Optional[int] = None
+    pending_comments: List[str] = []
+
+    while i < n:
+        raw = lines[i]
+        s = raw.strip()
+        code = s.split("#", 1)[0].strip() if not s.startswith("#") else ""
+
+        if skip_table_depth is not None:
+            depth += code.count("{") - code.count("}")
+            if depth <= skip_table_depth:
+                skip_table_depth = None
+                pending_comments.clear()
+            i += 1
+            continue
+
+        if skip_elem_depth is not None:
+            depth += code.count("{") - code.count("}")
+            if depth <= skip_elem_depth:
+                skip_elem_depth = None
+                pending_comments.clear()
+            i += 1
+            continue
+
+        if s.startswith("#") or not s:
+            pending_comments.append(raw)
+            i += 1
+            continue
+
+        # Check standalone `table <fam> <name>` without `{` (e.g., forward declaration before `delete table`)
+        bare_tbl = re.match(r"^table\s+(ip|ip6|inet)\s+(\S+)\s*$", code, re.IGNORECASE)
+        if bare_tbl and (bare_tbl.group(1).lower(), bare_tbl.group(2).lower()) in nat_tables:
+            pending_comments.clear()
+            i += 1
+            continue
+
+        del_m = delete_table_re.match(code)
+        if del_m and (del_m.group(1).lower(), del_m.group(2).lower()) in nat_tables:
+            pending_comments.clear()
+            i += 1
+            continue
+
+        add_m = ADD_ELEMENT_HEADER_REGEX.match(s)
+        if add_m:
+            e_key = (add_m.group(1).lower(), add_m.group(2).lower())
+            if e_key in nat_tables or add_m.group(2).lower() in ("nat", "port_forward"):
+                pending_comments.clear()
+                pre_d = depth
+                depth += code.count("{") - code.count("}")
+                if depth > pre_d:
+                    skip_elem_depth = pre_d
+                i += 1
+                continue
+
+        tm = table_header_re.match(code)
+        if tm and (tm.group(1).lower(), tm.group(2).lower()) in nat_tables:
+            pending_comments.clear()
+            pre_d = depth
+            depth += code.count("{") - code.count("}")
+            if depth > pre_d:
+                skip_table_depth = pre_d
+            i += 1
+            continue
+
+        if pending_comments:
+            out_lines.extend(pending_comments)
+            pending_comments.clear()
+        out_lines.append(raw)
+        depth += code.count("{") - code.count("}")
+        i += 1
+
+    if pending_comments:
+        # Preserve trailing non-blank non-category comments only if output isn't purely headers
+        out_lines.extend(c for c in pending_comments if not CATEGORY_COMMENT_REGEX.match(c.strip()))
+
+    # Trim consecutive blank lines left after stripped sections
+    cleaned_out: List[str] = []
+    for line in out_lines:
+        if not line.strip() and (not cleaned_out or not cleaned_out[-1].strip()):
+            continue
+        cleaned_out.append(line)
+    return ("\n".join(cleaned_out).rstrip() + "\n") if any(l.strip() for l in cleaned_out) else ""
+
+
+def _strip_iptables_nat_text(content: str) -> str:
+    """Removes PREROUTING/OUTPUT `-j DNAT` rules from iptables-save files while preserving `*filter`."""
+    kept: List[str] = []
+    for line in content.splitlines():
+        if IPTABLES_DNAT_REGEX.search(line) or ("-j DNAT" in line and line.strip().startswith("-A")):
+            continue
+        kept.append(line)
+    return ("\n".join(kept).rstrip() + "\n") if any(l.strip() for l in kept) else ""
+
+
+def cleanup_legacy_nftables_files(backup_dir: str = "/etc/xforwarder/backups") -> List[str]:
+    """
+    Archives persistent legacy NFTables/iptables config files to /etc/xforwarder/backups/ and
+    surgically removes legacy DNAT/NAT tables & backups so deleted panel rules never reappear or collide on reboot.
+    """
+    logs: List[str] = []
+    active_files = find_candidate_nftables_files()
+    bak_files = [p for p in glob.glob("/etc/nftables.conf.bak*") if os.path.isfile(p)]
+    if not active_files and not bak_files:
+        return logs
+
+    ts = time.strftime("%Y%m%d_%H%M%S")
+    archive_dir = os.path.join(backup_dir, f"legacy_nft_files_{ts}")
+    try:
+        os.makedirs(archive_dir, exist_ok=True)
+    except Exception as e:
+        return [f"Warning: could not create NFTables archive dir: {e}"]
+
+    for bpath in bak_files:
+        try:
+            dst = os.path.join(archive_dir, os.path.basename(bpath))
+            shutil.move(bpath, dst)
+            logs.append(f"Archived legacy backup {bpath} -> {dst}")
+        except Exception as e:
+            logs.append(f"Warning: failed to archive {bpath}: {e}")
+
+    for path in active_files:
+        try:
+            with open(path, "r", encoding="utf-8", errors="ignore") as f:
+                orig = f.read()
+        except Exception:
+            continue
+
+        is_iptables = "iptables" in path
+        parsed = parse_iptables_text(orig) if is_iptables else parse_nftables_text(orig)
+        if not parsed:
+            continue
+
+        # Snapshot original before editing
+        try:
+            shutil.copy2(path, os.path.join(archive_dir, os.path.basename(path)))
+        except Exception as e:
+            logs.append(f"Warning: failed copying {path} to {archive_dir}: {e}")
+
+        stripped = _strip_iptables_nat_text(orig) if is_iptables else _strip_nftables_dnat_text(orig)
+        is_dropin = any(seg in path for seg in ("/etc/nftables/", "/etc/nftables.d/", "/etc/nftables.conf.d/"))
+
+        if is_dropin and not any(
+            l.strip() and not l.strip().startswith("#") and not l.strip().startswith("flush")
+            for l in stripped.splitlines()
+        ):
+            try:
+                os.remove(path)
+                logs.append(f"Removed legacy DNAT drop-in {path} (archived to {archive_dir})")
+            except Exception as e:
+                logs.append(f"Warning: failed removing {path}: {e}")
+        else:
+            if stripped != orig:
+                tmp_p = f"{path}.tmp.{os.getpid()}"
+                try:
+                    with open(tmp_p, "w", encoding="utf-8") as f:
+                        f.write(stripped or "#!/usr/sbin/nft -f\n# Legacy NAT/DNAT migrated to XForwarder\n")
+                    os.replace(tmp_p, path)
+                    logs.append(f"Stripped legacy DNAT rules from {path} (preserved host firewall; backup in {archive_dir})")
+                except Exception as e:
+                    logs.append(f"Warning: failed updating {path}: {e}")
+    return logs
+
+
+def _normalize_imported_rules_for_host(rules: List[Dict[str, Any]]) -> None:
+    """
+    When running on Linux without Nginx installed, removes dead auto-generated `nginx` P1 destinations
+    so imported NFTables rules run directly via Priority 1 `nftables`.
+    """
+    if sys.platform == "win32" or shutil.which("nginx"):
+        return
+    for r in rules:
+        dests = r.get("destinations")
+        if not isinstance(dests, list) or len(dests) <= 1:
+            continue
+        non_ngx = [d for d in dests if str(d.get("type", "")).lower() != "nginx"]
+        if non_ngx and len(non_ngx) < len(dests):
+            for idx, d in enumerate(non_ngx, start=1):
+                d["priority"] = idx
+            r["destinations"] = non_ngx
+            r["active_priority"] = 1
+            r["force_override"] = 0
 
 
 def discover_importable_nftables_rules(
@@ -1523,15 +1759,19 @@ def import_nftables_rules_into_config(
     importable = discover_importable_nftables_rules(rules, protected_ports=get_protected_ports(cfg))
 
     if not importable:
-        return 0, [], ["No new unimported NFTables rules found"]
+        if deactivate_legacy:
+            logs.extend(cleanup_legacy_nftables_files())
+        return 0, [], (logs or ["No new unimported NFTables rules found"])
 
-    # Optional legacy rule backup and deactivation
+    # Optional legacy rule backup and deactivation (kernel + persistent files)
     if deactivate_legacy:
         backup_file = backup_legacy_nftables()
         if backup_file:
             logs.append(f"Created legacy ruleset backup at: {backup_file}")
         deact_count, deact_logs = deactivate_legacy_rules(importable)
         logs.extend(deact_logs)
+
+    _normalize_imported_rules_for_host(importable)
 
     imported_ports: List[Any] = []
     for r in importable:
@@ -1555,6 +1795,8 @@ def import_nftables_rules_into_config(
             json.dump(cfg, f, indent=2, ensure_ascii=False)
         os.replace(tmp_path, config_path)
         logs.append(f"Successfully saved {len(imported_ports)} rule(s) to {config_path}")
+        if deactivate_legacy:
+            logs.extend(cleanup_legacy_nftables_files())
         return len(imported_ports), imported_ports, logs
     except Exception as e:
         logger.error(f"Failed to save imported rules to {config_path}: {e}")
@@ -1566,12 +1808,12 @@ def discover_all_relay_rules(
     protected_ports: Optional[Set[int]] = None
 ) -> Dict[str, Any]:
     """
-    Unified discovery scanning both HAProxy configurations and active NFTables rules.
+    Unified discovery scanning HAProxy configs, active NFTables rules, and unmanaged Nginx streams.
     Returns structured results with per-source metrics.
     """
     # 1. HAProxy rules
     from core.haproxy_parser import discover_importable_rules as discover_haproxy
-    ha_rules = discover_haproxy(existing_rules)
+    ha_rules = discover_haproxy(existing_rules, protected_ports=protected_ports) if protected_ports is not None else discover_haproxy(existing_rules)
     for r in ha_rules:
         r["_source"] = "haproxy"
 
@@ -1589,9 +1831,18 @@ def discover_all_relay_rules(
         for r in nft_rules if "port" in r or "port_range" in r
     }
 
-    combined = ha_rules + nft_rules
+    # 3. Unmanaged Nginx stream rules
+    ngx_rules: List[Dict[str, Any]] = []
+    try:
+        from core.service_manager import discover_importable_nginx_rules
+        ngx_rules = discover_importable_nginx_rules(all_known + nft_rules, protected_ports=protected_ports)
+    except Exception:
+        ngx_rules = []
+    ngx_ports = {r["port"] for r in ngx_rules if "port" in r}
+
+    combined = ha_rules + nft_rules + ngx_rules
     combined_ports = sorted(
-        list(ha_ports | nft_ports),
+        list(ha_ports | nft_ports | ngx_ports),
         key=lambda x: (0, str(x)) if str(x).startswith("!=") else (int(str(x).split("-")[0]), str(x))
     )
 
@@ -1602,7 +1853,8 @@ def discover_all_relay_rules(
         "rules": combined,
         "sources": {
             "haproxy": len(ha_rules),
-            "nftables": len(nft_rules)
+            "nftables": len(nft_rules),
+            "nginx": len(ngx_rules)
         }
     }
 
@@ -1612,15 +1864,20 @@ def import_all_relay_rules_into_config(
     deactivate_legacy: bool = True
 ) -> Tuple[int, List[int], List[str]]:
     """
-    Imports both unmanaged HAProxy and NFTables rules into config_path in a single atomic operation.
-    Cleans up any legacy kernel DNAT rules for all imported ports to eliminate hook collision.
+    Imports unmanaged HAProxy, NFTables, and Nginx rules into config_path atomically.
+    Deactivates active kernel DNAT handles and archives/cleans legacy config files so
+    XForwarder assumes full ownership without reboot collisions or phantom re-discovery.
     """
-    from core.haproxy_parser import import_haproxy_rules_into_config
+    from core.haproxy_parser import import_haproxy_rules_into_config, archive_legacy_haproxy_files
+    try:
+        from core.service_manager import import_nginx_rules_into_config, cleanup_legacy_nginx_files
+    except ImportError:
+        from service_manager import import_nginx_rules_into_config, cleanup_legacy_nginx_files
 
     all_logs: List[str] = []
     total_ports: List[int] = []
 
-    # 1. Backup legacy rules before modifying anything
+    # 1. Backup live kernel ruleset before modifying anything
     if deactivate_legacy:
         backup_file = backup_legacy_nftables()
         if backup_file:
@@ -1632,16 +1889,26 @@ def import_all_relay_rules_into_config(
         all_logs.append(f"Imported {h_count} HAProxy rule(s): {h_ports}")
         total_ports.extend(h_ports)
 
-    # 3. Import NFTables rules (pass deactivate_legacy=False because we deactivate all ports together)
+    # 3. Import NFTables rules (deactivate_legacy=False so kernel handles + files are cleaned together below)
     n_count, n_ports, n_logs = import_nftables_rules_into_config(config_path, deactivate_legacy=False)
     if n_count > 0:
         all_logs.append(f"Imported {n_count} NFTables rule(s): {n_ports}")
         total_ports.extend(n_ports)
     all_logs.extend(n_logs)
 
-    # 4. Deactivate any active legacy DNAT rules matching ANY imported ports (Zero-Collision Guarantee)
-    if deactivate_legacy and total_ports:
-        deact_count, deact_logs = deactivate_legacy_rules_for_ports(set(total_ports))
-        all_logs.extend(deact_logs)
+    # 4. Import unmanaged Nginx stream rules
+    x_count, x_ports, x_logs = import_nginx_rules_into_config(config_path, cleanup_legacy=False)
+    if x_count > 0:
+        total_ports.extend(x_ports)
+    all_logs.extend(x_logs)
+
+    # 5. Full legacy takeover: kernel DNAT deletion + persistent file/backup archival
+    if deactivate_legacy:
+        if total_ports:
+            deact_count, deact_logs = deactivate_legacy_rules_for_ports(set(total_ports))
+            all_logs.extend(deact_logs)
+        all_logs.extend(cleanup_legacy_nftables_files())
+        all_logs.extend(archive_legacy_haproxy_files())
+        all_logs.extend(cleanup_legacy_nginx_files())
 
     return len(total_ports), total_ports, all_logs
