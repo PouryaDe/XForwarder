@@ -314,12 +314,17 @@ function getAvailableServerInterfaces() {
         if (!name || seen.has(name)) return;
         seen.add(name);
         const ipPart = tObj.ip && tObj.ip !== "No IP assigned" ? tObj.ip : "";
+        const peerPart = String((tObj && tObj.peer_ip) || "").trim();
+        const pingPart = String((tObj && tObj.target_to_ping) || "").trim();
         const statePart = String(tObj.state || "UP").toUpperCase();
         entries.push({
             name,
             ip: ipPart,
+            peerIp: peerPart,
+            targetToPing: pingPart,
+            isTunnel: true,
             up: statePart === "UP",
-            label: `${name} (${tObj.type || "Tunnel"}${ipPart ? ` · ${ipPart}` : ""} · ${statePart})`
+            label: `${name} (${tObj.type || "Tunnel"}${ipPart ? ` · ${ipPart}` : ""}${peerPart ? ` -> ${peerPart}` : ""} · ${statePart})`
         });
     });
 
@@ -331,6 +336,9 @@ function getAvailableServerInterfaces() {
         entries.push({
             name,
             ip: ipPart,
+            peerIp: "",
+            targetToPing: "",
+            isTunnel: false,
             up: true,
             label: `${name} (WAN${ipPart ? ` · ${ipPart}` : ""})`
         });
@@ -339,9 +347,42 @@ function getAvailableServerInterfaces() {
     const primaryName = String(net.primary_interface || "").trim();
     if (primaryName && !seen.has(primaryName)) {
         seen.add(primaryName);
-        entries.push({ name: primaryName, ip: "", up: true, label: `${primaryName} (Primary WAN)` });
+        entries.push({ name: primaryName, ip: "", peerIp: "", targetToPing: "", isTunnel: false, up: true, label: `${primaryName} (Primary WAN)` });
     }
     return entries;
+}
+
+function findSuggestedTunnelInterface(list, targetHost = "", isIngress = false) {
+    if (!list || list.length === 0) return null;
+    const cleanTarget = String(targetHost || "").trim().toLowerCase();
+
+    // 1. Direct match on peer IP, ping target, or local IP
+    if (cleanTarget) {
+        const direct = list.find(item =>
+            item.isTunnel && (
+                (item.peerIp && item.peerIp.toLowerCase() === cleanTarget) ||
+                (item.targetToPing && item.targetToPing.toLowerCase() === cleanTarget) ||
+                (item.ip && item.ip.toLowerCase() === cleanTarget)
+            )
+        );
+        if (direct) return direct.name;
+
+        // 2. Subnet match (/24 or /30, e.g. 10.80.15.x)
+        const parts = cleanTarget.split(".");
+        if (parts.length === 4) {
+            const prefix = `${parts[0]}.${parts[1]}.${parts[2]}.`;
+            const subnetMatch = list.find(item => item.isTunnel && item.ip && item.ip.startsWith(prefix));
+            if (subnetMatch) return subnetMatch.name;
+        }
+    }
+
+    // 3. For Inbound Tunnel Interface (DSR Relay), suggest the first active/UP tunnel
+    if (isIngress) {
+        const upTunnel = list.find(item => item.isTunnel && item.up);
+        if (upTunnel) return upTunnel.name;
+    }
+
+    return null;
 }
 
 function buildTunnelIfaceTriggerHtml(selectedVal = "", isIngress = false) {
@@ -359,7 +400,7 @@ function buildTunnelIfaceTriggerHtml(selectedVal = "", isIngress = false) {
     return `<span class="iface-dot ${up ? "is-up" : "is-down"}"></span><span class="iface-trigger-name font-mono">${escapeHtml(cur)}</span>${ip}`;
 }
 
-function buildTunnelIfaceMenuHtml(selectedVal = "", isIngress = false) {
+function buildTunnelIfaceMenuHtml(selectedVal = "", isIngress = false, targetHost = "") {
     const cur = String(selectedVal || "").trim();
     const autoLabel = escapeHtml(
         isIngress
@@ -367,22 +408,34 @@ function buildTunnelIfaceMenuHtml(selectedVal = "", isIngress = false) {
             : t("modal.tunnel_iface_auto", {}, "Auto (Kernel Route)")
     );
     const checkSvg = `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>`;
+    const list = getAvailableServerInterfaces();
+    const suggestedName = findSuggestedTunnelInterface(list, targetHost, isIngress);
+
     let html = `
         <button type="button" class="iface-option ${!cur ? "is-checked" : ""}" data-iface="">
             <span class="iface-checkbox">${!cur ? checkSvg : ""}</span>
             <span class="iface-opt-name">${autoLabel}</span>
         </button>`;
-    const list = getAvailableServerInterfaces();
+
+    // Sort list so that the suggested interface appears right after Auto
+    const sortedList = [...list].sort((a, b) => {
+        if (a.name === suggestedName) return -1;
+        if (b.name === suggestedName) return 1;
+        return 0;
+    });
+
     let foundSelected = !cur;
-    list.forEach(item => {
+    sortedList.forEach(item => {
         const isSel = Boolean(cur && cur === item.name);
+        const isSugg = Boolean(suggestedName && item.name === suggestedName);
         if (isSel) foundSelected = true;
         html += `
-        <button type="button" class="iface-option ${isSel ? "is-checked" : ""}" data-iface="${escapeHtml(item.name)}" title="${escapeHtml(item.label)}">
+        <button type="button" class="iface-option ${isSel ? "is-checked" : ""} ${isSugg ? "is-suggested" : ""}" data-iface="${escapeHtml(item.name)}" title="${escapeHtml(item.label)}">
             <span class="iface-checkbox">${isSel ? checkSvg : ""}</span>
             <span class="iface-dot ${item.up ? "is-up" : "is-down"}"></span>
             <span class="iface-opt-name font-mono">${escapeHtml(item.name)}</span>
             ${item.ip ? `<small class="iface-opt-ip font-mono">${escapeHtml(item.ip)}</small>` : ""}
+            ${isSugg ? `<span class="iface-suggest-badge">${escapeHtml(t("modal.suggested", {}, "Suggested"))}</span>` : ""}
         </button>`;
     });
     if (cur && !foundSelected) {
@@ -606,7 +659,7 @@ export function renderDestinationRow(dest, index, totalCount) {
                         <span class="iface-trigger-text">${buildTunnelIfaceTriggerHtml(dest.ingress_iface || "", true)}</span>
                         <svg class="iface-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="6 9 12 15 18 9"/></svg>
                     </button>
-                    <div class="iface-dropdown-menu">${buildTunnelIfaceMenuHtml(dest.ingress_iface || "", true)}</div>
+                    <div class="iface-dropdown-menu">${buildTunnelIfaceMenuHtml(dest.ingress_iface || "", true, target)}</div>
                 </div>
             </div>
             <div class="form-group flex-1 dest-snat-ip-group" style="display:${isDsrRelay ? "block" : "none"};">
@@ -636,7 +689,7 @@ export function renderDestinationRow(dest, index, totalCount) {
                         <span class="iface-trigger-text">${buildTunnelIfaceTriggerHtml(dest.tunnel_iface || "", false)}</span>
                         <svg class="iface-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="6 9 12 15 18 9"/></svg>
                     </button>
-                    <div class="iface-dropdown-menu">${buildTunnelIfaceMenuHtml(dest.tunnel_iface || "", false)}</div>
+                    <div class="iface-dropdown-menu">${buildTunnelIfaceMenuHtml(dest.tunnel_iface || "", false, target)}</div>
                 </div>
             </div>
             <div class="form-group dest-comment-group">
@@ -1000,7 +1053,16 @@ export function initRuleModal(fetchStatusCallback) {
                 if (!ms) return;
                 const wasOpen = ms.classList.contains("open");
                 document.querySelectorAll(".iface-multiselect.open").forEach(el => el.classList.remove("open"));
-                if (!wasOpen) ms.classList.add("open");
+                if (!wasOpen) {
+                    const box = ms.closest(".priority-box");
+                    const targetVal = (box && box.querySelector(".dest-target")) ? box.querySelector(".dest-target").value : "";
+                    const hidden = ms.parentElement ? ms.parentElement.querySelector("input[type='hidden']") : null;
+                    const curVal = (hidden && hidden.value) || "";
+                    const menu = ms.querySelector(".iface-dropdown-menu");
+                    const isIngress = ms.dataset.autoMode === "ingress";
+                    if (menu) menu.innerHTML = buildTunnelIfaceMenuHtml(curVal, isIngress, targetVal);
+                    ms.classList.add("open");
+                }
                 return;
             }
             const opt = ev.target.closest(".iface-option");
@@ -1016,10 +1078,27 @@ export function initRuleModal(fetchStatusCallback) {
             const clickedVal = opt.dataset.iface || "";
             const prevVal = (hidden && hidden.value) || "";
             const nextVal = (clickedVal && clickedVal === prevVal) ? "" : clickedVal;
+            const box = ms.closest(".priority-box");
+            const targetVal = (box && box.querySelector(".dest-target")) ? box.querySelector(".dest-target").value : "";
             if (hidden) hidden.value = nextVal;
-            if (menu) menu.innerHTML = buildTunnelIfaceMenuHtml(nextVal, isIngress);
+            if (menu) menu.innerHTML = buildTunnelIfaceMenuHtml(nextVal, isIngress, targetVal);
             if (triggerText) triggerText.innerHTML = buildTunnelIfaceTriggerHtml(nextVal, isIngress);
             ms.classList.remove("open");
+        });
+
+        destContainer.addEventListener("input", (ev) => {
+            const targetInput = ev.target.closest(".dest-target");
+            if (!targetInput) return;
+            const box = targetInput.closest(".priority-box");
+            if (!box) return;
+            const newTarget = targetInput.value.trim();
+            box.querySelectorAll(".iface-multiselect").forEach(ms => {
+                const hidden = ms.parentElement ? ms.parentElement.querySelector("input[type='hidden']") : null;
+                const curVal = (hidden && hidden.value) || "";
+                const menu = ms.querySelector(".iface-dropdown-menu");
+                const isIngress = ms.dataset.autoMode === "ingress";
+                if (menu) menu.innerHTML = buildTunnelIfaceMenuHtml(curVal, isIngress, newTarget);
+            });
         });
     }
 
