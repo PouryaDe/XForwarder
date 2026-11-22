@@ -27,13 +27,32 @@ export function renderSystemStats(sys) {
     const connsPill = document.getElementById("connsPill");
     const ovTrafficText = document.getElementById("ovTrafficText");
 
-    // 1. CPU Usage
+    // 1. CPU Usage & Hardware Specs Tooltip
     if (sys.cpu_percent !== undefined) {
         const cpuPct = Number(sys.cpu_percent) || 0;
+        const cores = Number(sys.cpu_count) || 0;
+        const mhz = Number(sys.cpu_mhz) || 0;
+        const ghzStr = mhz > 0 ? `${(mhz / 1000).toFixed(2)} GHz` : "";
+        const coreStr = cores > 0 ? `${cores} ${cores === 1 ? "Core" : "Cores"}` : "";
+        const specSummary = [coreStr, ghzStr].filter(Boolean).join(" · ");
+        const cpuModelStr = sys.cpu_model ? String(sys.cpu_model) : "";
+        const fullCpuTip = [
+            cores > 0 ? `CPU Cores: ${cores} vCPU` : "",
+            ghzStr ? `Clock: ${ghzStr} (${mhz} MHz)` : "",
+            cpuModelStr ? `Model: ${cpuModelStr}` : ""
+        ].filter(Boolean).join(" | ") || "Server CPU Load & System Load Average";
+
         if (cpuText) cpuText.textContent = `CPU: ${cpuPct}%`;
         const ovCpuText = document.getElementById("ovCpuText");
         const ovCpuBar = document.getElementById("ovCpuBar");
-        if (ovCpuText) ovCpuText.innerText = sys.cpu_count ? `${sys.cpu_count} Cores Active` : "Processor Load";
+        const ovCpuInfoTip = document.getElementById("ovCpuInfoTip");
+        const cpuPill = document.getElementById("cpuPill");
+        if (ovCpuText) ovCpuText.innerText = specSummary || "Processor Load";
+        if (ovCpuInfoTip) {
+            ovCpuInfoTip.setAttribute("data-tip", fullCpuTip);
+            ovCpuInfoTip.title = fullCpuTip;
+        }
+        if (cpuPill) cpuPill.title = fullCpuTip;
         if (ovCpuBar) ovCpuBar.style.width = `${Math.min(100, Math.max(0, cpuPct))}%`;
 
         // Graphical Circular SVG Ring & Badge
@@ -121,7 +140,7 @@ export function renderSystemStats(sys) {
         if (ovLoadText) {
             const l5 = sys.load_5 !== undefined ? Number(sys.load_5).toFixed(2) : "--";
             const l15 = sys.load_15 !== undefined ? Number(sys.load_15).toFixed(2) : "--";
-            ovLoadText.textContent = `${l1} (1m), ${l5} (5m), ${l15} (15m)`;
+            ovLoadText.textContent = `1m: ${l1} · 5m: ${l5} · 15m: ${l15}`;
         }
 
         // Graphical 3-tier visual load bars
@@ -166,11 +185,13 @@ export function renderSystemStats(sys) {
         const rTx = formatTrafficMB(rawRateTx);
         const rxMb = formatTrafficMB(sys.net_rx_mb);
         const txMb = formatTrafficMB(sys.net_tx_mb);
+        const rxCompact = formatBytes((Number(sys.net_rx_mb) || 0) * 1048576);
+        const txCompact = formatBytes((Number(sys.net_tx_mb) || 0) * 1048576);
 
         if (_trafficModeRate) {
             trafficText.textContent = `↓ ${rRx} MB/s · ↑ ${rTx} MB/s`;
         } else {
-            trafficText.textContent = `↓ ${rxMb} MB · ↑ ${txMb} MB`;
+            trafficText.textContent = `↓ ${rxCompact} · ↑ ${txCompact}`;
         }
 
         if (ovTrafficText) {
@@ -184,12 +205,12 @@ export function renderSystemStats(sys) {
         const netTxSpeed = document.getElementById("ovNetTxSpeed");
         if (netRxFill) netRxFill.style.width = `${Math.min(100, Math.max(4, Math.round((Number(rawRateRx) / 25) * 100)))}%`;
         if (netTxFill) netTxFill.style.width = `${Math.min(100, Math.max(4, Math.round((Number(rawRateTx) / 25) * 100)))}%`;
-        if (netRxSpeed) netRxSpeed.textContent = _trafficModeRate ? `${rRx} MB/s` : `${rxMb} MB`;
-        if (netTxSpeed) netTxSpeed.textContent = _trafficModeRate ? `${rTx} MB/s` : `${txMb} MB`;
+        if (netRxSpeed) netRxSpeed.textContent = _trafficModeRate ? `${rRx} MB/s` : rxCompact;
+        if (netTxSpeed) netTxSpeed.textContent = _trafficModeRate ? `${rTx} MB/s` : txCompact;
 
         const ovTrafficRateBadge = document.getElementById("ovTrafficRateBadge");
         if (ovTrafficRateBadge) {
-            ovTrafficRateBadge.textContent = _trafficModeRate ? "Live MB/s" : "Total MB";
+            ovTrafficRateBadge.textContent = _trafficModeRate ? "Live MB/s" : "Total Data";
         }
 
         if (trafficPill) {

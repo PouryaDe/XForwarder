@@ -11,6 +11,7 @@ import { t } from "./i18n.js";
 let currentModalDestinations = [];
 let draggedModalPrioIndex = null;
 let currentEditingRuleId = null;
+let lastAutoInboundPort = "";
 
 /**
  * Parses comma/space separated excluded ports or small sub-ranges (e.g. "22, 443, 1001").
@@ -166,6 +167,7 @@ export function openAddRuleModal() {
     if (ruleCreatedAtInput) ruleCreatedAtInput.value = "";
 
     setExcludedTags([]);
+    lastAutoInboundPort = "";
 
     currentModalDestinations = [
         { priority: 1, type: "haproxy", target: "", port: "", comment: "", proxy_protocol: false, is_relay: false, enabled: true },
@@ -206,6 +208,7 @@ export function openEditRuleModal(ruleId) {
 
     const portInput = document.getElementById("formPort");
     if (portInput) portInput.value = rule.port_range || rule.port || "1-65535";
+    lastAutoInboundPort = String(rule.port_range || rule.port || "");
 
     setExcludedTags(Array.isArray(rule.excluded_ports) ? rule.excluded_ports : []);
 
@@ -1153,22 +1156,36 @@ export function initRuleModal(fetchStatusCallback) {
         });
     }
 
+    const destContainer = document.getElementById("destinationsContainer");
+    if (destContainer) {
+        destContainer.addEventListener("input", (ev) => {
+            if (!ev.target || !ev.target.classList || !ev.target.classList.contains("dest-port")) return;
+            const curVal = ev.target.value.trim();
+            const parsedIn = parsePortSpec(formPortInput ? formPortInput.value : "");
+            const inVal = parsedIn ? String(parsedIn.rangeStr || parsedIn.start) : (formPortInput ? formPortInput.value.trim() : "");
+            ev.target.dataset.autoSynced = (curVal === "" || curVal === inVal) ? "true" : "false";
+        });
+    }
+
     if (formPortInput) {
         formPortInput.addEventListener("input", () => {
-            const parsed = parsePortSpec(formPortInput.value);
+            const rawVal = formPortInput.value.trim();
+            const parsed = parsePortSpec(rawVal);
             if (parsed && parsed.excludedPorts) {
                 setExcludedTags(parsed.excludedPorts);
             }
             refreshRangeConstraintUI();
-            if (!currentEditingRuleId && parsed) {
-                const fillVal = parsed.rangeStr || parsed.start;
-                const portInputs = document.querySelectorAll("#destinationsContainer .dest-port");
-                portInputs.forEach(input => {
-                    if (!input.value) {
-                        input.value = fillVal;
-                    }
-                });
-            }
+            const fillVal = parsed ? String(parsed.rangeStr || parsed.start) : rawVal;
+            const portInputs = document.querySelectorAll("#destinationsContainer .dest-port");
+            portInputs.forEach(input => {
+                const cur = input.value.trim();
+                const wasAuto = input.dataset.autoSynced !== "false";
+                if (wasAuto && (cur === "" || cur === lastAutoInboundPort)) {
+                    input.value = fillVal;
+                    input.dataset.autoSynced = "true";
+                }
+            });
+            lastAutoInboundPort = fillVal;
         });
     }
 

@@ -95,13 +95,54 @@ def ping_target(target: str, iface: Optional[str] = None) -> Tuple[bool, Optiona
     return False, None
 
 
+_CPU_HW_CACHE: Optional[Dict[str, Any]] = None
+
+
+def _get_cpu_hardware_info() -> Dict[str, Any]:
+    """Reads and caches static CPU model, core count, and clock frequency from /proc/cpuinfo."""
+    global _CPU_HW_CACHE
+    if _CPU_HW_CACHE is not None:
+        return _CPU_HW_CACHE
+    info: Dict[str, Any] = {
+        "cpu_count": os.cpu_count() or 1,
+        "cpu_model": "",
+        "cpu_mhz": 0.0,
+    }
+    if os.path.exists("/proc/cpuinfo"):
+        try:
+            with open("/proc/cpuinfo", "r", encoding="utf-8") as f:
+                for line in f:
+                    if ":" not in line:
+                        continue
+                    k, v = line.split(":", 1)
+                    k_clean = k.strip().lower()
+                    v_clean = v.strip()
+                    if k_clean == "model name" and not info["cpu_model"]:
+                        info["cpu_model"] = " ".join(v_clean.split())
+                    elif k_clean == "cpu mhz" and info["cpu_mhz"] == 0.0:
+                        try:
+                            info["cpu_mhz"] = round(float(v_clean), 1)
+                        except ValueError:
+                            pass
+                    if info["cpu_model"] and info["cpu_mhz"] > 0.0:
+                        break
+        except Exception:
+            pass
+    _CPU_HW_CACHE = info
+    return info
+
+
 def get_system_stats() -> dict:
     """Collects host hardware metrics (RAM, CPU, sockets, network rate)."""
+    cpu_hw = _get_cpu_hardware_info()
     stats = {
         "ram_used_mb": 0,
         "ram_total_mb": 0,
         "ram_percent": 0,
         "cpu_percent": 0,
+        "cpu_count": cpu_hw["cpu_count"],
+        "cpu_model": cpu_hw["cpu_model"],
+        "cpu_mhz": cpu_hw["cpu_mhz"],
         "load_1": 0.0,
         "load_5": 0.0,
         "load_15": 0.0,

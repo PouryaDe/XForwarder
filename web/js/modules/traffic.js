@@ -165,7 +165,7 @@ export function renderTrafficBreakdown(summary, entityType, entityId) {
                 </div>
                 <div class="breakdown-meta-row">
                     <span style="font-weight:700; color:var(--text-primary);">${formatBytes(total)}</span>
-                    <span>↑ ${formatBytes(tx)} · ↓ ${formatBytes(rx)}</span>
+                    <span>↑ ${formatBytes(rx)} · ↓ ${formatBytes(tx)}</span>
                 </div>
             </div>
         `;
@@ -221,8 +221,8 @@ export function renderTrafficBarsChart(rows) {
                     </div>
                     <div style="font-weight:700; color:#fff;">Total: <span style="color:var(--accent-cyan); font-weight:800;">${formatBytes(total)}</span></div>
                     <div style="display:flex; flex-direction:column; gap:2px; font-size:0.68rem; margin-top:2px;">
-                        <span style="color:var(--accent-mint); display:inline-flex; align-items:center; gap:4px;"><span style="width:6px;height:6px;border-radius:1px;background:var(--accent-mint);display:inline-block;"></span>↑ TX: <b>${formatBytes(tx)}</b> (${txPct}%)</span>
-                        <span style="color:var(--accent-cyan); display:inline-flex; align-items:center; gap:4px;"><span style="width:6px;height:6px;border-radius:1px;background:var(--accent-cyan);display:inline-block;"></span>↓ RX: <b>${formatBytes(rx)}</b> (${rxPct}%)</span>
+                        <span style="color:var(--accent-cyan); display:inline-flex; align-items:center; gap:4px;"><span style="width:6px;height:6px;border-radius:1px;background:var(--accent-cyan);display:inline-block;"></span>↑ RX: <b>${formatBytes(rx)}</b> (${rxPct}%)</span>
+                        <span style="color:var(--accent-mint); display:inline-flex; align-items:center; gap:4px;"><span style="width:6px;height:6px;border-radius:1px;background:var(--accent-mint);display:inline-block;"></span>↓ TX: <b>${formatBytes(tx)}</b> (${txPct}%)</span>
                     </div>
                 </div>
                 <div class="traffic-bar-stack" style="height:${stackHeightPct}%;">
@@ -257,8 +257,8 @@ export function renderTrafficTable(rows) {
         return `
             <tr>
                 <td style="color:var(--text-primary); font-weight:600;">${escapeHtml(timeLabel)}</td>
-                <td><span class="text-cyan font-mono">↓ ${formatBytes(rx)}</span></td>
-                <td><span class="text-mint font-mono">↑ ${formatBytes(tx)}</span></td>
+                <td><span class="text-cyan font-mono">↑ ${formatBytes(rx)}</span></td>
+                <td><span class="text-mint font-mono">↓ ${formatBytes(tx)}</span></td>
                 <td><span class="text-violet font-mono" style="font-weight:700;">${formatBytes(total)}</span></td>
                 <td>
                     <div style="display:flex; align-items:center; gap:8px;">
@@ -624,8 +624,8 @@ export async function loadOverviewTrafficChart(period = currentOverviewPeriod) {
         const totalBytes = summary.total_bytes || 0;
 
         if (kpiTotal) kpiTotal.textContent = formatBytes(totalBytes);
-        if (kpiRx) kpiRx.textContent = `↓ ${formatBytes(totalRx)}`;
-        if (kpiTx) kpiTx.textContent = `↑ ${formatBytes(totalTx)}`;
+        if (kpiRx) kpiRx.textContent = `↑ ${formatBytes(totalRx)}`;
+        if (kpiTx) kpiTx.textContent = `↓ ${formatBytes(totalTx)}`;
 
         // Peak computation
         if (rows.length > 0) {
@@ -716,8 +716,8 @@ export function renderOverviewTrafficBars(rows, period) {
                     </div>
                     <div style="font-weight:700; color:#fff;">Total: <span style="color:var(--accent-cyan); font-weight:800;">${formatBytes(total)}</span></div>
                     <div style="display:flex; flex-direction:column; gap:2px; font-size:0.68rem; margin-top:2px;">
-                        <span style="color:var(--accent-mint); display:inline-flex; align-items:center; gap:4px;"><span style="width:6px;height:6px;border-radius:1px;background:var(--accent-mint);display:inline-block;"></span>↑ TX: <b>${formatBytes(tx)}</b> (${txPct}%)</span>
-                        <span style="color:var(--accent-cyan); display:inline-flex; align-items:center; gap:4px;"><span style="width:6px;height:6px;border-radius:1px;background:var(--accent-cyan);display:inline-block;"></span>↓ RX: <b>${formatBytes(rx)}</b> (${rxPct}%)</span>
+                        <span style="color:var(--accent-cyan); display:inline-flex; align-items:center; gap:4px;"><span style="width:6px;height:6px;border-radius:1px;background:var(--accent-cyan);display:inline-block;"></span>↑ RX: <b>${formatBytes(rx)}</b> (${rxPct}%)</span>
+                        <span style="color:var(--accent-mint); display:inline-flex; align-items:center; gap:4px;"><span style="width:6px;height:6px;border-radius:1px;background:var(--accent-mint);display:inline-block;"></span>↓ TX: <b>${formatBytes(tx)}</b> (${txPct}%)</span>
                     </div>
                 </div>
                 <div class="traffic-bar-stack" style="height:${stackHeightPct}%;">

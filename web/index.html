@@ -662,9 +662,12 @@
                                         <div class="telemetry-bar-fill fill-cyan" id="ovCpuBar" style="width: 0%;"></div>
                                     </div>
                                 </div>
-                                <div style="display:flex; justify-content:space-between; align-items:center; gap:6px;">
-                                    <span class="telemetry-subtext font-mono" id="ovLoadText" style="font-size:0.71rem;">0.00 (1m), 0.00 (5m), 0.00 (15m)</span>
-                                    <span class="telemetry-subtext font-mono text-cyan" id="ovCpuText" data-i18n="overview.cpu_load" style="font-size:0.71rem; opacity:0.85;">Processor Load</span>
+                                <div class="cpu-meta-row">
+                                    <span class="telemetry-subtext font-mono" id="ovLoadText" style="font-size:0.71rem;">1m: 0.00 · 5m: 0.00 · 15m: 0.00</span>
+                                    <span class="cpu-spec-pill">
+                                        <span class="font-mono text-cyan" id="ovCpuText" data-i18n="overview.cpu_load">Processor Load</span>
+                                        <span class="info-tip cpu-info-tip" id="ovCpuInfoTip" data-tip="CPU Cores &amp; Clock Speed" title="CPU Cores &amp; Clock Speed">i</span>
+                                    </span>
                                     <span id="ovLoadBadge" style="display:none;">Balanced</span>
                                 </div>
                                 <div class="telemetry-load-bars" style="display:none;" aria-hidden="true">
