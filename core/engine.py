@@ -1341,6 +1341,16 @@ class XForwarderEngine:
                             nft_raw_rules.append(
                                 f'        iifname "{wan_iface}"{daddr_match} {p_name} dport {listen_spec} notrack {ip_kw} daddr set {clean_target}'
                             )
+                    # Clamp TCP MSS to 1380 on DSR tunnel target to prevent PMTU blackholes
+                    mss_key = (ip_kw, clean_target)
+                    if mss_key not in seen_dsr_mss:
+                        seen_dsr_mss.add(mss_key)
+                        nft_dsr_mss_rules.append(
+                            f'        tcp flags syn {ip_kw} daddr {clean_target} tcp option maxseg size set 1380'
+                        )
+                        nft_dsr_mss_rules.append(
+                            f'        tcp flags syn {ip_kw} saddr {clean_target} tcp option maxseg size set 1380'
+                        )
                 elif dest_type == "nftables_dsr_relay":
                     spoof_ip = str(dest.get("spoof_ip") or "").strip().strip("[]")
                     try:

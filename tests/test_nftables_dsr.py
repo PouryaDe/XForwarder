@@ -545,6 +545,48 @@ class TestNFTablesDSRMethods(unittest.TestCase):
             self.assertEqual(keys["method:nftables_dsr"]["total_bytes"], 5000)
             self.assertEqual(keys["method:nftables_dsr_relay"]["total_bytes"], 15000)
 
+    def test_dsr_sysctl_persistence_pmtu_icmp_and_symmetric_mss(self):
+        """Verifies persistent 99-xforwarder-dsr.conf drop-in, ICMP PMTU allowance on untracked DSR,
+        and symmetric 1380 MSS clamping for nftables_dsr targets."""
+        from core.firewall import ensure_dsr_sysctl, cleanup_dsr_sysctl, generate_nftables_ruleset
+
+        # 1. ICMP PMTU rules appear only when has_untracked=True
+        rs_untracked = generate_nftables_ruleset(
+            ['        tcp dport 443 dnat to 10.10.10.2:443'],
+            rule_ports={443},
+            enable_ipv6=True,
+            has_untracked=True
+        )
+        self.assertIn("icmp type destination-unreachable accept", rs_untracked)
+        self.assertIn("icmpv6 type packet-too-big accept", rs_untracked)
+
+        rs_normal = generate_nftables_ruleset(
+            ['        tcp dport 443 dnat to 10.10.10.2:443'],
+            rule_ports={443},
+            enable_ipv6=True,
+            has_untracked=False
+        )
+        self.assertNotIn("icmp type destination-unreachable accept", rs_normal)
+        self.assertNotIn("icmpv6 type packet-too-big accept", rs_normal)
+
+        # 2. Persistent sysctl drop-in write & cleanup (cross-platform mocked linux)
+        with tempfile.TemporaryDirectory() as tmp:
+            conf_file = os.path.join(tmp, "99-xforwarder-dsr.conf")
+            with patch("core.firewall.sys.platform", "linux"), \
+                 patch("core.firewall.shutil.which", return_value=None):
+                ensure_dsr_sysctl({"eth0", "gre15"}, sysctl_conf_path=conf_file)
+                self.assertTrue(os.path.isfile(conf_file))
+                with open(conf_file, "r", encoding="utf-8") as f:
+                    body = f.read()
+                self.assertIn("net.ipv4.ip_forward=1", body)
+                self.assertIn("net.ipv4.conf.all.rp_filter=0", body)
+                self.assertIn("net.ipv4.conf.default.rp_filter=0", body)
+                self.assertIn("net.ipv4.conf.eth0.rp_filter=0", body)
+                self.assertIn("net.ipv4.conf.gre15.rp_filter=0", body)
+
+                cleanup_dsr_sysctl(sysctl_conf_path=conf_file)
+                self.assertFalse(os.path.isfile(conf_file))
+
 
 if __name__ == "__main__":
     unittest.main()

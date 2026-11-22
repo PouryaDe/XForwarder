@@ -100,20 +100,30 @@ def _format_postrouting_masquerades(custom_oifs: Optional[Set[str]] = None) -> s
     return "\n".join(lines)
 
 
-def ensure_dsr_sysctl(ifaces: Optional[Set[str]] = None) -> None:
-    """
-    Ensures Linux kernel IP forwarding and rp_filter=0 are configured for asymmetric DSR routing.
-    Required so packets arriving on tunnel interfaces with un-NATted client IPs are not dropped.
-    """
+DSR_SYSCTL_CONF_PATH = "/etc/sysctl.d/99-xforwarder-dsr.conf"
+_DSR_SYSCTL_APPLIED = False
+
+
+def cleanup_dsr_sysctl(sysctl_conf_path: str = DSR_SYSCTL_CONF_PATH) -> None:
+    """Removes persistent DSR sysctl drop-in when no DSR rules remain active."""
     if sys.platform == "win32":
         return
-    sysctl_bin = shutil.which("sysctl")
-    if not sysctl_bin:
-        for candidate in ("/sbin/sysctl", "/usr/sbin/sysctl", "/bin/sysctl"):
-            if os.path.isfile(candidate) and os.access(candidate, os.X_OK):
-                sysctl_bin = candidate
-                break
-    if not sysctl_bin:
+    try:
+        if os.path.isfile(sysctl_conf_path):
+            os.remove(sysctl_conf_path)
+    except Exception:
+        pass
+
+
+def ensure_dsr_sysctl(
+    ifaces: Optional[Set[str]] = None,
+    sysctl_conf_path: str = DSR_SYSCTL_CONF_PATH
+) -> None:
+    """
+    Ensures Linux kernel IP forwarding and rp_filter=0 are configured and persisted for asymmetric DSR routing.
+    Required so packets arriving on tunnel interfaces with un-NATted client IPs are not dropped on reboot or tune.
+    """
+    if sys.platform == "win32":
         return
 
     settings = [
@@ -125,6 +135,27 @@ def ensure_dsr_sysctl(ifaces: Optional[Set[str]] = None) -> None:
         clean_if = str(iface or "").strip()
         if IFACE_NAME_REGEX.match(clean_if):
             settings.append(f"net.ipv4.conf.{clean_if}.rp_filter=0")
+
+    # Atomically persist drop-in so sysctl --system or reboots never re-enable rp_filter=1
+    try:
+        conf_dir = os.path.dirname(sysctl_conf_path)
+        if conf_dir and os.path.isdir(conf_dir):
+            tmp_path = f"{sysctl_conf_path}.tmp.{os.getpid()}"
+            content = "# Managed by XForwarder - Asymmetric DSR Tunnel Routing\n" + "\n".join(settings) + "\n"
+            with open(tmp_path, "w", encoding="utf-8") as f:
+                f.write(content)
+            os.replace(tmp_path, sysctl_conf_path)
+    except Exception:
+        pass
+
+    sysctl_bin = shutil.which("sysctl")
+    if not sysctl_bin:
+        for candidate in ("/sbin/sysctl", "/usr/sbin/sysctl", "/bin/sysctl"):
+            if os.path.isfile(candidate) and os.access(candidate, os.X_OK):
+                sysctl_bin = candidate
+                break
+    if not sysctl_bin:
+        return
 
     for kv in settings:
         try:
@@ -243,6 +274,8 @@ def generate_nftables_ruleset(
     ipv4_mss_str = ("\n" + "\n".join(ipv4_mss_rules)) if ipv4_mss_rules else ""
     ipv6_mss_str = ("\n" + "\n".join(ipv6_mss_rules)) if ipv6_mss_rules else ""
     ct_accept_line = "        ct state { established, related, untracked } accept" if has_untracked else "        ct state { established, related } accept"
+    ipv4_pmtu_line = "        icmp type destination-unreachable accept\n" if has_untracked else ""
+    ipv6_pmtu_line = "        icmpv6 type packet-too-big accept\n" if has_untracked else ""
 
     base_postrouting = _format_postrouting_masquerades(custom_oifs)
     ipv4_postrouting = ("\n".join(ipv4_snat_rules) + "\n" + base_postrouting) if ipv4_snat_rules else base_postrouting
@@ -272,7 +305,7 @@ table ip xfwd_orchestrator {{
         type filter hook forward priority filter; policy accept;
         # Automatically clamp TCP MSS to path MTU to prevent packet loss in GRE/IPIP tunnels
         tcp flags syn tcp option maxseg size set rt mtu{ipv4_mss_str}
-{forward_counters_str}        ct status dnat accept
+{forward_counters_str}{ipv4_pmtu_line}        ct status dnat accept
 {ct_accept_line}
     }}
 }}"""
@@ -306,7 +339,7 @@ table ip6 xfwd_orchestrator {{
         type filter hook forward priority filter; policy accept;
         # Automatically clamp TCP MSS to path MTU to prevent packet loss in GRE/IPIP tunnels
         tcp flags syn tcp option maxseg size set rt mtu{ipv6_mss_str}
-{forward_counters_str}        ct status dnat accept
+{forward_counters_str}{ipv6_pmtu_line}        ct status dnat accept
 {ct_accept_line}
     }}
 }}"""
@@ -342,10 +375,14 @@ def apply_nftables(
         has_untracked=has_untracked
     )
 
+    global _DSR_SYSCTL_APPLIED
     if not shutil.which("nft"):
         return True, None, nft_content
 
     if last_content and last_content == nft_content:
+        if raw_rules and not _DSR_SYSCTL_APPLIED:
+            ensure_dsr_sysctl(dsr_ifaces)
+            _DSR_SYSCTL_APPLIED = True
         return True, None, nft_content
 
     try:
@@ -359,6 +396,10 @@ def apply_nftables(
         if proc.returncode == 0:
             if raw_rules:
                 ensure_dsr_sysctl(dsr_ifaces)
+                _DSR_SYSCTL_APPLIED = True
+            elif _DSR_SYSCTL_APPLIED or os.path.isfile(DSR_SYSCTL_CONF_PATH):
+                cleanup_dsr_sysctl()
+                _DSR_SYSCTL_APPLIED = False
             apply_proc = subprocess.Popen(["nft", "-f", "-"], stdin=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
             _, apply_err = apply_proc.communicate(input=nft_content)
             if apply_proc.returncode != 0:
