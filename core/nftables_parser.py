@@ -98,6 +98,31 @@ DNAT_JHASH_MAP_REGEX = re.compile(
     re.IGNORECASE
 )
 
+# Matches named map DNAT lookups:
+# Examples:
+#   dnat ip to tcp dport map @ipv4_backends
+#   dnat ip6 to udp dport map @ipv6_backends
+#   dnat to th dport map @my_backends
+DNAT_MAP_REF_REGEX = re.compile(
+    r"\bdnat(?:\s+(?:ip|ip6))?\s+to\s+(?:(tcp|udp|th)\s+)?dport\s+map\s+@([a-zA-Z0-9_\-]+)",
+    re.IGNORECASE
+)
+
+# Matches `add element ip port_forward ipv4_backends { ... }` (or `create element ...`)
+ADD_ELEMENT_HEADER_REGEX = re.compile(
+    r"^(?:add|create)\s+element\s+(ip|ip6|inet)\s+(\S+)\s+([a-zA-Z0-9_\-]+)\s*\{(.*)$",
+    re.IGNORECASE
+)
+
+# Matches `map ipv4_backends {` inside a table
+MAP_BLOCK_HEADER_REGEX = re.compile(
+    r"^map\s+([a-zA-Z0-9_\-]+)\s*\{(.*)$",
+    re.IGNORECASE
+)
+
+# Matches `# [Category]` comment headers above map element groups
+CATEGORY_COMMENT_REGEX = re.compile(r"^#\s*\[([^\[\]]{1,48})\]\s*$")
+
 # Matches rule handle at line end:
 # Example: # handle 12
 HANDLE_REGEX = re.compile(
@@ -195,6 +220,8 @@ def _apply_protected_port_splits(
                 sub_rule["port_range"] = f"{sub_s}-{sub_e}"
             if "_source" in r:
                 sub_rule["_source"] = r["_source"]
+            if r.get("category"):
+                sub_rule["category"] = r["category"]
             safe_rules.append(sub_rule)
     return safe_rules
 
@@ -236,7 +263,8 @@ def _build_xforwarder_range_rule_from_nftables(
     handle: Optional[int] = None,
     handles: Optional[List[int]] = None,
     raw_rule: str = "",
-    excluded_ports: Optional[List[int]] = None
+    excluded_ports: Optional[List[int]] = None,
+    category: str = ""
 ) -> Optional[Dict[str, Any]]:
     """
     Constructs an NFTables-only XForwarder port-range (or wildcard != excluded) rule
@@ -298,6 +326,8 @@ def _build_xforwarder_range_rule_from_nftables(
             "raw_rule": raw_rule.strip()
         }
     }
+    if category:
+        rule_dict["category"] = category
     if excl_sorted:
         rule_dict["excluded_ports"] = excl_sorted
         rule_dict["_meta"]["excluded_ports"] = excl_sorted
@@ -313,7 +343,8 @@ def _build_xforwarder_rule_from_nftables(
     chain_name: str = "prerouting",
     family: str = "ip",
     handle: Optional[int] = None,
-    raw_rule: str = ""
+    raw_rule: str = "",
+    category: str = ""
 ) -> Optional[Dict[str, Any]]:
     """
     Constructs a valid XForwarder rule dictionary from an extracted NFTables rule.
@@ -332,7 +363,7 @@ def _build_xforwarder_rule_from_nftables(
     p1_type = "haproxy" if is_ipv6 else "nginx"
     p1_comment = f"Auto-configured Primary for port {port}"
 
-    return {
+    rule_dict: Dict[str, Any] = {
         "id": f"rule-{port}",
         "port": port,
         "protocol": protocol,
@@ -365,6 +396,9 @@ def _build_xforwarder_rule_from_nftables(
             "raw_rule": raw_rule.strip()
         }
     }
+    if category:
+        rule_dict["category"] = category
+    return rule_dict
 
 
 def _merge_or_append_rule(
@@ -394,10 +428,58 @@ def _merge_or_append_rule(
     rules.append(rule_obj)
 
 
+def _extract_json_map_entries(raw_elems: Any) -> List[Tuple[int, int, str, Optional[int], str]]:
+    """Parses JSON map/set element pairs (`[key, val]` or `{'elem': ...}`) into `(sp, ep, ip, port, cat)`."""
+    entries: List[Tuple[int, int, str, Optional[int], str]] = []
+    if not isinstance(raw_elems, list):
+        return entries
+    for elem in raw_elems:
+        if isinstance(elem, dict) and "elem" in elem:
+            elem = elem["elem"]
+        if isinstance(elem, dict) and "key" in elem and "val" in elem:
+            elem = (elem["key"], elem["val"])
+        if not isinstance(elem, (list, tuple)) or len(elem) < 2:
+            continue
+        k_raw, v_raw = elem[0], elem[1]
+        sp = ep = 0
+        if isinstance(k_raw, (int, str)):
+            try:
+                sp = ep = int(k_raw)
+            except ValueError:
+                continue
+        elif isinstance(k_raw, dict) and isinstance(k_raw.get("range"), list) and len(k_raw["range"]) == 2:
+            try:
+                sp, ep = int(k_raw["range"][0]), int(k_raw["range"][1])
+            except (ValueError, TypeError):
+                continue
+        if not (1 <= sp <= ep <= 65535):
+            continue
+        tgt_ip = ""
+        tgt_port: Optional[int] = None
+        if isinstance(v_raw, str):
+            tgt_ip = v_raw.strip().strip("[]")
+        elif isinstance(v_raw, dict) and isinstance(v_raw.get("concat"), list) and v_raw["concat"]:
+            tgt_ip = str(v_raw["concat"][0]).strip().strip("[]")
+            if len(v_raw["concat"]) > 1:
+                try:
+                    tp_val = int(v_raw["concat"][1])
+                    if 1 <= tp_val <= 65535:
+                        tgt_port = tp_val
+                except (ValueError, TypeError):
+                    pass
+        if tgt_ip and _is_valid_target(tgt_ip):
+            try:
+                ipaddress.ip_address(tgt_ip)
+                entries.append((sp, ep, tgt_ip, tgt_port, ""))
+            except ValueError:
+                continue
+    return entries
+
+
 def parse_nftables_json(data: dict) -> List[Dict[str, Any]]:
     """
     Parses 'nft -j list ruleset' output dictionary.
-    Extracts single-port, range, and excluded-set (`!= { ... }`) DNAT rules from unmanaged tables.
+    Extracts single-port, range, excluded-set (`!= { ... }`), and named/inline map DNAT rules.
     """
     rules: List[Dict[str, Any]] = []
     rule_index: Dict[Any, int] = {}
@@ -405,6 +487,21 @@ def parse_nftables_json(data: dict) -> List[Dict[str, Any]]:
     nft_items = data.get("nftables", [])
     if not isinstance(nft_items, list):
         return []
+
+    # Collect named maps (`map ipv4_backends { elements = { ... } }`) before resolving map DNAT refs
+    named_maps: Dict[Tuple[str, str, str], List[Tuple[int, int, str, Optional[int], str]]] = {}
+    for item in nft_items:
+        m_info = item.get("map")
+        if not isinstance(m_info, dict):
+            continue
+        m_table = str(m_info.get("table", "")).strip().lower()
+        m_family = str(m_info.get("family", "ip")).strip().lower()
+        m_name = str(m_info.get("name", "")).strip().lower()
+        if not m_name or m_table in MANAGED_TABLES:
+            continue
+        entries = _extract_json_map_entries(m_info.get("elem"))
+        if entries:
+            named_maps[(m_family, m_table, m_name)] = entries
 
     for item in nft_items:
         rule_info = item.get("rule")
@@ -514,15 +611,45 @@ def parse_nftables_json(data: dict) -> List[Dict[str, Any]]:
 
         raw_addr = dnat_info.get("addr", "")
         target_addrs: List[str] = []
+        map_ref_name: Optional[str] = None
+        inline_map_entries: List[Tuple[int, int, str, Optional[int], str]] = []
         if isinstance(raw_addr, str) and raw_addr.strip():
-            target_addrs = [raw_addr.strip().strip("[]")]
+            s_addr = raw_addr.strip().strip("[]")
+            if s_addr.startswith("@"):
+                map_ref_name = s_addr[1:].lower()
+            else:
+                target_addrs = [s_addr]
         elif isinstance(raw_addr, dict) and "map" in raw_addr:
-            # Handle jhash map targets when present in structured nft JSON
-            map_data = raw_addr.get("map", {}).get("data", {})
-            if isinstance(map_data, dict) and isinstance(map_data.get("set"), list):
-                for entry in map_data["set"]:
-                    if isinstance(entry, list) and len(entry) == 2 and isinstance(entry[1], str):
-                        target_addrs.append(entry[1].strip().strip("[]"))
+            map_obj = raw_addr.get("map", {})
+            key_obj = map_obj.get("key", {})
+            if isinstance(key_obj, dict) and "payload" in key_obj:
+                k_proto = str(key_obj["payload"].get("protocol", "")).lower()
+                if k_proto in ("tcp", "udp"):
+                    rule_proto = k_proto
+            map_data = map_obj.get("data", {})
+            if isinstance(map_data, str) and map_data.strip().startswith("@"):
+                map_ref_name = map_data.strip()[1:].lower()
+            elif isinstance(map_data, dict) and isinstance(map_data.get("set"), list):
+                inline_map_entries = _extract_json_map_entries(map_data["set"])
+
+        if map_ref_name or inline_map_entries:
+            raw_rule_json = json.dumps(rule_info)
+            map_entries = (
+                named_maps.get((family.lower(), table_name.lower(), map_ref_name), [])
+                if map_ref_name else inline_map_entries
+            )
+            _expand_map_entries(
+                entries=map_entries,
+                protocol=rule_proto,
+                table_name=table_name,
+                chain_name=chain_name,
+                family=family,
+                handle=handle,
+                raw_rule=raw_rule_json,
+                rules=rules,
+                rule_index=rule_index
+            )
+            continue
 
         if not target_addrs:
             continue
@@ -582,10 +709,108 @@ def parse_nftables_json(data: dict) -> List[Dict[str, Any]]:
     return rules
 
 
+def _parse_map_element_chunk(
+    chunk_text: str,
+    category: str = ""
+) -> List[Tuple[int, int, str, Optional[int], str]]:
+    """
+    Parses `<port|start-end> : <ip>[ . <target_port>]` entries from a named NFTables map block.
+    """
+    entries: List[Tuple[int, int, str, Optional[int], str]] = []
+    cleaned = chunk_text.split("#", 1)[0].strip()
+    if not cleaned:
+        return entries
+
+    for item in cleaned.split(","):
+        tok = item.rstrip(";").strip()
+        if not tok or ":" not in tok:
+            continue
+        key_part, val_part = tok.split(":", 1)
+        key_part = key_part.strip()
+        val_part = val_part.rstrip(";").strip()
+        if not key_part or not val_part:
+            continue
+
+        if "-" in key_part:
+            parts = key_part.split("-", 1)
+            try:
+                sp, ep = int(parts[0].strip()), int(parts[1].strip())
+            except ValueError:
+                continue
+        else:
+            try:
+                sp = ep = int(key_part)
+            except ValueError:
+                continue
+        if not (1 <= sp <= ep <= 65535):
+            continue
+
+        # Support `ip . port` concatenations while preserving IPv4 dots
+        val_parts = re.split(r"\s+\.\s+", val_part, maxsplit=1)
+        tgt_ip = val_parts[0].strip().strip("[]")
+        tgt_port: Optional[int] = None
+        if len(val_parts) > 1:
+            try:
+                tp_val = int(val_parts[1].strip())
+                if 1 <= tp_val <= 65535:
+                    tgt_port = tp_val
+            except ValueError:
+                pass
+        if not _is_valid_target(tgt_ip):
+            continue
+        try:
+            ipaddress.ip_address(tgt_ip)
+        except ValueError:
+            continue
+
+        entries.append((sp, ep, tgt_ip, tgt_port, category))
+    return entries
+
+
+def _expand_map_entries(
+    entries: List[Tuple[int, int, str, Optional[int], str]],
+    protocol: str,
+    table_name: str,
+    chain_name: str,
+    family: str,
+    handle: Optional[int],
+    raw_rule: str,
+    rules: List[Dict[str, Any]],
+    rule_index: Dict[Any, int]
+) -> None:
+    """Expands resolved named-map entries into XForwarder single-port and range rules."""
+    for sp, ep, tgt_ip, tgt_port, category in entries:
+        if sp == ep:
+            eff_tport = tgt_port if (tgt_port and 1 <= tgt_port <= 65535) else sp
+            rule_obj = _build_xforwarder_rule_from_nftables(
+                port=sp, target=tgt_ip, target_port=eff_tport, protocol=protocol,
+                table_name=table_name, chain_name=chain_name, family=family,
+                handle=handle, raw_rule=raw_rule, category=category
+            )
+            _merge_or_append_rule(rules, rule_index, (sp, sp, tgt_ip, eff_tport), rule_obj, protocol, handle)
+        else:
+            if (ep - sp) <= 100 and tgt_port:
+                for p in range(sp, ep + 1):
+                    rule_obj = _build_xforwarder_rule_from_nftables(
+                        port=p, target=tgt_ip, target_port=tgt_port, protocol=protocol,
+                        table_name=table_name, chain_name=chain_name, family=family,
+                        handle=handle, raw_rule=raw_rule, category=category
+                    )
+                    _merge_or_append_rule(rules, rule_index, (p, p, tgt_ip, tgt_port), rule_obj, protocol, handle)
+            else:
+                rule_obj = _build_xforwarder_range_rule_from_nftables(
+                    start_port=sp, end_port=ep, targets=[tgt_ip], target_port=tgt_port,
+                    protocol=protocol, table_name=table_name, chain_name=chain_name,
+                    family=family, handle=handle, raw_rule=raw_rule, category=category
+                )
+                _merge_or_append_rule(rules, rule_index, (sp, ep, (tgt_ip,), tgt_port), rule_obj, protocol, handle)
+
+
 def parse_nftables_text(content: str) -> List[Dict[str, Any]]:
     """
     Parses textual NFTables ruleset (e.g. from 'nft -a list ruleset' or '/etc/nftables.conf').
-    Tracks table/chain nesting and extracts single-port, range, and `dport != { ... }` DNAT rules.
+    Tracks table/chain/map nesting and extracts direct DNAT rules, ranges, `dport != { ... }`,
+    and named `map @<name>` lookups (`elements = { ... }` and `add element ... { ... }`).
     """
     rules: List[Dict[str, Any]] = []
     rule_index: Dict[Any, int] = {}
@@ -593,21 +818,101 @@ def parse_nftables_text(content: str) -> List[Dict[str, Any]]:
     current_family = "ip"
     current_table = ""
     current_chain = ""
+    current_map = ""
     brace_depth = 0
     table_depth = -1
     chain_depth = -1
+    map_depth = -1
+
+    active_elem_key: Optional[Tuple[str, str, str]] = None
+    active_elem_depth = -1
+    active_elem_category = ""
+    last_category = ""
+
+    named_maps: Dict[Tuple[str, str, str], List[Tuple[int, int, str, Optional[int], str]]] = {}
+    map_dnat_refs: List[Tuple[str, str, str, str, str, Optional[int], str]] = []
 
     table_header_regex = re.compile(r"^table\s+(ip|ip6|inet)\s+(\S+)", re.IGNORECASE)
     chain_header_regex = re.compile(r"^chain\s+(\S+)", re.IGNORECASE)
+    elem_assign_regex = re.compile(r"^elements\s*=\s*\{(.*)$", re.IGNORECASE)
+
+    def _begin_map_element_block(
+        elem_key: Tuple[str, str, str],
+        rest_text: str,
+        line_no_comment: str
+    ) -> bool:
+        """Processes single-line or opens multi-line map element blocks; returns True to continue loop."""
+        nonlocal active_elem_key, active_elem_depth, active_elem_category, brace_depth, last_category
+        cat = last_category
+        last_category = ""
+        # Strip inline `#` comment before brace detection so `# comment }` doesn't close a multi-line block
+        rest_code = rest_text.split("#", 1)[0]
+        if "}" in rest_code:
+            body = rest_code.split("}", 1)[0]
+            named_maps.setdefault(elem_key, []).extend(_parse_map_element_chunk(body, category=cat))
+            return False
+        active_elem_key = elem_key
+        active_elem_depth = brace_depth
+        active_elem_category = cat
+        brace_depth += line_no_comment.count("{") - line_no_comment.count("}")
+        if rest_code.strip():
+            named_maps.setdefault(elem_key, []).extend(_parse_map_element_chunk(rest_code, category=cat))
+        return True
 
     for raw_line in content.splitlines():
         line = raw_line.strip()
         if not line:
             continue
 
-        # Count braces to track scope
-        open_braces = line.count("{")
-        close_braces = line.count("}")
+        # Capture `# [Category]` comment headers (e.g. `# [Test]`, `# [X-G-R]`)
+        if line.startswith("#"):
+            cat_m = CATEGORY_COMMENT_REGEX.match(line)
+            if cat_m:
+                raw_cat = cat_m.group(1).strip()
+                # Match validate_rule()'s 48-char limit and character allowlist so imports always validate
+                clean_cat = "".join(c for c in raw_cat if ord(c) >= 32 and c not in "<>\";`$\\")[:48].strip()
+                if active_elem_key is not None:
+                    active_elem_category = clean_cat
+                else:
+                    last_category = clean_cat
+            continue
+
+        line_code = line.split("#", 1)[0]
+
+        # Handle `add element <family> <table> <map> { ... }` and in-map `elements = { ... }`
+        if active_elem_key is None:
+            add_m = ADD_ELEMENT_HEADER_REGEX.match(line)
+            if add_m:
+                e_fam, e_tbl, e_map, rest = (
+                    add_m.group(1).lower(), add_m.group(2).lower(), add_m.group(3).lower(), add_m.group(4)
+                )
+                if e_tbl not in MANAGED_TABLES:
+                    if _begin_map_element_block((e_fam, e_tbl, e_map), rest, line_code):
+                        continue
+                else:
+                    last_category = ""
+            elif current_map and current_table not in MANAGED_TABLES:
+                elem_m = elem_assign_regex.match(line)
+                if elem_m:
+                    if _begin_map_element_block((current_family, current_table, current_map), elem_m.group(1), line_code):
+                        continue
+        else:
+            open_b = line_code.count("{")
+            close_b = line_code.count("}")
+            chunk = line_code.split("}", 1)[0] if close_b > 0 else line_code
+            named_maps.setdefault(active_elem_key, []).extend(
+                _parse_map_element_chunk(chunk, category=active_elem_category)
+            )
+            brace_depth += open_b - close_b
+            if brace_depth <= active_elem_depth:
+                active_elem_key = None
+                active_elem_depth = -1
+                active_elem_category = ""
+            continue
+
+        # Count braces (outside comments) to track table/chain/map scope
+        open_braces = line_code.count("{")
+        close_braces = line_code.count("}")
 
         t_match = table_header_regex.search(line)
         if t_match:
@@ -615,11 +920,17 @@ def parse_nftables_text(content: str) -> List[Dict[str, Any]]:
             current_table = t_match.group(2).lower()
             table_depth = brace_depth
             current_chain = ""
+            current_map = ""
 
         c_match = chain_header_regex.search(line)
         if c_match:
             current_chain = c_match.group(1)
             chain_depth = brace_depth
+
+        m_match = MAP_BLOCK_HEADER_REGEX.match(line)
+        if m_match and current_table:
+            current_map = m_match.group(1).lower()
+            map_depth = brace_depth
 
         brace_depth += open_braces - close_braces
         if brace_depth <= table_depth:
@@ -628,9 +939,43 @@ def parse_nftables_text(content: str) -> List[Dict[str, Any]]:
         if brace_depth <= chain_depth:
             current_chain = ""
             chain_depth = -1
+        if brace_depth <= map_depth:
+            current_map = ""
+            map_depth = -1
 
-        # Skip comments or XForwarder's own tables
-        if line.startswith("#") or current_table in MANAGED_TABLES:
+        # Reset dangling category comment if a non-element statement follows
+        if not t_match and not c_match and not m_match:
+            last_category = ""
+
+        # Skip XForwarder's own tables
+        if current_table in MANAGED_TABLES:
+            continue
+
+        # Check for named map DNAT reference (`dnat ip to tcp dport map @ipv4_backends`)
+        map_ref_match = DNAT_MAP_REF_REGEX.search(line)
+        if map_ref_match:
+            h_match = HANDLE_REGEX.search(line)
+            handle = int(h_match.group(1)) if h_match else None
+            p_raw = (map_ref_match.group(1) or "").lower()
+            if p_raw in ("tcp", "udp"):
+                m_proto = p_raw
+            else:
+                lower_l = line.lower()
+                if "tcp dport" in lower_l or "meta l4proto tcp" in lower_l:
+                    m_proto = "tcp"
+                elif "udp dport" in lower_l or "meta l4proto udp" in lower_l:
+                    m_proto = "udp"
+                else:
+                    m_proto = "both"
+            map_dnat_refs.append((
+                current_family,
+                current_table or "nat",
+                current_chain or "prerouting",
+                map_ref_match.group(2).lower(),
+                m_proto,
+                handle,
+                line
+            ))
             continue
 
         # Check if line contains a DNAT target or jhash map target
@@ -761,6 +1106,21 @@ def parse_nftables_text(content: str) -> List[Dict[str, Any]]:
                 handle=handle, raw_rule=line
             )
             _merge_or_append_rule(rules, rule_index, (p, p, targets[0], target_port), rule_obj, proto, handle)
+
+    # Expand all named map DNAT references after collecting map elements from the full ruleset
+    for m_fam, m_tbl, m_chn, m_name, m_proto, m_handle, m_line in map_dnat_refs:
+        entries = named_maps.get((m_fam, m_tbl, m_name), [])
+        _expand_map_entries(
+            entries=entries,
+            protocol=m_proto,
+            table_name=m_tbl,
+            chain_name=m_chn,
+            family=m_fam,
+            handle=m_handle,
+            raw_rule=m_line,
+            rules=rules,
+            rule_index=rule_index
+        )
 
     return rules
 

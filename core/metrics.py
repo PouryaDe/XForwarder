@@ -499,6 +499,11 @@ def get_latest_metrics_per_target(db_path: Optional[str] = None) -> Dict[str, Di
                 }
         finally:
             conn.close()
+    except sqlite3.OperationalError as e:
+        if "no such table" in str(e).lower():
+            init_metrics_db(path)
+        else:
+            print(f"[WARN] Failed to query latest target metrics: {e}", file=sys.stderr)
     except Exception as e:
         print(f"[WARN] Failed to query latest target metrics: {e}", file=sys.stderr)
 
@@ -526,6 +531,11 @@ def prune_old_metrics(retention_days: int = RETENTION_DAYS, db_path: Optional[st
             conn.commit()
         finally:
             conn.close()
+    except sqlite3.OperationalError as e:
+        if "no such table" in str(e).lower():
+            init_metrics_db(path)
+        else:
+            print(f"[WARN] Failed to prune old metrics: {e}", file=sys.stderr)
     except Exception as e:
         print(f"[WARN] Failed to prune old metrics: {e}", file=sys.stderr)
     return pruned
@@ -749,6 +759,44 @@ def get_metrics_history(
             }
         finally:
             conn.close()
+    except sqlite3.OperationalError as e:
+        if "no such table" in str(e).lower():
+            init_metrics_db(path)
+            return {
+                "targets": [],
+                "summary": {
+                    "total_probes": 0,
+                    "disrupted_probes": 0,
+                    "clean_probes": 0,
+                    "quality_pct": 100.0,
+                    "avg_latency_ms": 0.0,
+                    "avg_loss_pct": 0.0,
+                    "peak_loss_pct": 0.0,
+                    "disruption_count": 0
+                },
+                "timeline": [],
+                "recent_disruptions": [],
+                "hours": time_range_hours,
+                "active_target": target or "all"
+            }
+        print(f"[ERROR] Failed to query metrics history: {e}", file=sys.stderr)
+        return {
+            "targets": [],
+            "summary": {
+                "total_probes": 0,
+                "disrupted_probes": 0,
+                "clean_probes": 0,
+                "quality_pct": 100.0,
+                "avg_latency_ms": 0.0,
+                "avg_loss_pct": 0.0,
+                "peak_loss_pct": 0.0,
+                "disruption_count": 0
+            },
+            "timeline": [],
+            "recent_disruptions": [],
+            "hours": time_range_hours,
+            "error": str(e)
+        }
     except Exception as e:
         print(f"[ERROR] Failed to query metrics history: {e}", file=sys.stderr)
         return {

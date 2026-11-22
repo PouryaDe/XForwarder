@@ -72,9 +72,9 @@
     "semantic_hash": ""
   },
   "AGENTS.md": {
-    "mtime": 1795309873.9351573,
-    "seen": 1795310074.8919604,
-    "ast_hash": "45e38afc634446f60a0e7b396d4ee22c",
+    "mtime": 1795313122.0844696,
+    "seen": 1795313251.408704,
+    "ast_hash": "ba51f8a28b792a28647b9c78fdfbd4d5",
     "semantic_hash": ""
   },
   "README.md": {
@@ -144,9 +144,9 @@
     "semantic_hash": ""
   },
   ".agents/session-state.json": {
-    "mtime": 1795196072.2363725,
-    "seen": 1795196173.0251474,
-    "ast_hash": "5c349455c8064745d0e49ec5e5cac80e",
+    "mtime": 1795313161.1986053,
+    "seen": 1795313251.4086068,
+    "ast_hash": "a6ad6226f5342783b515a4d0eaa60762",
     "semantic_hash": ""
   },
   ".agents/AGENTS.md": {
@@ -354,15 +354,15 @@
     "semantic_hash": ""
   },
   "core/metrics.py": {
-    "mtime": 1793024693.8438835,
-    "seen": 1793024964.6667247,
-    "ast_hash": "33ec95d60f81bf1645ca32bb0830e45f",
+    "mtime": 1795313118.0664115,
+    "seen": 1795313251.4086146,
+    "ast_hash": "d6b7efe983fc3eb845bdd1b4651e0ad1",
     "semantic_hash": ""
   },
   "tests/test_metrics_subsystem.py": {
-    "mtime": 1793024788.7046552,
-    "seen": 1793024964.6667364,
-    "ast_hash": "c2ff387bac790ab6f04887760045f1eb",
+    "mtime": 1795313237.8238115,
+    "seen": 1795313251.4086297,
+    "ast_hash": "3be215271387a3f9b1cb414fc307091d",
     "semantic_hash": ""
   },
   ".agents/experiences/010-decoupled-in-panel-system-updates-and-reconnect-flow.md": {
@@ -372,15 +372,15 @@
     "semantic_hash": ""
   },
   "core/nftables_parser.py": {
-    "mtime": 1795197630.3869429,
-    "seen": 1795198181.9406867,
-    "ast_hash": "a35b7c2e96bda8d71e0f78ba4ae7ec8d",
+    "mtime": 1795313114.4496152,
+    "seen": 1795313251.4086156,
+    "ast_hash": "2f38c1d43cff360032474c2a2b325663",
     "semantic_hash": ""
   },
   "tests/test_nftables_parser.py": {
-    "mtime": 1795197798.1156962,
-    "seen": 1795198181.940705,
-    "ast_hash": "73515fc81a52b23e74de1f0c4f4e5220",
+    "mtime": 1795313155.9752173,
+    "seen": 1795313251.4086347,
+    "ast_hash": "cea5f7baa58d4e73639a23c897e09e8a",
     "semantic_hash": ""
   },
   ".agents/experiences/011-nftables-active-rules-auto-discovery-and-deconfliction.md": {

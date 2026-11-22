@@ -1,14 +1,14 @@
 {
   "core/engine.py": {
-    "mtime": 1795309247.998214,
-    "seen": 1795309436.4857173,
-    "ast_hash": "14d6e318622c8ce7266988fb0ae1904b",
+    "mtime": 1795309622.2938223,
+    "seen": 1795310074.891866,
+    "ast_hash": "4ebdd06bac5aa6be5ba24f989acb5f6e",
     "semantic_hash": ""
   },
   "core/web_server.py": {
-    "mtime": 1795308734.220068,
-    "seen": 1795309436.485732,
-    "ast_hash": "573067c6e5415694b38ba137ab0e5fdd",
+    "mtime": 1795309625.4953253,
+    "seen": 1795310074.8918784,
+    "ast_hash": "fd63c2ca097401510d12024866725e9c",
     "semantic_hash": ""
   },
   "web/app.js": {
@@ -18,9 +18,9 @@
     "semantic_hash": ""
   },
   ".agents/rules/01-architecture-and-failover.md": {
-    "mtime": 1795177356.0538828,
-    "seen": 1795179650.823954,
-    "ast_hash": "9822a2e7787d324bf4c0c018b7d9b102",
+    "mtime": 1795309797.0080724,
+    "seen": 1795310074.8919382,
+    "ast_hash": "95ff72d558dbdeadee88595954bcea02",
     "semantic_hash": ""
   },
   ".agents/rules/02-python-core-standards.md": {
@@ -30,9 +30,9 @@
     "semantic_hash": ""
   },
   ".agents/rules/03-networking-and-kernel.md": {
-    "mtime": 1795197811.2608886,
-    "seen": 1795198181.9407563,
-    "ast_hash": "7d59813326badf522d5792c226987b1f",
+    "mtime": 1795309794.559122,
+    "seen": 1795310074.8919404,
+    "ast_hash": "0ec56c748570051e27a271d23fa42f80",
     "semantic_hash": ""
   },
   ".agents/rules/04-web-dashboard-and-security.md": {
@@ -72,9 +72,9 @@
     "semantic_hash": ""
   },
   "AGENTS.md": {
-    "mtime": 1795197805.4229252,
-    "seen": 1795198181.940776,
-    "ast_hash": "49ec0563ebeeab4c4b97cc6768c0ae38",
+    "mtime": 1795309873.9351573,
+    "seen": 1795310074.8919604,
+    "ast_hash": "45e38afc634446f60a0e7b396d4ee22c",
     "semantic_hash": ""
   },
   "README.md": {
@@ -150,9 +150,9 @@
     "semantic_hash": ""
   },
   ".agents/AGENTS.md": {
-    "mtime": 1795177338.5735562,
-    "seen": 1795179650.8239164,
-    "ast_hash": "48cfa4cc26a52a960be9287ad4bbfd95",
+    "mtime": 1795309876.4832623,
+    "seen": 1795310074.891919,
+    "ast_hash": "43941f905353a3939be3efb3426dbf29",
     "semantic_hash": ""
   },
   ".agents/experiences/001-zero-collision-haproxy-nftables-failover.md": {
@@ -354,9 +354,9 @@
     "semantic_hash": ""
   },
   "core/metrics.py": {
-    "mtime": 1793024693.8438835,
-    "seen": 1793024964.6667247,
-    "ast_hash": "33ec95d60f81bf1645ca32bb0830e45f",
+    "mtime": 1795312229.9109712,
+    "seen": 1795312431.324894,
+    "ast_hash": "0a95fb2d0db47365954cc26a655276ef",
     "semantic_hash": ""
   },
   "tests/test_metrics_subsystem.py": {
@@ -372,15 +372,15 @@
     "semantic_hash": ""
   },
   "core/nftables_parser.py": {
-    "mtime": 1795197630.3869429,
-    "seen": 1795198181.9406867,
-    "ast_hash": "a35b7c2e96bda8d71e0f78ba4ae7ec8d",
+    "mtime": 1795312220.1157503,
+    "seen": 1795312431.3248951,
+    "ast_hash": "2c2b54b2e64d4d9ceef27711a1da8fa4",
     "semantic_hash": ""
   },
   "tests/test_nftables_parser.py": {
-    "mtime": 1795197798.1156962,
-    "seen": 1795198181.940705,
-    "ast_hash": "73515fc81a52b23e74de1f0c4f4e5220",
+    "mtime": 1795312385.4574535,
+    "seen": 1795312431.324915,
+    "ast_hash": "9ad8fe894caf85d3245d650438dee39e",
     "semantic_hash": ""
   },
   ".agents/experiences/011-nftables-active-rules-auto-discovery-and-deconfliction.md": {
@@ -438,15 +438,15 @@
     "semantic_hash": ""
   },
   "core/config_manager.py": {
-    "mtime": 1795308780.623935,
-    "seen": 1795309436.4857156,
-    "ast_hash": "a0b5d2811fb5cf7aaa9cda5006cf112d",
+    "mtime": 1795309604.7618048,
+    "seen": 1795310074.8918638,
+    "ast_hash": "264c6b05800fafb3ba90f3b6b0f4550c",
     "semantic_hash": ""
   },
   "core/firewall.py": {
-    "mtime": 1795308727.9780202,
-    "seen": 1795309436.4857183,
-    "ast_hash": "b958edc935e56bccc3100bc2c406c32b",
+    "mtime": 1795309609.4805565,
+    "seen": 1795310074.8918667,
+    "ast_hash": "f14e6bd6ff6cc63b60ba51fbfd946ed5",
     "semantic_hash": ""
   },
   "core/prober.py": {
@@ -510,9 +510,9 @@
     "semantic_hash": ""
   },
   "web/js/modules/rule_modal.js": {
-    "mtime": 1795309100.960134,
-    "seen": 1795309436.4857686,
-    "ast_hash": "8f418bd3a7a0ef4a6acdf28d2d1f62f2",
+    "mtime": 1795309629.0304933,
+    "seen": 1795310074.8919098,
+    "ast_hash": "4bf0164b49da3c57b9176c6f8f6696a3",
     "semantic_hash": ""
   },
   "web/js/modules/rules.js": {
@@ -654,9 +654,9 @@
     "semantic_hash": ""
   },
   "tests/test_nftables_dsr.py": {
-    "mtime": 1795309147.6222837,
-    "seen": 1795309436.4857442,
-    "ast_hash": "c27e1ed322e16264e539b3e193b733c3",
+    "mtime": 1795309998.5732503,
+    "seen": 1795310074.891889,
+    "ast_hash": "5f9fe719e3da3eb686d096624808ec96",
     "semantic_hash": ""
   }
 }

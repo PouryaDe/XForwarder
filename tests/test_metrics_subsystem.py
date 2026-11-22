@@ -31,6 +31,7 @@ from core.metrics import (
     record_ping_result,
     prune_old_metrics,
     get_metrics_history,
+    get_latest_metrics_per_target,
     measure_packet_loss_50,
     run_scheduled_ping_round,
     LossMonitorScheduler
@@ -421,6 +422,33 @@ rtt min/avg/max/mdev = 15.1/16.2/19.4/0.6 ms
             self.assertEqual(target_to_iface["10.88.1.2"], "gre1")
             self.assertIn("2001:db8::1", target_to_iface)
             self.assertIsNone(target_to_iface["2001:db8::1"])
+
+    def test_metrics_self_healing_when_ping_history_missing(self):
+        """Verifies metrics queries self-heal when SQLite file exists without ping_history (TrafficCollector race)."""
+        conn = sqlite3.connect(self.db_path)
+        conn.execute("CREATE TABLE IF NOT EXISTS dummy_traffic (id INTEGER PRIMARY KEY);")
+        conn.commit()
+        conn.close()
+
+        latest = get_latest_metrics_per_target(db_path=self.db_path)
+        self.assertEqual(latest, {})
+        pruned = prune_old_metrics(db_path=self.db_path)
+        self.assertEqual(pruned, 0)
+
+        # Also test get_metrics_history on a second fresh DB missing ping_history
+        db2 = self.db_path + ".2"
+        try:
+            conn2 = sqlite3.connect(db2)
+            conn2.execute("CREATE TABLE IF NOT EXISTS dummy_traffic (id INTEGER PRIMARY KEY);")
+            conn2.commit()
+            conn2.close()
+            hist = get_metrics_history(db_path=db2)
+            self.assertNotIn("error", hist)
+            self.assertEqual(hist["targets"], [])
+            self.assertEqual(hist["summary"]["total_probes"], 0)
+        finally:
+            if os.path.exists(db2):
+                os.remove(db2)
 
 
 if __name__ == "__main__":

@@ -15,6 +15,7 @@ REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if REPO_ROOT not in sys.path:
     sys.path.insert(0, REPO_ROOT)
 
+from core.config_manager import validate_rule
 from core.nftables_parser import (
     parse_nftables_json,
     parse_nftables_text,
@@ -536,6 +537,200 @@ table ip port_forward_iran {
                 c_count, c_ports, _ = import_nftables_rules_into_config(cfg_custom, deactivate_legacy=False)
             self.assertEqual(c_count, 2)
             self.assertEqual(c_ports, ["1002-2082", "2084-65535"])
+
+    def test_parse_named_map_with_add_element_and_categories(self):
+        """Verifies named map DNAT lookups (`dnat ip to tcp dport map @ipv4_backends`) and `add element` blocks."""
+        nft_conf = """
+table ip port_forward
+delete table ip port_forward
+
+table ip port_forward {
+    map ipv4_backends {
+        type inet_service : ipv4_addr
+    }
+
+    chain prerouting {
+        type nat hook prerouting priority dstnat; policy accept;
+        dnat ip to tcp dport map @ipv4_backends
+        dnat ip to udp dport map @ipv4_backends
+    }
+}
+
+# [Test]
+add element ip port_forward ipv4_backends {
+    1000 : 5.199.136.72,
+    1100 : 5.199.136.72
+}
+
+# [X-G-R]
+add element ip port_forward ipv4_backends {
+    9101 : 5.199.136.72,
+    9201 : 213.202.218.198
+}
+"""
+        rules = parse_nftables_text(nft_conf)
+        self.assertEqual(len(rules), 4)
+        by_port = {r["port"]: r for r in rules}
+        self.assertEqual(by_port[1000]["protocol"], "both")
+        self.assertEqual(by_port[1000]["category"], "Test")
+        self.assertEqual(by_port[1000]["destinations"][1]["target"], "5.199.136.72")
+        self.assertEqual(by_port[9101]["category"], "X-G-R")
+        self.assertEqual(by_port[9201]["destinations"][1]["target"], "213.202.218.198")
+
+    def test_parse_inline_map_elements_and_json_map(self):
+        """Verifies live `map { elements = { ... } }` text and `nft -j` JSON map resolution."""
+        live_text = """
+table ip port_forward {
+    map ipv4_backends {
+        type inet_service : ipv4_addr
+        elements = { 4001 : 152.53.154.167,
+                     4002 : 5.199.138.108,
+                     7000-7005 : 10.10.10.2 }
+    }
+    chain prerouting {
+        type nat hook prerouting priority dstnat; policy accept;
+        dnat ip to tcp dport map @ipv4_backends # handle 7
+        dnat ip to udp dport map @ipv4_backends # handle 8
+    }
+}
+"""
+        text_rules = parse_nftables_text(live_text)
+        self.assertEqual(len(text_rules), 3)
+        r4001 = next(r for r in text_rules if r["port"] == 4001)
+        self.assertEqual(r4001["protocol"], "both")
+        self.assertEqual(sorted(r4001["_meta"]["handles"]), [7, 8])
+        rrange = next(r for r in text_rules if r.get("port_range") == "7000-7005")
+        self.assertEqual(rrange["destinations"][0]["target"], "10.10.10.2")
+
+        json_data = {
+            "nftables": [
+                {
+                    "map": {
+                        "family": "ip",
+                        "name": "ipv4_backends",
+                        "table": "port_forward",
+                        "elem": [
+                            [5001, "185.94.29.156"],
+                            [5002, {"concat": ["5.199.143.241", 8443]}]
+                        ]
+                    }
+                },
+                {
+                    "rule": {
+                        "family": "ip",
+                        "table": "port_forward",
+                        "chain": "prerouting",
+                        "handle": 15,
+                        "expr": [
+                            {
+                                "dnat": {
+                                    "addr": {
+                                        "map": {
+                                            "key": {"payload": {"protocol": "tcp", "field": "dport"}},
+                                            "data": "@ipv4_backends"
+                                        }
+                                    }
+                                }
+                            }
+                        ]
+                    }
+                }
+            ]
+        }
+        j_rules = parse_nftables_json(json_data)
+        self.assertEqual(len(j_rules), 2)
+        by_p = {r["port"]: r for r in j_rules}
+        self.assertEqual(by_p[5001]["destinations"][1]["target"], "185.94.29.156")
+        self.assertEqual(by_p[5002]["destinations"][1]["port"], 8443)
+
+    def test_named_map_edge_cases_ipv6_semicolons_validation(self):
+        """Verifies IPv6 named maps, semicolons, brace-comments, malformed entries, inline JSON maps, and validate_rule parity."""
+        edge_text = """
+table ip port_forward {
+    map ipv4_backends {
+        type inet_service : ipv4_addr
+        elements = { 6001 : 1.2.3.4, 6002 : 5.6.7.8 . 8443; }
+    }
+    chain prerouting {
+        type nat hook prerouting priority dstnat; policy accept;
+        dnat ip to tcp dport map @ipv4_backends
+    }
+}
+
+table ip6 port6 {
+    map ipv6_backends {
+        type inet_service : ipv6_addr
+    }
+    chain prerouting {
+        type nat hook prerouting priority dstnat; policy accept;
+        dnat ip6 to tcp dport map @ipv6_backends
+    }
+}
+
+# [  Safe;Cat  ]
+add element ip port_forward ipv4_backends { # ignore } in comment
+    6003 : 9.9.9.9,
+    0 : 1.1.1.1,
+    70000 : 1.1.1.1,
+    6004 : 999.999.999.999,
+    6005 : bad;cmd
+}
+
+# [IPv6-Nodes]
+add element ip6 port6 ipv6_backends {
+    9443 : [2001:db8::1] . 8443,
+    9444 : 2001:db8::2;
+}
+"""
+        rules = parse_nftables_text(edge_text)
+        by_port = {r["port"]: r for r in rules}
+        self.assertEqual(set(by_port.keys()), {6001, 6002, 6003, 9443, 9444})
+        self.assertEqual(by_port[6002]["destinations"][1]["port"], 8443)
+        self.assertEqual(by_port[6003]["category"], "SafeCat")
+        self.assertEqual(by_port[9443]["destinations"][1]["target"], "2001:db8::1")
+        self.assertEqual(by_port[9443]["destinations"][1]["port"], 8443)
+        self.assertEqual(by_port[9443]["category"], "IPv6-Nodes")
+        self.assertEqual(by_port[9444]["destinations"][1]["target"], "2001:db8::2")
+
+        for r in rules:
+            ok, err = validate_rule(dict(r))
+            self.assertTrue(ok, f"Imported map rule {r.get('port')} failed validate_rule: {err}")
+
+        # Verify anonymous inline JSON map resolution without explicit top-level `map` object
+        inline_json = {
+            "nftables": [
+                {
+                    "rule": {
+                        "family": "ip",
+                        "table": "nat",
+                        "chain": "prerouting",
+                        "handle": 21,
+                        "expr": [
+                            {
+                                "dnat": {
+                                    "addr": {
+                                        "map": {
+                                            "key": {"payload": {"protocol": "udp", "field": "dport"}},
+                                            "data": {
+                                                "set": [
+                                                    [7777, "1.1.1.1"],
+                                                    [7778, {"concat": ["8.8.8.8", 8443]}]
+                                                ]
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        ]
+                    }
+                }
+            ]
+        }
+        inline_rules = parse_nftables_json(inline_json)
+        self.assertEqual(len(inline_rules), 2)
+        in_by_p = {r["port"]: r for r in inline_rules}
+        self.assertEqual(in_by_p[7777]["protocol"], "udp")
+        self.assertEqual(in_by_p[7778]["destinations"][1]["port"], 8443)
 
 
 if __name__ == "__main__":
