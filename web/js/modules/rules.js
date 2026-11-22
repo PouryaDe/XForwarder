@@ -22,6 +22,13 @@ function getPrioTagClass(prio) {
     return "prio-tag-other";
 }
 
+function formatDestTypeLabel(destType) {
+    const s = String(destType || "haproxy").toLowerCase();
+    if (s === "nftables_dsr") return "NFTABLES DSR";
+    if (s === "nftables_dsr_relay") return "NFTABLES DSR RELAY";
+    return s.toUpperCase();
+}
+
 export function sortRulesList(rulesList, sortMode, rulesState) {
     if (!Array.isArray(rulesList)) return [];
     const copy = [...rulesList];
@@ -111,7 +118,7 @@ export function computeRulesFingerprint(filteredRules, rulesState) {
         const st = rulesState[id] || {};
         const activePrio = r.active_priority || 1;
         const ds = (st.dest_stats && st.dest_stats[`prio_${activePrio}`]) || {};
-        const destSummary = (r.destinations || []).map(d => `${d.priority}:${d.target}:${d.port}`).join('|');
+        const destSummary = (r.destinations || []).map(d => `${d.priority}:${d.type || ''}:${d.target}:${d.port}:${d.spoof_ip || ''}:${d.ingress_iface || ''}:${d.tunnel_iface || ''}:${d.snat_ip || ''}:${d.enabled !== false}`).join('|');
         parts.push(`${id}:${r.port}:${activePrio}:${r.force_override || 0}:${r.category || ''}:${ds.status || ''}:${ds.latency_ms || ''}:${destSummary}`);
     });
     return parts.join(';');
@@ -332,7 +339,7 @@ export function renderRuleCard(rule, rulesState) {
                     </div>
                 </div>
                 <div class="path-dest">
-                    <span>${escapeHtml(String(dest.type || 'haproxy').toUpperCase())}: ${targetDisplay}:${escapeHtml(dest.port_range ? `${dest.port_range} (1:1)` : (dest.port || rule.port))}${dest.tunnel_iface ? ` <em style="color:var(--text-muted); font-style:normal;">(${escapeHtml(dest.tunnel_iface)})</em>` : ''}</span>
+                    <span>${escapeHtml(formatDestTypeLabel(dest.type))}: ${targetDisplay}:${escapeHtml(dest.port_range ? `${dest.port_range} (1:1)` : (dest.port || rule.port))}${dest.tunnel_iface ? ` <em style="color:var(--text-muted); font-style:normal;">(${escapeHtml(dest.tunnel_iface)})</em>` : ''}${dest.ingress_iface ? ` <em style="color:var(--text-muted); font-style:normal;">(in:${escapeHtml(dest.ingress_iface)})</em>` : ''}${dest.spoof_ip ? ` <em style="color:var(--text-muted); font-style:normal;">[spoof:${escapeHtml(dest.spoof_ip)}]</em>` : ''}</span>
                     <button class="btn-copy" onclick="copyText(decodeURIComponent('${encodeURIComponent(rawTarget)}'))" title="${escapeHtml(t("rules.copy_dest_ip", {}, "Copy Destination IP"))}">${copyPortSvg}</button>
                 </div>
                 <div class="path-meta">
@@ -460,12 +467,17 @@ export function renderRuleListRow(rule, rulesState) {
         const statusDetail = stat.reason ? ` · ${stat.reason}` : (stat.status ? ` · ${String(stat.status).toUpperCase()}` : '');
 
         const destPortLabel = dest.port_range ? `${dest.port_range} (1:1)` : (dest.port || rule.port);
+        const destExtraNote = [
+            dest.tunnel_iface || "",
+            dest.ingress_iface ? `in:${dest.ingress_iface}` : "",
+            dest.spoof_ip ? `spoof:${dest.spoof_ip}` : ""
+        ].filter(Boolean).join(" · ");
         return `
-            <div class="${pillClass}" title="Priority #${prio}: ${escapeHtml(String(dest.type || 'haproxy').toUpperCase())} ${targetDisplay}:${escapeHtml(destPortLabel)}${latText}${escapeHtml(statusDetail)}">
+            <div class="${pillClass}" title="Priority #${prio}: ${escapeHtml(formatDestTypeLabel(dest.type))} ${targetDisplay}:${escapeHtml(destPortLabel)}${destExtraNote ? ` (${escapeHtml(destExtraNote)})` : ''}${latText}${escapeHtml(statusDetail)}">
                 <span style="width:7px; height:7px; border-radius:50%; background:${dotColor}; display:inline-block;"></span>
                 <span style="font-weight:700; color:var(--text-primary); font-family:var(--font-mono);">#${prio}</span>
                 ${dest.is_relay ? `<span class="badge-relay-pill" style="font-size:0.62rem; padding:1px 4px;" title="${escapeHtml(t("rules.relay_tooltip", {}, "Mid Server"))}">${escapeHtml(t("rules.relay", {}, "Mid Server"))}</span>` : ''}
-                <span class="font-mono" style="color:var(--text-secondary); font-size:0.75rem;">${targetDisplay}:${escapeHtml(destPortLabel)}${dest.tunnel_iface ? ` (${escapeHtml(dest.tunnel_iface)})` : ''}</span>
+                <span class="font-mono" style="color:var(--text-secondary); font-size:0.75rem;">${targetDisplay}:${escapeHtml(destPortLabel)}${destExtraNote ? ` (${escapeHtml(destExtraNote)})` : ''}</span>
                 ${latText && isEnabled ? `<span class="font-mono" style="color:var(--accent-mint); font-size:0.72rem;">${latText}</span>` : ''}
                 ${isEnabled ? loss50Inline : ''}
                 ${isActive && isEnabled ? `<span style="font-size:0.68rem; font-weight:700; color:${isFailover ? 'var(--accent-amber)' : 'var(--accent-mint)'}; text-transform:uppercase;">${isFailover ? escapeHtml(t("status.failover", {}, "FAILOVER")) : escapeHtml(t("status.active", {}, "ACTIVE"))}</span>` : ''}

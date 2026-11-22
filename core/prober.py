@@ -16,8 +16,14 @@ from typing import Dict, Any, Tuple, Optional, List
 
 try:
     from core.metrics import parse_ping_output, parse_ping_replies, sanitize_target_host, _c_locale_env, _ip_family_flag
+    from core.config_manager import is_nftables_type
 except ImportError:
     from metrics import parse_ping_output, parse_ping_replies, sanitize_target_host, _c_locale_env, _ip_family_flag
+    try:
+        from config_manager import is_nftables_type
+    except ImportError:
+        def is_nftables_type(dest_type: Any) -> bool:
+            return str(dest_type or "").lower().strip() in ("nftables", "nftables_dsr", "nftables_dsr_relay")
 
 # Extra echo requests appended after the measured burst. iputils exits ~2*maxRTT after the
 # last request, which falsely counts a slightly-late final reply as lost. Padding probes give
@@ -104,8 +110,8 @@ def validate_probe_route(
 
     target_is_private = is_private_or_tunnel_target(target)
 
-    if dest_type in ("nftables", "nginx") or tunnel_iface:
-        if tunnel_iface:
+    if is_nftables_type(dest_type) or dest_type == "nginx" or tunnel_iface:
+        if tunnel_iface and dest_type != "nftables_dsr_relay":
             if not check_iface_up(tunnel_iface):
                 return False, tunnel_iface, f"Tunnel interface '{tunnel_iface}' is missing or down"
         elif target_is_private:
@@ -359,7 +365,7 @@ def check_destination(
         }
 
     dest_type = str(dest.get("type", "haproxy")).lower()
-    if dest_type == "nftables" or proto == "icmp":
+    if is_nftables_type(dest_type) or proto == "icmp":
         sent = max(1, min(count, 10))
         return probe_destination_icmp(target, iface=tunnel_iface, count=sent, interval_ms=200)
 
@@ -410,7 +416,7 @@ def fast_confirm_burst(
     successes = 0
     latencies = []
 
-    if proto != "udp" and dest_type != "nftables":
+    if proto != "udp" and not is_nftables_type(dest_type):
         for _ in range(burst_count):
             t0 = time.perf_counter()
             try:

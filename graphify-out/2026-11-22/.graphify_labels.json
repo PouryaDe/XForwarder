@@ -35,7 +35,6 @@
   "69": ".test_zero_collision_mutual_exclusivity",
   "71": "5. Verification & Testing",
   "76": ".test_override_mode_change_resets_cooldown",
-  "78": "Architectural Solutions Implemented",
   "82": "Experience 003: Native Python Zero-Dependency Web Server",
   "84": "Experience 012: Kernel Zero-Copy Splicing, BBR Network Tuning, and Session Timeout Optimization",
   "88": ".test_anti_flapping_cooldown_hold_and_hard_outage_bypass",

@@ -100,25 +100,83 @@ def _format_postrouting_masquerades(custom_oifs: Optional[Set[str]] = None) -> s
     return "\n".join(lines)
 
 
+def ensure_dsr_sysctl(ifaces: Optional[Set[str]] = None) -> None:
+    """
+    Ensures Linux kernel IP forwarding and rp_filter=0 are configured for asymmetric DSR routing.
+    Required so packets arriving on tunnel interfaces with un-NATted client IPs are not dropped.
+    """
+    if sys.platform == "win32":
+        return
+    sysctl_bin = shutil.which("sysctl")
+    if not sysctl_bin:
+        for candidate in ("/sbin/sysctl", "/usr/sbin/sysctl", "/bin/sysctl"):
+            if os.path.isfile(candidate) and os.access(candidate, os.X_OK):
+                sysctl_bin = candidate
+                break
+    if not sysctl_bin:
+        return
+
+    settings = [
+        "net.ipv4.ip_forward=1",
+        "net.ipv4.conf.all.rp_filter=0",
+        "net.ipv4.conf.default.rp_filter=0",
+    ]
+    for iface in sorted(ifaces or set()):
+        clean_if = str(iface or "").strip()
+        if IFACE_NAME_REGEX.match(clean_if):
+            settings.append(f"net.ipv4.conf.{clean_if}.rp_filter=0")
+
+    for kv in settings:
+        try:
+            subprocess.run(
+                [sysctl_bin, "-w", kv],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                timeout=2.0,
+                check=False
+            )
+        except Exception:
+            pass
+
+
 def generate_nftables_ruleset(
     dnat_rules: List[str],
     rule_ports: Optional[Set[int]] = None,
     enable_ipv6: Optional[bool] = None,
     rule_ranges: Optional[Set[str]] = None,
-    custom_oifs: Optional[Set[str]] = None
+    custom_oifs: Optional[Set[str]] = None,
+    raw_rules: Optional[List[str]] = None,
+    snat_rules: Optional[List[str]] = None,
+    dsr_mss_rules: Optional[List[str]] = None,
+    has_untracked: bool = False
 ) -> str:
-    """Generates a complete, isolated NFTables ruleset string (single ports + NFTables ranges)."""
+    """Generates a complete, isolated NFTables ruleset string (DNAT, DSR stateless/relay, single ports & ranges)."""
     if enable_ipv6 is None:
         enable_ipv6 = is_ipv6_supported()
 
     ipv4_rules = []
     ipv6_rules = []
-
     for r in dnat_rules:
-        if "dnat to [" in r or "]:" in r:
+        if "dnat to [" in r or "]:" in r or "ip6 daddr" in r:
             ipv6_rules.append(r)
         else:
             ipv4_rules.append(r)
+
+    ipv4_raw_rules = []
+    ipv6_raw_rules = []
+    for r in (raw_rules or []):
+        if "ip6 daddr" in r:
+            ipv6_raw_rules.append(r)
+        else:
+            ipv4_raw_rules.append(r)
+
+    ipv4_snat_rules = []
+    ipv6_snat_rules = []
+    for r in (snat_rules or []):
+        if "ip6 daddr" in r or "snat to [" in r:
+            ipv6_snat_rules.append(r)
+        else:
+            ipv4_snat_rules.append(r)
 
     ipv4_block = "\n".join(ipv4_rules) if ipv4_rules else "        # No active NFTables IPv4 DNAT rules"
 
@@ -126,7 +184,7 @@ def generate_nftables_ruleset(
     all_ranges = set(rule_ranges or [])
     excl_counters: List[Tuple[str, str]] = []
     seen_excl: Set[Tuple[str, str]] = set()
-    for r in dnat_rules:
+    for r in list(dnat_rules) + list(raw_rules or []):
         m_excl = re.search(r"\b(tcp|udp)\s+dport\s+(!=\s*(?:\{\s*[^}]+\s*\}|\d+))", r)
         if m_excl:
             proto_e, expr_e = m_excl.group(1), m_excl.group(2)
@@ -173,60 +231,83 @@ def generate_nftables_ruleset(
         counter_defs.append("    counter cnt_out_1_excl { }")
         for proto_e, expr_e in excl_counters:
             forward_counters.append(f"        {proto_e} dport {expr_e} ct status dnat counter name cnt_in_1_excl")
+            if has_untracked:
+                forward_counters.append(f"        {proto_e} dport {expr_e} ct state untracked counter name cnt_in_1_excl")
             forward_counters.append(f"        {proto_e} sport {expr_e} counter name cnt_out_1_excl")
 
     counter_defs_str = "\n".join(counter_defs) + "\n\n" if counter_defs else ""
     forward_counters_str = "\n".join(forward_counters) + "\n" if forward_counters else ""
 
-    postrouting_block = _format_postrouting_masquerades(custom_oifs)
+    ipv4_mss_rules = [r for r in (dsr_mss_rules or []) if "ip6 daddr" not in r]
+    ipv6_mss_rules = [r for r in (dsr_mss_rules or []) if "ip6 daddr" in r]
+    ipv4_mss_str = ("\n" + "\n".join(ipv4_mss_rules)) if ipv4_mss_rules else ""
+    ipv6_mss_str = ("\n" + "\n".join(ipv6_mss_rules)) if ipv6_mss_rules else ""
+    ct_accept_line = "        ct state { established, related, untracked } accept" if has_untracked else "        ct state { established, related } accept"
+
+    base_postrouting = _format_postrouting_masquerades(custom_oifs)
+    ipv4_postrouting = ("\n".join(ipv4_snat_rules) + "\n" + base_postrouting) if ipv4_snat_rules else base_postrouting
+    ipv4_raw_chain = (
+        f"    chain raw_prerouting {{\n"
+        f"        type filter hook prerouting priority raw; policy accept;\n"
+        f"{chr(10).join(ipv4_raw_rules)}\n"
+        f"    }}\n\n"
+    ) if ipv4_raw_rules else ""
+
     tables_content = [
         f"""table ip xfwd_orchestrator
 delete table ip xfwd_orchestrator
 
 table ip xfwd_orchestrator {{
-{counter_defs_str}    chain prerouting {{
+{counter_defs_str}{ipv4_raw_chain}    chain prerouting {{
         type nat hook prerouting priority dstnat; policy accept;
 {ipv4_block}
     }}
 
     chain postrouting {{
         type nat hook postrouting priority srcnat; policy accept;
-{postrouting_block}
+{ipv4_postrouting}
     }}
 
     chain forward {{
         type filter hook forward priority filter; policy accept;
         # Automatically clamp TCP MSS to path MTU to prevent packet loss in GRE/IPIP tunnels
-        tcp flags syn tcp option maxseg size set rt mtu
+        tcp flags syn tcp option maxseg size set rt mtu{ipv4_mss_str}
 {forward_counters_str}        ct status dnat accept
-        ct state {{ established, related }} accept
+{ct_accept_line}
     }}
 }}"""
     ]
 
     if enable_ipv6:
         ipv6_block = "\n".join(ipv6_rules) if ipv6_rules else "        # No active NFTables IPv6 DNAT rules"
+        ipv6_postrouting = ("\n".join(ipv6_snat_rules) + "\n" + base_postrouting) if ipv6_snat_rules else base_postrouting
+        ipv6_raw_chain = (
+            f"    chain raw_prerouting {{\n"
+            f"        type filter hook prerouting priority raw; policy accept;\n"
+            f"{chr(10).join(ipv6_raw_rules)}\n"
+            f"    }}\n\n"
+        ) if ipv6_raw_rules else ""
         tables_content.append(
             f"""table ip6 xfwd_orchestrator
 delete table ip6 xfwd_orchestrator
 
 table ip6 xfwd_orchestrator {{
-{counter_defs_str}    chain prerouting {{
+{counter_defs_str}{ipv6_raw_chain}    chain prerouting {{
         type nat hook prerouting priority dstnat; policy accept;
 {ipv6_block}
     }}
 
     chain postrouting {{
         type nat hook postrouting priority srcnat; policy accept;
-{postrouting_block}
+{ipv6_postrouting}
     }}
 
     chain forward {{
         type filter hook forward priority filter; policy accept;
         # Automatically clamp TCP MSS to path MTU to prevent packet loss in GRE/IPIP tunnels
-        tcp flags syn tcp option maxseg size set rt mtu
+        tcp flags syn tcp option maxseg size set rt mtu{ipv6_mss_str}
 {forward_counters_str}        ct status dnat accept
-        ct state {{ established, related }} accept
+{ct_accept_line}
     }}
 }}"""
         )
@@ -239,7 +320,12 @@ def apply_nftables(
     rule_ports: Optional[Set[int]] = None,
     last_content: Optional[str] = None,
     rule_ranges: Optional[Set[str]] = None,
-    custom_oifs: Optional[Set[str]] = None
+    custom_oifs: Optional[Set[str]] = None,
+    raw_rules: Optional[List[str]] = None,
+    snat_rules: Optional[List[str]] = None,
+    dsr_mss_rules: Optional[List[str]] = None,
+    has_untracked: bool = False,
+    dsr_ifaces: Optional[Set[str]] = None
 ) -> Tuple[bool, Optional[str], Optional[str]]:
     """
     Validates and atomically applies NFTables ruleset.
@@ -249,7 +335,11 @@ def apply_nftables(
         dnat_rules,
         rule_ports=rule_ports,
         rule_ranges=rule_ranges,
-        custom_oifs=custom_oifs
+        custom_oifs=custom_oifs,
+        raw_rules=raw_rules,
+        snat_rules=snat_rules,
+        dsr_mss_rules=dsr_mss_rules,
+        has_untracked=has_untracked
     )
 
     if not shutil.which("nft"):
@@ -267,6 +357,8 @@ def apply_nftables(
         proc = subprocess.Popen(["nft", "-c", "-f", "-"], stdin=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
         out, err = proc.communicate(input=nft_content)
         if proc.returncode == 0:
+            if raw_rules:
+                ensure_dsr_sysctl(dsr_ifaces)
             apply_proc = subprocess.Popen(["nft", "-f", "-"], stdin=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
             _, apply_err = apply_proc.communicate(input=nft_content)
             if apply_proc.returncode != 0:

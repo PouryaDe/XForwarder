@@ -559,7 +559,7 @@ export function renderStats(rules, runtime, traffic) {
         if (dest) {
             if (dest.type === "haproxy") haproxyCount++;
             if (dest.type === "nginx") nginxCount++;
-            if (dest.type === "nftables") nftablesCount++;
+            if (dest.type === "nftables" || dest.type === "nftables_dsr" || dest.type === "nftables_dsr_relay") nftablesCount++;
         }
 
         const rId = String(r.id || `rule-${r.port}`);

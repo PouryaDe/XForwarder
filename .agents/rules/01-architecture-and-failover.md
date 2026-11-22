@@ -89,6 +89,7 @@ A port must **NEVER** be bound by HAProxy and forwarded by NFTables DNAT at the 
   - Monitors per-`rule_port` RX/TX byte deltas per collection cycle (`_collect_seq`).
   - Flags a traffic blackhole only when incoming client traffic is significant (`RX >= 20480` bytes) while server return traffic collapses (`TX == 0` or `TX < 0.01 * RX`) across `>= 2` distinct collection cycles.
   - Sequence deduplication prevents rapid engine loops (`run_loop`) from double-counting the same delta sample; silent periods (`RX == 0`) reset deltas and streaks; priority transitions invoke `reset_port_blackhole(rule_port)` so newly activated routes start clean.
+  - Exempts `nftables_dsr` (stateless upload-only DSR) where zero `TX` on the ingress relay is expected by design.
 
 
 

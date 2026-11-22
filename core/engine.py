@@ -33,7 +33,8 @@ from core.config_manager import (
     load_config as cm_load_config, save_config as cm_save_config,
     CONFIG_PATH as DEFAULT_CONFIG_PATH, LEGACY_CONFIG_PATH, LOCAL_CONFIG_PATH,
     STATE_FILE_PATH, LEGACY_STATE_FILE_PATH, get_rule_port_bounds,
-    split_port_interval_excluding, get_protected_ports
+    split_port_interval_excluding, get_protected_ports, is_nftables_type,
+    IFACE_NAME_REGEX
 )
 from core.prober import (
     is_private_or_tunnel_target, validate_probe_route,
@@ -172,6 +173,30 @@ class XForwarderEngine:
             except Exception:
                 pass
         return "eth0"
+
+    def _detect_wan_ip(self, wan_iface: str, family: int = 4) -> Optional[str]:
+        """Detects the primary global IPv4 or IPv6 address on the WAN interface for DSR SNAT."""
+        if sys.platform == "win32" or not wan_iface:
+            return None
+        flag = "-6" if family == 6 else "-4"
+        try:
+            out = subprocess.check_output(
+                ["ip", "-o", flag, "addr", "show", "dev", wan_iface, "scope", "global"],
+                text=True,
+                stderr=subprocess.DEVNULL,
+                timeout=1.5
+            ).strip()
+            for line in out.splitlines():
+                parts = line.split()
+                for idx, tok in enumerate(parts):
+                    if tok in ("inet", "inet6") and idx + 1 < len(parts):
+                        ip_cidr = parts[idx + 1]
+                        ip_only = ip_cidr.split("/", 1)[0].strip()
+                        if ip_only and not ip_only.startswith("fe80:") and not ip_only.startswith("127."):
+                            return ip_only
+        except Exception:
+            pass
+        return None
 
     def _is_interface_up(self, iface: str) -> bool:
         return is_interface_up(iface)
@@ -337,8 +362,9 @@ class XForwarderEngine:
                 new_type = dests.get(int(new_prio), "")
             except (TypeError, ValueError):
                 return
-            if old_type != new_type and "nftables" in (old_type, new_type):
-                self._queue_post_sync_conntrack_flush(port_int, "udp")
+            if old_type != new_type and (is_nftables_type(old_type) or is_nftables_type(new_type)):
+                proto_flush = None if "nftables_dsr" in (old_type, new_type) else "udp"
+                self._queue_post_sync_conntrack_flush(port_int, proto_flush)
 
     def _flush_pending_conntrack(self) -> None:
         """Executes deferred conntrack flushes after firewall and proxy rules are synchronized."""
@@ -784,9 +810,10 @@ class XForwarderEngine:
                     l4_fail_reason = f"HAProxy backend DOWN ({ha_backend.get('check_status') or 'check failed'})"
 
             if not l4_fail_reason and is_active_dest and self._traffic_collector and rule_port > 0:
-                is_bh, bh_reason = self._traffic_collector.check_traffic_blackhole(rule_port)
-                if is_bh:
-                    l4_fail_reason = bh_reason
+                if dest_type != "nftables_dsr":
+                    is_bh, bh_reason = self._traffic_collector.check_traffic_blackhole(rule_port)
+                    if is_bh:
+                        l4_fail_reason = bh_reason
 
             # Verify remote TCP handshake on HAProxy TCP/both routes so ICMP replies never mask blocked ports
             if not l4_fail_reason and dest_type == "haproxy" and dest_proto in ("tcp", "both") and target_port > 0 and is_valid:
@@ -1173,6 +1200,14 @@ class XForwarderEngine:
         udp_entries = []
         nginx_entries = []
         nft_dnat_rules = []
+        nft_raw_rules = []
+        nft_snat_rules = []
+        nft_dsr_mss_rules = []
+        seen_snat: Set[Tuple[str, str, str]] = set()
+        seen_dsr_mss: Set[Tuple[str, str]] = set()
+        wan_ip_cache: Dict[Tuple[str, int], Optional[str]] = {}
+        has_untracked = False
+        dsr_ifaces: Set[str] = set()
         protected_ports = get_protected_ports(self.config)
         web_port = int((self.config.get("web") or {}).get("port", 8090) or 8090)
 
@@ -1201,9 +1236,9 @@ class XForwarderEngine:
 
             target = str(dest.get("target", "")).strip().strip("[]")
             target_port = dest.get("port", port)
-            dest_type = dest.get("type", "haproxy")
-            if port_range and dest_type != "nftables":
-                # Port ranges are restricted strictly to NFTables kernel DNAT
+            dest_type = str(dest.get("type", "haproxy")).lower().strip()
+            if port_range and not is_nftables_type(dest_type):
+                # Port ranges are restricted strictly to NFTables kernel rules
                 continue
 
             target_str = f"[{target}]:{target_port}" if ":" in target else f"{target}:{target_port}"
@@ -1261,9 +1296,15 @@ class XForwarderEngine:
                         f"    # [{comment_clean}]\n"
                         f"    server {{ {listens_str} proxy_pass {target_str};{pp_ngx} proxy_timeout 60s; }}"
                     )
-            elif dest_type == "nftables":
+            elif is_nftables_type(dest_type):
                 clean_target = target.strip("[]")
-                is_ipv6 = ":" in clean_target
+                try:
+                    target_ip_obj = ipaddress.ip_address(clean_target)
+                except ValueError:
+                    # Skip malformed non-IP targets cleanly to keep nft ruleset valid
+                    continue
+                is_ipv6 = (target_ip_obj.version == 6)
+                ip_kw = "ip6" if is_ipv6 else "ip"
                 if port_range and (dest.get("port_range") or dest.get("port") is None):
                     # Preserve 1:1 inbound-to-outbound ports across each sub-interval in nftables
                     dnat_target = f"[{clean_target}]" if is_ipv6 else clean_target
@@ -1277,18 +1318,109 @@ class XForwarderEngine:
                     if not safe_intervals and not port_range and port and port != web_port:
                         safe_intervals = [(int(port), int(port))]
                     dport_selectors = [sub_s if sub_s == sub_e else f"{sub_s}-{sub_e}" for sub_s, sub_e in safe_intervals]
-                for listen_spec in dport_selectors:
-                    if proto in ("tcp", "both"):
-                        nft_dnat_rules.append(
-                            f'        iifname "{wan_iface}" tcp dport {listen_spec} dnat to {dnat_target}'
+
+                if dest_type == "nftables_dsr":
+                    has_untracked = True
+                    dsr_ifaces.add(wan_iface)
+                    raw_t_iface = str(dest.get("tunnel_iface") or "").strip()
+                    if raw_t_iface and IFACE_NAME_REGEX.match(raw_t_iface):
+                        dsr_ifaces.add(raw_t_iface)
+                    raw_spoof = str(dest.get("spoof_ip") or "").strip().strip("[]")
+                    daddr_match = ""
+                    if raw_spoof:
+                        try:
+                            if ipaddress.ip_address(raw_spoof).version == target_ip_obj.version:
+                                daddr_match = f" {ip_kw} daddr {raw_spoof}"
+                        except ValueError:
+                            continue
+                    # Stateless DSR cannot reverse-translate ports on return traffic; keep ports 1:1
+                    for listen_spec in dport_selectors:
+                        for p_name in (("tcp", "udp") if proto == "both" else (proto,)):
+                            if p_name not in ("tcp", "udp"):
+                                continue
+                            nft_raw_rules.append(
+                                f'        iifname "{wan_iface}"{daddr_match} {p_name} dport {listen_spec} notrack {ip_kw} daddr set {clean_target}'
+                            )
+                elif dest_type == "nftables_dsr_relay":
+                    spoof_ip = str(dest.get("spoof_ip") or "").strip().strip("[]")
+                    try:
+                        if not spoof_ip or ipaddress.ip_address(spoof_ip).version != target_ip_obj.version:
+                            continue
+                    except ValueError:
+                        continue
+                    raw_in_iface = str(dest.get("ingress_iface") or dest.get("tunnel_iface") or "").strip()
+                    if raw_in_iface and not IFACE_NAME_REGEX.match(raw_in_iface):
+                        continue
+                    ingress_iface = raw_in_iface
+                    dsr_ifaces.add(wan_iface)
+                    if ingress_iface:
+                        dsr_ifaces.add(ingress_iface)
+                    in_match = f'iifname "{ingress_iface}" ' if ingress_iface else f'iifname != "{wan_iface}" '
+                    for listen_spec in dport_selectors:
+                        for p_name in (("tcp", "udp") if proto == "both" else (proto,)):
+                            if p_name not in ("tcp", "udp"):
+                                continue
+                            nft_raw_rules.append(
+                                f'        {in_match}{p_name} dport {listen_spec} {ip_kw} daddr set {spoof_ip}'
+                            )
+                            nft_dnat_rules.append(
+                                f'        {in_match}{ip_kw} daddr {spoof_ip} {p_name} dport {listen_spec} dnat to {dnat_target}'
+                            )
+                    # Scope 1380 MSS clamping specifically to DSR relay target so normal rt mtu tunnels stay unaffected
+                    mss_key = (ip_kw, clean_target)
+                    if mss_key not in seen_dsr_mss:
+                        seen_dsr_mss.add(mss_key)
+                        nft_dsr_mss_rules.append(
+                            f'        tcp flags syn {ip_kw} daddr {clean_target} tcp option maxseg size set 1380'
                         )
-                    if proto in ("udp", "both"):
-                        nft_dnat_rules.append(
-                            f'        iifname "{wan_iface}" udp dport {listen_spec} dnat to {dnat_target}'
-                        )
+                    snat_key = (wan_iface, ip_kw, clean_target)
+                    if snat_key not in seen_snat:
+                        seen_snat.add(snat_key)
+                        raw_snat = str(dest.get("snat_ip") or "").strip().strip("[]")
+                        snat_ip: Optional[str] = None
+                        if raw_snat:
+                            try:
+                                if ipaddress.ip_address(raw_snat).version == target_ip_obj.version:
+                                    snat_ip = raw_snat
+                            except ValueError:
+                                snat_ip = None
+                        if not snat_ip:
+                            cache_key = (wan_iface, target_ip_obj.version)
+                            if cache_key not in wan_ip_cache:
+                                wan_ip_cache[cache_key] = self._detect_wan_ip(wan_iface, family=target_ip_obj.version)
+                            snat_ip = wan_ip_cache[cache_key]
+                        if snat_ip:
+                            nft_snat_rules.append(
+                                f'        oifname "{wan_iface}" {ip_kw} daddr {clean_target} snat to {snat_ip}'
+                            )
+                        else:
+                            nft_snat_rules.append(
+                                f'        oifname "{wan_iface}" {ip_kw} daddr {clean_target} masquerade'
+                            )
+                else:
+                    for listen_spec in dport_selectors:
+                        if proto in ("tcp", "both"):
+                            nft_dnat_rules.append(
+                                f'        iifname "{wan_iface}" tcp dport {listen_spec} dnat to {dnat_target}'
+                            )
+                        if proto in ("udp", "both"):
+                            nft_dnat_rules.append(
+                                f'        iifname "{wan_iface}" udp dport {listen_spec} dnat to {dnat_target}'
+                            )
 
         errors: List[str] = []
-        ok_nft, err_nft = self._apply_nftables(nft_dnat_rules)
+        nft_kwargs: Dict[str, Any] = {}
+        if nft_raw_rules:
+            nft_kwargs["raw_rules"] = nft_raw_rules
+        if nft_snat_rules:
+            nft_kwargs["snat_rules"] = nft_snat_rules
+        if nft_dsr_mss_rules:
+            nft_kwargs["dsr_mss_rules"] = nft_dsr_mss_rules
+        if has_untracked:
+            nft_kwargs["has_untracked"] = True
+        if dsr_ifaces:
+            nft_kwargs["dsr_ifaces"] = dsr_ifaces
+        ok_nft, err_nft = self._apply_nftables(nft_dnat_rules, **nft_kwargs)
         if not ok_nft and err_nft:
             errors.append(err_nft)
 
@@ -1304,7 +1436,15 @@ class XForwarderEngine:
         self._last_applied_rules = self._get_rules_fingerprint()
         return len(errors) == 0, errors
 
-    def _apply_nftables(self, dnat_rules: List[str]) -> Tuple[bool, Optional[str]]:
+    def _apply_nftables(
+        self,
+        dnat_rules: List[str],
+        raw_rules: Optional[List[str]] = None,
+        snat_rules: Optional[List[str]] = None,
+        dsr_mss_rules: Optional[List[str]] = None,
+        has_untracked: bool = False,
+        dsr_ifaces: Optional[Set[str]] = None
+    ) -> Tuple[bool, Optional[str]]:
         rule_ports: Set[int] = set()
         rule_ranges: Set[str] = set()
         custom_oifs: Set[str] = set()
@@ -1330,10 +1470,20 @@ class XForwarderEngine:
         }
         if custom_oifs:
             apply_kwargs["custom_oifs"] = custom_oifs
+        if raw_rules:
+            apply_kwargs["raw_rules"] = raw_rules
+        if snat_rules:
+            apply_kwargs["snat_rules"] = snat_rules
+        if dsr_mss_rules:
+            apply_kwargs["dsr_mss_rules"] = dsr_mss_rules
+        if has_untracked:
+            apply_kwargs["has_untracked"] = True
+        if dsr_ifaces:
+            apply_kwargs["dsr_ifaces"] = dsr_ifaces
         ok, err, new_content = apply_nftables(dnat_rules, **apply_kwargs)
         if ok:
             self._last_nft_content = new_content
-            self.runtime_state["active_services"]["nftables"] = bool(dnat_rules)
+            self.runtime_state["active_services"]["nftables"] = bool(dnat_rules or raw_rules)
         return ok, err
 
     def _apply_haproxy(self, haproxy_entries: List[str], udp_entries: Optional[List[str]] = None) -> Tuple[bool, Optional[str]]:
@@ -1461,19 +1611,30 @@ class XForwarderEngine:
                             rule_ports_list = [int(r["port"]) for r in rules if r.get("port")]
                             prot_ports = get_protected_ports(self.config)
                             port_range_map: Dict[int, int] = {}
+                            port_method_map: Dict[int, str] = {}
                             for r in rules:
                                 r_port = r.get("port")
                                 if not r_port:
                                     continue
                                 r_port_int = int(r_port)
-                                s_p, e_p = get_rule_port_bounds(r)
+                                act_p = r.get("active_priority", 1)
+                                act_d = next((d for d in r.get("destinations", []) if d.get("enabled", True) and d.get("priority") == act_p), None)
+                                if not act_d:
+                                    act_d = next((d for d in r.get("destinations", []) if d.get("enabled", True)), None)
+                                if act_d and is_nftables_type(act_d.get("type")):
+                                    port_method_map[r_port_int] = str(act_d.get("type")).lower().strip()
+                                s_p, e_p, _ = get_rule_port_bounds(r)
                                 excl = set(r.get("excluded_ports") or [])
-                                if excl:
+                                if excl and s_p is not None and e_p is not None:
                                     for sub_s, _ in split_port_interval_excluding(s_p, e_p, excl | prot_ports):
                                         port_range_map[sub_s] = r_port_int
-                                elif r.get("port_range"):
+                                elif r.get("port_range") and s_p is not None:
                                     port_range_map[s_p] = r_port_int
-                            self._traffic_collector.collect_cycle(ports=rule_ports_list, port_range_map=port_range_map)
+                            self._traffic_collector.collect_cycle(
+                                ports=rule_ports_list,
+                                port_range_map=port_range_map,
+                                port_method_map=port_method_map
+                            )
                             self._last_traffic_cycle = now_ts
                         except Exception:
                             pass

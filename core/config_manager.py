@@ -24,6 +24,13 @@ LEGACY_STATE_FILE_PATH = "/run/forward-manager/state.json"
 
 HOSTNAME_REGEX = re.compile(r"^[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$")
 IFACE_NAME_REGEX = re.compile(r"^[a-zA-Z0-9][a-zA-Z0-9_.\-]{0,14}$")
+NFTABLES_TYPES = ("nftables", "nftables_dsr", "nftables_dsr_relay")
+VALID_DEST_TYPES = ("haproxy", "nftables", "nftables_dsr", "nftables_dsr_relay", "nginx")
+
+
+def is_nftables_type(dest_type: Any) -> bool:
+    """Returns True for standard NFTables DNAT as well as NFTables DSR modes."""
+    return str(dest_type or "").lower().strip() in NFTABLES_TYPES
 
 
 def get_config_path(override_path: Optional[str] = None) -> str:
@@ -524,6 +531,25 @@ def migrate_and_normalize_config(cfg: Dict[str, Any]) -> Tuple[Dict[str, Any], b
                     d["target"] = clean_target
                     modified = True
 
+            for ip_key in ("spoof_ip", "snat_ip"):
+                if ip_key in d:
+                    clean_ip = str(d.get(ip_key) or "").strip().strip("[]")
+                    if not clean_ip:
+                        d.pop(ip_key, None)
+                        modified = True
+                    elif d.get(ip_key) != clean_ip:
+                        d[ip_key] = clean_ip
+                        modified = True
+
+            if "ingress_iface" in d:
+                clean_in_if = str(d.get("ingress_iface") or "").strip()
+                if not clean_in_if:
+                    d.pop("ingress_iface", None)
+                    modified = True
+                elif d.get("ingress_iface") != clean_in_if:
+                    d["ingress_iface"] = clean_in_if
+                    modified = True
+
             has_pp = _coerce_bool(d.get("proxy_protocol", False) or d.get("send_proxy", False), False)
             if d.get("proxy_protocol") != has_pp:
                 d["proxy_protocol"] = has_pp
@@ -926,13 +952,14 @@ def validate_rule(body: dict) -> Tuple[bool, str]:
             else:
                 d_type = "nginx"
             d["type"] = d_type
-        elif d_type not in ("haproxy", "nftables", "nginx"):
-            return False, "Destination type must be 'haproxy', 'nftables', or 'nginx'"
+        elif d_type not in VALID_DEST_TYPES:
+            return False, "Destination type must be 'haproxy', 'nftables', 'nftables_dsr', 'nftables_dsr_relay', or 'nginx'"
         d["type"] = d_type
 
-        if port_range_str and d_type != "nftables":
+        if port_range_str and not is_nftables_type(d_type):
             return False, f"Port ranges / exclusions ({port_range_str}) are only supported for 'nftables' destinations (not '{d_type}')"
 
+        target_ip_obj = None
         if d_type == "haproxy":
             clean_target = target.strip("[]")
             try:
@@ -941,12 +968,12 @@ def validate_rule(body: dict) -> Tuple[bool, str]:
                     return False, f"HAProxy destination target must be a valid IPv6 address (got IPv4 '{target}')"
             except ValueError:
                 return False, f"HAProxy destination target must be a valid IPv6 address (got '{target}')"
-        elif d_type == "nftables":
-            # NFTables kernel DNAT rules require raw numeric IPv4 or IPv6 addresses.
+        elif is_nftables_type(d_type):
+            # NFTables kernel rules require raw numeric IPv4 or IPv6 addresses.
             # Hostnames/domains cause syntax errors during atomic ruleset commit ('nft -c -f').
             clean_target = target.strip("[]")
             try:
-                ipaddress.ip_address(clean_target)
+                target_ip_obj = ipaddress.ip_address(clean_target)
             except ValueError:
                 return False, f"NFTables destination target must be a valid IPv4 or IPv6 address (got '{target}')"
 
@@ -962,13 +989,15 @@ def validate_rule(body: dict) -> Tuple[bool, str]:
             if d_sp is None:
                 return False, "Destination port must be between 1 and 65535 (or a valid matching range)"
             if d_range_str:
-                if d_type != "nftables":
+                if not is_nftables_type(d_type):
                     return False, f"Destination port range '{d_range_str}' is only supported for 'nftables' (not '{d_type}')"
                 if not port_range_str or d_range_str != port_range_str:
                     return False, f"NFTables outbound port range must match inbound range ({port_range_str or start_p}) or be a single target port"
                 d["port"] = d_sp
                 d["port_range"] = d_range_str
             else:
+                if d_type == "nftables_dsr" and (port_range_str or d_sp != start_p):
+                    return False, f"NFTables DSR (stateless) requires destination port to match inbound port ({port_range_str or start_p})"
                 d["port"] = d_sp
                 d.pop("port_range", None)
 
@@ -987,7 +1016,7 @@ def validate_rule(body: dict) -> Tuple[bool, str]:
         # Optional custom outbound tunnel interface (NFTables masquerade + ping -I isolation)
         raw_iface = str(d.get("tunnel_iface") or "").strip()
         if raw_iface:
-            if d_type != "nftables":
+            if d_type not in ("nftables", "nftables_dsr"):
                 d.pop("tunnel_iface", None)
             elif not IFACE_NAME_REGEX.match(raw_iface):
                 return False, f"Invalid tunnel interface '{raw_iface}'. Must be 1-15 alphanumeric, '.', '_', or '-' characters"
@@ -995,6 +1024,46 @@ def validate_rule(body: dict) -> Tuple[bool, str]:
                 d["tunnel_iface"] = raw_iface
         else:
             d.pop("tunnel_iface", None)
+
+        # DSR fields: spoof_ip (required for nftables_dsr_relay, optional ingress IP filter for nftables_dsr),
+        # ingress_iface (optional inbound tunnel interface for nftables_dsr_relay),
+        # snat_ip (optional explicit SNAT IP for nftables_dsr_relay).
+        raw_spoof_ip = str(d.get("spoof_ip") or "").strip().strip("[]")
+        if d_type in ("nftables_dsr", "nftables_dsr_relay"):
+            if raw_spoof_ip:
+                try:
+                    spoof_obj = ipaddress.ip_address(raw_spoof_ip)
+                except ValueError:
+                    return False, f"Invalid Spoof/Ingress IP '{raw_spoof_ip}'. Must be a valid IPv4 or IPv6 address"
+                if target_ip_obj is not None and spoof_obj.version != target_ip_obj.version:
+                    return False, f"Spoof/Ingress IP '{raw_spoof_ip}' must match target IP version (IPv{target_ip_obj.version})"
+                d["spoof_ip"] = raw_spoof_ip
+            elif d_type == "nftables_dsr_relay":
+                return False, "NFTables DSR Relay requires 'spoof_ip' (the Iran/ingress server public IP)"
+            else:
+                d.pop("spoof_ip", None)
+        else:
+            d.pop("spoof_ip", None)
+
+        raw_in_iface = str(d.get("ingress_iface") or "").strip()
+        if d_type == "nftables_dsr_relay" and raw_in_iface:
+            if not IFACE_NAME_REGEX.match(raw_in_iface):
+                return False, f"Invalid inbound tunnel interface '{raw_in_iface}'. Must be 1-15 alphanumeric, '.', '_', or '-' characters"
+            d["ingress_iface"] = raw_in_iface
+        else:
+            d.pop("ingress_iface", None)
+
+        raw_snat_ip = str(d.get("snat_ip") or "").strip().strip("[]")
+        if d_type == "nftables_dsr_relay" and raw_snat_ip:
+            try:
+                snat_obj = ipaddress.ip_address(raw_snat_ip)
+            except ValueError:
+                return False, f"Invalid SNAT IP '{raw_snat_ip}'. Must be a valid IPv4 or IPv6 address"
+            if target_ip_obj is not None and snat_obj.version != target_ip_obj.version:
+                return False, f"SNAT IP '{raw_snat_ip}' must match target IP version (IPv{target_ip_obj.version})"
+            d["snat_ip"] = raw_snat_ip
+        else:
+            d.pop("snat_ip", None)
 
     return True, ""
 

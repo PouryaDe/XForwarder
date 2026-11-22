@@ -37,6 +37,8 @@ export function populateTrafficEntitySelect(selectedType, selectedId) {
         typeOptgroup.innerHTML = `
             <option value="method:haproxy">Direct IPv6 Relay (HAProxy)</option>
             <option value="method:nftables">Kernel Tunnel DNAT (NFTables)</option>
+            <option value="method:nftables_dsr">NFTables DSR (Upload-Only)</option>
+            <option value="method:nftables_dsr_relay">NFTables DSR Relay (Spoof)</option>
             <option value="tunnel_type:gre">GRE Tunnels (gre*)</option>
             <option value="tunnel_type:ipip">IPIP Tunnels (ipip*)</option>
             <option value="tunnel_type:wireguard">WireGuard / AWG (awg*)</option>
@@ -299,7 +301,13 @@ export async function loadTrafficModalData() {
             titleEl.textContent = `Port :${entityId} Bandwidth Analytics`;
             if (subEl) subEl.textContent = `Traffic accounting for forwarded port ${entityId} (HAProxy / NFTables / Nginx)`;
         } else if (entityType === "method") {
-            const methodLabel = entityId === "haproxy" ? "Direct IPv6 (HAProxy Relay)" : "Kernel Tunnel DNAT (NFTables)";
+            const methodLabelMap = {
+                haproxy: "Direct IPv6 (HAProxy Relay)",
+                nftables: "Kernel Tunnel DNAT (NFTables)",
+                nftables_dsr: "NFTables DSR (Upload-Only)",
+                nftables_dsr_relay: "NFTables DSR Relay (Spoof)"
+            };
+            const methodLabel = methodLabelMap[entityId] || entityId;
             titleEl.textContent = `${methodLabel} Analytics`;
             if (subEl) subEl.textContent = `Aggregated bandwidth forwarded via ${methodLabel}`;
         } else if (entityType === "tunnel_type") {

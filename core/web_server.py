@@ -1183,8 +1183,13 @@ class XForwarderWebHandler(BaseHTTPRequestHandler):
 
             try:
                 from core.prober import check_destination
+                from core.config_manager import IFACE_NAME_REGEX
+                test_dest = {"target": target, "port": port, "type": dest_type}
+                tunnel_iface = str(body.get("tunnel_iface") or "").strip()
+                if tunnel_iface and dest_type in ("nftables", "nftables_dsr") and IFACE_NAME_REGEX.match(tunnel_iface):
+                    test_dest["tunnel_iface"] = tunnel_iface
                 probe_res = check_destination(
-                    {"target": target, "port": port, "type": dest_type},
+                    test_dest,
                     rule_port=port,
                     protocol=protocol,
                     count=packets

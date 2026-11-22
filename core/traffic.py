@@ -424,7 +424,8 @@ class TrafficCollector:
         ports: Optional[List[int]] = None,
         tunnel_ifaces: Optional[List[str]] = None,
         haproxy_sock: str = "/run/haproxy/admin.sock",
-        port_range_map: Optional[Dict[int, int]] = None
+        port_range_map: Optional[Dict[int, int]] = None,
+        port_method_map: Optional[Dict[int, str]] = None
     ) -> Dict[str, Any]:
         """
         Executes one collection cycle:
@@ -490,9 +491,12 @@ class TrafficCollector:
 
                 self._last_counters[key] = {"rx_bytes": stats["rx_bytes"], "tx_bytes": stats["tx_bytes"]}
 
+                nft_method = (port_method_map or {}).get(target_port) or (port_method_map or {}).get(raw_port) or "nftables"
+                if nft_method not in ("nftables", "nftables_dsr", "nftables_dsr_relay"):
+                    nft_method = "nftables"
                 _record_delta("port", str(target_port), rx_delta, tx_delta)
-                _record_delta("port_path", f"{target_port}:nftables", rx_delta, tx_delta)
-                _record_delta("method", "nftables", rx_delta, tx_delta)
+                _record_delta("port_path", f"{target_port}:{nft_method}", rx_delta, tx_delta)
+                _record_delta("method", nft_method, rx_delta, tx_delta)
                 _record_delta("tunnel_type", "tunnel_dnat", rx_delta, tx_delta)
 
             # 3. Process Tunnels from /proc/net/dev
@@ -950,9 +954,15 @@ def get_traffic_summary(
                 """, (f"{clean_eid}:%", cutoff_ts))
                 p_tot_sum = summary["total_bytes"]
                 path_list = []
+                method_labels = {
+                    "haproxy": "Direct IPv6 (HAProxy Relay)",
+                    "nftables": "Kernel Tunnel DNAT (NFTables)",
+                    "nftables_dsr": "NFTables DSR (Upload-Only)",
+                    "nftables_dsr_relay": "NFTables DSR Relay (Spoof)",
+                }
                 for peid, prx, ptx, ptot in cursor.fetchall():
                     sub_key = peid.split(":", 1)[1] if ":" in peid else peid
-                    lbl = "Direct IPv6 (HAProxy Relay)" if sub_key == "haproxy" else ("Kernel Tunnel DNAT (NFTables)" if sub_key == "nftables" else sub_key)
+                    lbl = method_labels.get(sub_key, sub_key)
                     pct = round((float(ptot) / p_tot_sum * 100.0), 1) if p_tot_sum > 0 else 0.0
                     path_list.append({
                         "key": sub_key,
@@ -974,8 +984,14 @@ def get_traffic_summary(
                     WHERE entity_type = 'method' AND period_start >= ?
                     GROUP BY entity_id;
                 """, (cutoff_ts,))
+                global_method_labels = {
+                    "haproxy": "Direct IPv6 Relay (HAProxy)",
+                    "nftables": "Kernel Tunnel DNAT (NFTables)",
+                    "nftables_dsr": "NFTables DSR (Upload-Only)",
+                    "nftables_dsr_relay": "NFTables DSR Relay (Spoof)",
+                }
                 for meid, mrx, mtx, mtot in cursor.fetchall():
-                    lbl = "Direct IPv6 Relay (HAProxy)" if meid == "haproxy" else ("Kernel Tunnel DNAT (NFTables)" if meid == "nftables" else meid)
+                    lbl = global_method_labels.get(meid, meid)
                     pct = round((float(mtot) / port_sum * 100.0), 1) if port_sum > 0 else 0.0
                     type_breakdown.append({
                         "key": f"method:{meid}",

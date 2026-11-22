@@ -17,7 +17,7 @@ Authoritative architectural invariants and navigation index for **XForwarder** (
 1. **Zero-Collision Forwarding:** A port must never be bound by HAProxy/Nginx and forwarded by NFTables DNAT simultaneously.
 2. **Native Python 3 Stdlib Only:** Zero third-party pip dependencies in `core/` or runtime. Combined idle RAM must stay strictly under **15MB**.
 3. **Atomic File Persistence:** Always write `config.json` and `state.json` via `.tmp.<pid>` + `os.replace`, preserving live `rules_state` on ad-hoc syncs.
-4. **NFTables Isolation & Clamping:** All DNAT rules reside exclusively inside `table ip xfwd_orchestrator` (and `ip6`). Never run `nft flush ruleset` or `iptables -F`; validate with `nft -c -f -`; enforce TCP MSS clamping.
+4. **NFTables Isolation & Clamping:** All DNAT and DSR (`nftables_dsr` / `nftables_dsr_relay`) rules reside exclusively inside `table ip xfwd_orchestrator` (and `ip6`). Never run `nft flush ruleset` or `iptables -F`; validate with `nft -c -f -`; enforce TCP MSS clamping (`rt mtu` for standard DNAT, scoped `1380` for DSR relay).
 5. **Bounded Non-Blocking Probes & Socket Safety:** Enforce explicit timeouts (`2.0s` / `1.5s` L4 TCP / `0.5s` burst), close sockets immediately, never fall back to ICMP when HAProxy L4 TCP fails, and isolate tunnel probes from WAN leakage.
 6. **Graceful Proxy Reloads:** Use non-disruptive `systemctl reload haproxy` (never destructive restarts during failover) with `option splice-auto`, `hard-stop-after 2m`, multi-core `nbthread`, and bounded Nginx UDP `proxy_timeout 60s`.
 7. **Clean TCP by Default:** Never hardcode `send-proxy-v2`; PROXY protocol v2 is opt-in per destination.
