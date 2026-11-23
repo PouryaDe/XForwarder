@@ -2793,9 +2793,10 @@ input:-webkit-autofill:active {
     font-variant-numeric: tabular-nums;
 }
 
-.port-capsule-copy {
+.port-capsule .btn-copy.port-capsule-copy {
+    width: auto;
     height: 100%;
-    padding: 0 8px 0 5px;
+    padding: 0 10px 0 6px;
     margin: 0;
     display: inline-flex;
     align-items: center;
