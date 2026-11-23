@@ -303,13 +303,21 @@ export function formatProtoBadge(proto) {
     return p.toUpperCase();
 }
 
+const CHECKMARK_COPY_SVG = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
+
 function triggerCopyFeedback(triggerEl) {
     if (!triggerEl || typeof triggerEl.classList === "undefined") return;
-    triggerEl.classList.remove("is-copied");
-    void triggerEl.offsetWidth;
+    if (!triggerEl.dataset.origSvg) {
+        triggerEl.dataset.origSvg = triggerEl.innerHTML;
+    }
+    triggerEl.innerHTML = CHECKMARK_COPY_SVG;
     triggerEl.classList.add("is-copied");
     if (triggerEl._copyTimer) clearTimeout(triggerEl._copyTimer);
     triggerEl._copyTimer = setTimeout(() => {
+        if (triggerEl.dataset.origSvg) {
+            triggerEl.innerHTML = triggerEl.dataset.origSvg;
+            delete triggerEl.dataset.origSvg;
+        }
         triggerEl.classList.remove("is-copied");
         triggerEl._copyTimer = null;
     }, 1100);

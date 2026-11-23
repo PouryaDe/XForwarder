@@ -2788,16 +2788,18 @@ input:-webkit-autofill:active {
     font-size: 0.96rem;
     font-weight: 700;
     color: var(--text-primary);
-    padding: 0 9px;
+    padding: 0 5px 0 9px;
     line-height: 1;
     font-variant-numeric: tabular-nums;
 }
 
 .port-capsule-copy {
     height: 100%;
-    padding: 0 7px 0 2px;
+    padding: 0 8px 0 5px;
+    margin: 0;
     display: inline-flex;
     align-items: center;
+    justify-content: center;
     opacity: 0.55;
     transition: opacity 0.15s ease;
 }
@@ -2934,13 +2936,11 @@ input:-webkit-autofill:active {
 }
 
 .btn-copy {
-    transition: transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1), color 0.18s ease, opacity 0.18s ease;
+    transition: opacity 0.15s ease;
 }
 
 .btn-copy.is-copied {
-    color: var(--good) !important;
     opacity: 1 !important;
-    transform: scale(1.18);
 }
 
 .rule-card.is-switching {
@@ -2956,7 +2956,10 @@ input:-webkit-autofill:active {
 }
 
 .timeline-node.is-disabled {
-    opacity: 0.42;
+    background: var(--raise-2);
+    color: var(--ink-3);
+    border-color: var(--line);
+    box-shadow: 0 0 0 4px var(--raise);
     cursor: not-allowed;
     pointer-events: none;
 }

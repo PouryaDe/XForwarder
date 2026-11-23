@@ -385,13 +385,14 @@ export function renderRuleCard(rule, rulesState) {
             nodeClasses.push('is-down');
         }
 
-        const canForceClick = sortedDests.length > 1 && isEnabled;
+        const showTimeline = sortedDests.length > 1;
+        const canForceClick = showTimeline && isEnabled;
         const nodeAction = canForceClick
             ? `onclick="handleOverrideChange(decodeURIComponent('${encodedId}'), ${isForcedThis ? 0 : prio})"`
             : 'disabled';
         const nodeTitle = !isEnabled
             ? escapeHtml(t("status.off", {}, "Path is disabled"))
-            : (sortedDests.length > 1
+            : (showTimeline
                 ? (isForcedThis
                     ? escapeHtml(t("rules.auto_failover", {}, "Click to restore Auto"))
                     : escapeHtml(t("rules.force_prio", { prio }, `Click to Force #${prio}`)))
@@ -413,7 +414,7 @@ export function renderRuleCard(rule, rulesState) {
                  ondragleave="handlePathDragLeave(event)"
                  ondrop="handlePathDrop(event, decodeURIComponent('${encodedId}'), ${destIndex})"
                  ondragend="handlePathDragEnd(event)">
-                <button type="button" class="${nodeClasses.join(' ')}" ${nodeAction} title="${nodeTitle}" aria-label="${nodeTitle}">${prio}</button>
+                ${showTimeline ? `<button type="button" class="${nodeClasses.join(' ')}" ${nodeAction} title="${nodeTitle}" aria-label="${nodeTitle}">${prio}</button>` : ''}
                 <div class="path-header">
                     <div class="path-header-left">
                         <span class="drag-handle" title="${escapeHtml(t("modal.drag_hint", {}, "Drag to reorder priority"))}">
@@ -913,7 +914,7 @@ export async function toggleDestinationEnabled(event, ruleId, prio, fetchStatusC
     const prevForceOverride = rule.force_override || 0;
     const prevActivePriority = rule.active_priority || 1;
 
-    // Optimistic UI update
+    // Optimistic in-place DOM update so the toggle slider animates smoothly without wiping the DOM
     dest.enabled = newEnabled;
     if (!newEnabled && rule.force_override === prio) {
         rule.force_override = 0;
@@ -924,7 +925,36 @@ export async function toggleDestinationEnabled(event, ruleId, prio, fetchStatusC
             rule.active_priority = nextEnabled.priority || 1;
         }
     }
-    renderRules(currentRules, lastRuntime);
+
+    const cardEl = document.getElementById(`rule-card-${encodeInlineParam(ruleId)}`);
+    const pathBox = cardEl ? cardEl.querySelector(`.path-box[data-prio="${prio}"]`) : null;
+    const toggleBtn = pathBox ? pathBox.querySelector('.btn-dest-toggle') : null;
+    if (cardEl && pathBox && toggleBtn) {
+        toggleBtn.classList.toggle('is-enabled', newEnabled);
+        toggleBtn.classList.toggle('is-disabled', !newEnabled);
+        pathBox.classList.toggle('is-disabled', !newEnabled);
+        if (!newEnabled) {
+            pathBox.classList.remove('is-active', 'is-failover');
+        }
+        const nodeBtn = pathBox.querySelector('.timeline-node');
+        if (nodeBtn) {
+            nodeBtn.classList.toggle('is-disabled', !newEnabled);
+            nodeBtn.disabled = !newEnabled;
+        }
+        const statusChip = pathBox.querySelector('.status-chip');
+        if (statusChip) {
+            const labelSpan = statusChip.querySelector('span:last-child');
+            if (!newEnabled) {
+                statusChip.className = 'status-chip status-disabled';
+                if (labelSpan) labelSpan.textContent = t("status.off", {}, 'Off');
+            } else {
+                statusChip.className = 'status-chip status-standby';
+                if (labelSpan) labelSpan.textContent = t("status.standby", {}, 'Standby');
+            }
+        }
+    } else {
+        renderRules(currentRules, lastRuntime);
+    }
 
     try {
         const res = await fetch(`${API_BASE}/rule/toggle-destination`, {
@@ -939,7 +969,7 @@ export async function toggleDestinationEnabled(event, ruleId, prio, fetchStatusC
         const data = await res.json().catch(() => ({}));
         if (res.ok && data.ok) {
             showToast(`Priority #${prio} turned ${newEnabled ? "ON" : "OFF"}`);
-            if (typeof fetchStatusCallback === "function") fetchStatusCallback();
+            if (typeof fetchStatusCallback === "function") setTimeout(() => fetchStatusCallback(), 220);
         } else {
             // Revert on failure
             dest.enabled = currentEnabled;

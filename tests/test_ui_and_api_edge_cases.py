@@ -3294,16 +3294,19 @@ stream {
         self.assertIn("telemetry-capsule", rules_js)
         self.assertIn("dest-ip-host", rules_js)
 
-        # 2. Disabled path cannot be forced via timeline node
-        self.assertIn("sortedDests.length > 1 && isEnabled", rules_js)
+        # 2. Disabled path cannot be forced & single-path rules hide timeline node
+        self.assertIn("const showTimeline = sortedDests.length > 1;", rules_js)
+        self.assertIn("showTimeline && isEnabled", rules_js)
         self.assertIn("nodeClasses.push('is-disabled')", rules_js)
 
-        # 3. Optimistic rollback on override and toggle failure
+        # 3. Optimistic rollback on override and toggle failure + in-place toggle animation
         self.assertIn("rule.force_override = prevForce;", rules_js)
         self.assertIn("rule.active_priority = prevActive;", rules_js)
         self.assertIn("rule.force_override = prevForceOverride;", rules_js)
+        self.assertIn("toggleBtn.classList.toggle('is-enabled', newEnabled);", rules_js)
 
-        # 4. Copy feedback and card/path transition animations + reduced motion guard
+        # 4. Copy checkmark feedback and card/path transition animations + reduced motion guard
+        self.assertIn("CHECKMARK_COPY_SVG", utils_js)
         self.assertIn("triggerCopyFeedback", utils_js)
         self.assertIn("is-copied", comp_css)
         self.assertIn("is-just-activated", comp_css)
