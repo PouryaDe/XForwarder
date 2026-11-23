@@ -309,57 +309,40 @@ export function renderRuleCard(rule, rulesState) {
 
     const copyPortSvg = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>`;
 
-    const modeButtonsHtml = [];
-    if (sortedDests.length > 1) {
-        modeButtonsHtml.push(`
-            <button type="button" class="btn-mode-pill ${forceOverride === 0 ? 'is-active auto' : ''}" data-prio="0" onclick="handleOverrideChange(decodeURIComponent('${encodedId}'), 0)" title="${t("rules.auto_failover", {}, "Auto Failover")}">
-                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-                <span>${t("rules.auto_failover", {}, "Auto Failover")}</span>
-            </button>
-        `);
-
-        sortedDests.forEach(d => {
-            const p = d.priority || 1;
-            const isForcedThis = (forceOverride === p);
-            modeButtonsHtml.push(`
-                <button type="button" class="btn-mode-pill ${isForcedThis ? 'is-active forced' : ''}" data-prio="${p}" onclick="handleOverrideChange(decodeURIComponent('${encodedId}'), ${p})" title="${t("rules.force_prio", { prio: p }, `Force #${p}`)}">
-                    <span class="pill-dot"></span>
-                    <span>${t("rules.force_prio", { prio: p }, `Force #${p}`)}</span>
-                </button>
-            `);
-        });
-    }
-
     const pathsHtml = sortedDests.map((dest, destIndex) => {
         const prio = dest.priority || (destIndex + 1);
         const isPrimary = prio === 1;
         const isActive = prio === activePriority;
         const isFailover = isActive && !isPrimary;
+        const isForcedThis = forceOverride === prio;
         const isEnabled = dest.enabled !== undefined ? Boolean(dest.enabled) : true;
 
         const stat = destStats[`prio_${prio}`] || {};
         const isHealthy = (stat.status === 'healthy');
         const isDown = (stat.status === 'failed' || stat.status === 'down' || (stat.packet_loss !== undefined && parseInt(stat.packet_loss) >= 100));
 
-        let statusLabel = t("status.standby", {}, 'STANDBY');
+        let statusLabel = t("status.standby", {}, 'Standby');
         let statusClass = 'status-standby';
         if (!isEnabled) {
-            statusLabel = t("status.off", {}, 'OFF');
+            statusLabel = t("status.off", {}, 'Off');
             statusClass = 'status-disabled';
+        } else if (isActive && !isDown) {
+            statusLabel = isForcedThis ? t("status.forced", {}, 'Forced') : t("status.active", {}, 'Active');
+            statusClass = isForcedThis ? 'status-degraded' : 'status-healthy';
         } else if (isHealthy) {
-            statusLabel = t("status.healthy", {}, 'HEALTHY');
+            statusLabel = t("status.healthy", {}, 'Healthy');
             statusClass = 'status-healthy';
         } else if (isDown) {
-            statusLabel = t("status.down", {}, 'DOWN');
+            statusLabel = t("status.down", {}, 'Down');
             statusClass = 'status-failed';
         } else if (stat.status === 'degraded') {
-            statusLabel = t("status.degraded", {}, 'DEGRADED');
+            statusLabel = t("status.degraded", {}, 'Degraded');
             statusClass = 'status-degraded';
         } else if (stat.status === 'critical') {
-            statusLabel = t("status.critical", {}, 'CRITICAL');
+            statusLabel = t("status.critical", {}, 'Critical');
             statusClass = 'status-failed';
         } else if (stat.status) {
-            statusLabel = String(stat.status).toUpperCase();
+            statusLabel = String(stat.status);
         }
 
         const rawTarget = String(dest.target || '');
@@ -368,7 +351,6 @@ export function renderRuleCard(rule, rulesState) {
         const loss50Badge = formatLoss50Badge(lossInfo, stat.packet_loss);
         const targetDisplay = rawTarget.includes(':') ? `[${escapeHtml(rawTarget)}]` : escapeHtml(rawTarget);
         const latencyBadge = formatLatencyBadge(stat);
-        const tagClass = getPrioTagClass(prio);
 
         const isDegraded = (stat.status === 'degraded');
         const isProblem = isDown || isDegraded || (stat.status === 'critical');
@@ -394,27 +376,57 @@ export function renderRuleCard(rule, rulesState) {
             pathBoxClasses.push('is-down');
         }
 
+        const nodeClasses = ['timeline-node'];
+        if (!isEnabled) {
+            nodeClasses.push('is-disabled');
+        } else if (isActive) {
+            nodeClasses.push(isForcedThis ? 'is-forced' : 'is-active');
+        } else if (isDown) {
+            nodeClasses.push('is-down');
+        }
+
+        const canForceClick = sortedDests.length > 1 && isEnabled;
+        const nodeAction = canForceClick
+            ? `onclick="handleOverrideChange(decodeURIComponent('${encodedId}'), ${isForcedThis ? 0 : prio})"`
+            : 'disabled';
+        const nodeTitle = !isEnabled
+            ? escapeHtml(t("status.off", {}, "Path is disabled"))
+            : (sortedDests.length > 1
+                ? (isForcedThis
+                    ? escapeHtml(t("rules.auto_failover", {}, "Click to restore Auto"))
+                    : escapeHtml(t("rules.force_prio", { prio }, `Click to Force #${prio}`)))
+                : `#${prio}`);
+
+        const destPortText = escapeHtml(dest.port_range ? `${dest.port_range} (1:1)` : (dest.port || rule.port));
+        const extraTags = [
+            dest.tunnel_iface ? `<span class="mono-tag">${escapeHtml(dest.tunnel_iface)}</span>` : '',
+            dest.ingress_iface ? `<span class="mono-tag">in:${escapeHtml(dest.ingress_iface)}</span>` : '',
+            dest.spoof_ip ? `<span class="mono-tag">spoof ${escapeHtml(dest.spoof_ip)}</span>` : ''
+        ].filter(Boolean).join('');
+
         return `
             <div class="${pathBoxClasses.join(' ')}"
+                 data-prio="${prio}"
                  draggable="true"
                  ondragstart="handlePathDragStart(event, decodeURIComponent('${encodedId}'), ${destIndex})"
                  ondragover="handlePathDragOver(event, decodeURIComponent('${encodedId}'), ${destIndex})"
                  ondragleave="handlePathDragLeave(event)"
                  ondrop="handlePathDrop(event, decodeURIComponent('${encodedId}'), ${destIndex})"
                  ondragend="handlePathDragEnd(event)">
+                <button type="button" class="${nodeClasses.join(' ')}" ${nodeAction} title="${nodeTitle}" aria-label="${nodeTitle}">${prio}</button>
                 <div class="path-header">
                     <div class="path-header-left">
                         <span class="drag-handle" title="${escapeHtml(t("modal.drag_hint", {}, "Drag to reorder priority"))}">
                             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="9" cy="6" r="1.5"/><circle cx="15" cy="6" r="1.5"/><circle cx="9" cy="12" r="1.5"/><circle cx="15" cy="12" r="1.5"/><circle cx="9" cy="18" r="1.5"/><circle cx="15" cy="18" r="1.5"/></svg>
                         </span>
-                        <span class="path-tag ${tagClass}">#${prio}</span>
-                        ${dest.is_relay ? `<span class="badge-relay-pill" title="${escapeHtml(t("rules.relay_tooltip", {}, "Mid Server: The engine anchors on Priority 1 and only fails over here on outage, packet loss, or latency > 150ms.")) }">${escapeHtml(t("rules.relay", {}, "Mid Server"))}</span>` : ''}
-                        <span class="path-status ${statusClass}" title="${escapeHtml(stat.reason || statusLabel)}">
-                            <span class="status-indicator"></span>
-                            ${statusLabel}
-                        </span>
+                        <span class="mono-tag ${isActive && isEnabled ? 'is-accent' : ''}">${escapeHtml(formatDestTypeLabel(dest.type))}</span>
+                        ${dest.is_relay ? `<span class="mono-tag" title="${escapeHtml(t("rules.relay_tooltip", {}, "Mid Server: The engine anchors on Priority 1 and only fails over here on outage, packet loss, or latency > 150ms."))}">${escapeHtml(t("rules.relay", {}, "RELAY"))}</span>` : ''}
                     </div>
                     <div class="path-header-right">
+                        <span class="status-chip ${statusClass}" title="${escapeHtml(stat.reason || statusLabel)}">
+                            <span class="status-indicator"></span>
+                            <span>${escapeHtml(statusLabel)}</span>
+                        </span>
                         <button type="button" 
                                 class="btn-dest-toggle ${isEnabled ? 'is-enabled' : 'is-disabled'}" 
                                 onclick="toggleDestinationEnabled(event, decodeURIComponent('${encodedId}'), ${prio})"
@@ -425,14 +437,17 @@ export function renderRuleCard(rule, rulesState) {
                     </div>
                 </div>
                 <div class="path-dest">
-                    <span>${escapeHtml(formatDestTypeLabel(dest.type))}: ${targetDisplay}:${escapeHtml(dest.port_range ? `${dest.port_range} (1:1)` : (dest.port || rule.port))}${dest.tunnel_iface ? ` <em style="color:var(--text-muted); font-style:normal;">(${escapeHtml(dest.tunnel_iface)})</em>` : ''}${dest.ingress_iface ? ` <em style="color:var(--text-muted); font-style:normal;">(in:${escapeHtml(dest.ingress_iface)})</em>` : ''}${dest.spoof_ip ? ` <em style="color:var(--text-muted); font-style:normal;">[spoof:${escapeHtml(dest.spoof_ip)}]</em>` : ''}</span>
-                    <button class="btn-copy" onclick="copyText(decodeURIComponent('${encodeURIComponent(rawTarget)}'))" title="${escapeHtml(t("rules.copy_dest_ip", {}, "Copy Destination IP"))}">${copyPortSvg}</button>
+                    <span class="path-dest-addr"><span class="dest-ip-host">${targetDisplay}</span><span class="dest-colon">:</span><span class="dest-port ${isActive && isEnabled ? 'is-active' : ''}">${destPortText}</span></span>
+                    ${extraTags}
+                    <button class="btn-copy" onclick="copyText(decodeURIComponent('${encodeURIComponent(rawTarget)}'), this)" title="${escapeHtml(t("rules.copy_dest_ip", {}, "Copy Destination IP"))}">${copyPortSvg}</button>
                 </div>
                 <div class="path-meta">
-                    <span>${metaText}</span>
+                    <span class="path-meta-comment">${metaText}</span>
                     <div class="path-meta-badges">
-                        ${latencyBadge}
-                        ${loss50Badge}
+                        <div class="telemetry-capsule">
+                            ${latencyBadge}
+                            ${loss50Badge}
+                        </div>
                     </div>
                 </div>
             </div>
@@ -448,12 +463,24 @@ export function renderRuleCard(rule, rulesState) {
     const exclTitleAttr = exclList.length > 0
         ? ` title="${escapeHtml(`${rule.port_range || "1-65535"} except: ${exclList.join(", ")} (+ auto-protected SSH & panel port)`)}"`
         : "";
+    const protoText = escapeHtml(String(rule.protocol || 'tcp+udp').replace('+', '/').toUpperCase());
+    const modeChipHtml = sortedDests.length > 1
+        ? (forceOverride > 0
+            ? `<button type="button" class="mode-chip is-forced" onclick="handleOverrideChange(decodeURIComponent('${encodedId}'), 0)" title="${escapeHtml(t("rules.auto_failover", {}, "Click to restore Auto"))}">Forced #${forceOverride} ×</button>`
+            : `<span class="mode-chip is-auto" title="${escapeHtml(t("rules.auto_failover", {}, "Auto Failover"))}">Auto</span>`)
+        : '';
+
     return `
         <div class="rule-card" id="rule-card-${encodedId}">
             <div class="rule-top">
                 <div class="port-badge">
-                    <span class="port-num"${exclTitleAttr}>:${escapeHtml(displayPort)}</span>
-                    <button class="btn-copy" onclick="copyText(decodeURIComponent('${encodeURIComponent(copyValue)}'))" title="${escapeHtml(t("rules.copy_port_num", {}, "Copy Port Number"))}">${copyPortSvg}</button>
+                    <div class="port-capsule">
+                        <span class="port-capsule-label">PORT</span>
+                        <span class="port-num"${exclTitleAttr}>${escapeHtml(displayPort)}</span>
+                        <button class="btn-copy port-capsule-copy" onclick="copyText(decodeURIComponent('${encodeURIComponent(copyValue)}'), this)" title="${escapeHtml(t("rules.copy_port_num", {}, "Copy Port Number"))}">${copyPortSvg}</button>
+                    </div>
+                    <span class="proto-pill">${protoText}</span>
+                    ${modeChipHtml}
                     ${rState.switch_pending_seconds > 0 ? `<span class="badge-pending-switch" title="${escapeHtml(t("rules.switch_pending_tooltip", { prio: rState.candidate_priority || '' }, `Candidate P${rState.candidate_priority || ''} sustained quality advantage. Switching after streak confirmation.`))}"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>${escapeHtml(t("rules.switch_in", { sec: rState.switch_pending_seconds }, `Switch in ${rState.switch_pending_seconds}s`))}</span>` : ''}
                     ${rState.hold_remaining > 0 ? `<span class="badge-cooldown" title="${escapeHtml(t("rules.min_hold_tooltip", {}, "Route held stable to prevent disruption (Min Hold: 10m)"))}"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 14 14"/></svg>${escapeHtml(t("rules.hold", { sec: rState.hold_remaining }, `Hold ${rState.hold_remaining}s`))}</span>` : (rState.cooldown_remaining > 0 ? `<span class="badge-cooldown" title="${escapeHtml(t("rules.cooldown_tooltip", {}, "Post-Critical Cooldown active"))}"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 14 14"/></svg>${escapeHtml(t("rules.cooldown", { sec: rState.cooldown_remaining }, `Cooldown ${rState.cooldown_remaining}s`))}</span>` : '')}
                     ${rState.is_flapping ? `<span class="badge-flapping" title="${escapeHtml(t("rules.flapping_tooltip", {}, "Repeated route flapping detected. Cooldown extended."))}"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>${escapeHtml(t("rules.flap_guard", {}, "Flap Guard"))}</span>` : ''}
@@ -477,20 +504,7 @@ export function renderRuleCard(rule, rulesState) {
                 </div>
             </div>
 
-            ${sortedDests.length > 1 ? `
-            <div class="rule-test-bar" data-rule-id="${escapeHtml(ruleId)}" data-mode="${forceOverride > 0 ? 'forced' : 'auto'}">
-                <div class="test-bar-label">
-                    <span class="mode-status-dot"></span>
-                    <span>${escapeHtml(t("rules.forwarding_label", {}, "Forwarding"))}</span>
-                </div>
-                <div class="mode-btn-group">
-                    <span class="mode-slider-thumb ${forceOverride > 0 ? 'is-forced' : 'is-auto'}" aria-hidden="true"></span>
-                    ${modeButtonsHtml.join('')}
-                </div>
-            </div>
-            ` : ''}
-
-            <div class="paths-grid">
+            <div class="paths-grid ${sortedDests.length > 1 ? 'paths-timeline' : ''}">
                 ${pathsHtml}
             </div>
         </div>
@@ -799,13 +813,16 @@ if (typeof window !== "undefined") {
 
 export async function handleOverrideChange(ruleId, val, fetchStatusCallback) {
     const prioVal = parseInt(val, 10);
+    const rule = (currentRules || []).find(x => getRuleId(x) === ruleId);
+    const prevForce = rule ? (rule.force_override || 0) : 0;
+    const prevActive = rule ? (rule.active_priority || 1) : 1;
+
     pendingOverrides.set(ruleId, {
         force_override: prioVal,
         active_priority: prioVal > 0 ? prioVal : undefined,
         timestamp: Date.now()
     });
 
-    const rule = (currentRules || []).find(x => getRuleId(x) === ruleId);
     if (rule) {
         rule.force_override = prioVal;
         if (prioVal > 0) {
@@ -813,7 +830,7 @@ export async function handleOverrideChange(ruleId, val, fetchStatusCallback) {
         }
     }
 
-    // Smooth in-place segmented pill slide + switching feedback without wiping the DOM
+    // Smooth in-place segmented pill slide + timeline card switching feedback
     let activeBar = null;
     document.querySelectorAll(".rule-test-bar").forEach(bar => {
         if (bar.dataset.ruleId === ruleId) activeBar = bar;
@@ -831,6 +848,17 @@ export async function handleOverrideChange(ruleId, val, fetchStatusCallback) {
         syncModeSliderThumbs(activeBar, true);
     } else if (rule) {
         renderRules(currentRules, lastRuntime);
+        const cardEl = document.getElementById(`rule-card-${encodeInlineParam(ruleId)}`);
+        if (cardEl) {
+            cardEl.classList.add("is-switching");
+            const targetPrio = prioVal > 0 ? prioVal : (rule.active_priority || 1);
+            const activatedBox = cardEl.querySelector(`.path-box[data-prio="${targetPrio}"]`);
+            if (activatedBox) activatedBox.classList.add("is-just-activated");
+            setTimeout(() => {
+                cardEl.classList.remove("is-switching");
+                if (activatedBox) activatedBox.classList.remove("is-just-activated");
+            }, 460);
+        }
     }
 
     try {
@@ -846,9 +874,21 @@ export async function handleOverrideChange(ruleId, val, fetchStatusCallback) {
                 setTimeout(() => fetchStatusCallback(), 240);
             }
         } else {
+            pendingOverrides.delete(ruleId);
+            if (rule) {
+                rule.force_override = prevForce;
+                rule.active_priority = prevActive;
+                renderRules(currentRules, lastRuntime);
+            }
             showToast(data.error || "Failed to update override mode", "error");
         }
     } catch (_) {
+        pendingOverrides.delete(ruleId);
+        if (rule) {
+            rule.force_override = prevForce;
+            rule.active_priority = prevActive;
+            renderRules(currentRules, lastRuntime);
+        }
         showToast("Network error updating override mode", "error");
     } finally {
         if (activeBar) {
@@ -870,9 +910,14 @@ export async function toggleDestinationEnabled(event, ruleId, prio, fetchStatusC
 
     const currentEnabled = dest.enabled !== undefined ? Boolean(dest.enabled) : true;
     const newEnabled = !currentEnabled;
+    const prevForceOverride = rule.force_override || 0;
+    const prevActivePriority = rule.active_priority || 1;
 
     // Optimistic UI update
     dest.enabled = newEnabled;
+    if (!newEnabled && rule.force_override === prio) {
+        rule.force_override = 0;
+    }
     if (!newEnabled && rule.active_priority === prio) {
         const nextEnabled = rule.destinations.find(d => (d.priority || 1) !== prio && (d.enabled !== false));
         if (nextEnabled) {
@@ -898,11 +943,15 @@ export async function toggleDestinationEnabled(event, ruleId, prio, fetchStatusC
         } else {
             // Revert on failure
             dest.enabled = currentEnabled;
+            rule.force_override = prevForceOverride;
+            rule.active_priority = prevActivePriority;
             renderRules(currentRules, lastRuntime);
             showToast(data.error || "Failed to update priority status", "error");
         }
     } catch (_) {
         dest.enabled = currentEnabled;
+        rule.force_override = prevForceOverride;
+        rule.active_priority = prevActivePriority;
         renderRules(currentRules, lastRuntime);
         showToast("Network error updating priority status", "error");
     }
@@ -916,6 +965,9 @@ export async function deleteRule(ruleId, fetchStatusCallback) {
     );
     if (!confirmed) return;
 
+    const cardEl = document.getElementById(`rule-card-${encodeInlineParam(ruleId)}`);
+    if (cardEl) cardEl.classList.add("is-deleting");
+
     try {
         const res = await fetch(`${API_BASE}/rule/${encodeURIComponent(ruleId)}`, { method: "DELETE" });
         const data = await res.json().catch(() => ({}));
@@ -923,9 +975,11 @@ export async function deleteRule(ruleId, fetchStatusCallback) {
             showToast(`Rule '${ruleId}' removed`);
             if (typeof fetchStatusCallback === "function") fetchStatusCallback();
         } else {
+            if (cardEl) cardEl.classList.remove("is-deleting");
             showToast(data.error || "Failed to delete rule", "error");
         }
     } catch (_) {
+        if (cardEl) cardEl.classList.remove("is-deleting");
         showToast("Error deleting rule", "error");
     }
 }

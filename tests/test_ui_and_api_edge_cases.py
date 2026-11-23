@@ -3275,6 +3275,42 @@ stream {
             self.assertEqual(state_store["cfg"]["rules"], [])
             self.assertTrue(mock_rm_state.called)
 
+    def test_failover_timeline_card_design_animations_and_guards(self):
+        """Verifies Failover Timeline card markup, disabled-node force guard, rollback logic, and fluid animations."""
+        web_dir = os.path.join(REPO_ROOT, "web")
+        with open(os.path.join(web_dir, "js", "modules", "rules.js"), "r", encoding="utf-8") as f:
+            rules_js = f.read()
+        with open(os.path.join(web_dir, "js", "modules", "utils.js"), "r", encoding="utf-8") as f:
+            utils_js = f.read()
+        with open(os.path.join(web_dir, "css", "components.css"), "r", encoding="utf-8") as f:
+            comp_css = f.read()
+
+        # 1. Inline header port capsule, mode chip, and timeline nodes
+        self.assertIn("port-capsule", rules_js)
+        self.assertIn("mode-chip", rules_js)
+        self.assertIn("paths-timeline", rules_js)
+        self.assertIn("timeline-node", rules_js)
+        self.assertIn("status-chip", rules_js)
+        self.assertIn("telemetry-capsule", rules_js)
+        self.assertIn("dest-ip-host", rules_js)
+
+        # 2. Disabled path cannot be forced via timeline node
+        self.assertIn("sortedDests.length > 1 && isEnabled", rules_js)
+        self.assertIn("nodeClasses.push('is-disabled')", rules_js)
+
+        # 3. Optimistic rollback on override and toggle failure
+        self.assertIn("rule.force_override = prevForce;", rules_js)
+        self.assertIn("rule.active_priority = prevActive;", rules_js)
+        self.assertIn("rule.force_override = prevForceOverride;", rules_js)
+
+        # 4. Copy feedback and card/path transition animations + reduced motion guard
+        self.assertIn("triggerCopyFeedback", utils_js)
+        self.assertIn("is-copied", comp_css)
+        self.assertIn("is-just-activated", comp_css)
+        self.assertIn("@keyframes pathActivatePop", comp_css)
+        self.assertIn("prefers-reduced-motion: reduce", comp_css)
+        self.assertIn("is-deleting", rules_js)
+
 
 if __name__ == "__main__":
     unittest.main()

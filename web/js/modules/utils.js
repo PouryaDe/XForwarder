@@ -303,24 +303,39 @@ export function formatProtoBadge(proto) {
     return p.toUpperCase();
 }
 
-export function copyText(text) {
+function triggerCopyFeedback(triggerEl) {
+    if (!triggerEl || typeof triggerEl.classList === "undefined") return;
+    triggerEl.classList.remove("is-copied");
+    void triggerEl.offsetWidth;
+    triggerEl.classList.add("is-copied");
+    if (triggerEl._copyTimer) clearTimeout(triggerEl._copyTimer);
+    triggerEl._copyTimer = setTimeout(() => {
+        triggerEl.classList.remove("is-copied");
+        triggerEl._copyTimer = null;
+    }, 1100);
+}
+
+export function copyText(text, triggerEl = null) {
     if (!text) return;
+    const onSuccess = () => {
+        triggerCopyFeedback(triggerEl);
+        showToast(`Copied to clipboard: ${text}`);
+    };
     if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(text).then(() => {
-            showToast(`Copied to clipboard: ${text}`);
-        }).catch(() => fallbackCopy(text));
+        navigator.clipboard.writeText(text).then(onSuccess).catch(() => fallbackCopy(text, triggerEl));
     } else {
-        fallbackCopy(text);
+        fallbackCopy(text, triggerEl);
     }
 }
 
-function fallbackCopy(text) {
+function fallbackCopy(text, triggerEl = null) {
     const el = document.createElement("textarea");
     el.value = text;
     document.body.appendChild(el);
     el.select();
     try {
         document.execCommand("copy");
+        triggerCopyFeedback(triggerEl);
         showToast(`Copied to clipboard: ${text}`);
     } catch (_) {}
     document.body.removeChild(el);
