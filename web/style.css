@@ -2978,13 +2978,13 @@ input:-webkit-autofill:active {
 
 @media (max-width: 480px) {
     .paths-grid.paths-timeline {
-        padding-left: 24px;
+        padding-left: 30px;
     }
     .paths-grid.paths-timeline::before {
         left: 9px;
     }
     .timeline-node {
-        left: -24px;
+        left: -30px;
         width: 20px;
         height: 20px;
         font-size: 0.65rem;
@@ -3179,7 +3179,7 @@ input:-webkit-autofill:active {
 
 .paths-grid.paths-timeline {
     position: relative;
-    padding-left: 30px;
+    padding-left: 38px;
 }
 
 .paths-grid.paths-timeline::before {
@@ -3195,7 +3195,7 @@ input:-webkit-autofill:active {
 
 .timeline-node {
     position: absolute;
-    left: -30px;
+    left: -38px;
     top: 14px;
     width: 22px;
     height: 22px;
