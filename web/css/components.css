@@ -1477,13 +1477,17 @@
         padding-left: 30px;
     }
     .paths-grid.paths-timeline::before {
-        left: 9px;
+        left: 10.5px;
     }
     .timeline-node {
         left: -30px;
         width: 20px;
         height: 20px;
         font-size: 0.65rem;
+    }
+    .path-box.is-active .timeline-node,
+    .path-box.is-failover .timeline-node {
+        left: -32px;
     }
 }
 
@@ -1681,7 +1685,7 @@
 .paths-grid.paths-timeline::before {
     content: "";
     position: absolute;
-    left: 11px;
+    left: 11.5px;
     top: 18px;
     bottom: 18px;
     width: 1px;
@@ -1695,10 +1699,15 @@
     top: 14px;
     width: 22px;
     height: 22px;
+    padding: 0;
+    margin: 0;
+    box-sizing: border-box;
     border-radius: 999px;
     font-family: var(--font-mono);
     font-size: 0.70rem;
     font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    text-align: center;
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -1710,6 +1719,11 @@
     z-index: 2;
     line-height: 1;
     transition: transform 0.14s ease, background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+.path-box.is-active .timeline-node,
+.path-box.is-failover .timeline-node {
+    left: -40px;
 }
 
 .timeline-node:hover {
