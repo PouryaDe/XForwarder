@@ -171,7 +171,7 @@ export function openAddRuleModal() {
 
     currentModalDestinations = [
         { priority: 1, type: "haproxy", target: "", port: "", comment: "", proxy_protocol: false, is_relay: false, enabled: true },
-        { priority: 2, type: "nftables", target: "", port: "", comment: "", proxy_protocol: false, is_relay: true, enabled: true }
+        { priority: 2, type: "nftables", target: "", port: "", comment: "", proxy_protocol: false, is_relay: false, enabled: true }
     ];
 
     renderDestinationsList();
@@ -1031,7 +1031,7 @@ export function initRuleModal(fetchStatusCallback) {
                 port: defaultPort,
                 comment: "",
                 proxy_protocol: false,
-                is_relay: nextPrio > 1,
+                is_relay: false,
                 enabled: true
             };
             if (isRange) newDest.port_range = inboundSpec.rangeStr;
