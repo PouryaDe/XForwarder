@@ -582,9 +582,13 @@ class TestNFTablesDSRMethods(unittest.TestCase):
         # 2. Persistent sysctl drop-in write & cleanup (cross-platform mocked linux)
         with tempfile.TemporaryDirectory() as tmp:
             conf_file = os.path.join(tmp, "99-xforwarder-dsr.conf")
+            proc_conf_dir = os.path.join(tmp, "proc_conf")
+            os.makedirs(os.path.join(proc_conf_dir, "tun99"), exist_ok=True)
+            os.makedirs(os.path.join(proc_conf_dir, "all"), exist_ok=True)
+            os.makedirs(os.path.join(proc_conf_dir, "lo"), exist_ok=True)
             with patch("core.firewall.sys.platform", "linux"), \
                  patch("core.firewall.shutil.which", return_value=None):
-                ensure_dsr_sysctl({"eth0", "gre15"}, sysctl_conf_path=conf_file)
+                ensure_dsr_sysctl({"eth0", "gre15"}, sysctl_conf_path=conf_file, proc_net_conf_dir=proc_conf_dir)
                 self.assertTrue(os.path.isfile(conf_file))
                 with open(conf_file, "r", encoding="utf-8") as f:
                     body = f.read()
@@ -593,9 +597,26 @@ class TestNFTablesDSRMethods(unittest.TestCase):
                 self.assertIn("net.ipv4.conf.default.rp_filter=0", body)
                 self.assertIn("net.ipv4.conf.eth0.rp_filter=0", body)
                 self.assertIn("net.ipv4.conf.gre15.rp_filter=0", body)
+                self.assertIn("net.ipv4.conf.tun99.rp_filter=0", body)
+                self.assertNotIn("net.ipv4.conf.lo.rp_filter=0", body)
 
                 cleanup_dsr_sysctl(sysctl_conf_path=conf_file)
                 self.assertFalse(os.path.isfile(conf_file))
+
+    def test_detect_dsr_mss_uses_iface_hint_and_ip_family(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            net_dir = os.path.join(tmp, "net")
+            os.makedirs(os.path.join(net_dir, "tun1"), exist_ok=True)
+            with open(os.path.join(net_dir, "tun1", "mtu"), "w", encoding="utf-8") as f:
+                f.write("1320\n")
+
+            eng = XForwarderEngine(config_path=os.path.join(tmp, "c.json"), state_file_path=os.path.join(tmp, "s.json"))
+            orig_isdir = os.path.isdir
+            orig_open = open
+            with patch("core.engine.os.path.isdir", side_effect=lambda p: True if p == "/sys/class/net" else orig_isdir(p)), \
+                 patch("builtins.open", side_effect=lambda p, *a, **kw: orig_open(os.path.join(net_dir, "tun1", "mtu"), *a, **kw) if str(p).replace("\\", "/") == "/sys/class/net/tun1/mtu" else orig_open(p, *a, **kw)):
+                self.assertEqual(eng._detect_dsr_mss("eth0", "tun1", "ip"), 1280)
+                self.assertEqual(eng._detect_dsr_mss("eth0", "tun1", "ip6"), 1260)
 
 
 if __name__ == "__main__":

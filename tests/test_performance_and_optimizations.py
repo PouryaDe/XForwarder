@@ -667,7 +667,7 @@ class TestPerformanceAndOptimizations(unittest.TestCase):
         self.assertTrue(raw_sec.strip().splitlines()[1].strip() == 'iifname "eth0" accept')
         self.assertTrue(pre_sec.strip().splitlines()[1].strip() == 'iifname "eth0" accept')
 
-        # 2. Linear fallback when `nft -c -f` rejects map/vmap on legacy kernels
+        # 2. Linear fallback when `nft -c -f` rejects map/vmap/syn_mss on legacy kernels
         dnat_multi = [
             '        tcp dport 1001 dnat to 10.88.1.2:1001',
             '        tcp dport 1002 dnat to 10.88.1.3:1002',
@@ -678,7 +678,7 @@ class TestPerformanceAndOptimizations(unittest.TestCase):
             proc = MagicMock()
             def fake_comm(input=None):
                 called_inputs.append(input)
-                if input and "vmap" in input:
+                if input and ("vmap" in input or "syn_mss" in input):
                     proc.returncode = 1
                     return ("", "syntax error, unexpected vmap")
                 proc.returncode = 0
@@ -692,11 +692,17 @@ class TestPerformanceAndOptimizations(unittest.TestCase):
             with patch("shutil.which", return_value="/usr/sbin/nft"), \
                  patch("subprocess.run", return_value=MagicMock(returncode=0)), \
                  patch("subprocess.Popen", side_effect=fake_popen):
-                ok, err, new_content = fw.apply_nftables(dnat_multi, rule_ports={1001, 1002})
+                ok, err, new_content = fw.apply_nftables(
+                    dnat_multi,
+                    rule_ports={1001, 1002},
+                    dsr_mss_rules=['        tcp flags syn ip daddr 10.88.1.2 tcp option maxseg size > 1340 tcp option maxseg size set 1340'],
+                )
             self.assertTrue(ok, err)
             self.assertIsNone(err)
             self.assertFalse(fw._NFT_MAPS_SUPPORTED)
             self.assertNotIn("vmap", new_content)
+            self.assertNotIn("syn_mss", new_content)
+            self.assertIn("tcp flags syn ip daddr 10.88.1.2 tcp option maxseg size > 1340 tcp option maxseg size set 1340", new_content)
             self.assertIn("tcp dport 1001 dnat to 10.88.1.2:1001", new_content)
             self.assertGreaterEqual(len(called_inputs), 3)
         finally:

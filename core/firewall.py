@@ -353,7 +353,8 @@ def cleanup_dsr_sysctl(sysctl_conf_path: str = DSR_SYSCTL_CONF_PATH) -> None:
 
 def ensure_dsr_sysctl(
     ifaces: Optional[Set[str]] = None,
-    sysctl_conf_path: str = DSR_SYSCTL_CONF_PATH
+    sysctl_conf_path: str = DSR_SYSCTL_CONF_PATH,
+    proc_net_conf_dir: str = "/proc/sys/net/ipv4/conf"
 ) -> None:
     """
     Ensures Linux kernel IP forwarding and rp_filter=0 are configured and persisted for asymmetric DSR routing.
@@ -362,15 +363,30 @@ def ensure_dsr_sysctl(
     if sys.platform == "win32":
         return
 
+    target_ifaces: Set[str] = set()
+    for iface in (ifaces or set()):
+        clean_if = str(iface or "").strip()
+        if IFACE_NAME_REGEX.match(clean_if):
+            target_ifaces.add(clean_if)
+
+    # Also disable rp_filter on any active host/tunnel interfaces (critical when ingress_iface/tunnel_iface is Auto)
+    try:
+        if proc_net_conf_dir and os.path.isdir(proc_net_conf_dir):
+            for name in os.listdir(proc_net_conf_dir):
+                if name in ("all", "default", "lo"):
+                    continue
+                if IFACE_NAME_REGEX.match(name):
+                    target_ifaces.add(name)
+    except Exception:
+        pass
+
     settings = [
         "net.ipv4.ip_forward=1",
         "net.ipv4.conf.all.rp_filter=0",
         "net.ipv4.conf.default.rp_filter=0",
     ]
-    for iface in sorted(ifaces or set()):
-        clean_if = str(iface or "").strip()
-        if IFACE_NAME_REGEX.match(clean_if):
-            settings.append(f"net.ipv4.conf.{clean_if}.rp_filter=0")
+    for clean_if in sorted(target_ifaces):
+        settings.append(f"net.ipv4.conf.{clean_if}.rp_filter=0")
 
     # Atomically persist drop-in so sysctl --system or reboots never re-enable rp_filter=1
     try:
@@ -724,7 +740,7 @@ def _build_family_table(
         decl_blocks.append("\n".join(vmap_chains))
 
     syn_mss_chain = ""
-    if mss_rules:
+    if mss_rules and optimize_maps:
         stripped_mss = [re.sub(r"^\s*tcp\s+flags\s+syn\s+", "        ", r) for r in mss_rules]
         syn_mss_chain = (
             "    chain syn_mss {\n"
@@ -735,7 +751,8 @@ def _build_family_table(
         decl_blocks.append(syn_mss_chain)
         forward_mss_line = "        tcp flags & (syn|rst) == syn jump syn_mss"
     else:
-        forward_mss_line = "        tcp flags syn tcp option maxseg size set rt mtu"
+        mss_lines = ["        tcp flags syn tcp option maxseg size set rt mtu"] + list(mss_rules)
+        forward_mss_line = "\n".join(mss_lines)
 
     if opt_raw_rules:
         decl_blocks.append(

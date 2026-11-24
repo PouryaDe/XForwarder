@@ -1635,7 +1635,6 @@ class XForwarderEngine:
             return None
         return f"!= {eff_excl[0]}" if len(eff_excl) == 1 else "!= { " + ", ".join(str(p) for p in eff_excl) + " }"
 
-    @staticmethod
     def _detect_dsr_mss(self, wan_iface: str, iface_hint: str = "", ip_kw: str = "ip") -> int:
         """Calculates safe TCP MSS ceiling for DSR targets from tunnel MTU (defaults to 1340)."""
         hdr_overhead = 60 if ip_kw == "ip6" else 40
