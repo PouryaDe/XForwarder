@@ -29,8 +29,9 @@ Universal protocol executed proactively at the conclusion of every coding task i
 ## 3. Requirement Convergence
 - **Convergence Audit:** Verify that 100% of user requirements, edge cases, and error states are handled. Never leave unverified gaps.
 
-## 4. Documentation Synchronization
+## 4. Documentation & Version Synchronization
 - **AGENTS.md & README.md:** Synchronize architectural docs if configuration schemas, command-line interfaces, or systemd services were altered.
+- **SemVer Version Bump:** For any runtime/UI/CLI change in `core/`, `web/`, or `xforwarder.sh`, evaluate SemVer impact per [`versioning.md`](versioning.md) and [`skills/release-version/SKILL.md`](../skills/release-version/SKILL.md), and bump all synchronized version targets when warranted.
 
 ## 5. UI Consistency (If Web Modified)
 - Comply with `ui-design-consistency.md`: Modern dark-mode glassmorphism, Inter and JetBrains Mono typography, debounce on live polling, and pure Vanilla JavaScript without build tools.
