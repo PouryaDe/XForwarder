@@ -996,14 +996,34 @@
 }
 
 .metrics-header-controls .btn-sm {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
     border-radius: 9999px;
+}
+
+.metrics-header-controls .btn-sm svg {
+    display: block;
+    flex-shrink: 0;
+}
+
+.metrics-header-controls .btn-sm span {
+    display: inline-flex;
+    align-items: center;
+    line-height: 1;
 }
 
 #btnRefreshOvTraffic {
     width: 32px;
+    min-width: 32px;
     height: 32px;
+    min-height: 32px;
     padding: 0 !important;
     border-radius: 9999px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .tunnel-status-pill {
