@@ -122,6 +122,8 @@ function formatDestTypeLabel(destType) {
     const s = String(destType || "haproxy").toLowerCase();
     if (s === "nftables_dsr") return "NFTABLES DSR";
     if (s === "nftables_dsr_relay") return "NFTABLES DSR RELAY";
+    if (s === "nftables_dsr_synack") return "NFTABLES DSR SYN-ACK";
+    if (s === "nftables_dsr_direct") return "NFTABLES DSR DIRECT";
     return s.toUpperCase();
 }
 

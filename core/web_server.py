@@ -35,7 +35,7 @@ from core.config_manager import (
     get_rule_port_bounds, ports_overlap, rules_ports_overlap,
     export_config_data, import_config_data, is_valid_target,
     is_port_in_use_by_external_service, migrate_and_normalize_config,
-    validate_update_transport_config,
+    validate_update_transport_config, sanitize_config_for_api,
     CONFIG_PATH, LEGACY_CONFIG_PATH, LOCAL_CONFIG_PATH,
     STATE_FILE_PATH, LEGACY_STATE_FILE_PATH
 )
@@ -45,10 +45,13 @@ from core.auth import (
     load_sessions_from_disk as auth_load_sessions_from_disk,
     save_sessions_to_disk as auth_save_sessions_to_disk,
     get_sessions_file_path as auth_get_sessions_file_path,
+    generate_api_key, sanitize_api_key_record, scope_allows, authenticate_api_key,
+    VALID_API_SCOPES,
     ACTIVE_SESSIONS, SESSION_LOCK,
     SESSION_TTL_HOURS, SESSION_IDLE_TIMEOUT_SECONDS, MAX_ACTIVE_SESSIONS,
     LOCKOUT_DURATION, MAX_FAILED_ATTEMPTS
 )
+from core.openapi_spec import build_openapi_spec
 from core.system_info import (
     get_system_stats, get_services_status,
     get_network_interfaces_info as sys_get_network_interfaces_info,
@@ -242,6 +245,121 @@ except ImportError:
         pick_best_now = None
 
 
+GLOBAL_SETTINGS_KEYS = (
+    "wan_interface",
+    "check_interval_seconds",
+    "probe_count",
+    "probe_interval_ms",
+    "quality_window_seconds",
+    "failure_threshold",
+    "recovery_threshold",
+    "fast_failover_enabled",
+    "max_acceptable_loss",
+    "critical_loss_percent",
+    "cooldown_seconds",
+    "min_hold_seconds",
+    "switch_confirm_seconds",
+    "hysteresis_percent",
+    "loss_penalty_weight",
+    "jitter_penalty_weight",
+    "priority_bias_ms",
+    "fast_probe_burst",
+    "target_probe_interval_seconds",
+    "fast_liveness_interval_seconds",
+    "max_primary_latency_ms",
+)
+
+
+def _normalize_api_subpath(subpath: str) -> str:
+    """Normalizes versioned `/api/v1/*` paths to canonical `/api/*` paths."""
+    if subpath == "/api/v1":
+        return "/api"
+    if subpath.startswith("/api/v1/"):
+        return "/api/" + subpath[len("/api/v1/"):]
+    return subpath
+
+
+def _extract_api_key_from_headers(headers: Any) -> Optional[str]:
+    """Extracts an API key from `Authorization: Bearer <key>` or `X-API-Key` headers."""
+    if not headers:
+        return None
+    api_key_hdr = headers.get("X-API-Key")
+    if isinstance(api_key_hdr, str) and api_key_hdr.strip():
+        return api_key_hdr.strip()
+    auth_hdr = headers.get("Authorization", "")
+    if isinstance(auth_hdr, str) and auth_hdr.lower().startswith("bearer "):
+        tok = auth_hdr[7:].strip()
+        if tok:
+            return tok
+    return None
+
+
+def _require_scope(handler: Any, required_scope: str = "read") -> bool:
+    """Enforces authentication and scoped API key authorization (401/403), compatible with mocked handlers."""
+    ctx = None
+    if hasattr(handler, "get_auth_context"):
+        cand = handler.get_auth_context()
+        if isinstance(cand, dict):
+            ctx = cand
+    if ctx is None:
+        if handler.is_authenticated():
+            ctx = {
+                "authenticated": True,
+                "auth_type": "session",
+                "username": "admin",
+                "scope": "admin",
+                "key_id": None,
+                "key_name": None,
+            }
+        else:
+            handler.send_json({"ok": False, "error": "Unauthorized"}, 401)
+            return False
+    if not scope_allows(ctx.get("scope", ""), required_scope):
+        handler.send_json({
+            "ok": False,
+            "error": f"Insufficient API key scope (requires '{required_scope}', key has '{ctx.get('scope')}')",
+            "required_scope": required_scope,
+            "current_scope": ctx.get("scope"),
+        }, 403)
+        return False
+    return True
+
+
+def _parse_json_body(handler: Any) -> Tuple[bool, Any]:
+    """Reads and parses up to 64KB JSON request payload."""
+    headers = getattr(handler, "headers", None)
+    content_len = int((headers.get("Content-Length", 0) if headers else 0) or 0)
+    if content_len <= 0:
+        return True, {}
+    if content_len > 65536:
+        handler.send_json({"ok": False, "error": "Payload too large"}, 413)
+        return False, None
+    raw_body = handler.rfile.read(content_len).decode("utf-8", errors="replace")
+    try:
+        return True, json.loads(raw_body)
+    except Exception:
+        return True, {}
+
+
+def _reject_disallowed_origin(handler: Any) -> bool:
+    """Validates CSRF Origin/Referer for cookie-backed browser requests; returns True if rejected."""
+    headers = getattr(handler, "headers", None)
+    has_api_key = bool(_extract_api_key_from_headers(headers))
+    has_cookie = bool(headers.get("Cookie")) if headers else False
+    if has_api_key and not has_cookie:
+        return False
+    if not handler.check_origin():
+        try:
+            drain_len = int((headers.get("Content-Length", 0) if headers else 0) or 0)
+            if 0 < drain_len <= 65536:
+                handler.rfile.read(drain_len)
+        except Exception:
+            pass
+        handler.send_json({"ok": False, "error": "Cross-origin request rejected"}, 403)
+        return True
+    return False
+
+
 class XForwarderWebHandler(BaseHTTPRequestHandler):
     server_instance: 'XForwarderWebServer'
     server_version = "XForwarder-Shield/2.0"
@@ -386,32 +504,77 @@ class XForwarderWebHandler(BaseHTTPRequestHandler):
         for item in cookie_header.split(";"):
             item = item.strip()
             if item.startswith("xfwd_session="):
-                return item.split("=")[1].strip()
+                return item.split("=", 1)[1].strip()
             if item.startswith("fwdman_session="):
-                return item.split("=")[1].strip()
+                return item.split("=", 1)[1].strip()
+        return None
+
+    def get_api_key_from_headers(self) -> Optional[str]:
+        """Extracts an API key from `Authorization: Bearer <key>` or `X-API-Key` headers."""
+        return _extract_api_key_from_headers(getattr(self, "headers", None))
+
+    def is_stateless_api_key_request(self) -> bool:
+        """Returns True when request authenticates solely via explicit API key header without cookies."""
+        return bool(self.get_api_key_from_headers()) and not bool(self.headers.get("Cookie"))
+
+    def get_auth_context(self) -> Optional[Dict[str, Any]]:
+        """Resolves session or API key authentication context, or None if unauthenticated."""
+        token = self.get_session_token()
+        if token:
+            now = time.time()
+            with SESSION_LOCK:
+                session = ACTIVE_SESSIONS.get(token)
+                if session:
+                    if now > session.get("expires_at", 0) or (now - session.get("last_active", 0)) > SESSION_IDLE_TIMEOUT_SECONDS:
+                        ACTIVE_SESSIONS.pop(token, None)
+                    else:
+                        session["last_active"] = now
+                        if len(ACTIVE_SESSIONS) > MAX_ACTIVE_SESSIONS:
+                            stale = [
+                                k for k, v in ACTIVE_SESSIONS.items()
+                                if now > v.get("expires_at", 0) or (now - v.get("last_active", 0)) > SESSION_IDLE_TIMEOUT_SECONDS
+                            ]
+                            for k in stale:
+                                ACTIVE_SESSIONS.pop(k, None)
+                        return {
+                            "authenticated": True,
+                            "auth_type": "session",
+                            "username": session.get("username", "admin"),
+                            "scope": "admin",
+                            "key_id": None,
+                            "key_name": None,
+                        }
+
+        raw_key = self.get_api_key_from_headers()
+        if raw_key:
+            cfg = load_config()
+            api_keys = cfg.get("web", {}).get("api_keys", [])
+            key_meta = authenticate_api_key(raw_key, api_keys)
+            if key_meta:
+                return {
+                    "authenticated": True,
+                    "auth_type": "api_key",
+                    "username": cfg.get("web", {}).get("auth", {}).get("username", "admin"),
+                    "scope": key_meta.get("scope", "admin"),
+                    "key_id": key_meta.get("id"),
+                    "key_name": key_meta.get("name"),
+                }
         return None
 
     def is_authenticated(self) -> bool:
-        token = self.get_session_token()
-        if not token:
-            return False
-        now = time.time()
-        with SESSION_LOCK:
-            session = ACTIVE_SESSIONS.get(token)
-            if not session:
-                return False
+        return self.get_auth_context() is not None
 
-            if now > session.get("expires_at", 0) or (now - session.get("last_active", 0)) > SESSION_IDLE_TIMEOUT_SECONDS:
-                ACTIVE_SESSIONS.pop(token, None)
-                return False
+    def require_scope(self, required_scope: str = "read") -> bool:
+        """Enforces authentication and scoped API key authorization (401/403)."""
+        return _require_scope(self, required_scope)
 
-            session["last_active"] = now
+    def _parse_json_body(self) -> Tuple[bool, Any]:
+        """Reads and parses up to 64KB JSON request payload."""
+        return _parse_json_body(self)
 
-            if len(ACTIVE_SESSIONS) > MAX_ACTIVE_SESSIONS:
-                stale = [k for k, v in ACTIVE_SESSIONS.items() if now > v.get("expires_at", 0) or (now - v.get("last_active", 0)) > SESSION_IDLE_TIMEOUT_SECONDS]
-                for k in stale:
-                    ACTIVE_SESSIONS.pop(k, None)
-        return True
+    def _reject_disallowed_origin(self) -> bool:
+        """Validates CSRF Origin/Referer for cookie-backed browser requests; returns True if rejected."""
+        return _reject_disallowed_origin(self)
 
     def resolve_path(self) -> Tuple[bool, str, Optional[str]]:
         parsed = urlparse(self.path)
@@ -499,18 +662,164 @@ class XForwarderWebHandler(BaseHTTPRequestHandler):
 
         # Check authentication for API
         if subpath.startswith("/api/"):
+            subpath = _normalize_api_subpath(subpath)
+
             if subpath == "/api/me":
-                auth_ok = self.is_authenticated()
+                raw_ctx = self.get_auth_context() if hasattr(self, "get_auth_context") else None
+                ctx = raw_ctx if isinstance(raw_ctx, dict) else None
+                auth_ok = ctx is not None or bool(self.is_authenticated())
                 cfg = load_config()
-                username = cfg.get("web", {}).get("auth", {}).get("username", "admin")
-                self.send_json({"authenticated": auth_ok, "username": username if auth_ok else None})
+                username = (ctx or {}).get("username") or cfg.get("web", {}).get("auth", {}).get("username", "admin")
+                self.send_json({
+                    "authenticated": auth_ok,
+                    "username": username if auth_ok else None,
+                    "auth_type": (ctx or {}).get("auth_type") if auth_ok else None,
+                    "scope": (ctx or {}).get("scope") if auth_ok else None,
+                    "key_id": (ctx or {}).get("key_id") if auth_ok else None,
+                    "key_name": (ctx or {}).get("key_name") if auth_ok else None,
+                })
                 return
 
-            if not self.is_authenticated():
-                self.send_json({"error": "Unauthorized"}, 401)
+            if subpath in ("/api/api-keys", "/api/security/api-keys"):
+                if not _require_scope(self, "admin"):
+                    return
+                cfg = load_config()
+                keys = [sanitize_api_key_record(k) for k in cfg.get("web", {}).get("api_keys", []) if isinstance(k, dict)]
+                self.send_json({"ok": True, "count": len(keys), "api_keys": keys})
                 return
 
-            if subpath == "/api/status":
+            if subpath.startswith("/api/api-keys/") or subpath.startswith("/api/security/api-keys/"):
+                if not _require_scope(self, "admin"):
+                    return
+                prefix = "/api/api-keys/" if subpath.startswith("/api/api-keys/") else "/api/security/api-keys/"
+                key_id = unquote(subpath[len(prefix):]).strip().strip("/")
+                if not key_id or "/" in key_id:
+                    self.send_json({"ok": False, "error": "API key ID required"}, 400)
+                    return
+                cfg = load_config()
+                match = next((k for k in cfg.get("web", {}).get("api_keys", []) if isinstance(k, dict) and k.get("id") == key_id), None)
+                if not match:
+                    self.send_json({"ok": False, "error": "API key not found"}, 404)
+                    return
+                self.send_json({"ok": True, "key": sanitize_api_key_record(match)})
+                return
+
+            if not _require_scope(self, "read"):
+                return
+
+            if subpath == "/api/health":
+                self.send_json({
+                    "ok": True,
+                    "status": "healthy",
+                    "version": get_installed_version(),
+                    "server_time": time.time(),
+                })
+                return
+            elif subpath == "/api/openapi.json":
+                host_hdr = self.headers.get("Host", "").strip()
+                scheme = "https" if (
+                    self.headers.get("X-Forwarded-Proto") == "https"
+                    or (hasattr(self, "server_instance") and getattr(self.server_instance, "is_ssl", False))
+                ) else "http"
+                cfg = load_config()
+                secret = str(cfg.get("web", {}).get("secret_path", "") or "").strip().strip("/")
+                base_url = f"{scheme}://{host_hdr}/{secret}" if (host_hdr and secret) else (f"{scheme}://{host_hdr}" if host_hdr else "/")
+                spec = build_openapi_spec(version=get_installed_version(), server_url=base_url)
+                self.send_json(spec)
+                return
+            elif subpath == "/api/rules":
+                parsed_url = urlparse(self.path)
+                params = parse_qs(parsed_url.query)
+                cat_filter = params.get("category", [None])[0]
+                proto_filter = params.get("protocol", [None])[0]
+                type_filter = params.get("type", [None])[0]
+                port_filter = params.get("port", [None])[0]
+                include_rt = params.get("include_runtime", ["true"])[0].lower() not in ("0", "false", "no")
+
+                cfg = load_config()
+                rules = cfg.get("rules", []) if isinstance(cfg, dict) else []
+                rules_state = load_state().get("runtime", {}).get("rules_state", {}) if include_rt else {}
+
+                p_filter_num = None
+                if port_filter is not None and str(port_filter).strip():
+                    try:
+                        p_filter_num = int(port_filter)
+                    except (ValueError, TypeError):
+                        self.send_json({"ok": False, "error": "Invalid port query filter"}, 400)
+                        return
+
+                items = []
+                for r in rules:
+                    if not isinstance(r, dict):
+                        continue
+                    if cat_filter is not None:
+                        r_cat = str(r.get("category") or "")
+                        if cat_filter == "__uncategorized__":
+                            if r_cat != "":
+                                continue
+                        elif r_cat.lower() != cat_filter.strip().lower():
+                            continue
+                    if proto_filter is not None:
+                        if str(r.get("protocol", "both")).lower() != proto_filter.strip().lower():
+                            continue
+                    if type_filter is not None:
+                        t_low = type_filter.strip().lower()
+                        if not any(str(d.get("type", "")).lower() == t_low for d in r.get("destinations", []) if isinstance(d, dict)):
+                            continue
+                    if p_filter_num is not None:
+                        sp, ep, _ = get_rule_port_bounds(r)
+                        excl = set(r.get("excluded_ports") or [])
+                        if sp is None or ep is None or not (sp <= p_filter_num <= ep) or p_filter_num in excl:
+                            continue
+                    r_out = dict(r)
+                    if include_rt:
+                        rid = _get_rule_effective_id(r)
+                        r_st = rules_state.get(rid) or rules_state.get(str(r.get("port", ""))) or {}
+                        r_out["runtime"] = r_st
+                    items.append(r_out)
+                self.send_json({"ok": True, "count": len(items), "rules": items})
+                return
+            elif subpath.startswith("/api/rules/") or subpath.startswith("/api/rule/"):
+                prefix = "/api/rules/" if subpath.startswith("/api/rules/") else "/api/rule/"
+                rule_id = unquote(subpath[len(prefix):]).strip().strip("/")
+                if not rule_id or "/" in rule_id:
+                    self.send_json({"ok": False, "error": "API endpoint not found"}, 404)
+                    return
+                cfg = load_config()
+                rules = cfg.get("rules", []) if isinstance(cfg, dict) else []
+                idx = XForwarderWebHandler._find_rule_index(self, rules, rule_id)
+                if idx is None:
+                    self.send_json({"ok": False, "error": "Rule not found"}, 404)
+                    return
+                rule_obj = rules[idx]
+                rid = _get_rule_effective_id(rule_obj)
+                rules_state = load_state().get("runtime", {}).get("rules_state", {})
+                r_st = rules_state.get(rid) or rules_state.get(str(rule_obj.get("port", ""))) or {}
+                self.send_json({"ok": True, "rule": rule_obj, "runtime": r_st})
+                return
+            elif subpath == "/api/settings":
+                cfg = load_config()
+                settings_data = {k: cfg.get(k) for k in GLOBAL_SETTINGS_KEYS}
+                self.send_json({"ok": True, "settings": settings_data})
+                return
+            elif subpath == "/api/logs/switches":
+                parsed_url = urlparse(self.path)
+                params = parse_qs(parsed_url.query)
+                rule_filter = params.get("rule_id", [None])[0]
+                try:
+                    limit = max(1, min(int(params.get("limit", [50])[0]), 200))
+                except (ValueError, TypeError):
+                    limit = 50
+                runtime = load_state().get("runtime", {})
+                if rule_filter:
+                    r_state = runtime.get("rules_state", {}).get(rule_filter, {})
+                    events = list(r_state.get("switch_events", []))
+                else:
+                    events = list(runtime.get("recent_switches", []))
+                events = list(reversed(events))[:limit]
+                self.send_json({"ok": True, "count": len(events), "events": events})
+                return
+            elif subpath == "/api/status":
                 cfg = load_config()
                 state = load_state()
                 runtime = state.get("runtime", {})
@@ -581,7 +890,7 @@ class XForwarderWebHandler(BaseHTTPRequestHandler):
                         pass
                 self.send_json({
                     "version": get_installed_version(),
-                    "config": cfg,
+                    "config": sanitize_config_for_api(cfg),
                     "runtime": runtime,
                     "latest_loss": latest_loss,
                     "system": get_system_stats(),
@@ -699,33 +1008,450 @@ class XForwarderWebHandler(BaseHTTPRequestHandler):
         # Serve SPA index.html for all UI subpaths under secret_path
         self.send_file(os.path.join(WEB_DIR, "index.html"), "text/html; charset=utf-8")
 
+    def _find_rule_index(self, rules: List[Dict[str, Any]], target_id: str) -> Optional[int]:
+        """Finds a rule index by exact ID first, then derived ID, then port/range fallback."""
+        target = unquote(str(target_id or "")).strip()
+        if not target:
+            return None
+        for idx, r in enumerate(rules):
+            if isinstance(r, dict) and str(r.get("id") or "").strip() == target:
+                return idx
+        for idx, r in enumerate(rules):
+            if isinstance(r, dict) and _rule_matches_target_id(r, target):
+                return idx
+        for idx, r in enumerate(rules):
+            if not isinstance(r, dict):
+                continue
+            if str(r.get("port") or "").strip() == target or str(r.get("port_range") or "").strip() == target:
+                return idx
+        return None
+
+    def _save_rule_payload(
+        self,
+        body: Any,
+        create_only: bool = False,
+        target_rule_id: Optional[str] = None,
+        partial: bool = False,
+    ) -> None:
+        """Shared DRY handler for rule creation, upsert, full replacement (PUT), and partial update (PATCH)."""
+        if not isinstance(body, dict):
+            self.send_json({"ok": False, "error": "Invalid JSON body"}, 400)
+            return
+
+        cfg = load_config()
+        rules = cfg.get("rules", [])
+        existing_idx: Optional[int] = None
+        existing_rule: Optional[Dict[str, Any]] = None
+
+        if target_rule_id is not None:
+            existing_idx = XForwarderWebHandler._find_rule_index(self, rules, target_rule_id)
+            if existing_idx is None:
+                self.send_json({"ok": False, "error": "Rule not found"}, 404)
+                return
+            existing_rule = dict(rules[existing_idx])
+
+        if partial and existing_rule is not None:
+            merged = json.loads(json.dumps(existing_rule))
+            for k, v in body.items():
+                if k == "id":
+                    continue
+                if k == "port" and "port_range" not in body:
+                    merged.pop("port_range", None)
+                if k == "excluded_ports" and (v is None or v == [] or v == ""):
+                    merged.pop("excluded_ports", None)
+                    continue
+                merged[k] = v
+            payload = merged
+        else:
+            payload = json.loads(json.dumps(body))
+            if existing_rule is not None:
+                payload["id"] = existing_rule.get("id") or _get_rule_effective_id(existing_rule)
+
+        valid, err_msg = validate_rule(payload)
+        if not valid:
+            self.send_json({"ok": False, "error": err_msg}, 400)
+            return
+
+        rule_label = (
+            f"!={','.join(str(p) for p in payload['excluded_ports'])}"
+            if payload.get("excluded_ports") else (payload.get("port_range") or payload["port"])
+        )
+        rule_id = str(
+            payload.get("id")
+            or (f"rule-excl-{'-'.join(str(p) for p in payload['excluded_ports'][:5])}" if payload.get("excluded_ports") else f"rule-{rule_label}")
+        )
+        payload["id"] = rule_id
+
+        if create_only and any(r.get("id") == rule_id for r in rules if isinstance(r, dict)):
+            self.send_json({"ok": False, "error": f"Rule '{rule_id}' already exists"}, 409)
+            return
+
+        new_start, new_end, _ = get_rule_port_bounds(payload)
+        web_port = int(cfg.get("web", {}).get("port", 8090) or 8090)
+        if not payload.get("excluded_ports") and new_start is not None and new_end is not None and new_start <= web_port <= new_end:
+            self.send_json({
+                "ok": False,
+                "error": f"Port / range {rule_label} overlaps the XForwarder Web Dashboard port ({web_port})"
+            }, 409)
+            return
+
+        for idx, r in enumerate(rules):
+            if existing_idx is not None and idx == existing_idx:
+                continue
+            if existing_idx is None and r.get("id") == rule_id:
+                continue
+            if rules_ports_overlap(payload, r):
+                ex_label = r.get("port_range") or r.get("port")
+                self.send_json({"ok": False, "error": f"Port / range {rule_label} overlaps with existing rule '{r.get('id')}' ({ex_label})"}, 409)
+                return
+
+        if not payload.get("port_range") and is_port_in_use_by_external_service(payload["port"], rule_id, rules):
+            self.send_json({
+                "ok": False,
+                "error": f"Port {payload['port']} is already bound by an external system service (e.g. web server, SSH, or proxy)!"
+            }, 409)
+            return
+
+        now_ts = time.time()
+        if existing_idx is not None and existing_rule is not None:
+            orig_created_at = float(existing_rule.get("created_at", 0) or 0)
+            body_created_at = float(payload.get("created_at", 0) or 0)
+            if orig_created_at > 0 and body_created_at <= 0:
+                payload["created_at"] = orig_created_at
+            elif body_created_at <= 0:
+                payload["created_at"] = now_ts
+            rules[existing_idx] = payload
+            status_code = 200
+        else:
+            updated = False
+            for i, r in enumerate(rules):
+                if r.get("id") == rule_id:
+                    orig_created_at = float(r.get("created_at", 0) or 0)
+                    body_created_at = float(payload.get("created_at", 0) or 0)
+                    if orig_created_at > 0 and body_created_at <= 0:
+                        payload["created_at"] = orig_created_at
+                    elif body_created_at <= 0:
+                        payload["created_at"] = now_ts
+                    rules[i] = payload
+                    updated = True
+                    break
+            if not updated:
+                if float(payload.get("created_at", 0) or 0) <= 0:
+                    payload["created_at"] = now_ts
+                rules.append(payload)
+            status_code = 201 if create_only else 200
+
+        cfg["rules"] = rules
+        if save_config(cfg):
+            sync_ok, sync_errors = sync_rules_and_notify(max_retries=2)
+            self.send_json({
+                "ok": True,
+                "rule": payload,
+                "sync_ok": sync_ok,
+                "sync_errors": sync_errors,
+            }, status_code)
+        else:
+            self.send_json({"ok": False, "error": "Save failed"}, 500)
+
+    def _handle_override_request(self, rule_id: str, body: dict) -> None:
+        """Applies or clears priority override on a rule and flushes targeted conntrack."""
+        try:
+            override_prio = int(body.get("force_override", 0))
+        except (ValueError, TypeError):
+            self.send_json({"ok": False, "error": "Invalid force_override value"}, 400)
+            return
+
+        if override_prio < 0:
+            self.send_json({"ok": False, "error": "force_override cannot be negative"}, 400)
+            return
+
+        cfg = load_config()
+        rules = cfg.get("rules", [])
+        idx = XForwarderWebHandler._find_rule_index(self, rules, rule_id)
+        matched_rule = rules[idx] if idx is not None else None
+        matched_rule_id = (_get_rule_effective_id(matched_rule) or rule_id) if matched_rule else rule_id
+        if matched_rule is not None:
+            r = matched_rule
+            r["force_override"] = override_prio
+            if override_prio > 0:
+                r["active_priority"] = override_prio
+            else:
+                state = load_state()
+                r_state = state.get("runtime", {}).get("rules_state", {}).get(matched_rule_id, {})
+                r_state["last_switch_time"] = 0
+                r_state["cooldown_remaining"] = 0
+                dest_stats = r_state.get("dest_stats", {})
+                dests = sorted(r.get("destinations", []), key=lambda d: d.get("priority", 99))
+                current_prio = r.get("active_priority", 1)
+                if callable(pick_best_now):
+                    r["active_priority"] = pick_best_now(dest_stats, dests, current_prio)
+                else:
+                    chosen = None
+                    for d in dests:
+                        p = d.get("priority", 1)
+                        st = dest_stats.get(f"prio_{p}", {})
+                        if st.get("status") == "healthy" and st.get("packet_loss", 0) <= 25:
+                            chosen = p
+                            break
+                    r["active_priority"] = chosen if chosen is not None else (dests[0].get("priority", 1) if dests else 1)
+        if not matched_rule:
+            self.send_json({"ok": False, "error": "Rule not found"}, 404)
+            return
+
+        if save_config(cfg):
+            update_state_rules({
+                matched_rule_id: {
+                    "active_priority": matched_rule["active_priority"],
+                    "last_force_override": override_prio,
+                    "last_switch_time": 0,
+                    "cooldown_remaining": 0
+                }
+            })
+            sync_ok, sync_errors = sync_rules_and_notify(max_retries=2)
+            _safe_flush_port_conntrack(matched_rule.get("port", 0))
+            self.send_json({
+                "ok": True,
+                "rule_id": matched_rule_id,
+                "force_override": override_prio,
+                "active_priority": matched_rule["active_priority"],
+                "sync_ok": sync_ok,
+                "sync_errors": sync_errors
+            })
+        else:
+            self.send_json({"ok": False, "error": "Save failed"}, 500)
+
+    def _handle_toggle_destination_request(self, rule_id: str, target_prio: int, explicit_enabled: Optional[bool]) -> None:
+        """Toggles or explicitly sets enabled state on a destination priority."""
+        cfg = load_config()
+        rules = cfg.get("rules", [])
+        idx = XForwarderWebHandler._find_rule_index(self, rules, rule_id)
+        found_rule = rules[idx] if idx is not None else None
+        found_dest = None
+        matched_rule_id = (_get_rule_effective_id(found_rule) or rule_id) if found_rule else rule_id
+
+        if found_rule is not None:
+            for d in found_rule.get("destinations", []):
+                if int(d.get("priority", 1)) == target_prio:
+                    found_dest = d
+                    break
+
+        if not found_rule or not found_dest:
+            self.send_json({"ok": False, "error": "Rule or destination priority not found"}, 404)
+            return
+
+        curr_en = bool(found_dest.get("enabled", True))
+        new_enabled = (not curr_en) if explicit_enabled is None else explicit_enabled
+        found_dest["enabled"] = new_enabled
+
+        active_prio_changed = False
+        if not new_enabled:
+            if found_rule.get("force_override") == target_prio:
+                found_rule["force_override"] = 0
+            if found_rule.get("active_priority") == target_prio:
+                enabled_dests = [d for d in found_rule.get("destinations", []) if d.get("enabled", True)]
+                if enabled_dests:
+                    found_rule["active_priority"] = enabled_dests[0].get("priority", 1)
+                    active_prio_changed = True
+
+        if save_config(cfg):
+            update_state_rules({
+                matched_rule_id: {
+                    "active_priority": found_rule.get("active_priority", 1),
+                    "force_override": found_rule.get("force_override", 0)
+                }
+            })
+            sync_ok, sync_errors = sync_rules_and_notify(max_retries=2)
+            if active_prio_changed:
+                _safe_flush_port_conntrack(found_rule.get("port", 0))
+            self.send_json({
+                "ok": True,
+                "rule_id": matched_rule_id,
+                "priority": target_prio,
+                "enabled": new_enabled,
+                "rule": found_rule,
+                "sync_ok": sync_ok,
+                "sync_errors": sync_errors
+            })
+        else:
+            self.send_json({"ok": False, "error": "Save failed"}, 500)
+
+    def _handle_delete_rule_request(self, rule_id: str) -> None:
+        """Deletes a forwarding rule by ID or port and cleans up runtime state."""
+        if not rule_id:
+            self.send_json({"ok": False, "error": "Rule ID required"}, 400)
+            return
+        cfg = load_config()
+        orig_rules = cfg.get("rules", [])
+        idx = XForwarderWebHandler._find_rule_index(self, orig_rules, rule_id)
+        if idx is None:
+            self.send_json({"ok": False, "error": "Rule not found"}, 404)
+            return
+        removed_rule = orig_rules[idx]
+        cfg["rules"] = [r for i, r in enumerate(orig_rules) if i != idx]
+        if save_config(cfg):
+            cleanup_ids = [rule_id, *_get_rule_all_ids(removed_rule)]
+            remove_state_rules(list(dict.fromkeys(cleanup_ids)))
+            sync_ok, sync_errors = sync_rules_and_notify(max_retries=2)
+            self.send_json({
+                "ok": True,
+                "deleted": rule_id,
+                "deleted_count": 1,
+                "sync_ok": sync_ok,
+                "sync_errors": sync_errors
+            })
+        else:
+            self.send_json({"ok": False, "error": "Save failed"}, 500)
+
+    def _handle_settings_update(self, body: Any) -> None:
+        """Validates and updates global failover/probing engine settings."""
+        if not isinstance(body, dict) or len(body) == 0:
+            self.send_json({"ok": False, "error": "JSON object with settings fields required"}, 400)
+            return
+        unknown = [k for k in body.keys() if k not in GLOBAL_SETTINGS_KEYS]
+        if unknown:
+            self.send_json({"ok": False, "error": f"Unknown settings key(s): {', '.join(unknown)}"}, 400)
+            return
+        cfg = load_config()
+        for k, v in body.items():
+            if k == "wan_interface":
+                iface_val = str(v or "auto").strip()
+                if iface_val != "auto" and not re.fullmatch(r"[a-zA-Z0-9][a-zA-Z0-9_.\-]{0,14}", iface_val):
+                    self.send_json({"ok": False, "error": f"Invalid wan_interface '{iface_val}'"}, 400)
+                    return
+                cfg[k] = iface_val or "auto"
+            elif k == "fast_failover_enabled":
+                cfg[k] = bool(v)
+            else:
+                if isinstance(v, bool):
+                    self.send_json({"ok": False, "error": f"Setting '{k}' must be numeric"}, 400)
+                    return
+                try:
+                    cfg[k] = float(v) if k == "hysteresis_percent" else int(v)
+                except (ValueError, TypeError):
+                    self.send_json({"ok": False, "error": f"Setting '{k}' must be numeric"}, 400)
+                    return
+        cfg, _ = migrate_and_normalize_config(cfg)
+        if save_config(cfg):
+            notify_engine_wakeup()
+            self.send_json({"ok": True, "settings": {k: cfg.get(k) for k in GLOBAL_SETTINGS_KEYS}})
+        else:
+            self.send_json({"ok": False, "error": "Failed to save settings"}, 500)
+
+    def _handle_api_keys_create(self, body: Any) -> None:
+        """Creates a new scoped API key and returns the secret once."""
+        if not isinstance(body, dict):
+            self.send_json({"ok": False, "error": "Invalid JSON body"}, 400)
+            return
+        raw_name = str(body.get("name") or "").strip()
+        clean_name = "".join(c for c in raw_name[:64] if ord(c) >= 32 and c not in "<>\";`$\\{}")
+        if not clean_name:
+            self.send_json({"ok": False, "error": "API key 'name' must contain valid characters"}, 400)
+            return
+        name = clean_name
+        scope = str(body.get("scope") or "admin").strip().lower()
+        if scope not in VALID_API_SCOPES:
+            self.send_json({"ok": False, "error": f"Invalid scope '{scope}'. Allowed: {', '.join(VALID_API_SCOPES)}"}, 400)
+            return
+        expires_days = body.get("expires_in_days")
+        if expires_days is not None and expires_days != "":
+            if isinstance(expires_days, bool):
+                self.send_json({"ok": False, "error": "expires_in_days must be a non-negative integer"}, 400)
+                return
+            try:
+                expires_days = int(expires_days)
+                if expires_days < 0 or expires_days > 3650:
+                    raise ValueError()
+            except (ValueError, TypeError):
+                self.send_json({"ok": False, "error": "expires_in_days must be between 0 and 3650"}, 400)
+                return
+        else:
+            expires_days = None
+
+        raw_key, record = generate_api_key(name=name, scope=scope, expires_in_days=expires_days)
+        cfg = load_config()
+        api_keys = cfg.setdefault("web", {}).setdefault("api_keys", [])
+        if len(api_keys) >= 50:
+            self.send_json({"ok": False, "error": "Maximum of 50 API keys reached"}, 409)
+            return
+        api_keys.append(record)
+        if save_config(cfg):
+            self.send_json({
+                "ok": True,
+                "api_key": raw_key,
+                "key": sanitize_api_key_record(record),
+            }, 201)
+        else:
+            self.send_json({"ok": False, "error": "Failed to save API key"}, 500)
+
+    def _handle_api_keys_update(self, key_id: str, body: Any) -> None:
+        """Updates an existing API key's name, scope, or enabled state."""
+        if not isinstance(body, dict):
+            self.send_json({"ok": False, "error": "Invalid JSON body"}, 400)
+            return
+        cfg = load_config()
+        api_keys = cfg.get("web", {}).get("api_keys", [])
+        target_rec = next((k for k in api_keys if isinstance(k, dict) and k.get("id") == key_id), None)
+        if not target_rec:
+            self.send_json({"ok": False, "error": "API key not found"}, 404)
+            return
+        if "name" in body:
+            clean_name = "".join(c for c in str(body.get("name") or "").strip()[:64] if ord(c) >= 32 and c not in "<>\";`$\\{}")
+            if not clean_name:
+                self.send_json({"ok": False, "error": "API key name cannot be empty"}, 400)
+                return
+            target_rec["name"] = clean_name
+        if "scope" in body:
+            sc = str(body.get("scope") or "").strip().lower()
+            if sc not in VALID_API_SCOPES:
+                self.send_json({"ok": False, "error": f"Invalid scope '{sc}'. Allowed: {', '.join(VALID_API_SCOPES)}"}, 400)
+                return
+            target_rec["scope"] = sc
+        if "enabled" in body:
+            target_rec["enabled"] = bool(body["enabled"])
+        if save_config(cfg):
+            self.send_json({"ok": True, "key": sanitize_api_key_record(target_rec)})
+        else:
+            self.send_json({"ok": False, "error": "Failed to save API key"}, 500)
+
+    def _handle_api_keys_delete(self, key_id: str) -> None:
+        """Revokes and removes an API key."""
+        cfg = load_config()
+        api_keys = cfg.get("web", {}).get("api_keys", [])
+        remaining = [k for k in api_keys if not (isinstance(k, dict) and k.get("id") == key_id)]
+        if len(remaining) == len(api_keys):
+            self.send_json({"ok": False, "error": "API key not found"}, 404)
+            return
+        cfg["web"]["api_keys"] = remaining
+        if save_config(cfg):
+            self.send_json({"ok": True, "deleted": key_id})
+        else:
+            self.send_json({"ok": False, "error": "Failed to delete API key"}, 500)
+
+    def do_OPTIONS(self):
+        allowed, _, _ = self.resolve_path()
+        if not allowed:
+            self.send_error(404, "Not Found")
+            return
+        self.send_response(204)
+        self.send_header("Allow", "GET, POST, PUT, PATCH, DELETE, OPTIONS")
+        self.apply_security_headers()
+        self.end_headers()
+
     def do_POST(self):
         allowed, subpath, _ = self.resolve_path()
         if not allowed:
             self.send_error(404, "Not Found")
             return
 
-        if not self.check_origin():
-            try:
-                drain_len = int(self.headers.get("Content-Length", 0))
-                if 0 < drain_len <= 65536:
-                    self.rfile.read(drain_len)
-            except Exception:
-                pass
-            self.send_json({"ok": False, "error": "Cross-origin request rejected"}, 403)
+        if _reject_disallowed_origin(self):
             return
 
-        body = {}
-        content_len = int(self.headers.get("Content-Length", 0))
-        if content_len > 0:
-            if content_len > 65536:
-                self.send_json({"error": "Payload too large"}, 413)
-                return
-            raw_body = self.rfile.read(content_len).decode("utf-8")
-            try:
-                body = json.loads(raw_body)
-            except Exception:
-                body = {}
+        ok_body, body = _parse_json_body(self)
+        if not ok_body:
+            return
+
+        if subpath.startswith("/api/"):
+            subpath = _normalize_api_subpath(subpath)
 
         client_ip = self.get_client_ip()
 
@@ -800,12 +1526,16 @@ class XForwarderWebHandler(BaseHTTPRequestHandler):
             self.send_json({"ok": True}, 200, cookie_token="")
             return
 
-        if not self.is_authenticated():
-            self.send_json({"error": "Unauthorized"}, 401)
+        # 3. Security Credentials & API Keys Management
+        if subpath in ("/api/api-keys", "/api/security/api-keys"):
+            if not _require_scope(self, "admin"):
+                return
+            XForwarderWebHandler._handle_api_keys_create(self, body)
             return
 
-        # 3. Security Credentials Management
         if subpath in ("/api/security", "/api/security/credentials"):
+            if not _require_scope(self, "admin"):
+                return
             current_pwd = body.get("current_password", "")
             new_user = body.get("new_username", "").strip()
             new_pwd = body.get("new_password", "")
@@ -845,6 +1575,8 @@ class XForwarderWebHandler(BaseHTTPRequestHandler):
             return
 
         elif subpath == "/api/security/panel":
+            if not _require_scope(self, "admin"):
+                return
             cfg = load_config()
             web_cfg = cfg.setdefault("web", {})
             old_port = int(web_cfg.get("port", 8090) or 8090)
@@ -938,151 +1670,30 @@ class XForwarderWebHandler(BaseHTTPRequestHandler):
             return
 
         elif subpath == "/api/rule":
-            valid, err_msg = validate_rule(body)
-            if not valid:
-                self.send_json({"ok": False, "error": err_msg}, 400)
+            if not _require_scope(self, "write"):
                 return
+            XForwarderWebHandler._save_rule_payload(self, body, create_only=False)
 
-            cfg = load_config()
-            rules = cfg.get("rules", [])
-            rule_label = (
-                f"!={','.join(str(p) for p in body['excluded_ports'])}"
-                if body.get("excluded_ports") else (body.get("port_range") or body["port"])
-            )
-            rule_id = str(body.get("id") or (f"rule-excl-{'-'.join(str(p) for p in body['excluded_ports'][:5])}" if body.get("excluded_ports") else f"rule-{rule_label}"))
-            body["id"] = rule_id
-
-            new_start, new_end, _ = get_rule_port_bounds(body)
-            web_port = int(cfg.get("web", {}).get("port", 8090) or 8090)
-            if not body.get("excluded_ports") and new_start is not None and new_end is not None and new_start <= web_port <= new_end:
-                self.send_json({
-                    "ok": False,
-                    "error": f"Port / range {rule_label} overlaps the XForwarder Web Dashboard port ({web_port})"
-                }, 409)
+        elif subpath == "/api/rules":
+            if not _require_scope(self, "write"):
                 return
+            XForwarderWebHandler._save_rule_payload(self, body, create_only=True)
 
-            for r in rules:
-                if r.get("id") == rule_id:
-                    continue
-                if rules_ports_overlap(body, r):
-                    ex_label = r.get("port_range") or r.get("port")
-                    self.send_json({"ok": False, "error": f"Port / range {rule_label} overlaps with existing rule '{r.get('id')}' ({ex_label})"}, 409)
-                    return
-
-            if not body.get("port_range") and is_port_in_use_by_external_service(body["port"], rule_id, rules):
-                self.send_json({
-                    "ok": False,
-                    "error": f"Port {body['port']} is already bound by an external system service (e.g. web server, SSH, or proxy)!"
-                }, 409)
+        elif subpath == "/api/override" or ((subpath.startswith("/api/rule/") or subpath.startswith("/api/rules/")) and subpath.endswith("/override")):
+            if not _require_scope(self, "write"):
                 return
-
-            now_ts = time.time()
-            updated = False
-            for i, r in enumerate(rules):
-                if r.get("id") == rule_id:
-                    orig_created_at = float(r.get("created_at", 0) or 0)
-                    body_created_at = float(body.get("created_at", 0) or 0)
-                    if orig_created_at > 0 and body_created_at <= 0:
-                        body["created_at"] = orig_created_at
-                    elif body_created_at <= 0:
-                        body["created_at"] = now_ts
-                    else:
-                        body["created_at"] = body_created_at
-                    rules[i] = body
-                    updated = True
-                    break
-            if not updated:
-                if float(body.get("created_at", 0) or 0) <= 0:
-                    body["created_at"] = now_ts
-                rules.append(body)
-
-            cfg["rules"] = rules
-            if save_config(cfg):
-                sync_ok, sync_errors = sync_rules_and_notify(max_retries=2)
-                self.send_json({
-                    "ok": True,
-                    "rule": body,
-                    "sync_ok": sync_ok,
-                    "sync_errors": sync_errors
-                })
-            else:
-                self.send_json({"ok": False, "error": "Save failed"}, 500)
-
-        elif subpath == "/api/override" or (subpath.startswith("/api/rule/") and subpath.endswith("/override")):
-            if subpath.startswith("/api/rule/"):
+            if subpath.startswith("/api/rule/") or subpath.startswith("/api/rules/"):
                 parts = subpath.split("/")
                 url_rule_id = unquote(parts[3]) if len(parts) >= 4 else ""
                 rule_id = str(body.get("rule_id", url_rule_id) or url_rule_id)
             else:
                 rule_id = str(body.get("rule_id", ""))
-            try:
-                override_prio = int(body.get("force_override", 0))
-            except (ValueError, TypeError):
-                self.send_json({"ok": False, "error": "Invalid force_override value"}, 400)
-                return
-
-            if override_prio < 0:
-                self.send_json({"ok": False, "error": "force_override cannot be negative"}, 400)
-                return
-
-            cfg = load_config()
-            found = False
-            matched_rule = None
-            matched_rule_id = rule_id
-            for r in cfg.get("rules", []):
-                if _rule_matches_target_id(r, rule_id):
-                    matched_rule = r
-                    matched_rule_id = _get_rule_effective_id(r) or rule_id
-                    r["force_override"] = override_prio
-                    if override_prio > 0:
-                        r["active_priority"] = override_prio
-                    else:
-                        state = load_state()
-                        r_state = state.get("runtime", {}).get("rules_state", {}).get(matched_rule_id, {})
-                        r_state["last_switch_time"] = 0
-                        r_state["cooldown_remaining"] = 0
-                        dest_stats = r_state.get("dest_stats", {})
-                        dests = sorted(r.get("destinations", []), key=lambda d: d.get("priority", 99))
-                        current_prio = r.get("active_priority", 1)
-                        if callable(pick_best_now):
-                            r["active_priority"] = pick_best_now(dest_stats, dests, current_prio)
-                        else:
-                            chosen = None
-                            for d in dests:
-                                p = d.get("priority", 1)
-                                st = dest_stats.get(f"prio_{p}", {})
-                                if st.get("status") == "healthy" and st.get("packet_loss", 0) <= 25:
-                                    chosen = p
-                                    break
-                            r["active_priority"] = chosen if chosen is not None else (dests[0].get("priority", 1) if dests else 1)
-                    found = True
-                    break
-            if not found or not matched_rule:
-                self.send_json({"ok": False, "error": "Rule not found"}, 404)
-                return
-
-            if save_config(cfg):
-                update_state_rules({
-                    matched_rule_id: {
-                        "active_priority": matched_rule["active_priority"],
-                        "last_force_override": override_prio,
-                        "last_switch_time": 0,
-                        "cooldown_remaining": 0
-                    }
-                })
-                sync_ok, sync_errors = sync_rules_and_notify(max_retries=2)
-                # Purge stale conntrack states AFTER applying new rules so active UDP/TCP packets cannot recreate old NAT entries
-                _safe_flush_port_conntrack(matched_rule.get("port", 0))
-                self.send_json({
-                    "ok": True,
-                    "sync_ok": sync_ok,
-                    "sync_errors": sync_errors
-                })
-            else:
-                self.send_json({"ok": False, "error": "Save failed"}, 500)
+            XForwarderWebHandler._handle_override_request(self, rule_id, body)
             return
 
         elif subpath == "/api/override/batch":
+            if not _require_scope(self, "write"):
+                return
             try:
                 override_prio = int(body.get("force_override", 0))
             except (ValueError, TypeError):
@@ -1144,77 +1755,36 @@ class XForwarderWebHandler(BaseHTTPRequestHandler):
             else:
                 self.send_json({"ok": False, "error": "Save failed"}, 500)
 
-        elif subpath in ("/api/rule/toggle-destination", "/api/destination/toggle"):
-            rule_id = str(body.get("rule_id", "")).strip()
+        elif subpath in ("/api/rule/toggle-destination", "/api/destination/toggle") or (
+            (subpath.startswith("/api/rules/") or subpath.startswith("/api/rule/"))
+            and "/destinations/" in subpath
+            and subpath.endswith("/toggle")
+        ):
+            if not _require_scope(self, "write"):
+                return
+            if "/destinations/" in subpath:
+                parts = subpath.split("/")
+                # /api/rules/<rule_id>/destinations/<priority>/toggle
+                rule_id = unquote(parts[3]) if len(parts) >= 7 else ""
+                raw_prio = parts[5] if len(parts) >= 7 else "1"
+            else:
+                rule_id = str(body.get("rule_id", "")).strip()
+                raw_prio = body.get("priority", 1)
             try:
-                target_prio = int(body.get("priority", 1))
+                target_prio = int(raw_prio)
             except (ValueError, TypeError):
                 self.send_json({"ok": False, "error": "Invalid priority"}, 400)
                 return
 
-            explicit_enabled = body.get("enabled")
+            explicit_enabled = body.get("enabled") if isinstance(body, dict) else None
             if explicit_enabled is not None:
                 explicit_enabled = bool(explicit_enabled)
-
-            cfg = load_config()
-            found_rule = None
-            found_dest = None
-            matched_rule_id = rule_id
-
-            for r in cfg.get("rules", []):
-                if _rule_matches_target_id(r, rule_id):
-                    found_rule = r
-                    matched_rule_id = _get_rule_effective_id(r) or rule_id
-                    for d in r.get("destinations", []):
-                        if int(d.get("priority", 1)) == target_prio:
-                            found_dest = d
-                            break
-                    break
-
-            if not found_rule or not found_dest:
-                self.send_json({"ok": False, "error": "Rule or destination priority not found"}, 404)
-                return
-
-            curr_en = bool(found_dest.get("enabled", True))
-            new_enabled = (not curr_en) if explicit_enabled is None else explicit_enabled
-            found_dest["enabled"] = new_enabled
-
-            # If this priority was disabled, adjust active priority or override if needed
-            active_prio_changed = False
-            if not new_enabled:
-                if found_rule.get("force_override") == target_prio:
-                    found_rule["force_override"] = 0
-                if found_rule.get("active_priority") == target_prio:
-                    enabled_dests = [d for d in found_rule.get("destinations", []) if d.get("enabled", True)]
-                    if enabled_dests:
-                        found_rule["active_priority"] = enabled_dests[0].get("priority", 1)
-                        active_prio_changed = True
-
-            if save_config(cfg):
-                update_state_rules({
-                    matched_rule_id: {
-                        "active_priority": found_rule.get("active_priority", 1),
-                        "force_override": found_rule.get("force_override", 0)
-                    }
-                })
-                sync_ok, sync_errors = sync_rules_and_notify(max_retries=2)
-                if active_prio_changed:
-                    # Active priority was disabled; flush conntrack AFTER syncing rules so sessions switch immediately without re-creating stale NAT
-                    _safe_flush_port_conntrack(found_rule.get("port", 0))
-                self.send_json({
-                    "ok": True,
-                    "rule_id": matched_rule_id,
-                    "priority": target_prio,
-                    "enabled": new_enabled,
-                    "rule": found_rule,
-                    "sync_ok": sync_ok,
-                    "sync_errors": sync_errors
-                })
-            else:
-                self.send_json({"ok": False, "error": "Save failed"}, 500)
+            XForwarderWebHandler._handle_toggle_destination_request(self, rule_id, target_prio, explicit_enabled)
             return
 
         elif subpath == "/api/sync":
+            if not _require_scope(self, "write"):
+                return
             sync_ok, sync_errors = sync_rules_and_notify(max_retries=2)
             self.send_json({
                 "ok": sync_ok,
@@ -1223,6 +1793,8 @@ class XForwarderWebHandler(BaseHTTPRequestHandler):
             }, 200 if sync_ok else 500)
 
         elif subpath == "/api/import/haproxy":
+            if not _require_scope(self, "write"):
+                return
             from core.haproxy_parser import import_haproxy_rules_into_config
             cfg_path = get_config_path()
             count, ports = import_haproxy_rules_into_config(cfg_path)
@@ -1236,6 +1808,8 @@ class XForwarderWebHandler(BaseHTTPRequestHandler):
             })
 
         elif subpath == "/api/import/nftables":
+            if not _require_scope(self, "write"):
+                return
             try:
                 from core.nftables_parser import import_nftables_rules_into_config
             except ImportError:
@@ -1253,6 +1827,8 @@ class XForwarderWebHandler(BaseHTTPRequestHandler):
             })
 
         elif subpath == "/api/import/all":
+            if not _require_scope(self, "write"):
+                return
             try:
                 from core.nftables_parser import import_all_relay_rules_into_config
             except ImportError:
@@ -1270,6 +1846,8 @@ class XForwarderWebHandler(BaseHTTPRequestHandler):
             })
 
         elif subpath == "/api/rules/bulk-delete":
+            if not _require_scope(self, "write"):
+                return
             raw_ids = body.get("rule_ids") if isinstance(body, dict) else None
             if not isinstance(raw_ids, list) or len(raw_ids) == 0:
                 self.send_json({"ok": False, "error": "rule_ids list required"}, 400)
@@ -1300,6 +1878,8 @@ class XForwarderWebHandler(BaseHTTPRequestHandler):
                 self.send_json({"ok": False, "error": "Save failed"}, 500)
 
         elif subpath == "/api/config/import":
+            if not _require_scope(self, "write"):
+                return
             if isinstance(body, dict) and "config" in body:
                 imported_raw = body["config"]
             else:
@@ -1313,6 +1893,8 @@ class XForwarderWebHandler(BaseHTTPRequestHandler):
                 self.send_json({"ok": False, "error": err}, 400)
 
         elif subpath == "/api/test-target":
+            if not _require_scope(self, "write"):
+                return
             target = str(body.get("target", "")).strip().strip("[]")
             try:
                 port = int(body.get("port", 0))
@@ -1379,8 +1961,11 @@ class XForwarderWebHandler(BaseHTTPRequestHandler):
                 from core.config_manager import IFACE_NAME_REGEX
                 test_dest = {"target": target, "port": port, "type": dest_type}
                 tunnel_iface = str(body.get("tunnel_iface") or "").strip()
-                if tunnel_iface and dest_type in ("nftables", "nftables_dsr") and IFACE_NAME_REGEX.match(tunnel_iface):
+                if tunnel_iface and dest_type in ("nftables", "nftables_dsr", "nftables_dsr_synack") and IFACE_NAME_REGEX.match(tunnel_iface):
                     test_dest["tunnel_iface"] = tunnel_iface
+                ingress_iface = str(body.get("ingress_iface") or "").strip()
+                if ingress_iface and dest_type in ("nftables_dsr_relay", "nftables_dsr_direct") and IFACE_NAME_REGEX.match(ingress_iface):
+                    test_dest["ingress_iface"] = ingress_iface
                 probe_res = check_destination(
                     test_dest,
                     rule_port=port,
@@ -1401,6 +1986,8 @@ class XForwarderWebHandler(BaseHTTPRequestHandler):
             return
 
         elif subpath == "/api/test-loss":
+            if not _require_scope(self, "write"):
+                return
             target = str(body.get("target", "")).strip().strip("[]")
             if not target or not is_valid_target(target):
                 self.send_json({"ok": False, "healthy": False, "error": "Invalid target IP/host"}, 400)
@@ -1426,6 +2013,8 @@ class XForwarderWebHandler(BaseHTTPRequestHandler):
             return
 
         elif subpath == "/api/metrics/trigger-round":
+            if not _require_scope(self, "write"):
+                return
             try:
                 from core.metrics import run_scheduled_ping_round
             except ImportError:
@@ -1447,6 +2036,8 @@ class XForwarderWebHandler(BaseHTTPRequestHandler):
             return
 
         elif subpath == "/api/system/update/transports":
+            if not _require_scope(self, "admin"):
+                return
             if not isinstance(body, dict):
                 self.send_json({"ok": False, "error": "Invalid JSON body"}, 400)
                 return
@@ -1467,6 +2058,8 @@ class XForwarderWebHandler(BaseHTTPRequestHandler):
             return
 
         elif subpath == "/api/system/update":
+            if not _require_scope(self, "admin"):
+                return
             transport_override = None
             if isinstance(body, dict) and any(
                 k in body for k in ("transport_mode", "tunnel_iface", "proxy_url", "mirror_url")
@@ -1490,6 +2083,8 @@ class XForwarderWebHandler(BaseHTTPRequestHandler):
             return
 
         elif subpath == "/api/services/restart":
+            if not _require_scope(self, "admin"):
+                return
             svc = body.get("service", "all")
             ok, msg, is_reconnecting = restart_services_action(svc, sync_rules_func=sync_rules_and_notify, notify_func=notify_engine_wakeup)
             with _SERVICES_LOCK:
@@ -1501,6 +2096,8 @@ class XForwarderWebHandler(BaseHTTPRequestHandler):
             return
 
         elif subpath == "/api/traffic/reset":
+            if not _require_scope(self, "write"):
+                return
             entity_type = str(body.get("entity_type", "all")).strip().lower()
             entity_id = str(body.get("entity_id", "all")).strip()
             wipe_history = bool(body.get("wipe_history", False))
@@ -1536,53 +2133,95 @@ class XForwarderWebHandler(BaseHTTPRequestHandler):
         else:
             self.send_error(404, "Not Found")
 
+    def _dispatch_put_or_patch(self, is_patch: bool) -> None:
+        """Shared dispatcher for PUT (replace) and PATCH (partial update) requests."""
+        allowed, subpath, _ = self.resolve_path()
+        if not allowed:
+            self.send_error(404, "Not Found")
+            return
+
+        if _reject_disallowed_origin(self):
+            return
+
+        ok_body, body = _parse_json_body(self)
+        if not ok_body:
+            return
+
+        if subpath.startswith("/api/"):
+            subpath = _normalize_api_subpath(subpath)
+
+        if subpath.startswith("/api/rules/") or subpath.startswith("/api/rule/"):
+            if not _require_scope(self, "write"):
+                return
+            prefix = "/api/rules/" if subpath.startswith("/api/rules/") else "/api/rule/"
+            rule_id = unquote(subpath[len(prefix):]).strip().strip("/")
+            if not rule_id or "/" in rule_id:
+                self.send_json({"ok": False, "error": "Rule ID required"}, 400)
+                return
+            XForwarderWebHandler._save_rule_payload(self, body, target_rule_id=rule_id, partial=is_patch)
+            return
+
+        if subpath == "/api/settings":
+            if not _require_scope(self, "admin"):
+                return
+            XForwarderWebHandler._handle_settings_update(self, body)
+            return
+
+        if is_patch and (subpath.startswith("/api/api-keys/") or subpath.startswith("/api/security/api-keys/")):
+            if not _require_scope(self, "admin"):
+                return
+            prefix = "/api/api-keys/" if subpath.startswith("/api/api-keys/") else "/api/security/api-keys/"
+            key_id = unquote(subpath[len(prefix):]).strip().strip("/")
+            if not key_id or "/" in key_id:
+                self.send_json({"ok": False, "error": "API key ID required"}, 400)
+                return
+            XForwarderWebHandler._handle_api_keys_update(self, key_id, body)
+            return
+
+        if not _require_scope(self, "read"):
+            return
+        self.send_error(404, "Not Found")
+
+    def do_PUT(self):
+        self._dispatch_put_or_patch(is_patch=False)
+
+    def do_PATCH(self):
+        self._dispatch_put_or_patch(is_patch=True)
+
     def do_DELETE(self):
         allowed, subpath, _ = self.resolve_path()
         if not allowed:
             self.send_error(404, "Not Found")
             return
 
-        if not self.check_origin():
-            try:
-                drain_len = int(self.headers.get("Content-Length", 0))
-                if 0 < drain_len <= 65536:
-                    self.rfile.read(drain_len)
-            except Exception:
-                pass
-            self.send_json({"ok": False, "error": "Cross-origin request rejected"}, 403)
+        if _reject_disallowed_origin(self):
             return
 
-        if not self.is_authenticated():
-            self.send_json({"error": "Unauthorized"}, 401)
-            return
+        if subpath.startswith("/api/"):
+            subpath = _normalize_api_subpath(subpath)
 
-        if subpath.startswith("/api/rule/"):
-            rule_id = unquote(subpath.split("/api/rule/", 1)[1]).strip()
-            if not rule_id:
-                self.send_json({"ok": False, "error": "Rule ID required"}, 400)
+        if subpath.startswith("/api/api-keys/") or subpath.startswith("/api/security/api-keys/"):
+            if not _require_scope(self, "admin"):
                 return
-            cfg = load_config()
-            orig_rules = cfg.get("rules", [])
-            removed_rules = [r for r in orig_rules if _rule_matches_target_id(r, rule_id)]
-            cfg["rules"] = [r for r in orig_rules if not _rule_matches_target_id(r, rule_id)]
-            removed_count = len(orig_rules) - len(cfg["rules"])
-            if save_config(cfg):
-                cleanup_ids = [rule_id]
-                for rr in removed_rules:
-                    cleanup_ids.extend(_get_rule_all_ids(rr))
-                remove_state_rules(list(dict.fromkeys(cleanup_ids)))
-                sync_ok, sync_errors = sync_rules_and_notify(max_retries=2)
-                self.send_json({
-                    "ok": True,
-                    "deleted": rule_id,
-                    "deleted_count": removed_count,
-                    "sync_ok": sync_ok,
-                    "sync_errors": sync_errors
-                })
-            else:
-                self.send_json({"ok": False, "error": "Save failed"}, 500)
-        else:
-            self.send_error(404, "Not Found")
+            prefix = "/api/api-keys/" if subpath.startswith("/api/api-keys/") else "/api/security/api-keys/"
+            key_id = unquote(subpath[len(prefix):]).strip().strip("/")
+            if not key_id or "/" in key_id:
+                self.send_json({"ok": False, "error": "API key ID required"}, 400)
+                return
+            XForwarderWebHandler._handle_api_keys_delete(self, key_id)
+            return
+
+        if subpath.startswith("/api/rules/") or subpath.startswith("/api/rule/"):
+            if not _require_scope(self, "write"):
+                return
+            prefix = "/api/rules/" if subpath.startswith("/api/rules/") else "/api/rule/"
+            rule_id = unquote(subpath[len(prefix):]).strip().strip("/")
+            XForwarderWebHandler._handle_delete_rule_request(self, rule_id)
+            return
+
+        if not _require_scope(self, "read"):
+            return
+        self.send_error(404, "Not Found")
 
 
 class XForwarderWebServer:

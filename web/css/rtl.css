@@ -989,3 +989,20 @@
     letter-spacing: normal !important;
 }
 
+/* 17. API Keys & Docs RTL BiDi Preservation */
+[dir="rtl"] .api-docs-endpoint-sig,
+[dir="rtl"] .api-endpoint-path,
+[dir="rtl"] .api-docs-code,
+[dir="rtl"] #apiKeyRevealValue,
+[dir="rtl"] #apiDocsBaseUrl {
+    direction: ltr !important;
+    unicode-bidi: embed !important;
+    text-align: left !important;
+}
+
+[dir="rtl"] .api-docs-endpoint-desc,
+[dir="rtl"] .api-key-reveal-text strong {
+    text-align: right !important;
+    font-family: var(--font-sans) !important;
+}
+

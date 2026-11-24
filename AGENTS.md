@@ -9,9 +9,10 @@ XForwarder is an ultra-lightweight, 24/7 intelligent multi-path priority failove
 XForwarder/
 ├── core/
 │   ├── engine.py          # Core failover engine daemon (<15MB RAM, main loop & IPC router)
-│   ├── web_server.py      # Native Python 3 HTTP server (session auth, JSON REST API, static asset server)
+│   ├── web_server.py      # Native Python 3 HTTP server (session & scoped API key auth, REST API v1, static asset server)
+│   ├── openapi_spec.py    # OpenAPI 3.0.3 machine-readable REST API schema builder
 │   ├── config_manager.py  # Centralized schema migrations, atomic persistence, validation, import/export
-│   ├── auth.py            # Salted PBKDF2-HMAC-SHA256, persistent sessions, adaptive brute-force lockout
+│   ├── auth.py            # Salted PBKDF2-HMAC-SHA256, persistent sessions, scoped API keys, adaptive brute-force lockout
 │   ├── firewall.py        # Isolated table ip xfwd_orchestrator NFTables ruleset generator & conntrack flusher
 │   ├── proxy_gen.py       # Multi-core HAProxy (zero-copy splice-auto) & Nginx stream proxy config generators
 │   ├── prober.py          # 10-probe ICMP bursts, socket health checks, route/interface isolation
@@ -27,7 +28,10 @@ XForwarder/
 │   ├── style.css          # Ovira Mint glassmorphism aesthetic, cursor spotlight & dual-theme responsive layout
 │   ├── app.js             # Vanilla JS state manager & orchestrator (Native ES module entry point)
 │   ├── css/               # Modular CSS stylesheets (tokens, base, layout, components, modals, rtl, style)
-│   └── js/modules/        # Clean Vanilla ES modules (api, state, theme, navigation, auth, effects, stats, rules, etc.)
+│   └── js/modules/        # Clean Vanilla ES modules (api, api_keys, state, theme, navigation, auth, effects, stats, rules, etc.)
+├── docs/
+│   ├── API.md             # Complete Persian REST API documentation (fictional RFC IPs & curl/Python examples)
+│   └── API.en.md          # Complete English REST API documentation (fictional RFC IPs)
 ├── config/
 │   └── config.json.example# Reference configuration schema
 ├── systemd/
@@ -46,7 +50,8 @@ XForwarder/
 │   ├── test_ui_and_api_edge_cases.py # Native Python unittest suite (UI, API edge cases & static asset integrity)
 │   ├── test_i18n_and_rtl.py   # Native Python unittest suite (i18n dictionaries, Vazirmatn font, RTL BiDi & DOM)
 │   ├── test_traffic_aware_failover.py # Dual-feedback L4 TCP probing, HAProxy DOWN & traffic blackhole tests
-│   └── test_load_balancing.py         # NFTables/Nginx LB pools, pruning, targeted conntrack & edge cases
+│   ├── test_load_balancing.py         # NFTables/Nginx LB pools, pruning, targeted conntrack & edge cases
+│   └── test_api_keys_and_rest_api.py  # Scoped API keys, RESTful CRUD (PUT/PATCH/DELETE/OPTIONS), OpenAPI & docs IP hygiene
 ├── .agents/               # Antigravity agent configuration (constitution, rules, workflows, skills, scripts)
 │   ├── AGENTS.md          # Master architecture constitution
 │   ├── hooks.json         # Antigravity lifecycle hooks (pre-invocation and stop syntax checks)
@@ -187,6 +192,12 @@ XForwarder/
     - Supported modes: `ip_hash` (default, persistent client affinity via `jhash ip saddr mod` on NFTables and `hash $remote_addr consistent` on Nginx), `round_robin` (`numgen inc mod` on NFTables, weighted round-robin on Nginx), `random` (`numgen random mod` on NFTables, `random two least_conn` fallback on Nginx), and Nginx `least_conn`.
     - Kernel NFTables LB pools emit named weighted `map` (1:1 forwarding) or `vmap` + `chain xfwd_lb_<key>` subchains (when port translation or `port_range -> fixed_port` is active), normalizing weights (`normalize_lb_weights`) and enforcing single IPv4/IPv6 family consistency per rule.
     - Dynamic Node Pruning & Targeted Conntrack Flushing: Individual dead backends are pruned from the active pool in `_evaluate_lb_destination()` while healthy nodes keep forwarding, with hysteresis before re-admission. Pruning an active backend queues a targeted `reply_src` conntrack flush (`conntrack -D -f <ipv4|ipv6> -r <backend_ip>`) executed after sync without dropping healthy sessions on surviving nodes; only total pool exhaustion triggers failover to backup priorities.
+
+23. **Scoped REST API Keys, Dual `/api/v1/*` Routing & OpenAPI 3.0.3 (Mandatory)**:
+    - Programmatic API access supports persistent scoped API keys (`web.api_keys`, stored with salted SHA-256 hashes `sha256$<salt>$<digest>` and `read` / `write` / `admin` scopes) passed via `Authorization: Bearer xfwd_...` or `X-API-Key: xfwd_...` alongside browser session auth.
+    - All API endpoints work identically across `/api/*` and `/api/v1/*`, supporting `GET`, `POST`, `PUT`, `PATCH`, `DELETE`, and `OPTIONS`, with machine-readable schema at `GET /api/v1/openapi.json` and sensitive hashes redacted via `sanitize_config_for_api()`.
+    - Cookie-backed browser mutations enforce CSRF `Origin`/`Referer` checks; stateless API key requests without cookies bypass browser Origin rejection while enforcing strict scope checks (`401`/`403`).
+    - All API documentation (`docs/API.md`, `docs/API.en.md`, `core/openapi_spec.py`, and `#apiDocsModal`) must exclusively use fictional RFC 5737 / RFC 3849 / RFC 1918 documentation IPs.
 
 ---
 

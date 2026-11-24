@@ -7791,6 +7791,206 @@ input:-webkit-autofill:active {
     border-color: var(--accent);
 }
 
+/* ── REST API Keys & Documentation UI ── */
+.api-key-form-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    align-items: flex-end;
+    margin-bottom: 16px;
+}
+
+.api-key-submit-wrap {
+    display: flex;
+    align-items: flex-end;
+}
+
+.api-key-reveal-box {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+    padding: 12px 14px;
+    margin-bottom: 16px;
+    border-radius: 12px;
+    background: var(--accent-wash);
+    border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent);
+}
+
+.api-key-reveal-text {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+}
+
+.api-key-reveal-text code {
+    font-size: 0.85rem;
+    color: var(--accent-text);
+    word-break: break-all;
+}
+
+.api-keys-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.api-keys-empty {
+    padding: 18px;
+    text-align: center;
+    font-size: 0.84rem;
+    color: var(--text-muted);
+    border: 1px dashed var(--border-color);
+    border-radius: 12px;
+}
+
+.api-key-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+    padding: 12px 14px;
+    border-radius: 12px;
+    background: var(--raise-2);
+    border: 1px solid var(--border-color);
+}
+
+.api-key-row-main {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+}
+
+.api-key-row-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.api-key-row-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    font-size: 0.76rem;
+    color: var(--text-muted);
+}
+
+.api-key-row-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.api-scope-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2px 8px;
+    border-radius: 6px;
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    border: 1px solid var(--border-color);
+}
+
+.api-scope-badge.scope-admin { background: var(--accent-wash); color: var(--accent-text); border-color: color-mix(in srgb, var(--accent) 35%, transparent); }
+.api-scope-badge.scope-write { background: rgba(70, 214, 230, 0.14); color: var(--accent-2); border-color: rgba(70, 214, 230, 0.3); }
+.api-scope-badge.scope-read, .api-scope-badge.scope-public { background: var(--raise-3); color: var(--text-secondary); }
+
+.api-docs-banner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 10px 14px;
+    border-radius: 10px;
+    background: var(--raise-2);
+    border: 1px solid var(--border-color);
+}
+
+.api-docs-endpoints-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    max-height: 55vh;
+    overflow-y: auto;
+    padding-right: 4px;
+}
+
+.api-docs-endpoint-card {
+    padding: 12px 14px;
+    border-radius: 12px;
+    background: var(--raise-2);
+    border: 1px solid var(--border-color);
+}
+
+.api-docs-endpoint-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.api-docs-endpoint-sig,
+.api-docs-endpoint-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.api-method-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 58px;
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    font-weight: 700;
+}
+
+.api-method-badge.method-get { background: rgba(70, 214, 230, 0.16); color: var(--accent-2); }
+.api-method-badge.method-post { background: var(--accent-wash); color: var(--accent-text); }
+.api-method-badge.method-put, .api-method-badge.method-patch { background: var(--warn-wash); color: var(--warn); }
+.api-method-badge.method-delete { background: var(--bad-wash); color: var(--bad); }
+
+.api-endpoint-path {
+    font-size: 0.84rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.api-docs-endpoint-desc {
+    margin: 8px 0;
+    font-size: 0.82rem;
+    color: var(--text-secondary);
+}
+
+.api-docs-code {
+    margin: 0;
+    padding: 10px 12px;
+    border-radius: 8px;
+    background: var(--ground);
+    border: 1px solid var(--border-color);
+    font-size: 0.76rem;
+    line-height: 1.5;
+    color: var(--text-primary);
+    overflow-x: auto;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
 /* ==========================================================================
    XForwarder Modals, Forms & Notification Toast Styles
    ========================================================================== */
@@ -11318,4 +11518,21 @@ input#formCategory::-webkit-list-button {
 [dir="rtl"] .lb-health-pill {
     font-family: var(--font-sans) !important;
     letter-spacing: normal !important;
+}
+
+/* 17. API Keys & Docs RTL BiDi Preservation */
+[dir="rtl"] .api-docs-endpoint-sig,
+[dir="rtl"] .api-endpoint-path,
+[dir="rtl"] .api-docs-code,
+[dir="rtl"] #apiKeyRevealValue,
+[dir="rtl"] #apiDocsBaseUrl {
+    direction: ltr !important;
+    unicode-bidi: embed !important;
+    text-align: left !important;
+}
+
+[dir="rtl"] .api-docs-endpoint-desc,
+[dir="rtl"] .api-key-reveal-text strong {
+    text-align: right !important;
+    font-family: var(--font-sans) !important;
 }

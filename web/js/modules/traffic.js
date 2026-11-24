@@ -41,9 +41,12 @@ export function populateTrafficEntitySelect(selectedType, selectedId) {
             <option value="method:nftables">Kernel Tunnel DNAT (NFTables)</option>
             <option value="method:nftables_dsr">NFTables DSR (UP)</option>
             <option value="method:nftables_dsr_relay">NFTables DSR (Spoof)</option>
+            <option value="method:nftables_dsr_synack">NFTables DSR (SYN-ACK · Iran)</option>
+            <option value="method:nftables_dsr_direct">NFTables DSR (Direct · Outside)</option>
             <option value="tunnel_type:gre">GRE Tunnels (gre*)</option>
             <option value="tunnel_type:ipip">IPIP Tunnels (ipip*)</option>
             <option value="tunnel_type:wireguard">WireGuard / AWG (awg*)</option>
+            <option value="tunnel_type:ipsec_esp">IPsec ESP / XFRM (esp*)</option>
         `;
     }
 
@@ -310,7 +313,9 @@ export async function loadTrafficModalData() {
                 haproxy: "Direct IPv6 (HAProxy Relay)",
                 nftables: "Kernel Tunnel DNAT (NFTables)",
                 nftables_dsr: "NFTables DSR (UP)",
-                nftables_dsr_relay: "NFTables DSR (Spoof)"
+                nftables_dsr_relay: "NFTables DSR (Spoof)",
+                nftables_dsr_synack: "NFTables DSR (SYN-ACK · Iran)",
+                nftables_dsr_direct: "NFTables DSR (Direct · Outside)"
             };
             const methodLabel = methodLabelMap[entityId] || entityId;
             titleEl.textContent = `${methodLabel} Analytics`;

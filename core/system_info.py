@@ -47,7 +47,7 @@ DEFAULT_IGNORED_INTERFACES = frozenset({
 
 VIRTUAL_TUNNEL_PREFIXES = (
     "gre", "ipip", "tunl", "awg", "wg", "ftcp", "sit",
-    "ip6tnl", "ip6gre", "gnv", "vxlan", "tun", "tap", "backhaul"
+    "ip6tnl", "ip6gre", "gnv", "vxlan", "tun", "tap", "backhaul", "esp", "xfrm"
 )
 
 
@@ -599,6 +599,8 @@ def get_network_interfaces_info(config_loader_fn: Optional[Any] = None) -> Dict[
                 friendly_type = "Geneve Tunnel"
             elif "vxlan" in lower_name or "vxlan" in link_type:
                 friendly_type = "VXLAN Tunnel"
+            elif "esp" in lower_name or "xfrm" in lower_name or link_type == "xfrm":
+                friendly_type = "IPsec ESP / XFRM Tunnel"
             else:
                 friendly_type = "Virtual / Tunnel"
 

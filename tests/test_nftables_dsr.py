@@ -27,7 +27,10 @@ from core.traffic import TrafficCollector, get_traffic_summary
 class TestNFTablesDSRMethods(unittest.TestCase):
 
     def test_is_nftables_type_helper(self):
-        for t in ("nftables", "nftables_dsr", "nftables_dsr_relay", "NFTABLES_DSR"):
+        for t in (
+            "nftables", "nftables_dsr", "nftables_dsr_relay",
+            "nftables_dsr_synack", "nftables_dsr_direct", "NFTABLES_DSR", "NFTABLES_DSR_SYNACK"
+        ):
             self.assertTrue(is_nftables_type(t))
         for t in ("haproxy", "nginx", "", None):
             self.assertFalse(is_nftables_type(t))
@@ -617,6 +620,383 @@ class TestNFTablesDSRMethods(unittest.TestCase):
                  patch("builtins.open", side_effect=lambda p, *a, **kw: orig_open(os.path.join(net_dir, "tun1", "mtu"), *a, **kw) if str(p).replace("\\", "/") == "/sys/class/net/tun1/mtu" else orig_open(p, *a, **kw)):
                 self.assertEqual(eng._detect_dsr_mss("eth0", "tun1", "ip"), 1280)
                 self.assertEqual(eng._detect_dsr_mss("eth0", "tun1", "ip6"), 1260)
+
+    def test_validate_and_migrate_dsr_synack_and_direct(self):
+        # Valid nftables_dsr_synack with port translation (443 -> 24443)
+        synack_rule = {
+            "port": 443,
+            "protocol": "tcp",
+            "destinations": [
+                {
+                    "priority": 1,
+                    "type": "nftables_dsr_synack",
+                    "target": "10.250.50.1",
+                    "port": 24443,
+                    "tunnel_iface": "esp-link",
+                    "spoof_ip": "198.51.100.25",
+                    "comment": "ESP SYN-ACK Return"
+                }
+            ]
+        }
+        ok, err = validate_rule(synack_rule)
+        self.assertTrue(ok, f"Expected valid nftables_dsr_synack rule, got: {err}")
+        self.assertEqual(synack_rule["destinations"][0]["port"], 24443)
+        self.assertEqual(synack_rule["destinations"][0]["tunnel_iface"], "esp-link")
+
+        # Valid nftables_dsr_direct (Outside server)
+        direct_rule = {
+            "port": 443,
+            "protocol": "tcp",
+            "destinations": [
+                {
+                    "priority": 1,
+                    "type": "nftables_dsr_direct",
+                    "target": "10.250.50.1",
+                    "port": 24443,
+                    "spoof_ip": "198.51.100.25",
+                    "ingress_iface": "esp-link"
+                }
+            ]
+        }
+        ok_d, err_d = validate_rule(direct_rule)
+        self.assertTrue(ok_d, f"Expected valid nftables_dsr_direct rule, got: {err_d}")
+
+        # Normalization idempotence
+        cfg = {"schema_version": 3, "rules": [synack_rule, direct_rule]}
+        norm1, _ = migrate_and_normalize_config(cfg)
+        norm2, mod2 = migrate_and_normalize_config(norm1)
+        self.assertFalse(mod2, "Second normalization pass for SYN-ACK/Direct must be idempotent")
+
+        # Reject UDP / both, IPv6, ranges, excluded_ports, missing spoof_ip / ingress_iface
+        for bad_rule in (
+            {
+                "port": 443,
+                "protocol": "both",
+                "destinations": [{"priority": 1, "type": "nftables_dsr_synack", "target": "10.250.50.1", "port": 24443}]
+            },
+            {
+                "port": 443,
+                "protocol": "udp",
+                "destinations": [{"priority": 1, "type": "nftables_dsr_direct", "target": "10.250.50.1", "port": 24443, "spoof_ip": "198.51.100.25", "ingress_iface": "esp-link"}]
+            },
+            {
+                "port": "2000-2010",
+                "protocol": "tcp",
+                "destinations": [{"priority": 1, "type": "nftables_dsr_synack", "target": "10.250.50.1"}]
+            },
+            {
+                "port": 443,
+                "protocol": "tcp",
+                "destinations": [{"priority": 1, "type": "nftables_dsr_synack", "target": "2001:db8::1"}]
+            },
+            {
+                "port": 443,
+                "protocol": "tcp",
+                "destinations": [{"priority": 1, "type": "nftables_dsr_direct", "target": "10.250.50.1", "port": 24443, "ingress_iface": "esp-link"}]
+            },
+            {
+                "port": 443,
+                "protocol": "tcp",
+                "destinations": [{"priority": 1, "type": "nftables_dsr_direct", "target": "10.250.50.1", "port": 24443, "spoof_ip": "198.51.100.25"}]
+            },
+        ):
+            ok_b, _ = validate_rule(bad_rule)
+            self.assertFalse(ok_b, f"Expected validation failure for {bad_rule}")
+
+    def test_engine_generates_dsr_synack_iran_ruleset(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            cfg_path = os.path.join(tmp, "config.json")
+            state_path = os.path.join(tmp, "state.json")
+            cfg = {
+                "schema_version": 3,
+                "wan_interface": "eth0",
+                "rules": [
+                    {
+                        "id": "rule-443",
+                        "port": 443,
+                        "protocol": "tcp",
+                        "active_priority": 1,
+                        "destinations": [
+                            {
+                                "priority": 1,
+                                "type": "nftables_dsr_synack",
+                                "target": "10.250.50.1",
+                                "port": 24443,
+                                "tunnel_iface": "esp-link",
+                                "spoof_ip": "198.51.100.25"
+                            }
+                        ]
+                    }
+                ]
+            }
+            with open(cfg_path, "w", encoding="utf-8") as f:
+                json.dump(cfg, f)
+
+            captured = {}
+            def fake_apply_nft(dnat_rules, **kwargs):
+                captured["kwargs"] = kwargs
+                captured["ruleset"] = generate_nftables_ruleset(
+                    dnat_rules,
+                    rule_ports=kwargs.get("rule_ports"),
+                    enable_ipv6=False,
+                    rule_ranges=kwargs.get("rule_ranges"),
+                    custom_oifs=kwargs.get("custom_oifs"),
+                    raw_rules=kwargs.get("raw_rules"),
+                    snat_rules=kwargs.get("snat_rules"),
+                    dsr_mss_rules=kwargs.get("dsr_mss_rules"),
+                    has_untracked=kwargs.get("has_untracked", False),
+                    input_rules=kwargs.get("input_rules"),
+                    raw_output_rules=kwargs.get("raw_output_rules"),
+                    route_output_rules=kwargs.get("route_output_rules"),
+                    raw_postrouting_rules=kwargs.get("raw_postrouting_rules"),
+                    extra_forward_rules=kwargs.get("extra_forward_rules"),
+                )
+                return True, None, captured["ruleset"]
+
+            eng = XForwarderEngine(config_path=cfg_path, state_file_path=state_path)
+            with patch("core.engine.apply_nftables", side_effect=fake_apply_nft), \
+                 patch("core.engine.apply_haproxy", return_value=(True, None)), \
+                 patch("core.engine.apply_nginx", return_value=(True, None)):
+                ok, errs = eng.sync_firewall_and_proxies()
+
+            self.assertTrue(ok, f"Sync failed: {errs}")
+            rs = captured["ruleset"]
+            self.assertIn("chain raw_prerouting", rs)
+            self.assertIn('iifname "eth0" ip daddr 198.51.100.25 tcp dport 443 notrack ip daddr set 10.250.50.1 tcp dport set 24443', rs)
+            self.assertIn('iifname "esp-link" ip saddr 10.250.50.1 tcp sport 24443 notrack', rs)
+            self.assertIn("chain dsr_postrouting", rs)
+            self.assertIn("type filter hook postrouting priority 300; policy accept;", rs)
+            self.assertIn('iifname "esp-link" oifname "eth0" ip saddr 10.250.50.1 tcp sport 24443 tcp flags & (syn | ack) == (syn | ack) ip saddr set 198.51.100.25 tcp sport set 443', rs)
+            self.assertIn('iifname "eth0" ip daddr 10.250.50.1 tcp dport 24443 counter name cnt_in_443', rs)
+            self.assertIn('iifname "esp-link" ip saddr 10.250.50.1 tcp sport 24443 tcp flags & (syn | ack) == (syn | ack) counter name cnt_out_443', rs)
+            self.assertIn("chain syn_mss", rs)
+            self.assertNotIn("chain dsr_input", rs)
+            self.assertNotIn("chain raw_output", rs)
+            self.assertNotIn("chain dsr_route_output", rs)
+
+    def test_engine_generates_dsr_direct_outside_ruleset(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            cfg_path = os.path.join(tmp, "config.json")
+            state_path = os.path.join(tmp, "state.json")
+            cfg = {
+                "schema_version": 3,
+                "wan_interface": "eth0",
+                "rules": [
+                    {
+                        "id": "rule-443",
+                        "port": 443,
+                        "protocol": "tcp",
+                        "active_priority": 1,
+                        "destinations": [
+                            {
+                                "priority": 1,
+                                "type": "nftables_dsr_direct",
+                                "target": "10.250.50.1",
+                                "port": 24443,
+                                "spoof_ip": "198.51.100.25",
+                                "ingress_iface": "esp-link"
+                            }
+                        ]
+                    }
+                ]
+            }
+            with open(cfg_path, "w", encoding="utf-8") as f:
+                json.dump(cfg, f)
+
+            captured = {}
+            def fake_apply_nft(dnat_rules, **kwargs):
+                captured["kwargs"] = kwargs
+                captured["ruleset"] = generate_nftables_ruleset(
+                    dnat_rules,
+                    rule_ports=kwargs.get("rule_ports"),
+                    enable_ipv6=False,
+                    rule_ranges=kwargs.get("rule_ranges"),
+                    custom_oifs=kwargs.get("custom_oifs"),
+                    raw_rules=kwargs.get("raw_rules"),
+                    snat_rules=kwargs.get("snat_rules"),
+                    dsr_mss_rules=kwargs.get("dsr_mss_rules"),
+                    has_untracked=kwargs.get("has_untracked", False),
+                    input_rules=kwargs.get("input_rules"),
+                    raw_output_rules=kwargs.get("raw_output_rules"),
+                    route_output_rules=kwargs.get("route_output_rules"),
+                    raw_postrouting_rules=kwargs.get("raw_postrouting_rules"),
+                    extra_forward_rules=kwargs.get("extra_forward_rules"),
+                )
+                return True, None, captured["ruleset"]
+
+            eng = XForwarderEngine(config_path=cfg_path, state_file_path=state_path)
+            with patch("core.engine.apply_nftables", side_effect=fake_apply_nft), \
+                 patch("core.engine.apply_haproxy", return_value=(True, None)), \
+                 patch("core.engine.apply_nginx", return_value=(True, None)):
+                ok, errs = eng.sync_firewall_and_proxies()
+
+            self.assertTrue(ok, f"Sync failed: {errs}")
+            rs = captured["ruleset"]
+            self.assertIn('iifname "esp-link" ip daddr 10.250.50.1 tcp dport 24443 notrack', rs)
+            self.assertIn("chain dsr_input", rs)
+            self.assertIn("type filter hook input priority -20; policy accept;", rs)
+            self.assertIn('ip daddr 10.250.50.1 tcp dport 24443 iifname != "esp-link" drop', rs)
+            self.assertIn('iifname "esp-link" ip daddr 10.250.50.1 tcp dport 24443 counter name cnt_in_443', rs)
+            self.assertIn("chain raw_output", rs)
+            self.assertIn("type filter hook output priority raw; policy accept;", rs)
+            self.assertIn("ip saddr 10.250.50.1 tcp sport 24443 notrack", rs)
+            self.assertIn("chain dsr_route_output", rs)
+            self.assertIn("type route hook output priority -149; policy accept;", rs)
+            self.assertIn("ip saddr 10.250.50.1 tcp sport 24443 tcp flags & (syn | ack) == (syn | ack) meta mark set 0x42600001", rs)
+            self.assertIn("chain dsr_postrouting", rs)
+            self.assertIn('oifname "eth0" ip saddr 10.250.50.1 tcp sport 24443 tcp flags & (syn | ack) != (syn | ack) counter name cnt_out_443 ip saddr set 198.51.100.25 tcp sport set 443', rs)
+            routes = captured["kwargs"].get("dsr_direct_routes", [])
+            self.assertEqual(len(routes), 1)
+            self.assertEqual(routes[0]["iface"], "esp-link")
+            self.assertEqual(routes[0]["table_id"], 42600)
+            self.assertEqual(routes[0]["priority"], 12600)
+            self.assertEqual(routes[0]["fwmark"], "0x42600001")
+            self.assertEqual(routes[0]["throw_ips"], ["198.51.100.25"])
+            self.assertTrue(eng.runtime_state["active_services"]["nftables"])
+
+    def test_dsr_direct_policy_routing_helpers_collision_and_cleanup(self):
+        from core.firewall import ensure_dsr_direct_policy_routing, cleanup_dsr_direct_policy_routing
+
+        with tempfile.TemporaryDirectory() as tmp:
+            st_file = os.path.join(tmp, "dsr_direct_routes.json")
+            cmds_seen = []
+
+            def fake_run(cmd, **kwargs):
+                cmds_seen.append(cmd[1:])
+                res = MagicMock()
+                res.returncode = 0
+                res.stderr = ""
+                if cmd[1:4] == ["-4", "rule", "show"]:
+                    res.stdout = "0:\tfrom all lookup local\n32766:\tfrom all lookup main\n"
+                elif cmd[1:5] == ["-j", "-4", "route", "show"]:
+                    res.stdout = "[]"
+                else:
+                    res.stdout = ""
+                return res
+
+            slot = [{
+                "iface": "esp-link",
+                "table_id": 42600,
+                "priority": 12600,
+                "fwmark": "0x42600001",
+                "throw_ips": ["198.51.100.25"]
+            }]
+            with patch("core.firewall.sys.platform", "linux"), \
+                 patch("core.firewall._find_system_bin", return_value="/sbin/ip"), \
+                 patch("core.firewall.subprocess.run", side_effect=fake_run):
+                ok, err = ensure_dsr_direct_policy_routing(slot, state_path=st_file)
+                self.assertTrue(ok, err)
+                self.assertTrue(os.path.isfile(st_file))
+                self.assertIn(["route", "replace", "throw", "198.51.100.25/32", "table", "42600"], cmds_seen)
+                self.assertIn(["route", "replace", "default", "dev", "esp-link", "table", "42600"], cmds_seen)
+                self.assertIn(["rule", "add", "priority", "12600", "fwmark", "0x42600001/0xffffffff", "lookup", "42600"], cmds_seen)
+
+                cmds_seen.clear()
+                cleanup_dsr_direct_policy_routing(state_path=st_file)
+                self.assertFalse(os.path.isfile(st_file))
+                self.assertIn(["rule", "del", "priority", "12600", "fwmark", "0x42600001/0xffffffff", "lookup", "42600"], cmds_seen)
+                self.assertIn(["route", "del", "default", "dev", "esp-link", "table", "42600"], cmds_seen)
+                self.assertIn(["route", "del", "throw", "198.51.100.25/32", "table", "42600"], cmds_seen)
+
+                # Collision with foreign priority rule must fail cleanly without mutating
+                def fake_run_collision(cmd, **kwargs):
+                    res = MagicMock()
+                    res.returncode = 0
+                    res.stderr = ""
+                    if cmd[1:4] == ["-4", "rule", "show"]:
+                        res.stdout = "12600:\tfrom all fwmark 0x999 lookup 99\n"
+                    else:
+                        res.stdout = ""
+                    return res
+
+                with patch("core.firewall.subprocess.run", side_effect=fake_run_collision):
+                    ok_col, err_col = ensure_dsr_direct_policy_routing(slot, state_path=st_file)
+                    self.assertFalse(ok_col)
+                    self.assertIn("12600", err_col)
+
+    def test_dsr_synack_direct_prober_blackhole_hot_toggle_and_traffic(self):
+        from core.traffic import classify_tunnel_type
+
+        # 1. Prober route validation for nftables_dsr_direct allows local tunnel IP without WAN leak failure
+        ok_p, iface_p, _ = validate_probe_route(
+            {"type": "nftables_dsr_direct", "target": "10.250.50.1", "ingress_iface": "esp-link"},
+            wan_iface="eth0",
+            is_interface_up_fn=lambda i: i == "esp-link",
+            get_route_interface_fn=lambda t: "lo"
+        )
+        self.assertTrue(ok_p)
+        self.assertIsNone(iface_p)
+
+        ok_down, _, reason_down = validate_probe_route(
+            {"type": "nftables_dsr_direct", "target": "10.250.50.1", "ingress_iface": "esp-link"},
+            wan_iface="eth0",
+            is_interface_up_fn=lambda i: False,
+            get_route_interface_fn=lambda t: "lo"
+        )
+        self.assertFalse(ok_down)
+        self.assertIn("esp-link", reason_down)
+
+        # 2. Hot-toggle between nftables_dsr_synack and haproxy on TCP-only rule still queues full conntrack flush
+        with tempfile.TemporaryDirectory() as tmp:
+            cfg_path = os.path.join(tmp, "config.json")
+            state_path = os.path.join(tmp, "state.json")
+            rule = {
+                "id": "rule-443",
+                "port": 443,
+                "protocol": "tcp",
+                "active_priority": 1,
+                "destinations": [
+                    {"priority": 1, "type": "nftables_dsr_synack", "target": "10.250.50.1", "port": 24443, "tunnel_iface": "esp-link"},
+                    {"priority": 2, "type": "haproxy", "target": "2001:db8::1", "port": 443}
+                ]
+            }
+            with open(cfg_path, "w", encoding="utf-8") as f:
+                json.dump({"schema_version": 3, "rules": [rule]}, f)
+
+            eng = XForwarderEngine(config_path=cfg_path, state_file_path=state_path)
+            eng._hot_toggle_rule_priority(rule, old_prio=1, new_prio=2, is_critical=False)
+            self.assertIn((443, None), eng._pending_conntrack_flushes)
+
+            # 3. nftables_dsr_synack skips traffic blackhole check (download bypasses Iran)
+            mock_tc = MagicMock()
+            eng._traffic_collector = mock_tc
+            probe_cache = {
+                "10.250.50.1": {"healthy": True, "packets_sent": 10, "packets_received": 10, "packet_loss": 0.0, "latency_ms": 20.0, "jitter_ms": 1.0}
+            }
+            with patch.object(eng, "_validate_probe_route", return_value=(True, "esp-link", "")):
+                changed = eng.evaluate_rule(eng.config["rules"][0], probe_cache=probe_cache)
+            self.assertFalse(changed)
+            mock_tc.check_traffic_blackhole.assert_not_called()
+
+        # 4. Traffic accounting & IPsec ESP tunnel classification
+        self.assertEqual(classify_tunnel_type("esp-link"), "ipsec_esp")
+        self.assertEqual(classify_tunnel_type("xfrm0"), "ipsec_esp")
+        with tempfile.TemporaryDirectory() as tmp:
+            db_path = os.path.join(tmp, "metrics.db")
+            tc = TrafficCollector(db_path=db_path)
+            samples = [
+                {443: {"rx_bytes": 1000, "tx_bytes": 200}, 8443: {"rx_bytes": 1000, "tx_bytes": 5000}},
+                {443: {"rx_bytes": 3500, "tx_bytes": 400}, 8443: {"rx_bytes": 2500, "tx_bytes": 25000}},
+            ]
+            idx = {"i": 0}
+            def fake_nft():
+                val = samples[idx["i"]]
+                idx["i"] = min(idx["i"] + 1, len(samples) - 1)
+                return val
+
+            method_map = {443: "nftables_dsr_synack", 8443: "nftables_dsr_direct"}
+            with patch("core.traffic.read_haproxy_port_stats", return_value={}), \
+                 patch("core.traffic.read_nftables_port_stats", side_effect=fake_nft), \
+                 patch("core.traffic.read_proc_net_dev", return_value={}):
+                tc.collect_cycle(ports=[443, 8443], port_method_map=method_map)
+                tc.collect_cycle(ports=[443, 8443], port_method_map=method_map)
+
+            summary = get_traffic_summary(period="24h", db_path=db_path)
+            keys = {item["key"]: item for item in summary.get("type_breakdown", [])}
+            self.assertIn("method:nftables_dsr_synack", keys)
+            self.assertIn("method:nftables_dsr_direct", keys)
+            self.assertEqual(keys["method:nftables_dsr_synack"]["total_bytes"], 2700)
+            self.assertEqual(keys["method:nftables_dsr_direct"]["total_bytes"], 21500)
 
 
 if __name__ == "__main__":

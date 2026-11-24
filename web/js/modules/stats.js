@@ -580,7 +580,7 @@ export function renderStats(rules, runtime, traffic) {
         if (dest) {
             if (dest.type === "haproxy") haproxyCount++;
             if (dest.type === "nginx") nginxCount++;
-            if (dest.type === "nftables" || dest.type === "nftables_dsr" || dest.type === "nftables_dsr_relay") nftablesCount++;
+            if (dest.type === "nftables" || dest.type === "nftables_dsr" || dest.type === "nftables_dsr_relay" || dest.type === "nftables_dsr_synack" || dest.type === "nftables_dsr_direct") nftablesCount++;
         }
 
         const rId = getRuleId(r);

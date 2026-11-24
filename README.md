@@ -12,7 +12,7 @@
   <img src="https://img.shields.io/badge/RAM-%3C15MB-brightgreen.svg" alt="RAM Usage">
   <img src="https://img.shields.io/badge/OS-Debian%20%7C%20Ubuntu-orange.svg" alt="OS Compatibility">
   <img src="https://img.shields.io/badge/Forwarding-HAProxy%20%7C%20NFTables%20DNAT%20%7C%20Nginx-purple.svg" alt="Forwarding Engine">
-  <img src="https://img.shields.io/badge/Version-1.6.5-success.svg" alt="Version">
+  <img src="https://img.shields.io/badge/Version-1.8.0-success.svg" alt="Version">
 </p>
 
 ---
@@ -172,6 +172,7 @@ sudo ./xforwarder.sh install
 
 ---
 
-## 📄 لایسنس (License)
+## 📄 لایسنس و مستندات API (License & API)
 
-این پروژه تحت لایسنس **MIT** منتشر شده است و استفاده از آن برای عموم آزاد و رایگان می‌باشد.
+- **مستندات کامل REST API:** [مستندات فارسی (docs/API.md)](docs/API.md) | [English Docs (docs/API.en.md)](docs/API.en.md)
+- این پروژه تحت لایسنس **MIT** منتشر شده است و استفاده از آن برای عموم آزاد و رایگان می‌باشد.

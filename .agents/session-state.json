@@ -1,14 +1,14 @@
 {
-  "last_updated": "2026-11-22T09:40:00+03:30",
-  "active_task": "Port range traffic accounting and dedicated Traffic Stats section",
+  "last_updated": "2026-11-25T02:12:00+03:30",
+  "active_task": "Scoped REST API Keys, Full RESTful API v1 & Documentation",
   "active_spec": null,
   "phase": "Completed",
   "completed_milestones": [
-    "Fixed per-port and port-range traffic collection with split sub-interval and wildcard exclusion rollup to parent canonical port",
-    "Separated Daily Traffic and Network Quality timeline charts into dedicated Traffic Stats section (#sectionTraffic)",
-    "Added full bilingual EN/FA localization, sidebar navigation item, and direct telemetry links for Traffic Stats",
-    "Enhanced traffic summary and timeseries query handlers to resolve port-range strings (e.g. 8000-9000) and exclusion labels",
-    "Added comprehensive unit tests for traffic rollup, range querying, and dedicated UI section"
+    "Added salted SHA-256 scoped API key subsystem (read/write/admin) with Bearer & X-API-Key auth in core/auth.py and core/config_manager.py",
+    "Added full RESTful endpoints (/api/* & /api/v1/*), PUT/PATCH/DELETE/OPTIONS support, /api/v1/settings, /api/v1/logs/switches, /api/v1/health, and /api/v1/openapi.json",
+    "Added API Keys management card (#cardApiKeys) and interactive API Reference modal (#apiDocsModal) in Security section with EN/FA i18n and RTL support",
+    "Authored complete Persian (docs/API.md) and English (docs/API.en.md) REST API documentation using strictly fictional RFC IPs",
+    "Bumped synchronized version to v1.8.0 and verified all 387+ unit tests, syntax, anti-patterns, and ES imports"
   ],
   "next_steps": [],
   "notes": "All unit tests and verify-all checks pass with 0 regressions. Clean code, standard library only, Vanilla ES6+ frontend."

@@ -30,7 +30,11 @@ description: Web dashboard UI aesthetics, Vanilla JS/CSS stack constraints, PBKD
   - Enforce `Content-Security-Policy`, `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, and `Referrer-Policy: strict-origin-when-cross-origin`.
   - Mask server identity header (`Server: XForwarder-Shield/2.0`).
   - Strict payload size limit of 64KB (`MAX_PAYLOAD = 65536`).
-  - CSRF protection via `Origin`/`Referer` header verification on mutating endpoints (POST, DELETE).
-- **API Guard**: Every endpoint under `/api/*` (except `/api/login`) must verify session validity using `check_auth(handler)` and return `401 Unauthorized` if unauthenticated.
+  - CSRF protection via `Origin`/`Referer` header verification on mutating cookie-backed browser endpoints (POST, PUT, PATCH, DELETE); stateless API key requests without cookies bypass browser Origin rejection.
+- **Scoped API Keys & REST API v1**:
+  - Persistent API keys in `web.api_keys` use salted SHA-256 hashes (`sha256$<salt>$<digest>`) and hierarchical scopes (`read` < `write` < `admin`), passed via `Authorization: Bearer xfwd_...` or `X-API-Key: xfwd_...`.
+  - All endpoints work identically under `/api/*` and `/api/v1/*` with `GET`, `POST`, `PUT`, `PATCH`, `DELETE`, and `OPTIONS`, plus `GET /api/v1/openapi.json` and `GET/PUT/PATCH /api/v1/settings`.
+  - `/api/status` redacts `password_hash` and `key_hash` via `sanitize_config_for_api()`.
+- **API Guard**: Every endpoint under `/api/*` (except `/api/login`) must verify session or API key validity (`401 Unauthorized` / `403 Forbidden` on insufficient scope).
 - **Cache Control**: All JSON API responses must specify `Cache-Control: no-store, no-cache, must-revalidate`.
 - **System Updates & Service Control Endpoints**: `/api/system/version` (GET), `/api/system/update` (POST), `/api/system/update/status` (GET), and `/api/services/restart` (POST) are strictly authenticated, origin-checked, and execute asynchronously to prevent HTTP socket cutoff or systemd cgroup termination.

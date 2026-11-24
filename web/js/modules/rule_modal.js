@@ -90,6 +90,17 @@ function getCurrentInboundSpec() {
 
 function isNftablesType(destType) {
     const s = String(destType || "").toLowerCase().trim();
+    return (
+        s === "nftables"
+        || s === "nftables_dsr"
+        || s === "nftables_dsr_relay"
+        || s === "nftables_dsr_synack"
+        || s === "nftables_dsr_direct"
+    );
+}
+
+function isRangeCompatibleType(destType) {
+    const s = String(destType || "").toLowerCase().trim();
     return s === "nftables" || s === "nftables_dsr" || s === "nftables_dsr_relay";
 }
 
@@ -303,18 +314,20 @@ function buildLbMemberRowHtml(member, mIdx, destType, isRangeRule, totalCount) {
 
 function buildDestTypeOptionsHtml(selectedType, isRange) {
     const sel = isRange
-        ? (isNftablesType(selectedType) ? String(selectedType).toLowerCase() : "nftables")
+        ? (isRangeCompatibleType(selectedType) ? String(selectedType).toLowerCase() : "nftables")
         : String(selectedType || "haproxy").toLowerCase();
-    const nftOpts = `
+    const nftRangeOpts = `
         <option value="nftables" ${sel === "nftables" ? "selected" : ""}>NFTables (Kernel DNAT)</option>
         <option value="nftables_dsr" ${sel === "nftables_dsr" ? "selected" : ""}>NFTables DSR (UP)</option>
         <option value="nftables_dsr_relay" ${sel === "nftables_dsr_relay" ? "selected" : ""}>NFTables DSR (Spoof)</option>
     `;
-    if (isRange) return nftOpts;
+    if (isRange) return nftRangeOpts;
     return `
         <option value="haproxy" ${sel === "haproxy" ? "selected" : ""}>HAProxy (IPv6)</option>
         <option value="nginx" ${sel === "nginx" ? "selected" : ""}>Nginx (Stream)</option>
-        ${nftOpts}
+        ${nftRangeOpts}
+        <option value="nftables_dsr_synack" ${sel === "nftables_dsr_synack" ? "selected" : ""}>NFTables DSR (SYN-ACK · Iran)</option>
+        <option value="nftables_dsr_direct" ${sel === "nftables_dsr_direct" ? "selected" : ""}>NFTables DSR (Direct · Outside)</option>
     `;
 }
 
@@ -333,7 +346,7 @@ function refreshRangeConstraintUI() {
         if (selectEl) {
             const prev = selectEl.value || "nftables";
             selectEl.innerHTML = buildDestTypeOptionsHtml(prev, isRange);
-            if (isRange && !isNftablesType(prev)) selectEl.value = "nftables";
+            if (isRange && !isRangeCompatibleType(prev)) selectEl.value = "nftables";
             handleDestTypeChange(selectEl);
         }
         if (portEl) {
@@ -794,10 +807,18 @@ export function renderDestinationRow(dest, index, totalCount) {
         ? "2001:db8:cafe::1 (IPv6 only)"
         : (type === "nftables_dsr_relay"
             ? "198.51.100.10 (Exit Server IP)"
-            : (isNftablesType(type) ? "10.88.1.2 (IPv4) or 2001:db8::2 (IPv6)" : "192.0.2.1 or 2001:db8::1"));
-    const showOutIface = (type === "nftables" || type === "nftables_dsr");
-    const showDsrRow = (type === "nftables_dsr" || type === "nftables_dsr_relay");
+            : (type === "nftables_dsr_synack"
+                ? "10.250.50.1 (Outside Tunnel IP)"
+                : (type === "nftables_dsr_direct"
+                    ? "10.250.50.1 (Local Tunnel IP)"
+                    : (isNftablesType(type) ? "10.88.1.2 (IPv4) or 2001:db8::2 (IPv6)" : "192.0.2.1 or 2001:db8::1"))));
+    const isDsrSynack = (type === "nftables_dsr_synack");
+    const isDsrDirect = (type === "nftables_dsr_direct");
     const isDsrRelay = (type === "nftables_dsr_relay");
+    const showOutIface = (type === "nftables" || type === "nftables_dsr" || isDsrSynack);
+    const showDsrRow = (type === "nftables_dsr" || isDsrRelay || isDsrSynack || isDsrDirect);
+    const showIngressIface = (isDsrRelay || isDsrDirect);
+    const spoofRequired = (isDsrRelay || isDsrDirect);
     const lbSupported = isLbSupportedType(type);
     const lbEnabled = lbSupported && Boolean(dest.lb_enabled);
     const lbMode = normalizeLbModeForType(type, dest.lb_mode || "ip_hash");
@@ -809,9 +830,12 @@ export function renderDestinationRow(dest, index, totalCount) {
             { target: "", port: defaultMemberPort, weight: 1, tunnel_iface: dest.tunnel_iface || "", comment: "", enabled: true }
         ];
     const lbMembersHtml = lbMembers.map((m, mIdx) => buildLbMemberRowHtml(m, mIdx, type, isRangeRule, lbMembers.length)).join("");
-    const spoofLabelText = isDsrRelay
+    const spoofLabelText = spoofRequired
         ? t("modal.spoof_ip", {}, "Iran / Spoof IP")
-        : t("modal.spoof_ip_opt", {}, "Ingress IP (Optional)");
+        : (isDsrSynack ? t("modal.spoof_ip_iran_opt", {}, "Iran Public IP (Optional)") : t("modal.spoof_ip_opt", {}, "Ingress IP (Optional)"));
+    const portPlaceholder = isRangeRule
+        ? escapeHtml(t("modal.dest_port_range_placeholder", {}, "Same range or single port"))
+        : ((isDsrSynack || isDsrDirect) ? "Backend Port (e.g. 24443)" : "Default");
 
     const detectedServerIps = getDetectedServerIps();
     const spoofDatalistId = `destSpoofIpList_${index}_${Math.random().toString(36).substr(2, 6)}`;
@@ -882,7 +906,7 @@ export function renderDestinationRow(dest, index, totalCount) {
             </div>
             <div class="form-group dest-col-port" style="display:${lbEnabled ? "none" : "block"};">
                 <label>${escapeHtml(t("modal.dest_port"))}</label>
-                <input type="text" inputmode="numeric" class="form-control dest-port" placeholder="${isRangeRule ? escapeHtml(t("modal.dest_port_range_placeholder", {}, "Same range or single port")) : "Default"}" value="${escapeHtml(port)}">
+                <input type="text" inputmode="numeric" class="form-control dest-port" placeholder="${portPlaceholder}" value="${escapeHtml(port)}">
             </div>
         </div>
         <div class="lb-pool-panel" style="display:${lbEnabled ? "block" : "none"};">
@@ -921,21 +945,21 @@ export function renderDestinationRow(dest, index, totalCount) {
         <div class="dest-meta-row dest-dsr-row" style="display:${showDsrRow ? "flex" : "none"};">
             <div class="form-group flex-1 dest-spoof-ip-group">
                 <label class="label-with-tip">
-                    <span class="dest-spoof-label">${escapeHtml(spoofLabelText)}</span>${isDsrRelay ? ' <span class="required">*</span>' : ''}
+                    <span class="dest-spoof-label">${escapeHtml(spoofLabelText)}</span><span class="dest-spoof-required required" style="display:${spoofRequired ? "inline" : "none"};"> *</span>
                     <span class="xfwd-info-tip" tabindex="0" data-tip="${escapeHtml(t("modal.tip_spoof_ip", {}, "Iran server public IP used as spoofed source on direct download return packets."))}" aria-label="Info">
                         <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
                     </span>
                 </label>
-                <input type="text" list="${spoofDatalistId}" class="form-control font-mono dest-spoof-ip" placeholder="${isDsrRelay ? "198.51.100.25 (Required)" : "Auto (WAN Interface)"}" value="${escapeHtml(dest.spoof_ip || "")}">
+                <input type="text" list="${spoofDatalistId}" class="form-control font-mono dest-spoof-ip" placeholder="${spoofRequired ? "198.51.100.25 (Required)" : "Auto (WAN Interface)"}" value="${escapeHtml(dest.spoof_ip || "")}">
                 <datalist id="${spoofDatalistId}">
                     ${serverIpDatalistOptionsHtml}
                 </datalist>
                 ${spoofQuickChipsHtml}
             </div>
-            <div class="form-group flex-1 dest-ingress-iface-group" style="display:${isDsrRelay ? "block" : "none"};">
+            <div class="form-group flex-1 dest-ingress-iface-group" style="display:${showIngressIface ? "block" : "none"};">
                 <label class="label-with-tip">
-                    <span>${escapeHtml(t("modal.ingress_iface", {}, "Inbound Tunnel Interface"))}</span>
-                    <span class="xfwd-info-tip" tabindex="0" data-tip="${escapeHtml(t("modal.tip_ingress_iface", {}, "Tunnel interface receiving packets from the Iran server (e.g. tun1, ipip1)."))}" aria-label="Info">
+                    <span>${escapeHtml(t("modal.ingress_iface", {}, "Inbound Tunnel Interface"))}</span><span class="dest-ingress-required required" style="display:${isDsrDirect ? "inline" : "none"};"> *</span>
+                    <span class="xfwd-info-tip" tabindex="0" data-tip="${escapeHtml(t("modal.tip_ingress_iface", {}, "Tunnel interface receiving packets from the Iran server (e.g. esp-link, gre15, ipip1)."))}" aria-label="Info">
                         <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
                     </span>
                 </label>
@@ -1050,10 +1074,17 @@ export function handleDestTypeChange(selectEl) {
     const lbPanel = row.querySelector(".lb-pool-panel");
     const lbModeSelect = row.querySelector(".lb-mode-select");
     const val = selectEl.value;
-    const showOutIface = (val === "nftables" || val === "nftables_dsr");
-    const showDsrRow = (val === "nftables_dsr" || val === "nftables_dsr_relay");
+    const isDsrSynack = (val === "nftables_dsr_synack");
+    const isDsrDirect = (val === "nftables_dsr_direct");
     const isDsrRelay = (val === "nftables_dsr_relay");
+    const showOutIface = (val === "nftables" || val === "nftables_dsr" || isDsrSynack);
+    const showDsrRow = (val === "nftables_dsr" || isDsrRelay || isDsrSynack || isDsrDirect);
+    const showIngressIface = (isDsrRelay || isDsrDirect);
+    const spoofRequired = (isDsrRelay || isDsrDirect);
     const lbSupported = isLbSupportedType(val);
+    const spoofReqStar = row.querySelector(".dest-spoof-required");
+    const ingressReqStar = row.querySelector(".dest-ingress-required");
+    const singlePortInput = row.querySelector(".dest-port");
 
     if (lbBar) {
         lbBar.style.display = lbSupported ? "flex" : "none";
@@ -1104,19 +1135,38 @@ export function handleDestTypeChange(selectEl) {
         dsrRow.style.display = showDsrRow ? "flex" : "none";
     }
     if (ingressGroup) {
-        ingressGroup.style.display = isDsrRelay ? "block" : "none";
+        ingressGroup.style.display = showIngressIface ? "block" : "none";
     }
     if (snatGroup) {
         snatGroup.style.display = isDsrRelay ? "block" : "none";
     }
+    if (spoofReqStar) {
+        spoofReqStar.style.display = spoofRequired ? "inline" : "none";
+    }
+    if (ingressReqStar) {
+        ingressReqStar.style.display = isDsrDirect ? "inline" : "none";
+    }
     if (spoofLabel) {
-        spoofLabel.textContent = isDsrRelay
+        spoofLabel.textContent = spoofRequired
             ? t("modal.spoof_ip", {}, "Iran / Spoof IP")
-            : t("modal.spoof_ip_opt", {}, "Ingress IP (Optional)");
+            : (isDsrSynack ? t("modal.spoof_ip_iran_opt", {}, "Iran Public IP (Optional)") : t("modal.spoof_ip_opt", {}, "Ingress IP (Optional)"));
     }
     if (spoofInput) {
-        spoofInput.placeholder = isDsrRelay ? "198.51.100.25 (Required)" : "Auto (WAN Interface)";
-        spoofInput.required = isDsrRelay;
+        spoofInput.placeholder = spoofRequired ? "198.51.100.25 (Required)" : "Auto (WAN Interface)";
+        spoofInput.required = spoofRequired;
+    }
+    if (singlePortInput) {
+        const inboundSpec = getCurrentInboundSpec();
+        const isRangeRule = Boolean(inboundSpec && inboundSpec.rangeStr);
+        singlePortInput.placeholder = isRangeRule
+            ? t("modal.dest_port_range_placeholder", {}, "Same range or single port")
+            : ((isDsrSynack || isDsrDirect) ? "Backend Port (e.g. 24443)" : "Default");
+    }
+    if (isDsrSynack || isDsrDirect) {
+        const protoEl = document.getElementById("formProto");
+        if (protoEl && protoEl.value !== "tcp") {
+            protoEl.value = "tcp";
+        }
     }
     if (lbActive) {
         refreshLbBoxState(row);
@@ -1126,6 +1176,10 @@ export function handleDestTypeChange(selectEl) {
         targetInput.placeholder = "2001:db8:cafe::1 (IPv6 only)";
     } else if (val === "nftables_dsr_relay") {
         targetInput.placeholder = "198.51.100.10 (Exit Server IP)";
+    } else if (val === "nftables_dsr_synack") {
+        targetInput.placeholder = "10.250.50.1 (Outside Tunnel IP)";
+    } else if (val === "nftables_dsr_direct") {
+        targetInput.placeholder = "10.250.50.1 (Local Tunnel IP)";
     } else if (isNftablesType(val)) {
         targetInput.placeholder = "10.88.1.2 (IPv4) or 2001:db8::2 (IPv6)";
     } else {
@@ -1172,15 +1226,15 @@ export function syncDestinationsFromDom() {
             is_relay: relayEl ? relayEl.checked : false,
             enabled: enabledEl ? enabledEl.checked : true
         };
-        if ((dType === "nftables" || dType === "nftables_dsr") && rawIface) {
+        if ((dType === "nftables" || dType === "nftables_dsr" || dType === "nftables_dsr_synack") && rawIface) {
             destObj.tunnel_iface = rawIface;
         }
-        if ((dType === "nftables_dsr" || dType === "nftables_dsr_relay") && rawSpoofIp) {
+        if ((dType === "nftables_dsr" || dType === "nftables_dsr_relay" || dType === "nftables_dsr_synack" || dType === "nftables_dsr_direct") && rawSpoofIp) {
             destObj.spoof_ip = rawSpoofIp;
         }
-        if (dType === "nftables_dsr_relay") {
+        if (dType === "nftables_dsr_relay" || dType === "nftables_dsr_direct") {
             if (rawIngressIface) destObj.ingress_iface = rawIngressIface;
-            if (rawSnatIp) destObj.snat_ip = rawSnatIp;
+            if (dType === "nftables_dsr_relay" && rawSnatIp) destObj.snat_ip = rawSnatIp;
         }
         if (parsedDPort && parsedDPort.rangeStr) {
             destObj.port_range = parsedDPort.rangeStr;
@@ -1357,6 +1411,7 @@ export async function testModalDestination(index) {
                 port: parseInt(port),
                 type: dest.type || "haproxy",
                 tunnel_iface: dest.tunnel_iface || "",
+                ingress_iface: dest.ingress_iface || "",
                 protocol: document.getElementById("formProto") ? document.getElementById("formProto").value : "both",
                 packets: 10
             })
@@ -1875,9 +1930,35 @@ export function initRuleModal(fetchStatusCallback) {
                         return;
                     }
                 }
+                if (d.type === "nftables_dsr_synack" || d.type === "nftables_dsr_direct") {
+                    const protoVal = (document.getElementById("formProto")?.value || "both").toLowerCase();
+                    if (inbound.rangeStr || excludedPorts.length > 0) {
+                        showToast(`Priority #${i + 1} (${d.type}) supports a single TCP port only (no port ranges)`, "error");
+                        return;
+                    }
+                    if (protoVal !== "tcp") {
+                        showToast(`Priority #${i + 1} (${d.type}) requires Protocol = TCP Only`, "error");
+                        return;
+                    }
+                    const tgtVer = detectIpVersion(d.target);
+                    if (tgtVer !== 4) {
+                        showToast(`Priority #${i + 1} (${d.type}) requires a valid IPv4 address`, "error");
+                        return;
+                    }
+                }
                 if (d.type === "nftables_dsr_relay" && (!d.spoof_ip || !d.spoof_ip.trim())) {
                     showToast(`Priority #${i + 1} (NFTables DSR Relay) requires Iran / Spoof IP`, "error");
                     return;
+                }
+                if (d.type === "nftables_dsr_direct") {
+                    if (!d.spoof_ip || !d.spoof_ip.trim()) {
+                        showToast(`Priority #${i + 1} (NFTables DSR Direct) requires Iran / Spoof IP`, "error");
+                        return;
+                    }
+                    if (!d.ingress_iface || !d.ingress_iface.trim()) {
+                        showToast(`Priority #${i + 1} (NFTables DSR Direct) requires Inbound Tunnel Interface`, "error");
+                        return;
+                    }
                 }
                 if (inbound.rangeStr) {
                     if (!isNftablesType(d.type)) {

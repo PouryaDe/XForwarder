@@ -114,6 +114,12 @@ import {
     appendLogEntry,
     initLogs
 } from "./js/modules/logs.js";
+import {
+    initApiKeysManager,
+    fetchApiKeys,
+    openApiDocsModal,
+    closeApiDocsModal
+} from "./js/modules/api_keys.js";
 
 // Re-expose public functions on window for inline HTML event handlers (e.g. onclick="...")
 window.openAddRuleModal = openAddRuleModal;
@@ -159,6 +165,8 @@ window.copyJsonToClipboard = copyJsonToClipboard;
 window.safeInlineArg = safeInlineArg;
 window.openSystemUpdateModal = openSystemUpdateModal;
 window.closeSystemUpdateModal = closeSystemUpdateModal;
+window.openApiDocsModal = openApiDocsModal;
+window.closeApiDocsModal = closeApiDocsModal;
 window.startSystemUpdateProcedure = startSystemUpdateProcedure;
 window.handleServiceRestart = (svc) => handleServiceRestart(svc, fetchStatus);
 window.formatLatencyBadge = formatLatencyBadge;
@@ -357,6 +365,7 @@ async function startAuthenticatedSession(username) {
     await fetchStatus();
     checkImportableRules();
     fetchSystemVersionInfo(false);
+    fetchApiKeys();
     if (!statusPollInterval) {
         statusPollInterval = setInterval(fetchStatus, 3500);
     }
@@ -386,6 +395,7 @@ async function initApp() {
     initSystemUpdateManager();
     initServiceRestartControls(fetchStatus);
     initLogs();
+    initApiKeysManager();
 
 
     const btnDismissSyncError = document.getElementById("btnDismissSyncError");

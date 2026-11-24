@@ -171,6 +171,8 @@ def classify_tunnel_type(iface_name: str) -> str:
         return "6to4"
     elif name.startswith("gnv") or name.startswith("vxlan"):
         return "vxlan"
+    elif name.startswith("esp") or name.startswith("xfrm"):
+        return "ipsec_esp"
     return "tunnel_other"
 
 
@@ -181,6 +183,7 @@ TUNNEL_TYPE_LABELS: Dict[str, str] = {
     "ipip": "IPIP Tunnel (ipip*)",
     "wireguard": "WireGuard / AWG (awg*)",
     "faketcp": "FakeTCP Tunnel (ftcp*)",
+    "ipsec_esp": "IPsec ESP / XFRM Tunnel",
     "6to4": "6to4 IPv6 Tunnel (sit*)",
     "vxlan": "VXLAN Overlay (vxlan*)",
     "tunnel_other": "Other Tunnel Interfaces"
@@ -492,7 +495,7 @@ class TrafficCollector:
                 self._last_counters[key] = {"rx_bytes": stats["rx_bytes"], "tx_bytes": stats["tx_bytes"]}
 
                 nft_method = (port_method_map or {}).get(target_port) or (port_method_map or {}).get(raw_port) or "nftables"
-                if nft_method not in ("nftables", "nftables_dsr", "nftables_dsr_relay"):
+                if nft_method not in ("nftables", "nftables_dsr", "nftables_dsr_relay", "nftables_dsr_synack", "nftables_dsr_direct"):
                     nft_method = "nftables"
                 _record_delta("port", str(target_port), rx_delta, tx_delta)
                 _record_delta("port_path", f"{target_port}:{nft_method}", rx_delta, tx_delta)
@@ -999,6 +1002,8 @@ def get_traffic_summary(
                     "nftables": "Kernel Tunnel DNAT (NFTables)",
                     "nftables_dsr": "NFTables DSR (Upload-Only)",
                     "nftables_dsr_relay": "NFTables DSR Relay (Spoof)",
+                    "nftables_dsr_synack": "NFTables DSR (SYN-ACK · Iran)",
+                    "nftables_dsr_direct": "NFTables DSR (Direct · Outside)",
                 }
                 for peid, prx, ptx, ptot in cursor.fetchall():
                     sub_key = peid.split(":", 1)[1] if ":" in peid else peid
@@ -1029,6 +1034,8 @@ def get_traffic_summary(
                     "nftables": "Kernel Tunnel DNAT (NFTables)",
                     "nftables_dsr": "NFTables DSR (Upload-Only)",
                     "nftables_dsr_relay": "NFTables DSR Relay (Spoof)",
+                    "nftables_dsr_synack": "NFTables DSR (SYN-ACK · Iran)",
+                    "nftables_dsr_direct": "NFTables DSR (Direct · Outside)",
                 }
                 for meid, mrx, mtx, mtot in cursor.fetchall():
                     lbl = global_method_labels.get(meid, meid)

@@ -282,7 +282,7 @@
                     </div>
                     <div class="brand-text">
                         <span class="brand-title" data-i18n="brand.title">XForwarder</span>
-                        <span class="brand-badge" id="brandVersionBadge">v1.6.5</span>
+                        <span class="brand-badge" id="brandVersionBadge">v1.8.0</span>
                     </div>
                 </div>
                 <button class="btn-sidebar-close" id="btnCloseSidebar" title="Close Menu">
@@ -1481,6 +1481,83 @@
                             </div>
                         </div>
                     </div>
+
+                    <!-- REST API Keys & Documentation Card -->
+                    <div class="overview-card full-width-card" id="cardApiKeys">
+                        <div class="overview-card-header" style="flex-wrap:wrap; gap:12px;">
+                            <div class="overview-card-title">
+                                <div class="stat-icon icon-emerald" style="width:36px;height:36px;">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4" />
+                                    </svg>
+                                </div>
+                                <div>
+                                    <h3 data-i18n="api.title">REST API &amp; API Keys</h3>
+                                    <span class="overview-card-sub" data-i18n="api.sub">Create scoped Bearer / X-API-Key tokens for external automation and inspect API docs</span>
+                                </div>
+                            </div>
+                            <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                                <button type="button" class="btn btn-secondary btn-sm" id="btnDownloadOpenApi">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                                        <polyline points="7 10 12 15 17 10" />
+                                        <line x1="12" y1="15" x2="12" y2="3" />
+                                    </svg>
+                                    <span data-i18n="api.download_openapi">OpenAPI JSON</span>
+                                </button>
+                                <button type="button" class="btn btn-primary btn-sm" id="btnOpenApiDocsModal">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <polyline points="16 18 22 12 16 6" />
+                                        <polyline points="8 6 2 12 8 18" />
+                                    </svg>
+                                    <span data-i18n="api.view_docs">API Reference</span>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="overview-card-body">
+                            <form id="apiKeyCreateForm" class="api-key-form-row">
+                                <div class="form-group" style="margin-bottom:0; flex:2; min-width:180px;">
+                                    <label for="inpApiKeyName" data-i18n="api.key_name">Key Name</label>
+                                    <input type="text" id="inpApiKeyName" class="form-control" maxlength="64" placeholder="e.g. WHMCS / Automation Bot" data-i18n-placeholder="api.key_name_placeholder" required autocomplete="off">
+                                </div>
+                                <div class="form-group" style="margin-bottom:0; flex:1; min-width:140px;">
+                                    <label for="selApiKeyScope" data-i18n="api.scope">Permission Scope</label>
+                                    <select id="selApiKeyScope" class="form-control">
+                                        <option value="admin" data-i18n="api.scope_admin">Admin (Full Access)</option>
+                                        <option value="write" data-i18n="api.scope_write">Write (Rules &amp; Probes)</option>
+                                        <option value="read" data-i18n="api.scope_read">Read-Only</option>
+                                    </select>
+                                </div>
+                                <div class="form-group" style="margin-bottom:0; flex:1; min-width:130px;">
+                                    <label for="selApiKeyExpiry" data-i18n="api.expiry">Expiration</label>
+                                    <select id="selApiKeyExpiry" class="form-control">
+                                        <option value="0" data-i18n="api.exp_never">Never Expires</option>
+                                        <option value="30" data-i18n="api.exp_30">30 Days</option>
+                                        <option value="90" data-i18n="api.exp_90">90 Days</option>
+                                        <option value="365" data-i18n="api.exp_365">365 Days</option>
+                                    </select>
+                                </div>
+                                <div class="api-key-submit-wrap">
+                                    <button type="submit" class="btn btn-primary" id="btnCreateApiKey" data-i18n="api.generate_btn">Generate API Key</button>
+                                </div>
+                            </form>
+
+                            <div id="apiKeyRevealBox" class="api-key-reveal-box" style="display:none;">
+                                <div class="api-key-reveal-text">
+                                    <strong data-i18n="api.reveal_title">Copy your new API key now — it will not be shown again:</strong>
+                                    <code id="apiKeyRevealValue" class="font-mono ltr-mono"></code>
+                                </div>
+                                <div style="display:flex; gap:8px; flex-shrink:0;">
+                                    <button type="button" class="btn btn-primary btn-sm" id="btnCopyApiKeySecret" data-i18n="api.copy_key">Copy Key</button>
+                                    <button type="button" class="btn btn-secondary btn-sm" id="btnDismissApiKeyReveal" data-i18n="rules.dismiss">Dismiss</button>
+                                </div>
+                            </div>
+
+                            <div id="apiKeysList" class="api-keys-list">
+                                <div class="api-keys-empty" data-i18n="api.empty">No API keys created yet. Generate one above for scripts or external integrations.</div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </section>
 
@@ -1551,7 +1628,7 @@
                             <div class="updates-telemetry-grid">
                                 <div class="update-stat-tile">
                                     <span class="update-tile-label" data-i18n="security.installed_version">Installed Version</span>
-                                    <span class="update-tile-value font-mono text-emerald" id="valInstalledVersion">v1.6.5</span>
+                                    <span class="update-tile-value font-mono text-emerald" id="valInstalledVersion">v1.8.0</span>
                                 </div>
                                 <div class="update-stat-tile">
                                     <span class="update-tile-label" data-i18n="security.local_commit">Local Git Commit</span>
@@ -2363,6 +2440,45 @@
                     <span data-i18n="switch_logs.copy">Copy Logs</span>
                 </button>
                 <button type="button" class="btn btn-secondary" id="btnCloseSwitchLogsModalFooter" data-i18n="switch_logs.close">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- API Reference Modal -->
+    <div class="modal-backdrop" id="apiDocsModal">
+        <div class="modal-card" style="max-width: 900px; width: 95%;">
+            <div class="modal-header">
+                <div class="modal-title-wrap">
+                    <h3 data-i18n="api.docs_title">XForwarder REST API Reference</h3>
+                    <p class="modal-subtitle" data-i18n="api.docs_sub">Supports Bearer Token, X-API-Key, and Session auth across /api/* and /api/v1/*</p>
+                </div>
+                <button type="button" class="modal-close" id="btnCloseApiDocsModal" title="Close dialog">&times;</button>
+            </div>
+            <div class="modal-body" style="padding-top:12px;">
+                <div class="api-docs-banner">
+                    <div>
+                        <span class="text-muted" style="font-size:0.76rem;" data-i18n="api.base_url">Base URL:</span>
+                        <code id="apiDocsBaseUrl" class="font-mono ltr-mono text-emerald" style="margin:0 6px;"></code>
+                    </div>
+                    <div style="font-size:0.78rem; color:var(--text-secondary);">
+                        <span data-i18n="api.auth_headers">Headers:</span>
+                        <code class="font-mono ltr-mono">Authorization: Bearer &lt;KEY&gt;</code>
+                        <span style="opacity:0.6;">|</span>
+                        <code class="font-mono ltr-mono">X-API-Key: &lt;KEY&gt;</code>
+                    </div>
+                </div>
+                <div class="metrics-range-tabs" id="apiDocsFilterTabs" style="margin:12px 0;">
+                    <button type="button" class="btn-range-tab active" data-doc-cat="all" data-i18n="api.cat_all">All</button>
+                    <button type="button" class="btn-range-tab" data-doc-cat="auth" data-i18n="api.cat_auth">Auth &amp; Keys</button>
+                    <button type="button" class="btn-range-tab" data-doc-cat="rules" data-i18n="api.cat_rules">Rules CRUD</button>
+                    <button type="button" class="btn-range-tab" data-doc-cat="failover" data-i18n="api.cat_failover">Failover &amp; Probes</button>
+                    <button type="button" class="btn-range-tab" data-doc-cat="traffic" data-i18n="api.cat_traffic">Traffic &amp; Metrics</button>
+                    <button type="button" class="btn-range-tab" data-doc-cat="system" data-i18n="api.cat_system">System &amp; Settings</button>
+                </div>
+                <div id="apiDocsEndpointsList" class="api-docs-endpoints-list"></div>
+            </div>
+            <div class="modal-footer" style="display:flex; justify-content:flex-end;">
+                <button type="button" class="btn btn-secondary" id="btnCloseApiDocsModalFooter" data-i18n="traffic_modal.close">Close</button>
             </div>
         </div>
     </div>

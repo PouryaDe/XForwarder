@@ -7,6 +7,7 @@ validates syntax dry-runs, and clears connection tracking states.
 
 import os
 import sys
+import json
 import shutil
 import socket
 import subprocess
@@ -295,6 +296,13 @@ def build_nft_lb_dnat_entries(
 
 IFACE_NAME_REGEX = re.compile(r"^[a-zA-Z0-9][a-zA-Z0-9_.\-]{0,14}$")
 
+DSR_DIRECT_TABLE_BASE = 42600
+DSR_DIRECT_PRIO_BASE = 12600
+DSR_DIRECT_MARK_BASE = 0x42600001
+DSR_DIRECT_MAX_SLOTS = 64
+DSR_DIRECT_STATE_PATH = "/run/xforwarder/dsr_direct_routes.json"
+_DSR_DIRECT_POLICY_APPLIED = False
+
 
 def _format_postrouting_masquerades(custom_oifs: Optional[Set[str]] = None) -> str:
     """Builds validated postrouting masquerade statements including custom tunnel interfaces."""
@@ -308,6 +316,8 @@ def _format_postrouting_masquerades(custom_oifs: Optional[Set[str]] = None) -> s
         '        oifname "vxlan*" masquerade',
         '        oifname "wg*" masquerade',
         '        oifname "tun*" masquerade',
+        '        oifname "xfrm*" masquerade',
+        '        oifname "esp*" masquerade',
         '        oifname "backhaul*" masquerade',
     ]
     for iface in sorted(custom_oifs or set()):
@@ -315,6 +325,307 @@ def _format_postrouting_masquerades(custom_oifs: Optional[Set[str]] = None) -> s
         if IFACE_NAME_REGEX.match(clean_iface):
             lines.append(f'        oifname "{clean_iface}" masquerade')
     return "\n".join(lines)
+
+
+def _run_ip_cmd(ip_bin: str, args: List[str]) -> subprocess.CompletedProcess:
+    """Executes an iproute2 command with bounded timeout."""
+    return subprocess.run(
+        [ip_bin] + args,
+        capture_output=True,
+        text=True,
+        timeout=2.0,
+        check=False,
+    )
+
+
+def _load_dsr_direct_state(state_path: str) -> Dict[int, Dict[str, Any]]:
+    """Loads persisted XForwarder-owned DSR Direct policy routing slots."""
+    if not state_path or not os.path.isfile(state_path):
+        return {}
+    try:
+        with open(state_path, "r", encoding="utf-8") as f:
+            raw = json.load(f)
+        slots = raw.get("slots", []) if isinstance(raw, dict) else []
+        out: Dict[int, Dict[str, Any]] = {}
+        for item in slots:
+            if not isinstance(item, dict):
+                continue
+            tid = int(item.get("table_id", 0))
+            if DSR_DIRECT_TABLE_BASE <= tid < DSR_DIRECT_TABLE_BASE + DSR_DIRECT_MAX_SLOTS:
+                out[tid] = item
+        return out
+    except Exception:
+        return {}
+
+
+def _save_dsr_direct_state(state_path: str, slots: List[Dict[str, Any]]) -> None:
+    """Atomically persists or removes XForwarder-owned DSR Direct policy routing state."""
+    if not state_path:
+        return
+    try:
+        if not slots:
+            if os.path.isfile(state_path):
+                os.remove(state_path)
+            return
+        parent = os.path.dirname(state_path)
+        if parent:
+            os.makedirs(parent, exist_ok=True)
+        tmp_path = f"{state_path}.tmp.{os.getpid()}"
+        with open(tmp_path, "w", encoding="utf-8") as f:
+            json.dump({"slots": slots}, f, indent=2)
+        os.replace(tmp_path, state_path)
+    except Exception:
+        pass
+
+
+def _parse_ip_rule_entry(line: str) -> Tuple[Optional[int], Optional[Tuple[int, int]], Optional[int], bool]:
+    """Parses `(priority, (fwmark_val, fwmark_mask), lookup_table, has_not)` from one `ip -4 rule show` line."""
+    words = line.strip().split()
+    if not words or not words[0].endswith(":"):
+        return None, None, None, False
+    try:
+        prio = int(words[0][:-1])
+    except ValueError:
+        return None, None, None, False
+    fwmark_pair: Optional[Tuple[int, int]] = None
+    has_not = False
+    if "fwmark" in words:
+        idx = words.index("fwmark")
+        has_not = "not" in words[:idx]
+        if idx + 1 < len(words):
+            parts = words[idx + 1].split("/", 1)
+            try:
+                val = int(parts[0], 0)
+                mask = int(parts[1], 0) if len(parts) == 2 else 0xFFFFFFFF
+                fwmark_pair = (val, mask)
+            except ValueError:
+                pass
+    lookup_table: Optional[int] = None
+    if "lookup" in words:
+        idx = words.index("lookup")
+        if idx + 1 < len(words):
+            try:
+                lookup_table = int(words[idx + 1])
+            except ValueError:
+                pass
+    return prio, fwmark_pair, lookup_table, has_not
+
+
+def _delete_dsr_direct_slot(ip_bin: str, slot: Dict[str, Any]) -> None:
+    """Removes kernel ip rule and routes recorded for one XForwarder-owned DSR Direct slot."""
+    try:
+        prio = int(slot.get("priority", 0))
+        tid = int(slot.get("table_id", 0))
+        fwmark_hex = hex(int(str(slot.get("fwmark", "0")), 0))
+        iface = str(slot.get("iface", "")).strip()
+    except (TypeError, ValueError):
+        return
+    if prio > 0 and tid > 0 and fwmark_hex != "0x0":
+        _run_ip_cmd(ip_bin, ["rule", "del", "priority", str(prio), "fwmark", f"{fwmark_hex}/0xffffffff", "lookup", str(tid)])
+    if tid > 0 and iface and IFACE_NAME_REGEX.match(iface):
+        _run_ip_cmd(ip_bin, ["route", "del", "default", "dev", iface, "table", str(tid)])
+    for ip_str in (slot.get("throw_ips") or []):
+        try:
+            clean_ip = str(ipaddress.IPv4Address(str(ip_str).strip()))
+            _run_ip_cmd(ip_bin, ["route", "del", "throw", f"{clean_ip}/32", "table", str(tid)])
+        except ValueError:
+            continue
+
+
+def cleanup_dsr_direct_policy_routing(state_path: str = DSR_DIRECT_STATE_PATH) -> None:
+    """Removes XForwarder-owned DSR Direct policy routing entries without touching unrelated rules."""
+    global _DSR_DIRECT_POLICY_APPLIED
+    _DSR_DIRECT_POLICY_APPLIED = False
+    if sys.platform == "win32":
+        return
+    prev_by_table = _load_dsr_direct_state(state_path)
+    if not prev_by_table:
+        try:
+            if state_path and os.path.isfile(state_path):
+                os.remove(state_path)
+        except Exception:
+            pass
+        return
+    ip_bin = _find_system_bin("ip", ("/sbin", "/usr/sbin", "/bin", "/usr/bin"))
+    if ip_bin:
+        for slot in prev_by_table.values():
+            _delete_dsr_direct_slot(ip_bin, slot)
+    _save_dsr_direct_state(state_path, [])
+
+
+def ensure_dsr_direct_policy_routing(
+    routes_spec: Optional[List[Dict[str, Any]]],
+    state_path: str = DSR_DIRECT_STATE_PATH
+) -> Tuple[bool, Optional[str]]:
+    """
+    Reconciles dedicated policy routing tables/rules for `nftables_dsr_direct` SYN-ACK tunnel return.
+    Validates ownership before modifying kernel tables and rolls back newly added items on failure.
+    """
+    global _DSR_DIRECT_POLICY_APPLIED
+    if not routes_spec:
+        cleanup_dsr_direct_policy_routing(state_path=state_path)
+        return True, None
+    if sys.platform == "win32":
+        _DSR_DIRECT_POLICY_APPLIED = True
+        return True, None
+
+    ip_bin = _find_system_bin("ip", ("/sbin", "/usr/sbin", "/bin", "/usr/bin"))
+    if not ip_bin:
+        return False, "iproute2 'ip' binary not found for DSR Direct policy routing"
+
+    desired_by_table: Dict[int, Dict[str, Any]] = {}
+    for raw in routes_spec:
+        if not isinstance(raw, dict):
+            continue
+        iface = str(raw.get("iface") or "").strip()
+        if not iface or not IFACE_NAME_REGEX.match(iface):
+            return False, f"Invalid DSR Direct tunnel interface '{iface}'"
+        try:
+            tid = int(raw.get("table_id"))
+            prio = int(raw.get("priority"))
+            mark_int = int(str(raw.get("fwmark")), 0)
+        except (TypeError, ValueError):
+            return False, "Invalid DSR Direct policy routing identifiers"
+        if not (DSR_DIRECT_TABLE_BASE <= tid < DSR_DIRECT_TABLE_BASE + DSR_DIRECT_MAX_SLOTS):
+            return False, f"DSR Direct route table {tid} out of reserved range"
+        if not (DSR_DIRECT_PRIO_BASE <= prio < DSR_DIRECT_PRIO_BASE + DSR_DIRECT_MAX_SLOTS):
+            return False, f"DSR Direct rule priority {prio} out of reserved range"
+        if not (DSR_DIRECT_MARK_BASE <= mark_int < DSR_DIRECT_MARK_BASE + DSR_DIRECT_MAX_SLOTS):
+            return False, f"DSR Direct fwmark {hex(mark_int)} out of reserved range"
+        clean_throws: List[str] = []
+        seen_throws: Set[str] = set()
+        for t_ip in (raw.get("throw_ips") or []):
+            try:
+                ip_str = str(ipaddress.IPv4Address(str(t_ip).strip()))
+            except ValueError:
+                return False, f"Invalid DSR Direct throw IP '{t_ip}'"
+            if ip_str not in seen_throws:
+                seen_throws.add(ip_str)
+                clean_throws.append(ip_str)
+        desired_by_table[tid] = {
+            "iface": iface,
+            "table_id": tid,
+            "priority": prio,
+            "fwmark": f"0x{mark_int:08x}",
+            "throw_ips": sorted(clean_throws),
+        }
+
+    if not desired_by_table:
+        cleanup_dsr_direct_policy_routing(state_path=state_path)
+        return True, None
+
+    prev_by_table = _load_dsr_direct_state(state_path)
+    rules_res = _run_ip_cmd(ip_bin, ["-4", "rule", "show"])
+    if rules_res.returncode != 0:
+        return False, f"Failed inspecting ip rules: {rules_res.stderr.strip()}"
+    rule_lines = [ln for ln in rules_res.stdout.splitlines() if ln.strip()]
+
+    existing_own_rule: Set[int] = set()
+    for tid, slot in desired_by_table.items():
+        prio = slot["priority"]
+        mark_int = int(slot["fwmark"], 0)
+        prio_matches = []
+        for ln in rule_lines:
+            l_prio, l_fw, l_tbl, l_not = _parse_ip_rule_entry(ln)
+            if l_prio == prio:
+                prio_matches.append((l_fw, l_tbl, l_not))
+                continue
+            if l_tbl == tid:
+                return False, f"Policy route table {tid} is already referenced by foreign ip rule"
+            if l_fw is not None:
+                f_val, f_mask = l_fw
+                matches = (mark_int & f_mask) == (f_val & f_mask)
+                if l_not:
+                    matches = not matches
+                if matches:
+                    return False, f"Policy fwmark {slot['fwmark']} collides with existing ip rule"
+        if len(prio_matches) > 1:
+            return False, f"Multiple ip rules exist at reserved priority {prio}"
+        if len(prio_matches) == 1:
+            l_fw, l_tbl, l_not = prio_matches[0]
+            if l_not or l_tbl != tid or l_fw is None or l_fw[0] != mark_int or l_fw[1] != 0xFFFFFFFF:
+                return False, f"Policy priority {prio} collides with unrelated ip rule"
+            existing_own_rule.add(tid)
+
+    existing_routes_by_table: Dict[int, List[Dict[str, Any]]] = {}
+    for tid, slot in desired_by_table.items():
+        rt_res = _run_ip_cmd(ip_bin, ["-j", "-4", "route", "show", "table", str(tid)])
+        if rt_res.returncode != 0 and rt_res.stderr.strip():
+            return False, f"Failed inspecting route table {tid}: {rt_res.stderr.strip()}"
+        routes_list: List[Dict[str, Any]] = []
+        raw_out = rt_res.stdout.strip()
+        if raw_out:
+            try:
+                parsed_rt = json.loads(raw_out)
+                if isinstance(parsed_rt, list):
+                    routes_list = parsed_rt
+            except ValueError:
+                return False, f"Route table {tid} is non-empty or returned unparseable output"
+        if routes_list and tid not in prev_by_table and tid not in existing_own_rule:
+            return False, f"Reserved route table {tid} is not empty and not owned by XForwarder"
+        for r in routes_list:
+            if not isinstance(r, dict):
+                continue
+            rtype = str(r.get("type") or "")
+            rdst = str(r.get("dst") or "default")
+            if rtype == "throw":
+                continue
+            if rdst == "default" and str(r.get("dev") or "") == slot["iface"] and not r.get("gateway"):
+                continue
+            return False, f"Route table {tid} contains unrelated route entry"
+        existing_routes_by_table[tid] = routes_list
+
+    undo_cmds: List[List[str]] = []
+    try:
+        for tid, slot in desired_by_table.items():
+            iface = slot["iface"]
+            prio = slot["priority"]
+            fwmark = slot["fwmark"]
+            prev_throws = set((prev_by_table.get(tid) or {}).get("throw_ips") or [])
+            cur_routes = existing_routes_by_table.get(tid, [])
+            cur_throws = {
+                str(r.get("dst", "")).split("/", 1)[0]
+                for r in cur_routes
+                if isinstance(r, dict) and r.get("type") == "throw"
+            }
+            cur_has_default = any(
+                isinstance(r, dict) and str(r.get("dst", "default")) == "default" and str(r.get("dev", "")) == iface
+                for r in cur_routes
+            )
+            desired_throws = set(slot["throw_ips"])
+            for stale_ip in sorted((prev_throws | cur_throws) - desired_throws):
+                _run_ip_cmd(ip_bin, ["route", "del", "throw", f"{stale_ip}/32", "table", str(tid)])
+
+            for t_ip in slot["throw_ips"]:
+                if t_ip not in cur_throws:
+                    res = _run_ip_cmd(ip_bin, ["route", "replace", "throw", f"{t_ip}/32", "table", str(tid)])
+                    if res.returncode != 0:
+                        raise RuntimeError(res.stderr.strip() or f"Failed adding throw route for {t_ip}")
+                    undo_cmds.append(["route", "del", "throw", f"{t_ip}/32", "table", str(tid)])
+
+            if not cur_has_default:
+                res = _run_ip_cmd(ip_bin, ["route", "replace", "default", "dev", iface, "table", str(tid)])
+                if res.returncode != 0:
+                    raise RuntimeError(res.stderr.strip() or f"Failed adding default route on {iface}")
+                undo_cmds.append(["route", "del", "default", "dev", iface, "table", str(tid)])
+
+            if tid not in existing_own_rule:
+                res = _run_ip_cmd(ip_bin, ["rule", "add", "priority", str(prio), "fwmark", f"{fwmark}/0xffffffff", "lookup", str(tid)])
+                if res.returncode != 0:
+                    raise RuntimeError(res.stderr.strip() or f"Failed adding ip rule at priority {prio}")
+                undo_cmds.append(["rule", "del", "priority", str(prio), "fwmark", f"{fwmark}/0xffffffff", "lookup", str(tid)])
+    except Exception as exc:
+        for cmd in reversed(undo_cmds):
+            _run_ip_cmd(ip_bin, cmd)
+        return False, f"DSR Direct policy routing error: {exc}"
+
+    for stale_tid, stale_slot in prev_by_table.items():
+        if stale_tid not in desired_by_table:
+            _delete_dsr_direct_slot(ip_bin, stale_slot)
+
+    _save_dsr_direct_state(state_path, [desired_by_table[k] for k in sorted(desired_by_table)])
+    _DSR_DIRECT_POLICY_APPLIED = True
+    return True, None
 
 
 DSR_SYSCTL_CONF_PATH = "/etc/sysctl.d/99-xforwarder-dsr.conf"
@@ -706,10 +1017,18 @@ def _build_family_table(
     excl_counters: List[Tuple[str, str]],
     base_postrouting: str,
     has_untracked: bool,
-    optimize_maps: bool
+    optimize_maps: bool,
+    input_rules: Optional[List[str]] = None,
+    raw_output_rules: Optional[List[str]] = None,
+    route_output_rules: Optional[List[str]] = None,
+    raw_postrouting_rules: Optional[List[str]] = None,
+    extra_forward_rules: Optional[List[str]] = None
 ) -> str:
     """Renders an isolated table ip/ip6 xfwd_orchestrator block."""
-    if family == "ip6" and not (dnat_rules or raw_rules or snat_rules or mss_rules or extra_chains):
+    if family == "ip6" and not (
+        dnat_rules or raw_rules or snat_rules or mss_rules or extra_chains
+        or input_rules or raw_output_rules or route_output_rules or raw_postrouting_rules or extra_forward_rules
+    ):
         # Emit counter declarations only (zero active Netfilter hooks when IPv6 is unused)
         body = counter_defs_str.rstrip()
         inner = f"\n{body}\n" if body else "\n"
@@ -762,10 +1081,43 @@ def _build_family_table(
             + "\n    }"
         )
 
+    if input_rules:
+        decl_blocks.append(
+            "    chain dsr_input {\n"
+            "        type filter hook input priority -20; policy accept;\n"
+            + "\n".join(input_rules)
+            + "\n    }"
+        )
+
+    if raw_output_rules:
+        decl_blocks.append(
+            "    chain raw_output {\n"
+            "        type filter hook output priority raw; policy accept;\n"
+            + "\n".join(raw_output_rules)
+            + "\n    }"
+        )
+
+    if route_output_rules:
+        decl_blocks.append(
+            "    chain dsr_route_output {\n"
+            "        type route hook output priority -149; policy accept;\n"
+            + "\n".join(route_output_rules)
+            + "\n    }"
+        )
+
+    if raw_postrouting_rules:
+        decl_blocks.append(
+            "    chain dsr_postrouting {\n"
+            "        type filter hook postrouting priority 300; policy accept;\n"
+            + "\n".join(raw_postrouting_rules)
+            + "\n    }"
+        )
+
     no_dnat_comment = f"        # No active NFTables {'IPv6' if family == 'ip6' else 'IPv4'} DNAT rules"
     dnat_block = "\n".join(opt_dnat_rules) if opt_dnat_rules else no_dnat_comment
     postrouting_block = ("\n".join(snat_rules) + "\n" + base_postrouting) if snat_rules else base_postrouting
-    forward_counters_str = "\n".join(forward_counter_lines) + "\n" if forward_counter_lines else ""
+    combined_forward_lines = list(forward_counter_lines) + list(extra_forward_rules or [])
+    forward_counters_str = "\n".join(combined_forward_lines) + "\n" if combined_forward_lines else ""
     pmtu_line = (
         ("        icmpv6 type packet-too-big accept\n" if family == "ip6" else "        icmp type destination-unreachable accept\n")
         if has_untracked else ""
@@ -799,6 +1151,18 @@ def _build_family_table(
     )
 
 
+def _split_rules_by_family(rules: Optional[List[str]], v6_marker: Optional[str] = None) -> Tuple[List[str], List[str]]:
+    """Splits NFTables statements into (ipv4_list, ipv6_list)."""
+    v4: List[str] = []
+    v6: List[str] = []
+    for r in (rules or []):
+        if (v6_marker and v6_marker in r) or _is_ipv6_nft_statement(r):
+            v6.append(r)
+        else:
+            v4.append(r)
+    return v4, v6
+
+
 def generate_nftables_ruleset(
     dnat_rules: List[str],
     rule_ports: Optional[Set[int]] = None,
@@ -810,43 +1174,26 @@ def generate_nftables_ruleset(
     dsr_mss_rules: Optional[List[str]] = None,
     has_untracked: bool = False,
     extra_chains: Optional[List[str]] = None,
-    optimize_maps: bool = True
+    optimize_maps: bool = True,
+    input_rules: Optional[List[str]] = None,
+    raw_output_rules: Optional[List[str]] = None,
+    route_output_rules: Optional[List[str]] = None,
+    raw_postrouting_rules: Optional[List[str]] = None,
+    extra_forward_rules: Optional[List[str]] = None
 ) -> str:
-    """Generates a complete, isolated NFTables ruleset string (O(1) maps/vmaps, syn_mss, DSR stateless/relay, single ports & ranges)."""
+    """Generates a complete, isolated NFTables ruleset string (O(1) maps/vmaps, syn_mss, DSR stateless/relay/synack/direct, single ports & ranges)."""
     if enable_ipv6 is None:
         enable_ipv6 = is_ipv6_supported()
 
-    ipv4_rules = []
-    ipv6_rules = []
-    for r in dnat_rules:
-        if _is_ipv6_nft_statement(r):
-            ipv6_rules.append(r)
-        else:
-            ipv4_rules.append(r)
-
-    ipv4_extra_chains = []
-    ipv6_extra_chains = []
-    for ch in (extra_chains or []):
-        if _is_ipv6_nft_statement(ch):
-            ipv6_extra_chains.append(ch)
-        else:
-            ipv4_extra_chains.append(ch)
-
-    ipv4_raw_rules = []
-    ipv6_raw_rules = []
-    for r in (raw_rules or []):
-        if "ip6 daddr" in r:
-            ipv6_raw_rules.append(r)
-        else:
-            ipv4_raw_rules.append(r)
-
-    ipv4_snat_rules = []
-    ipv6_snat_rules = []
-    for r in (snat_rules or []):
-        if "ip6 daddr" in r or "snat to [" in r:
-            ipv6_snat_rules.append(r)
-        else:
-            ipv4_snat_rules.append(r)
+    ipv4_rules, ipv6_rules = _split_rules_by_family(dnat_rules)
+    ipv4_extra_chains, ipv6_extra_chains = _split_rules_by_family(extra_chains)
+    ipv4_raw_rules, ipv6_raw_rules = _split_rules_by_family(raw_rules, "ip6 daddr")
+    ipv4_snat_rules, ipv6_snat_rules = _split_rules_by_family(snat_rules, "ip6 daddr")
+    ipv4_input_rules, ipv6_input_rules = _split_rules_by_family(input_rules, "ip6 ")
+    ipv4_raw_output_rules, ipv6_raw_output_rules = _split_rules_by_family(raw_output_rules, "ip6 ")
+    ipv4_route_output_rules, ipv6_route_output_rules = _split_rules_by_family(route_output_rules, "ip6 ")
+    ipv4_raw_postrouting_rules, ipv6_raw_postrouting_rules = _split_rules_by_family(raw_postrouting_rules, "ip6 ")
+    ipv4_extra_forward_rules, ipv6_extra_forward_rules = _split_rules_by_family(extra_forward_rules, "ip6 ")
 
     all_ports = set(rule_ports or [])
     all_ranges = set(rule_ranges or [])
@@ -908,6 +1255,11 @@ def generate_nftables_ruleset(
             base_postrouting=base_postrouting,
             has_untracked=has_untracked,
             optimize_maps=optimize_maps,
+            input_rules=ipv4_input_rules,
+            raw_output_rules=ipv4_raw_output_rules,
+            route_output_rules=ipv4_route_output_rules,
+            raw_postrouting_rules=ipv4_raw_postrouting_rules,
+            extra_forward_rules=ipv4_extra_forward_rules,
         )
     ]
 
@@ -927,6 +1279,11 @@ def generate_nftables_ruleset(
                 base_postrouting=base_postrouting,
                 has_untracked=has_untracked,
                 optimize_maps=optimize_maps,
+                input_rules=ipv6_input_rules,
+                raw_output_rules=ipv6_raw_output_rules,
+                route_output_rules=ipv6_route_output_rules,
+                raw_postrouting_rules=ipv6_raw_postrouting_rules,
+                extra_forward_rules=ipv6_extra_forward_rules,
             )
         )
 
@@ -944,15 +1301,22 @@ def apply_nftables(
     dsr_mss_rules: Optional[List[str]] = None,
     has_untracked: bool = False,
     dsr_ifaces: Optional[Set[str]] = None,
-    extra_chains: Optional[List[str]] = None
+    extra_chains: Optional[List[str]] = None,
+    input_rules: Optional[List[str]] = None,
+    raw_output_rules: Optional[List[str]] = None,
+    route_output_rules: Optional[List[str]] = None,
+    raw_postrouting_rules: Optional[List[str]] = None,
+    extra_forward_rules: Optional[List[str]] = None,
+    dsr_direct_routes: Optional[List[Dict[str, Any]]] = None
 ) -> Tuple[bool, Optional[str], Optional[str]]:
     """
     Validates and atomically applies NFTables ruleset.
     Falls back automatically to linear ruleset generation if `nft -c -f` fails on legacy kernels.
     Returns (success: bool, error_msg: Optional[str], new_content: Optional[str]).
     """
-    global _DSR_SYSCTL_APPLIED, _NFT_MAPS_SUPPORTED
+    global _DSR_SYSCTL_APPLIED, _DSR_DIRECT_POLICY_APPLIED, _NFT_MAPS_SUPPORTED
     use_opt = (_NFT_MAPS_SUPPORTED is not False)
+    has_any_dsr = bool(raw_rules or raw_output_rules or route_output_rules or raw_postrouting_rules)
     gen_kwargs: Dict[str, Any] = {
         "rule_ports": rule_ports,
         "rule_ranges": rule_ranges,
@@ -962,6 +1326,11 @@ def apply_nftables(
         "dsr_mss_rules": dsr_mss_rules,
         "has_untracked": has_untracked,
         "extra_chains": extra_chains,
+        "input_rules": input_rules,
+        "raw_output_rules": raw_output_rules,
+        "route_output_rules": route_output_rules,
+        "raw_postrouting_rules": raw_postrouting_rules,
+        "extra_forward_rules": extra_forward_rules,
     }
     nft_content = generate_nftables_ruleset(dnat_rules, optimize_maps=use_opt, **gen_kwargs)
 
@@ -969,9 +1338,15 @@ def apply_nftables(
         return True, None, nft_content
 
     if last_content and last_content == nft_content:
-        if raw_rules and not _DSR_SYSCTL_APPLIED:
+        if has_any_dsr and not _DSR_SYSCTL_APPLIED:
             ensure_dsr_sysctl(dsr_ifaces)
             _DSR_SYSCTL_APPLIED = True
+        if dsr_direct_routes and not _DSR_DIRECT_POLICY_APPLIED:
+            ok_pr, err_pr = ensure_dsr_direct_policy_routing(dsr_direct_routes)
+            if not ok_pr:
+                return False, err_pr, last_content
+        elif not dsr_direct_routes and (_DSR_DIRECT_POLICY_APPLIED or os.path.isfile(DSR_DIRECT_STATE_PATH)):
+            cleanup_dsr_direct_policy_routing()
         return True, None, nft_content
 
     try:
@@ -993,18 +1368,25 @@ def apply_nftables(
                     proc = lin_proc
                     err = lin_err
         if proc.returncode == 0:
-            if raw_rules:
+            if has_any_dsr:
                 ensure_dsr_sysctl(dsr_ifaces)
                 _DSR_SYSCTL_APPLIED = True
             elif _DSR_SYSCTL_APPLIED or os.path.isfile(DSR_SYSCTL_CONF_PATH):
                 cleanup_dsr_sysctl()
                 _DSR_SYSCTL_APPLIED = False
+            if dsr_direct_routes:
+                ok_pr, err_pr = ensure_dsr_direct_policy_routing(dsr_direct_routes)
+                if not ok_pr:
+                    print(f"[WARN] DSR Direct policy routing failed: {err_pr}", file=sys.stderr)
+                    return False, err_pr, last_content
             apply_proc = subprocess.Popen(["nft", "-f", "-"], stdin=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
             _, apply_err = apply_proc.communicate(input=nft_content)
             if apply_proc.returncode != 0:
                 err_msg = apply_err.strip() if apply_err else "Failed applying nftables ruleset"
                 print(f"[WARN] NFTables apply failed: {err_msg}", file=sys.stderr)
                 return False, f"NFTables apply: {err_msg}", last_content
+            if not dsr_direct_routes and (_DSR_DIRECT_POLICY_APPLIED or os.path.isfile(DSR_DIRECT_STATE_PATH)):
+                cleanup_dsr_direct_policy_routing()
             return True, None, nft_content
         else:
             err_msg = err.strip() if err else "NFTables validation check failed"

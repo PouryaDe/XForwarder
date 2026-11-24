@@ -25,8 +25,8 @@ LEGACY_STATE_FILE_PATH = "/run/forward-manager/state.json"
 
 HOSTNAME_REGEX = re.compile(r"^[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$")
 IFACE_NAME_REGEX = re.compile(r"^[a-zA-Z0-9][a-zA-Z0-9_.\-]{0,14}$")
-NFTABLES_TYPES = ("nftables", "nftables_dsr", "nftables_dsr_relay")
-VALID_DEST_TYPES = ("haproxy", "nftables", "nftables_dsr", "nftables_dsr_relay", "nginx")
+NFTABLES_TYPES = ("nftables", "nftables_dsr", "nftables_dsr_relay", "nftables_dsr_synack", "nftables_dsr_direct")
+VALID_DEST_TYPES = ("haproxy", "nftables", "nftables_dsr", "nftables_dsr_relay", "nftables_dsr_synack", "nftables_dsr_direct", "nginx")
 LB_SUPPORTED_TYPES = ("nftables", "nginx")
 VALID_LB_MODES_NFT = ("ip_hash", "round_robin", "random")
 VALID_LB_MODES_NGINX = ("ip_hash", "least_conn", "round_robin", "random")
@@ -226,7 +226,7 @@ def get_destination_backends(
         "port": d_port_int,
         "port_range": d_range,
         "weight": 1,
-        "tunnel_iface": d_iface if d_type in ("nftables", "nftables_dsr") else "",
+        "tunnel_iface": d_iface if d_type in ("nftables", "nftables_dsr", "nftables_dsr_synack") else "",
         "enabled": d_enabled,
         "comment": sanitize_comment(dest.get("comment", ""))
     }]
@@ -556,6 +556,56 @@ def migrate_and_normalize_config(cfg: Dict[str, Any]) -> Tuple[Dict[str, Any], b
     if "password_hash" not in auth:
         auth["password_hash"] = ""
         modified = True
+
+    if "api_keys" not in web or not isinstance(web["api_keys"], list):
+        web["api_keys"] = []
+        modified = True
+    else:
+        norm_keys = []
+        for idx, k_item in enumerate(web["api_keys"]):
+            if not isinstance(k_item, dict):
+                modified = True
+                continue
+            k_id = str(k_item.get("id") or f"key_{idx + 1}").strip()
+            k_name = sanitize_comment(k_item.get("name", "API Key")) or "API Key"
+            k_prefix = str(k_item.get("prefix") or "xfwd_...").strip()[:32]
+            k_hash = str(k_item.get("key_hash") or "").strip()
+            if not k_hash:
+                modified = True
+                continue
+            k_scope = str(k_item.get("scope") or "admin").strip().lower()
+            if k_scope not in ("read", "write", "admin"):
+                k_scope = "admin"
+            k_enabled = _coerce_bool(k_item.get("enabled"), True)
+            try:
+                k_created = float(k_item.get("created_at") or 0.0)
+            except (ValueError, TypeError):
+                k_created = 0.0
+            try:
+                k_expires = float(k_item.get("expires_at") or 0.0)
+            except (ValueError, TypeError):
+                k_expires = 0.0
+            try:
+                k_last = float(k_item.get("last_used_at") or 0.0)
+            except (ValueError, TypeError):
+                k_last = 0.0
+            norm_entry = {
+                "id": k_id,
+                "name": k_name,
+                "prefix": k_prefix,
+                "key_hash": k_hash,
+                "scope": k_scope,
+                "enabled": k_enabled,
+                "created_at": k_created,
+                "expires_at": k_expires,
+                "last_used_at": k_last,
+            }
+            if norm_entry != k_item:
+                modified = True
+            norm_keys.append(norm_entry)
+        if web["api_keys"] != norm_keys:
+            web["api_keys"] = norm_keys
+            modified = True
 
     if "rules" not in cfg or not isinstance(cfg["rules"], list):
         cfg["rules"] = []
@@ -1221,6 +1271,44 @@ def validate_rule(body: dict) -> Tuple[bool, str]:
         created_at = 0.0
     body["created_at"] = created_at
 
+    # Validate optional per-rule failover/latency overrides
+    if "force_override" in body and body.get("force_override") is not None:
+        if isinstance(body.get("force_override"), bool):
+            return False, "force_override must be a non-negative integer"
+        try:
+            fov = int(body.get("force_override", 0))
+            if fov < 0:
+                return False, "force_override cannot be negative"
+            body["force_override"] = fov
+        except (ValueError, TypeError):
+            return False, "force_override must be a non-negative integer"
+
+    if "active_priority" in body and body.get("active_priority") is not None:
+        if isinstance(body.get("active_priority"), bool):
+            return False, "active_priority must be a positive integer"
+        try:
+            ap = int(body.get("active_priority", 1))
+            if ap < 1:
+                return False, "active_priority must be 1 or greater"
+            body["active_priority"] = ap
+        except (ValueError, TypeError):
+            return False, "active_priority must be a positive integer"
+
+    if "max_primary_latency_ms" in body:
+        raw_mpl = body.get("max_primary_latency_ms")
+        if raw_mpl is None or raw_mpl == "":
+            body.pop("max_primary_latency_ms", None)
+        elif isinstance(raw_mpl, bool):
+            return False, "max_primary_latency_ms must be an integer between 50 and 1000"
+        else:
+            try:
+                mpl = int(raw_mpl)
+                if not (50 <= mpl <= 1000):
+                    return False, "max_primary_latency_ms must be between 50 and 1000"
+                body["max_primary_latency_ms"] = mpl
+            except (ValueError, TypeError):
+                return False, "max_primary_latency_ms must be an integer between 50 and 1000"
+
     dests = body.get("destinations", [])
     if not isinstance(dests, list) or len(dests) == 0:
         return False, "At least one destination is required"
@@ -1376,11 +1464,17 @@ def validate_rule(body: dict) -> Tuple[bool, str]:
                 d_type = "nginx"
             d["type"] = d_type
         elif d_type not in VALID_DEST_TYPES:
-            return False, "Destination type must be 'haproxy', 'nftables', 'nftables_dsr', 'nftables_dsr_relay', or 'nginx'"
+            return False, "Destination type must be 'haproxy', 'nftables', 'nftables_dsr', 'nftables_dsr_relay', 'nftables_dsr_synack', 'nftables_dsr_direct', or 'nginx'"
         d["type"] = d_type
 
         if port_range_str and not is_nftables_type(d_type):
             return False, f"Port ranges / exclusions ({port_range_str}) are only supported for 'nftables' destinations (not '{d_type}')"
+
+        if d_type in ("nftables_dsr_synack", "nftables_dsr_direct"):
+            if port_range_str or body.get("excluded_ports"):
+                return False, f"Port ranges / exclusions are not supported for '{d_type}' (single TCP port only)"
+            if proto != "tcp":
+                return False, "NFTables DSR (SYN-ACK / Direct) supports TCP only — set rule protocol to 'tcp'"
 
         target_ip_obj = None
         if d_type == "haproxy":
@@ -1399,6 +1493,8 @@ def validate_rule(body: dict) -> Tuple[bool, str]:
                 target_ip_obj = ipaddress.ip_address(clean_target)
             except ValueError:
                 return False, f"NFTables destination target must be a valid IPv4 or IPv6 address (got '{target}')"
+            if d_type in ("nftables_dsr_synack", "nftables_dsr_direct") and target_ip_obj.version != 4:
+                return False, f"'{d_type}' currently supports IPv4 targets only (got IPv6 '{target}')"
 
         raw_dport = d.get("port_range") if d.get("port_range") else d.get("port")
         if raw_dport is None or str(raw_dport).strip() == "":
@@ -1439,7 +1535,7 @@ def validate_rule(body: dict) -> Tuple[bool, str]:
         # Optional custom outbound tunnel interface (NFTables masquerade + ping -I isolation)
         raw_iface = str(d.get("tunnel_iface") or "").strip()
         if raw_iface:
-            if d_type not in ("nftables", "nftables_dsr"):
+            if d_type not in ("nftables", "nftables_dsr", "nftables_dsr_synack"):
                 d.pop("tunnel_iface", None)
             elif not IFACE_NAME_REGEX.match(raw_iface):
                 return False, f"Invalid tunnel interface '{raw_iface}'. Must be 1-15 alphanumeric, '.', '_', or '-' characters"
@@ -1448,11 +1544,12 @@ def validate_rule(body: dict) -> Tuple[bool, str]:
         else:
             d.pop("tunnel_iface", None)
 
-        # DSR fields: spoof_ip (required for nftables_dsr_relay, optional ingress IP filter for nftables_dsr),
-        # ingress_iface (optional inbound tunnel interface for nftables_dsr_relay),
+        # DSR fields: spoof_ip (required for nftables_dsr_relay / nftables_dsr_direct,
+        # optional ingress IP filter/rewrite for nftables_dsr / nftables_dsr_synack),
+        # ingress_iface (optional for nftables_dsr_relay, required for nftables_dsr_direct),
         # snat_ip (optional explicit SNAT IP for nftables_dsr_relay).
         raw_spoof_ip = str(d.get("spoof_ip") or "").strip().strip("[]")
-        if d_type in ("nftables_dsr", "nftables_dsr_relay"):
+        if d_type in ("nftables_dsr", "nftables_dsr_relay", "nftables_dsr_synack", "nftables_dsr_direct"):
             if raw_spoof_ip:
                 try:
                     spoof_obj = ipaddress.ip_address(raw_spoof_ip)
@@ -1463,16 +1560,23 @@ def validate_rule(body: dict) -> Tuple[bool, str]:
                 d["spoof_ip"] = raw_spoof_ip
             elif d_type == "nftables_dsr_relay":
                 return False, "NFTables DSR Relay requires 'spoof_ip' (the Iran/ingress server public IP)"
+            elif d_type == "nftables_dsr_direct":
+                return False, "NFTables DSR Direct requires 'spoof_ip' (the Iran/ingress server public IP)"
             else:
                 d.pop("spoof_ip", None)
         else:
             d.pop("spoof_ip", None)
 
         raw_in_iface = str(d.get("ingress_iface") or "").strip()
-        if d_type == "nftables_dsr_relay" and raw_in_iface:
-            if not IFACE_NAME_REGEX.match(raw_in_iface):
-                return False, f"Invalid inbound tunnel interface '{raw_in_iface}'. Must be 1-15 alphanumeric, '.', '_', or '-' characters"
-            d["ingress_iface"] = raw_in_iface
+        if d_type in ("nftables_dsr_relay", "nftables_dsr_direct"):
+            if raw_in_iface:
+                if not IFACE_NAME_REGEX.match(raw_in_iface):
+                    return False, f"Invalid inbound tunnel interface '{raw_in_iface}'. Must be 1-15 alphanumeric, '.', '_', or '-' characters"
+                d["ingress_iface"] = raw_in_iface
+            elif d_type == "nftables_dsr_direct":
+                return False, "NFTables DSR Direct (Outside) requires 'ingress_iface' (the tunnel interface receiving traffic from Iran)"
+            else:
+                d.pop("ingress_iface", None)
         else:
             d.pop("ingress_iface", None)
 
@@ -1528,6 +1632,26 @@ def is_port_in_use_by_external_service(port: int, current_rule_id: str, existing
     except Exception:
         pass
     return False
+
+
+def sanitize_config_for_api(cfg: Optional[dict]) -> dict:
+    """Returns a copy of configuration with password hashes and API key hashes redacted."""
+    if not isinstance(cfg, dict):
+        return {}
+    clean = json.loads(json.dumps(cfg))
+    web = clean.get("web")
+    if isinstance(web, dict):
+        auth = web.get("auth")
+        if isinstance(auth, dict) and "password_hash" in auth:
+            auth.pop("password_hash", None)
+        if isinstance(web.get("api_keys"), list):
+            safe_keys = []
+            for k in web["api_keys"]:
+                if isinstance(k, dict):
+                    k_copy = {fn: fv for fn, fv in k.items() if fn != "key_hash"}
+                    safe_keys.append(k_copy)
+            web["api_keys"] = safe_keys
+    return clean
 
 
 def export_config_data(cfg: Optional[dict] = None) -> dict:

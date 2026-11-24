@@ -23,7 +23,9 @@ except ImportError:
         from config_manager import is_nftables_type
     except ImportError:
         def is_nftables_type(dest_type: Any) -> bool:
-            return str(dest_type or "").lower().strip() in ("nftables", "nftables_dsr", "nftables_dsr_relay")
+            return str(dest_type or "").lower().strip() in (
+                "nftables", "nftables_dsr", "nftables_dsr_relay", "nftables_dsr_synack", "nftables_dsr_direct"
+            )
 
 # Extra echo requests appended after the measured burst. iputils exits ~2*maxRTT after the
 # last request, which falsely counts a slightly-late final reply as lost. Padding probes give
@@ -109,6 +111,12 @@ def validate_probe_route(
         return False, None, "Invalid target"
 
     target_is_private = is_private_or_tunnel_target(target)
+
+    if dest_type == "nftables_dsr_direct":
+        in_iface = str(dest.get("ingress_iface", "")).strip()
+        if in_iface and not check_iface_up(in_iface):
+            return False, in_iface, f"Tunnel interface '{in_iface}' is missing or down"
+        return True, None, ""
 
     if is_nftables_type(dest_type) or dest_type == "nginx" or tunnel_iface:
         if tunnel_iface and dest_type != "nftables_dsr_relay":
