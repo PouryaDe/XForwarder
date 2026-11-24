@@ -8,13 +8,26 @@ import { currentRules } from "./state.js";
 
 let currentImportConfig = null;
 
+/**
+ * Builds a clean, import-ready rule object, preserving DSR, range/exclusion,
+ * status, and load-balancing fields while omitting runtime-only state.
+ */
 export function getSanitizedRuleForExport(rule) {
     if (!rule) return null;
+    const parsedPort = parseInt(rule.port || rule.port_range, 10);
+    const hasExcl = Array.isArray(rule.excluded_ports) && rule.excluded_ports.length > 0;
+    const cleanPort = (parsedPort > 0 && parsedPort <= 65535) ? parsedPort : (hasExcl ? 1 : 0);
     const clean = {
-        name: rule.name || `Port ${rule.port}`,
-        port: parseInt(rule.port, 10),
+        name: rule.name || `Port ${rule.port_range || cleanPort}`,
+        port: cleanPort,
         protocol: rule.protocol || "both"
     };
+    if (rule.port_range && String(rule.port_range).trim()) {
+        clean.port_range = String(rule.port_range).trim();
+    }
+    if (Array.isArray(rule.excluded_ports) && rule.excluded_ports.length > 0) {
+        clean.excluded_ports = [...rule.excluded_ports];
+    }
     if (rule.category && String(rule.category).trim()) {
         clean.category = String(rule.category).trim();
     }
@@ -27,6 +40,9 @@ export function getSanitizedRuleForExport(rule) {
     if (rule.active_priority !== undefined) {
         clean.active_priority = rule.active_priority;
     }
+    if (rule.max_primary_latency_ms !== undefined && rule.max_primary_latency_ms !== null) {
+        clean.max_primary_latency_ms = rule.max_primary_latency_ms;
+    }
 
     if (Array.isArray(rule.destinations)) {
         clean.destinations = rule.destinations.map(d => {
@@ -37,9 +53,35 @@ export function getSanitizedRuleForExport(rule) {
                 target: String(d.target || "").trim(),
                 port: (destPort > 0 && destPort <= 65535) ? destPort : parseInt(rule.port, 10)
             };
+            if (d.port_range && String(d.port_range).trim()) {
+                cd.port_range = String(d.port_range).trim();
+            }
+            if (d.comment && String(d.comment).trim()) cd.comment = String(d.comment).trim();
             if (d.proxy_protocol) cd.proxy_protocol = true;
             if (d.is_tunnel) cd.is_tunnel = true;
-            if (d.tunnel_iface) cd.tunnel_iface = d.tunnel_iface;
+            if (d.is_relay) cd.is_relay = true;
+            if (d.enabled === false) cd.enabled = false;
+            if (d.tunnel_iface && String(d.tunnel_iface).trim()) cd.tunnel_iface = String(d.tunnel_iface).trim();
+            if (d.spoof_ip && String(d.spoof_ip).trim()) cd.spoof_ip = String(d.spoof_ip).trim();
+            if (d.ingress_iface && String(d.ingress_iface).trim()) cd.ingress_iface = String(d.ingress_iface).trim();
+            if (d.snat_ip && String(d.snat_ip).trim()) cd.snat_ip = String(d.snat_ip).trim();
+            if (d.lb_enabled && Array.isArray(d.lb_targets) && d.lb_targets.length > 0) {
+                cd.lb_enabled = true;
+                if (d.lb_mode) cd.lb_mode = d.lb_mode;
+                cd.lb_targets = d.lb_targets.map(m => {
+                    const mPort = parseInt(m.port || cd.port || rule.port, 10);
+                    const cm = {
+                        target: String(m.target || "").trim(),
+                        port: (mPort > 0 && mPort <= 65535) ? mPort : cd.port,
+                        weight: parseInt(m.weight || 1, 10) || 1,
+                        enabled: m.enabled !== false
+                    };
+                    if (m.port_range && String(m.port_range).trim()) cm.port_range = String(m.port_range).trim();
+                    if (m.tunnel_iface && String(m.tunnel_iface).trim()) cm.tunnel_iface = String(m.tunnel_iface).trim();
+                    if (m.comment && String(m.comment).trim()) cm.comment = String(m.comment).trim();
+                    return cm;
+                });
+            }
             return cd;
         });
     }
@@ -58,7 +100,10 @@ export function copyRuleJson(ruleId) {
         rules: [cleanRule]
     };
     const jsonStr = JSON.stringify(exportPayload, null, 2);
-    copyJsonToClipboard(jsonStr, `Port :${rule.port} configuration JSON copied! Ready to import.`);
+    const portLabel = (Array.isArray(rule.excluded_ports) && rule.excluded_ports.length > 0)
+        ? `!=${rule.excluded_ports.join(",")}`
+        : (rule.port_range || rule.port);
+    copyJsonToClipboard(jsonStr, `Port :${portLabel} configuration JSON copied! Ready to import.`);
 }
 
 export function copyCategoryJson(catKey) {
@@ -190,7 +235,7 @@ export function parseAndValidateImportJson(rawText, sourceName) {
         let parsed = JSON.parse(rawText);
         if (Array.isArray(parsed)) {
             parsed = { rules: parsed };
-        } else if (parsed && typeof parsed === "object" && !parsed.rules && parsed.port) {
+        } else if (parsed && typeof parsed === "object" && !parsed.rules && (parsed.port || parsed.port_range || parsed.excluded_ports)) {
             parsed = { rules: [parsed] };
         } else if (!parsed || typeof parsed !== "object") {
             throw new Error("Configuration must be a valid JSON object or rules array");
@@ -203,7 +248,12 @@ export function parseAndValidateImportJson(rawText, sourceName) {
 
         const ports = [];
         for (const r of rules) {
-            if (r && r.port) {
+            if (!r) continue;
+            if (Array.isArray(r.excluded_ports) && r.excluded_ports.length > 0) {
+                ports.push(`!=${r.excluded_ports.join(",")}`);
+            } else if (r.port_range) {
+                ports.push(String(r.port_range));
+            } else if (r.port) {
                 const p = parseInt(r.port, 10);
                 if (p > 0 && p <= 65535) ports.push(p);
             }
@@ -224,7 +274,7 @@ export function parseAndValidateImportJson(rawText, sourceName) {
             if (importPreviewFilename) importPreviewFilename.innerText = sourceName || "config.json";
             if (importPreviewDetails) {
                 const portsDisplay = ports.length > 0
-                    ? `<code>:${ports.slice(0, 12).join("</code>, <code>:")}${ports.length > 12 ? '... (+' + (ports.length - 12) + ' more)' : ''}</code>`
+                    ? `<code>:${ports.slice(0, 12).map(p => escapeHtml(String(p))).join("</code>, <code>:")}${ports.length > 12 ? '... (+' + (ports.length - 12) + ' more)' : ''}</code>`
                     : "No ports";
                 importPreviewDetails.innerHTML = `
                     <div><strong>Detected Rules:</strong> ${rules.length} port mapping(s)</div>

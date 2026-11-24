@@ -3346,6 +3346,30 @@ stream {
         self.assertIn("lb-member-idx", modal_js)
         self.assertNotIn("lb-columns-head", modal_js)
 
+    def test_sanitized_rule_export_preserves_dsr_and_advanced_fields(self):
+        """Verifies getSanitizedRuleForExport and parseAndValidateImportJson preserve DSR, range, LB, and status fields."""
+        import_export_path = os.path.join(REPO_ROOT, "web", "js", "modules", "import_export.js")
+        with open(import_export_path, "r", encoding="utf-8") as f:
+            ie_js = f.read()
+
+        for field in (
+            "spoof_ip",
+            "ingress_iface",
+            "snat_ip",
+            "port_range",
+            "excluded_ports",
+            "is_relay",
+            "enabled",
+            "lb_enabled",
+            "lb_mode",
+            "lb_targets",
+            "max_primary_latency_ms",
+        ):
+            self.assertIn(field, ie_js)
+
+        self.assertIn("parsed.port || parsed.port_range || parsed.excluded_ports", ie_js)
+        self.assertIn("ports.slice(0, 12).map(p => escapeHtml(String(p)))", ie_js)
+
 
 if __name__ == "__main__":
     unittest.main()

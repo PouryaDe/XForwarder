@@ -353,6 +353,90 @@ class TestExportImport(unittest.TestCase):
         finally:
             server.server_close()
 
+    def test_export_import_roundtrip_dsr_relay(self):
+        """Verifies nftables_dsr_relay rules with spoof_ip/ingress_iface/snat_ip round-trip cleanly through export & import."""
+        payload = {
+            "rules": [
+                {
+                    "name": "Port 9214",
+                    "port": 9214,
+                    "protocol": "both",
+                    "category": "X14",
+                    "active_priority": 1,
+                    "destinations": [
+                        {
+                            "priority": 1,
+                            "type": "nftables_dsr_relay",
+                            "target": "89.163.154.222",
+                            "port": 9214,
+                            "spoof_ip": "185.215.229.193",
+                            "ingress_iface": "tun1",
+                            "snat_ip": "81.180.93.42",
+                        }
+                    ],
+                }
+            ]
+        }
+        ok, err, info = import_config_data(payload, mode="merge")
+        self.assertTrue(ok, f"Expected DSR relay import to succeed, got: {err}")
+        self.assertEqual(info["imported_count"], 1)
+
+        exported = export_config_data()
+        rule_9214 = next(r for r in exported["rules"] if r["port"] == 9214)
+        dest = rule_9214["destinations"][0]
+        self.assertEqual(dest["type"], "nftables_dsr_relay")
+        self.assertEqual(dest["spoof_ip"], "185.215.229.193")
+        self.assertEqual(dest["ingress_iface"], "tun1")
+        self.assertEqual(dest["snat_ip"], "81.180.93.42")
+
+    def test_import_dsr_relay_validation_edge_cases(self):
+        """Missing spoof_ip, IP family mismatch, and invalid ingress_iface must be rejected on import."""
+        # 1. Missing spoof_ip
+        ok, err, _ = import_config_data({
+            "rules": [{
+                "port": 9214,
+                "protocol": "both",
+                "destinations": [{"priority": 1, "type": "nftables_dsr_relay", "target": "89.163.154.222", "port": 9214}],
+            }]
+        }, mode="merge")
+        self.assertFalse(ok)
+        self.assertIn("spoof_ip", err.lower())
+
+        # 2. IPv4/IPv6 mismatch on spoof_ip
+        ok, err, _ = import_config_data({
+            "rules": [{
+                "port": 9214,
+                "protocol": "both",
+                "destinations": [{
+                    "priority": 1,
+                    "type": "nftables_dsr_relay",
+                    "target": "89.163.154.222",
+                    "port": 9214,
+                    "spoof_ip": "2001:db8::1",
+                }],
+            }]
+        }, mode="merge")
+        self.assertFalse(ok)
+        self.assertIn("version", err.lower())
+
+        # 3. Shell injection characters in ingress_iface
+        ok, err, _ = import_config_data({
+            "rules": [{
+                "port": 9214,
+                "protocol": "both",
+                "destinations": [{
+                    "priority": 1,
+                    "type": "nftables_dsr_relay",
+                    "target": "89.163.154.222",
+                    "port": 9214,
+                    "spoof_ip": "185.215.229.193",
+                    "ingress_iface": "tun1;rm -rf /",
+                }],
+            }]
+        }, mode="merge")
+        self.assertFalse(ok)
+        self.assertIn("interface", err.lower())
+
 
 if __name__ == "__main__":
     unittest.main()
