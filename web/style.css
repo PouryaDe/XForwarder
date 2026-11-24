@@ -782,18 +782,18 @@ input:-webkit-autofill:active {
     width: 34px;
     height: 34px;
     border-radius: 10px;
-    background: var(--accent);
+    background: linear-gradient(135deg, #6366f1 0%, #7c3aed 100%);
     box-shadow: 0 4px 16px -2px var(--accent-glow);
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    color: var(--accent-ink);
+    color: #ffffff;
     flex-shrink: 0;
     transition: transform 0.55s var(--spring), box-shadow var(--med) var(--ease);
 }
 
 .logo-orb svg {
-    stroke: var(--accent-ink);
+    stroke: #ffffff;
 }
 
 .brand:hover .logo-orb {
@@ -802,13 +802,13 @@ input:-webkit-autofill:active {
 }
 
 [data-theme="light"] .logo-orb {
-    background: var(--accent);
+    background: linear-gradient(135deg, #6366f1 0%, #7c3aed 100%);
     box-shadow: 0 4px 14px -2px var(--accent-glow);
-    color: var(--accent-ink);
+    color: #ffffff;
 }
 
 [data-theme="light"] .logo-orb svg {
-    stroke: var(--accent-ink);
+    stroke: #ffffff;
 }
 
 .brand-text {
