@@ -33,6 +33,7 @@ from core.config_manager import (
     get_rule_port_bounds, ports_overlap, rules_ports_overlap,
     export_config_data, import_config_data, is_valid_target,
     is_port_in_use_by_external_service, migrate_and_normalize_config,
+    validate_update_transport_config,
     CONFIG_PATH, LEGACY_CONFIG_PATH, LOCAL_CONFIG_PATH,
     STATE_FILE_PATH, LEGACY_STATE_FILE_PATH
 )
@@ -58,6 +59,7 @@ from core.service_manager import (
     get_installed_version, get_remote_version_info,
     get_full_version_status as sm_get_full_version_status,
     get_local_version_info,
+    discover_update_transports, invalidate_remote_version_cache,
     get_update_state_file_path as sm_get_update_state_file_path,
     get_update_log_path as sm_get_update_log_path,
     save_update_state as sm_save_update_state,
@@ -652,6 +654,12 @@ class XForwarderWebHandler(BaseHTTPRequestHandler):
                 params = parse_qs(parsed_url.query)
                 force_check = params.get("check", ["0"])[0] in ("1", "true")
                 data = get_full_version_status(force=force_check)
+                data["transport_config"] = load_config().get("system_update", {})
+                self.send_json(data)
+                return
+            elif subpath == "/api/system/update/transports":
+                cfg = load_config()
+                data = discover_update_transports(config=cfg)
                 self.send_json(data)
                 return
             elif subpath == "/api/system/update/status":
@@ -1343,12 +1351,47 @@ class XForwarderWebHandler(BaseHTTPRequestHandler):
                 self.send_json({"ok": False, "error": str(e)}, 500)
             return
 
+        elif subpath == "/api/system/update/transports":
+            if not isinstance(body, dict):
+                self.send_json({"ok": False, "error": "Invalid JSON body"}, 400)
+                return
+            ok_v, err_v, clean_t = validate_update_transport_config(body, require_target=True)
+            if not ok_v:
+                self.send_json({"ok": False, "error": err_v}, 400)
+                return
+            cfg = load_config()
+            cfg["system_update"] = clean_t
+            if not save_config(cfg):
+                self.send_json({"ok": False, "error": "Failed to save update transport configuration"}, 500)
+                return
+            invalidate_remote_version_cache()
+            resp_payload: Dict[str, Any] = {"ok": True, "system_update": clean_t}
+            if bool(body.get("test", False)):
+                resp_payload["version_status"] = get_full_version_status(force=True)
+            self.send_json(resp_payload)
+            return
+
         elif subpath == "/api/system/update":
-            ok, msg = start_system_update()
+            transport_override = None
+            if isinstance(body, dict) and any(
+                k in body for k in ("transport_mode", "tunnel_iface", "proxy_url", "mirror_url")
+            ):
+                ok_v, err_v, clean_t = validate_update_transport_config(body, require_target=True)
+                if not ok_v:
+                    self.send_json({"ok": False, "status": "error", "error": err_v}, 400)
+                    return
+                cfg = load_config()
+                cfg["system_update"] = clean_t
+                save_config(cfg)
+                invalidate_remote_version_cache()
+                transport_override = clean_t
+
+            ok, msg = start_system_update(transport_override=transport_override)
             if ok:
                 self.send_json({"ok": True, "status": "started", "message": msg})
             else:
-                self.send_json({"ok": False, "status": "error", "error": msg}, 409 if "already" in msg else 500)
+                code = 409 if "already" in msg else (400 if "Invalid" in msg or "required" in msg else 500)
+                self.send_json({"ok": False, "status": "error", "error": msg}, code)
             return
 
         elif subpath == "/api/services/restart":

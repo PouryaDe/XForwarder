@@ -7,9 +7,11 @@
 
 set -Eeuo pipefail
 
-# Reconnect stdin to terminal if piped (e.g. curl ... | bash)
-if [[ ! -t 0 && -e /dev/tty ]]; then
-    exec < /dev/tty 2>/dev/null || true
+# Reconnect stdin to terminal only in interactive piped runs with a real controlling TTY
+if [[ "${NONINTERACTIVE:-0}" != "1" && "${YES:-0}" != "1" && ! -t 0 && -r /dev/tty ]]; then
+    if (exec < /dev/tty) 2>/dev/null; then
+        exec < /dev/tty
+    fi
 fi
 
 SCRIPT_VERSION="1.5.0"
@@ -90,10 +92,10 @@ ui_init() {
     fi
 
     UI_FD=""
-    if (( ${YES:-0} == 0 )); then
+    if (( ${NONINTERACTIVE:-0} == 0 && ${YES:-0} == 0 )); then
         if [[ -t 0 ]]; then
             UI_FD=0
-        elif [[ -r /dev/tty && -w /dev/tty ]] && { : < /dev/tty; } 2>/dev/null; then
+        elif [[ -r /dev/tty && -w /dev/tty ]] && (exec < /dev/tty) 2>/dev/null; then
             exec 3< /dev/tty
             UI_FD=3
         fi
@@ -851,6 +853,264 @@ if count > 0:
     show_web_access_info
 }
 
+xfwd_load_saved_update_transport() {
+    # Populate XFWD_UPDATE_* env vars from config.json when not explicitly supplied by caller
+    if [[ -n "${XFWD_UPDATE_MODE:-}" ]]; then
+        return 0
+    fi
+    local cfg_file
+    cfg_file=$(resolve_active_config)
+    if [[ ! -f "$cfg_file" ]] || ! command -v python3 >/dev/null 2>&1; then
+        XFWD_UPDATE_MODE="auto"
+        return 0
+    fi
+    local parsed
+    parsed=$(python3 - "$cfg_file" <<'PYEOF' 2>/dev/null || true
+import json, shlex, sys
+try:
+    with open(sys.argv[1], "r", encoding="utf-8") as f:
+        su = (json.load(f) or {}).get("system_update") or {}
+    print("XFWD_UPDATE_MODE=" + shlex.quote(str(su.get("transport_mode", "auto") or "auto")))
+    print("XFWD_UPDATE_IFACE=" + shlex.quote(str(su.get("tunnel_iface", "") or "")))
+    print("XFWD_UPDATE_PROXY=" + shlex.quote(str(su.get("proxy_url", "") or "")))
+    print("XFWD_UPDATE_MIRROR=" + shlex.quote(str(su.get("mirror_url", "") or "")))
+except Exception:
+    pass
+PYEOF
+)
+    if [[ -n "$parsed" ]]; then
+        eval "$parsed"
+    fi
+    XFWD_UPDATE_MODE="${XFWD_UPDATE_MODE:-auto}"
+}
+
+xfwd_is_public_ipv4() {
+    local ip="$1"
+    [[ "$ip" =~ ^([0-9]{1,3})\.([0-9]{1,3})\.([0-9]{1,3})\.([0-9]{1,3})$ ]] || return 1
+    local o1="${BASH_REMATCH[1]}" o2="${BASH_REMATCH[2]}" o3="${BASH_REMATCH[3]}" o4="${BASH_REMATCH[4]}"
+    (( o1 <= 255 && o2 <= 255 && o3 <= 255 && o4 <= 255 )) || return 1
+    (( o1 == 0 || o1 == 10 || o1 == 127 || o1 >= 224 )) && return 1
+    (( o1 == 172 && o2 >= 16 && o2 <= 31 )) && return 1
+    (( o1 == 192 && o2 == 168 )) && return 1
+    (( o1 == 169 && o2 == 254 )) && return 1
+    (( o1 == 100 && o2 >= 64 && o2 <= 127 )) && return 1
+    return 0
+}
+
+xfwd_run_with_timeout() {
+    local secs="$1"
+    shift
+    if command -v timeout >/dev/null 2>&1; then
+        timeout "$secs" "$@"
+    else
+        "$@"
+    fi
+}
+
+xfwd_try_fetch_repo() {
+    local dest_dir="$1"
+    local mode="$2"
+    local target="${3:-}"
+    local repo_url="https://github.com/PouryaDe/XForwarder.git"
+    local archive_url="https://github.com/PouryaDe/XForwarder/archive/refs/heads/main.tar.gz"
+
+    rm -rf "$dest_dir"
+    mkdir -p "$dest_dir"
+
+    export GIT_TERMINAL_PROMPT=0
+    export GIT_HTTP_LOW_SPEED_LIMIT=1024
+    export GIT_HTTP_LOW_SPEED_TIME=12
+
+    local added_ips=()
+    local iface_name=""
+
+    _xfwd_cleanup_temp_routes() {
+        local rip
+        if [[ -n "$iface_name" && ${#added_ips[@]} -gt 0 ]]; then
+            for rip in "${added_ips[@]}"; do
+                ip route del "${rip}/32" dev "$iface_name" >/dev/null 2>&1 || true
+            done
+        fi
+        added_ips=()
+    }
+    trap '_xfwd_cleanup_temp_routes' INT TERM EXIT
+
+    if [[ "$mode" == "iface" ]]; then
+        if [[ ! "$target" =~ ^[a-zA-Z0-9][a-zA-Z0-9_.-]{0,14}$ ]]; then
+            msg_warn "Invalid tunnel interface name '$target'."
+            return 1
+        fi
+        iface_name="$target"
+        local local_ip="" peer_ip="" addr_line=""
+        addr_line=$(ip -o -4 addr show dev "$iface_name" 2>/dev/null | head -n 1 || true)
+        if [[ "$addr_line" =~ inet[[:space:]]+([0-9.]+)/ ]]; then
+            local_ip="${BASH_REMATCH[1]}"
+        fi
+        if [[ "$addr_line" =~ peer[[:space:]]+([0-9.]+) ]]; then
+            peer_ip="${BASH_REMATCH[1]}"
+        fi
+
+        local ip_list=""
+        if [[ -f "$INSTALL_DIR/core/service_manager.py" ]] && command -v python3 >/dev/null 2>&1; then
+            ip_list=$(python3 "$INSTALL_DIR/core/service_manager.py" --resolve-github-ips 2>/dev/null || true)
+        fi
+        if [[ -z "$ip_list" ]] && command -v getent >/dev/null 2>&1; then
+            ip_list=$(getent ahostsv4 github.com codeload.github.com objects.githubusercontent.com 2>/dev/null | awk '{print $1}' | sort -u || true)
+        fi
+
+        local ip_cand
+        while IFS= read -r ip_cand; do
+            [[ -z "$ip_cand" ]] && continue
+            xfwd_is_public_ipv4 "$ip_cand" || continue
+            local cur_rt=""
+            cur_rt=$(ip -o route get "$ip_cand" 2>/dev/null || true)
+            if [[ " $cur_rt " == *" dev $iface_name "* ]]; then
+                continue
+            fi
+            local rt_cmd=(ip route replace "${ip_cand}/32")
+            [[ -n "$peer_ip" ]] && rt_cmd+=(via "$peer_ip")
+            rt_cmd+=(dev "$iface_name")
+            [[ -n "$local_ip" ]] && rt_cmd+=(src "$local_ip")
+            if "${rt_cmd[@]}" >/dev/null 2>&1; then
+                added_ips+=("$ip_cand")
+            elif [[ -n "$peer_ip" ]]; then
+                local rt_p2p=(ip route replace "${ip_cand}/32" dev "$iface_name")
+                [[ -n "$local_ip" ]] && rt_p2p+=(src "$local_ip")
+                "${rt_p2p[@]}" >/dev/null 2>&1 && added_ips+=("$ip_cand") || true
+            fi
+        done <<< "$ip_list"
+    elif [[ "$mode" == "mirror" && -n "$target" ]]; then
+        if [[ -f "$INSTALL_DIR/core/service_manager.py" ]] && command -v python3 >/dev/null 2>&1; then
+            repo_url=$(python3 "$INSTALL_DIR/core/service_manager.py" --build-mirror-url "$target" 2>/dev/null || echo "$repo_url")
+        elif [[ "$target" != *".git" ]]; then
+            repo_url="${target%/}/https://github.com/PouryaDe/XForwarder.git"
+        else
+            repo_url="$target"
+        fi
+        if [[ "$target" != *".git" ]]; then
+            archive_url="${target%/}/https://github.com/PouryaDe/XForwarder/archive/refs/heads/main.tar.gz"
+        fi
+    fi
+
+    local fetch_ok=1
+    if command -v git >/dev/null 2>&1; then
+        local git_cmd=(git)
+        if [[ "$mode" == "proxy" && -n "$target" ]]; then
+            git_cmd+=(-c "http.proxy=$target")
+        fi
+        git_cmd+=(clone --depth 1 "$repo_url" "$dest_dir")
+        if xfwd_run_with_timeout 35 "${git_cmd[@]}"; then
+            fetch_ok=0
+        fi
+    fi
+
+    if (( fetch_ok != 0 )) && command -v curl >/dev/null 2>&1 && command -v tar >/dev/null 2>&1; then
+        rm -rf "$dest_dir"
+        mkdir -p "$dest_dir"
+        local curl_cmd=(curl -fsSL --connect-timeout 8 --max-time 35)
+        if [[ "$mode" == "proxy" && -n "$target" ]]; then
+            curl_cmd+=(--proxy "$target")
+        elif [[ "$mode" == "iface" && -n "$iface_name" ]]; then
+            curl_cmd+=(--interface "$iface_name")
+        fi
+        if "$curl_cmd" "$archive_url" | tar -xz --strip-components=1 -C "$dest_dir" 2>/dev/null; then
+            if [[ -d "$dest_dir/core" && -d "$dest_dir/web" ]]; then
+                fetch_ok=0
+            fi
+        fi
+    fi
+
+    _xfwd_cleanup_temp_routes
+    trap - INT TERM EXIT
+    return "$fetch_ok"
+}
+
+xfwd_fetch_repo_with_fallback() {
+    local dest_dir="$1"
+    xfwd_load_saved_update_transport
+
+    local mode="${XFWD_UPDATE_MODE:-auto}"
+    local iface="${XFWD_UPDATE_IFACE:-}"
+    local proxy="${XFWD_UPDATE_PROXY:-}"
+    local mirror="${XFWD_UPDATE_MIRROR:-}"
+
+    if [[ "$mode" == "direct" ]]; then
+        msg_info "Fetching latest XForwarder release directly from GitHub..."
+        xfwd_try_fetch_repo "$dest_dir" "direct" && return 0
+        return 1
+    elif [[ "$mode" == "iface" && -n "$iface" ]]; then
+        msg_info "Fetching latest XForwarder release via tunnel interface '$iface'..."
+        xfwd_try_fetch_repo "$dest_dir" "iface" "$iface" && return 0
+        return 1
+    elif [[ "$mode" == "proxy" && -n "$proxy" ]]; then
+        msg_info "Fetching latest XForwarder release via proxy '$proxy'..."
+        xfwd_try_fetch_repo "$dest_dir" "proxy" "$proxy" && return 0
+        return 1
+    elif [[ "$mode" == "mirror" && -n "$mirror" ]]; then
+        msg_info "Fetching latest XForwarder release via mirror '$mirror'..."
+        xfwd_try_fetch_repo "$dest_dir" "mirror" "$mirror" && return 0
+        return 1
+    fi
+
+    # Auto mode: Direct -> saved/custom proxy/iface/mirror -> auto-discovered local proxies & UP tunnels
+    msg_info "Fetching latest XForwarder release from GitHub..."
+    if xfwd_try_fetch_repo "$dest_dir" "direct"; then
+        return 0
+    fi
+
+    msg_warn "Direct GitHub connection failed or timed out. Scanning active server proxies & tunnels..."
+    if [[ -n "$proxy" ]]; then
+        msg_info "Trying configured proxy '$proxy'..."
+        xfwd_try_fetch_repo "$dest_dir" "proxy" "$proxy" && { msg_ok "Connected via proxy '$proxy'."; return 0; }
+    fi
+    if [[ -n "$iface" ]]; then
+        msg_info "Trying configured tunnel interface '$iface'..."
+        xfwd_try_fetch_repo "$dest_dir" "iface" "$iface" && { msg_ok "Connected via tunnel '$iface'."; return 0; }
+    fi
+    if [[ -n "$mirror" ]]; then
+        msg_info "Trying configured GitHub mirror '$mirror'..."
+        xfwd_try_fetch_repo "$dest_dir" "mirror" "$mirror" && { msg_ok "Connected via mirror."; return 0; }
+    fi
+
+    local svc_mgr=""
+    if [[ -f "$INSTALL_DIR/core/service_manager.py" ]]; then
+        svc_mgr="$INSTALL_DIR/core/service_manager.py"
+    elif [[ -f "$(dirname "$(readlink -f "$0")")/core/service_manager.py" ]]; then
+        svc_mgr="$(dirname "$(readlink -f "$0")")/core/service_manager.py"
+    fi
+
+    if [[ -n "$svc_mgr" ]] && command -v python3 >/dev/null 2>&1; then
+        local candidates
+        candidates=$(python3 - "$svc_mgr" <<'PYEOF' 2>/dev/null || true
+import importlib.util, sys
+spec = importlib.util.spec_from_file_location("sm", sys.argv[1])
+mod = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(mod)
+disc = mod.discover_update_transports()
+for p in disc.get("local_proxies", []):
+    if p.get("url"):
+        print("proxy|" + str(p["url"]))
+for t in disc.get("tunnels", []):
+    if t.get("usable") and t.get("name"):
+        print("iface|" + str(t["name"]))
+PYEOF
+)
+        local line c_mode c_target
+        while IFS='|' read -r c_mode c_target; do
+            [[ -z "$c_mode" || -z "$c_target" ]] && continue
+            if [[ "$c_mode" == "proxy" && "$c_target" == "$proxy" ]]; then continue; fi
+            if [[ "$c_mode" == "iface" && "$c_target" == "$iface" ]]; then continue; fi
+            msg_info "Trying active $c_mode transport ($c_target)..."
+            if xfwd_try_fetch_repo "$dest_dir" "$c_mode" "$c_target"; then
+                msg_ok "Fetched update cleanly via $c_mode ($c_target)."
+                return 0
+            fi
+        done <<< "$candidates"
+    fi
+
+    return 1
+}
+
 update_xforwarder() {
     check_root
     msg_info "Starting XForwarder update & automatic migration..."
@@ -859,18 +1119,28 @@ update_xforwarder() {
     script_dir=$(dirname "$(readlink -f "$0")")
     local cleanup_tmp=""
 
-    # If running from installed location (/opt/xforwarder) or a non-git directory, always clone fresh from GitHub
+    # If running from installed location (/opt/xforwarder) or a non-git directory, fetch from GitHub (with tunnel/proxy fallback)
     if [[ "$script_dir" == "$INSTALL_DIR" || ! -d "$script_dir/core" || ! -d "$script_dir/web" ]] || ! (command -v git >/dev/null 2>&1 && git -C "$script_dir" rev-parse --is-inside-work-tree >/dev/null 2>&1); then
-        msg_info "Fetching latest XForwarder release from GitHub..."
         local tmp_clone
         tmp_clone=$(mktemp -d /tmp/xfwd_update.XXXXXX)
-        git clone --depth 1 https://github.com/PouryaDe/XForwarder.git "$tmp_clone"
-        script_dir="$tmp_clone"
         cleanup_tmp="$tmp_clone"
+        if ! xfwd_fetch_repo_with_fallback "$tmp_clone"; then
+            rm -rf "$tmp_clone" 2>/dev/null || true
+            msg_err "Failed to pull updates from GitHub (Direct & active tunnels/proxies unreachable). Configure a working tunnel or proxy in Updates settings."
+            return 1
+        fi
+        script_dir="$tmp_clone"
     else
         msg_info "Checking for remote updates via Git in $script_dir..."
         if git -C "$script_dir" remote >/dev/null 2>&1; then
-            git -C "$script_dir" pull --rebase origin main >/dev/null 2>&1 || msg_warn "Could not pull updates; proceeding with current source files."
+            xfwd_load_saved_update_transport
+            local pull_cmd=(git -C "$script_dir")
+            if [[ "${XFWD_UPDATE_MODE:-auto}" == "proxy" && -n "${XFWD_UPDATE_PROXY:-}" ]]; then
+                pull_cmd+=(-c "http.proxy=${XFWD_UPDATE_PROXY}")
+            fi
+            GIT_TERMINAL_PROMPT=0 GIT_HTTP_LOW_SPEED_LIMIT=1024 GIT_HTTP_LOW_SPEED_TIME=12 \
+                xfwd_run_with_timeout 30 "${pull_cmd[@]}" pull --rebase origin main >/dev/null 2>&1 \
+                || msg_warn "Could not pull updates; proceeding with current source files."
         fi
     fi
 
@@ -1715,6 +1985,36 @@ case "${1:-}" in
         import_relay_rules
         ;;
     update|upgrade)
+        shift || true
+        while [[ $# -gt 0 ]]; do
+            case "${1:-}" in
+                --via)
+                    via_val="${2:-}"
+                    shift 2 || { msg_err "--via requires a value (auto|direct|<iface>|<proxy_url>|<mirror_url>)"; exit 1; }
+                    if [[ "$via_val" == "auto" || "$via_val" == "direct" ]]; then
+                        export XFWD_UPDATE_MODE="$via_val"
+                    elif [[ "$via_val" =~ ^(socks5h|socks5|socks4):// ]]; then
+                        export XFWD_UPDATE_MODE="proxy"
+                        export XFWD_UPDATE_PROXY="$via_val"
+                    elif [[ "$via_val" =~ ^https?:// ]]; then
+                        local after_scheme="${via_val#*://}"
+                        if [[ "$via_val" == *"github"* || "$via_val" == *"ghproxy"* || "$via_val" == *"mirror"* || "${after_scheme%%/*}" != *:* ]]; then
+                            export XFWD_UPDATE_MODE="mirror"
+                            export XFWD_UPDATE_MIRROR="$via_val"
+                        else
+                            export XFWD_UPDATE_MODE="proxy"
+                            export XFWD_UPDATE_PROXY="$via_val"
+                        fi
+                    else
+                        export XFWD_UPDATE_MODE="iface"
+                        export XFWD_UPDATE_IFACE="$via_val"
+                    fi
+                    ;;
+                *)
+                    shift
+                    ;;
+            esac
+        done
         if ! is_installed; then
             ui_header big "Initial Setup"
             msg_warn "XForwarder is not installed on this system. Starting setup wizard..."
@@ -1822,7 +2122,7 @@ case "${1:-}" in
         fi
         ;;
     *)
-        echo "Usage: xforwarder {install|update|tune|check-deps|status|url|port|username|password|path|settings|export|import-config|restart|logs}"
+        echo "Usage: xforwarder {install|update [--via auto|direct|iface|proxy]|tune|check-deps|status|url|port|username|password|path|settings|export|import-config|restart|logs}"
         exit 1
         ;;
 esac

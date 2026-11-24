@@ -1532,6 +1532,58 @@
                                     <span class="update-tile-value" id="valLastChecked" data-i18n="security.never">Never</span>
                                 </div>
                             </div>
+
+                            <!-- Active Tunnel / Proxy Update Transport Panel -->
+                            <div class="updates-transport-box" id="updateTransportBox">
+                                <div class="updates-transport-head">
+                                    <div class="updates-transport-title-group">
+                                        <span class="updates-transport-title" data-i18n="updates.transport_title">GitHub Connection &amp; Active Tunnel Fallback</span>
+                                        <span class="xfwd-info-tip" tabindex="0" data-tip-key="updates.transport_tip" data-tip-pos="top" aria-label="Info">?</span>
+                                        <span class="stat-badge badge-neutral ltr-mono" id="badgeUpdateTransportSummary" data-i18n="updates.transport_auto_short">Auto Discovery</span>
+                                    </div>
+                                    <div class="updates-transport-actions">
+                                        <button type="button" class="btn btn-secondary btn-xs" id="btnScanUpdateTunnels" data-i18n="updates.scan_tunnels">Scan Tunnels</button>
+                                        <button type="button" class="btn btn-primary btn-xs" id="btnSaveUpdateTransport" data-i18n="updates.save_test_transport">Save &amp; Test</button>
+                                    </div>
+                                </div>
+
+                                <div class="updates-transport-controls">
+                                    <div class="updates-transport-field">
+                                        <label for="selUpdateTransportMode" data-i18n="updates.mode_label">Connection Method</label>
+                                        <select id="selUpdateTransportMode" class="form-input">
+                                            <option value="auto" data-i18n="updates.mode_auto">Auto (Direct -&gt; Active Tunnels / Local Proxies)</option>
+                                            <option value="direct" data-i18n="updates.mode_direct">Direct Internet Only</option>
+                                            <option value="iface" data-i18n="updates.mode_iface">Active Server Tunnel Interface (L3)</option>
+                                            <option value="proxy" data-i18n="updates.mode_proxy">Local / Custom Proxy (SOCKS5 / HTTP)</option>
+                                            <option value="mirror" data-i18n="updates.mode_mirror">GitHub Mirror URL</option>
+                                        </select>
+                                    </div>
+
+                                    <div class="updates-transport-field" id="wrapUpdateIface" style="display:none;">
+                                        <label for="selUpdateTunnelIface" data-i18n="updates.iface_label">Select Active Tunnel Interface</label>
+                                        <select id="selUpdateTunnelIface" class="form-input ltr-mono"></select>
+                                    </div>
+
+                                    <div class="updates-transport-field" id="wrapUpdateProxy" style="display:none;">
+                                        <label for="inpUpdateProxyUrl" data-i18n="updates.proxy_label">Proxy Address (SOCKS5h / HTTP)</label>
+                                        <input type="text" id="inpUpdateProxyUrl" class="form-input ltr-mono" placeholder="socks5h://127.0.0.1:10808" autocomplete="off" />
+                                        <div id="updateProxyChipsWrap" style="display:none; margin-top:6px;">
+                                            <span class="text-muted" style="font-size:0.74rem;" data-i18n="updates.proxy_detected">Detected Local Proxies</span>
+                                            <div id="updateProxyChips" class="updates-proxy-chips"></div>
+                                        </div>
+                                    </div>
+
+                                    <div class="updates-transport-field" id="wrapUpdateMirror" style="display:none;">
+                                        <label for="inpUpdateMirrorUrl" data-i18n="updates.mirror_label">Mirror Base or Repo URL</label>
+                                        <input type="text" id="inpUpdateMirrorUrl" class="form-input ltr-mono" placeholder="https://ghproxy.net/" autocomplete="off" />
+                                    </div>
+
+                                    <div class="updates-transport-field updates-transport-hint" id="wrapUpdateAutoInfo">
+                                        <span class="text-secondary" style="font-size:0.79rem; line-height:1.5;" data-i18n="updates.auto_hint">Tries Direct GitHub first; on timeout or block, automatically fails over through detected local proxies and UP tunnel interfaces using isolated host routes.</span>
+                                        <span class="text-muted ltr-mono" id="valDetectedTransportCounts" style="font-size:0.75rem; margin-top:4px; display:block;"></span>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
 

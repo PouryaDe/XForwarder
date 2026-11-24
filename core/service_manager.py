@@ -14,14 +14,36 @@ import threading
 import subprocess
 import tempfile
 import urllib.request
+import urllib.parse
+import http.client
+import socket
+import ssl
+import ipaddress
+import shlex
 import re
+from contextlib import contextmanager
 from typing import Dict, Any, Tuple, Optional, List, Set
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 APP_VERSION = "1.5.0"
 
-_REMOTE_VERSION_CACHE: Dict[str, Any] = {"data": None, "expires": 0}
+_GITHUB_REPO_URL = "https://github.com/PouryaDe/XForwarder.git"
+_GITHUB_API_URL = "https://api.github.com/repos/PouryaDe/XForwarder/commits/main"
+_GITHUB_HOSTS = ("github.com", "api.github.com", "codeload.github.com", "objects.githubusercontent.com", "raw.githubusercontent.com")
+_COMMON_PROXY_PORTS = (10808, 10809, 1080, 10810, 2080, 2081, 7890, 7891, 8080, 8118, 8888, 3128, 9050, 10800)
+_EXCLUDED_SYSTEM_PORTS = {22, 25, 53, 80, 443, 3306, 5432, 6379, 27017}
+
+_REMOTE_VERSION_CACHE: Dict[str, Any] = {"data": None, "key": None, "expires": 0}
 _REMOTE_VERSION_LOCK = threading.Lock()
+_IFACE_ROUTE_LOCK = threading.Lock()
+
+
+def invalidate_remote_version_cache() -> None:
+    """Clears cached remote GitHub version check results."""
+    with _REMOTE_VERSION_LOCK:
+        _REMOTE_VERSION_CACHE["data"] = None
+        _REMOTE_VERSION_CACHE["key"] = None
+        _REMOTE_VERSION_CACHE["expires"] = 0
 
 _UPDATE_STATE: Dict[str, Any] = {
     "status": "idle",
@@ -155,68 +177,630 @@ def get_local_version_info() -> dict:
     return info
 
 
-def get_remote_version_info(force: bool = False) -> dict:
-    """Checks remote GitHub repository for the latest commit on main."""
-    now = time.time()
-    with _REMOTE_VERSION_LOCK:
-        if not force and _REMOTE_VERSION_CACHE["data"] and now < _REMOTE_VERSION_CACHE["expires"]:
-            return _REMOTE_VERSION_CACHE["data"]
+def build_mirror_git_url(mirror_url: str) -> str:
+    """Normalizes a GitHub mirror prefix or direct git URL to a cloneable repository URL."""
+    m = str(mirror_url or "").strip()
+    if not m:
+        return _GITHUB_REPO_URL
+    lower = m.lower()
+    if "pouryade/xforwarder" in lower or lower.endswith(".git"):
+        return m
+    return f"{m.rstrip('/')}/{_GITHUB_REPO_URL}"
 
-    remote = {
-        "remote_commit": None,
-        "remote_commit_msg": None,
-        "remote_date": None,
-        "repo_url": "https://github.com/PouryaDe/XForwarder",
-        "checked_at": int(now),
-        "error": None
+
+def build_mirror_api_url(mirror_url: str) -> str:
+    """Normalizes a GitHub mirror prefix to a GitHub commits API URL when prefix-based."""
+    m = str(mirror_url or "").strip()
+    if not m:
+        return _GITHUB_API_URL
+    if "pouryade/xforwarder" in m.lower() or m.lower().endswith(".git"):
+        return _GITHUB_API_URL
+    return f"{m.rstrip('/')}/{_GITHUB_API_URL}"
+
+
+def _open_socks5_socket(
+    proxy_host: str,
+    proxy_port: int,
+    target_host: str,
+    target_port: int,
+    timeout: float = 4.0,
+    username: Optional[str] = None,
+    password: Optional[str] = None,
+) -> socket.socket:
+    """Connects to `target_host:target_port` via an RFC 1928 SOCKS5 proxy using remote DNS (ATYP=0x03)."""
+    sock = socket.create_connection((proxy_host, int(proxy_port)), timeout=timeout)
+    try:
+        sock.settimeout(timeout)
+        if username is not None and password is not None:
+            sock.sendall(b"\x05\x02\x00\x02")
+        else:
+            sock.sendall(b"\x05\x01\x00")
+        greeting = sock.recv(2)
+        if len(greeting) < 2 or greeting[0] != 5:
+            raise OSError("Invalid SOCKS5 proxy greeting response")
+        method = greeting[1]
+        if method == 2:
+            if username is None or password is None:
+                raise OSError("SOCKS5 proxy requires authentication")
+            u_b = username.encode("utf-8")[:255]
+            p_b = password.encode("utf-8")[:255]
+            sock.sendall(bytes([1, len(u_b)]) + u_b + bytes([len(p_b)]) + p_b)
+            auth_resp = sock.recv(2)
+            if len(auth_resp) < 2 or auth_resp[1] != 0:
+                raise OSError("SOCKS5 username/password authentication failed")
+        elif method != 0:
+            raise OSError(f"SOCKS5 proxy selected unsupported auth method {method}")
+
+        host_b = target_host.encode("idna")
+        if len(host_b) > 255:
+            raise ValueError("Target hostname exceeds SOCKS5 limit")
+        req = b"\x05\x01\x00\x03" + bytes([len(host_b)]) + host_b + int(target_port).to_bytes(2, "big")
+        sock.sendall(req)
+
+        hdr = sock.recv(4)
+        if len(hdr) < 4 or hdr[0] != 5 or hdr[1] != 0:
+            code = hdr[1] if len(hdr) >= 2 else -1
+            raise OSError(f"SOCKS5 CONNECT failed with status {code}")
+        atyp = hdr[3]
+        if atyp == 1:
+            sock.recv(6)
+        elif atyp == 3:
+            alen_b = sock.recv(1)
+            if alen_b:
+                sock.recv(alen_b[0] + 2)
+        elif atyp == 4:
+            sock.recv(18)
+        return sock
+    except Exception:
+        try:
+            sock.close()
+        except Exception:
+            pass
+        raise
+
+
+class _HttpsViaSocks5Connection(http.client.HTTPSConnection):
+    """Stdlib HTTPSConnection tunneling TLS cleanly through a SOCKS5/SOCKS5h proxy."""
+
+    def __init__(self, host, proxy_host, proxy_port, proxy_user=None, proxy_pass=None, port=443, timeout=4.0, context=None):
+        super().__init__(host, port=port, timeout=timeout, context=context)
+        self._proxy_host = proxy_host
+        self._proxy_port = proxy_port
+        self._proxy_user = proxy_user
+        self._proxy_pass = proxy_pass
+
+    def connect(self):
+        raw_sock = _open_socks5_socket(
+            self._proxy_host,
+            self._proxy_port,
+            self.host,
+            self.port,
+            timeout=float(self.timeout or 4.0),
+            username=self._proxy_user,
+            password=self._proxy_pass,
+        )
+        try:
+            ctx = self._context or ssl.create_default_context()
+            self.sock = ctx.wrap_socket(raw_sock, server_hostname=self.host)
+        except Exception:
+            try:
+                raw_sock.close()
+            except Exception:
+                pass
+            raise
+
+
+def _probe_socks5_noauth(host: str, port: int, timeout: float = 0.25) -> Tuple[bool, bool]:
+    """Tests if a local loopback TCP port speaks SOCKS5. Returns `(is_socks5, requires_auth)`."""
+    try:
+        with socket.create_connection((host, int(port)), timeout=timeout) as sock:
+            sock.settimeout(timeout)
+            sock.sendall(b"\x05\x01\x00")
+            resp = sock.recv(2)
+            if len(resp) >= 2 and resp[0] == 5:
+                return True, (resp[1] == 2)
+    except Exception:
+        pass
+    return False, False
+
+
+def _parse_proc_net_tcp_listen(proc_path: str, is_v6: bool = False) -> List[Tuple[str, int]]:
+    """Parses Linux `/proc/net/tcp` or `/proc/net/tcp6` and returns `(ip, port)` of LISTEN sockets."""
+    results: List[Tuple[str, int]] = []
+    if not os.path.isfile(proc_path):
+        return results
+    try:
+        with open(proc_path, "r", encoding="utf-8", errors="replace") as f:
+            lines = f.readlines()[1:]
+        for line in lines:
+            parts = line.split()
+            if len(parts) < 4 or parts[3] != "0A":
+                continue
+            local_addr = parts[1]
+            if ":" not in local_addr:
+                continue
+            hex_ip, hex_port = local_addr.split(":", 1)
+            port = int(hex_port, 16)
+            if not (1 <= port <= 65535):
+                continue
+            if not is_v6 and len(hex_ip) == 8:
+                raw_bytes = bytes.fromhex(hex_ip)[::-1]
+                ip_str = str(ipaddress.IPv4Address(raw_bytes))
+                results.append((ip_str, port))
+            elif is_v6 and len(hex_ip) == 32:
+                words = [bytes.fromhex(hex_ip[i:i + 8])[::-1] for i in range(0, 32, 8)]
+                ip_str = str(ipaddress.IPv6Address(b"".join(words)))
+                results.append((ip_str, port))
+    except Exception:
+        pass
+    return results
+
+
+def discover_local_proxies(
+    config: Optional[dict] = None,
+    proc_tcp_paths: Optional[Tuple[str, str]] = None,
+) -> List[Dict[str, Any]]:
+    """
+    Discovers local SOCKS5/HTTP proxy tunnels listening on the host (e.g. Xray, Sing-box, SSH -D)
+    while strictly excluding XForwarder's own web port and managed forwarding ports.
+    """
+    if config is None:
+        try:
+            from core.config_manager import load_config
+        except ImportError:
+            from config_manager import load_config
+        config = load_config()
+
+    excluded = set(_EXCLUDED_SYSTEM_PORTS)
+    try:
+        excluded.add(int((config.get("web") or {}).get("port", 8090)))
+    except (ValueError, TypeError):
+        excluded.add(8090)
+
+    for rule in config.get("rules", []) if isinstance(config, dict) else []:
+        if not isinstance(rule, dict):
+            continue
+        try:
+            p = int(rule.get("port", 0))
+            if 1 <= p <= 65535:
+                excluded.add(p)
+        except (ValueError, TypeError):
+            pass
+        pr = str(rule.get("port_range") or "")
+        if "-" in pr:
+            try:
+                sp, ep = map(int, pr.split("-", 1))
+                if ep - sp <= 256:
+                    excluded.update(range(sp, ep + 1))
+            except (ValueError, TypeError):
+                pass
+
+    tcp4_path, tcp6_path = proc_tcp_paths or ("/proc/net/tcp", "/proc/net/tcp6")
+    raw_listeners = _parse_proc_net_tcp_listen(tcp4_path, is_v6=False) + _parse_proc_net_tcp_listen(tcp6_path, is_v6=True)
+
+    candidates_by_port: Dict[int, bool] = {}
+    for ip_str, port in raw_listeners:
+        if port in excluded:
+            continue
+        is_loopback = ip_str in ("127.0.0.1", "::1")
+        is_wildcard = ip_str in ("0.0.0.0", "::")
+        if is_loopback:
+            candidates_by_port[port] = True
+        elif is_wildcard and port in _COMMON_PROXY_PORTS:
+            candidates_by_port.setdefault(port, False)
+
+    # Sort known proxy ports first, then ascending port number; cap probing to 12 ports
+    sorted_ports = sorted(
+        candidates_by_port.keys(),
+        key=lambda p: (0 if p in _COMMON_PROXY_PORTS else 1, p),
+    )[:12]
+
+    discovered: List[Dict[str, Any]] = []
+    http_likely_ports = {3128, 7890, 7891, 8080, 8118, 8888, 10809, 10811, 2081}
+    for port in sorted_ports:
+        is_socks, req_auth = _probe_socks5_noauth("127.0.0.1", port, timeout=0.25)
+        if is_socks and not req_auth:
+            discovered.append({
+                "url": f"socks5h://127.0.0.1:{port}",
+                "host": "127.0.0.1",
+                "port": port,
+                "proto": "socks5h",
+                "label": f"SOCKS5 Local (127.0.0.1:{port})",
+                "verified": True,
+            })
+        elif port in http_likely_ports:
+            discovered.append({
+                "url": f"http://127.0.0.1:{port}",
+                "host": "127.0.0.1",
+                "port": port,
+                "proto": "http",
+                "label": f"HTTP Proxy (127.0.0.1:{port})",
+                "verified": False,
+            })
+
+    return discovered
+
+
+def _get_iface_ipv4_endpoints(iface: str) -> Tuple[Optional[str], Optional[str]]:
+    """Resolves `(local_ipv4, peer_ipv4)` for an active Linux tunnel interface."""
+    if sys.platform == "win32" or not iface:
+        return None, None
+    local_ip: Optional[str] = None
+    peer_ip: Optional[str] = None
+    try:
+        out = subprocess.check_output(
+            ["ip", "-o", "-4", "addr", "show", "dev", iface],
+            text=True, stderr=subprocess.DEVNULL, timeout=2.0
+        )
+        for line in out.splitlines():
+            tokens = line.split()
+            if "inet" in tokens:
+                idx = tokens.index("inet")
+                if idx + 1 < len(tokens):
+                    local_ip = tokens[idx + 1].split("/")[0]
+            if "peer" in tokens:
+                p_idx = tokens.index("peer")
+                if p_idx + 1 < len(tokens):
+                    peer_ip = tokens[p_idx + 1].split("/")[0]
+            if local_ip:
+                break
+    except Exception:
+        pass
+    return local_ip, peer_ip
+
+
+def _resolve_public_ipv4s(hosts: Tuple[str, ...]) -> List[str]:
+    """Resolves unique global public IPv4 addresses, filtering out poisoned/private/loopback IPs."""
+    ips: List[str] = []
+    for host in hosts:
+        try:
+            infos = socket.getaddrinfo(host, 443, socket.AF_INET, socket.SOCK_STREAM)
+            for item in infos:
+                ip_str = item[4][0]
+                try:
+                    ip_obj = ipaddress.IPv4Address(ip_str)
+                    if ip_obj.is_global and not (ip_obj.is_private or ip_obj.is_loopback or ip_obj.is_link_local or ip_obj.is_multicast):
+                        if ip_str not in ips:
+                            ips.append(ip_str)
+                except ValueError:
+                    pass
+        except Exception:
+            pass
+    return ips
+
+
+@contextmanager
+def _transient_iface_routes(iface: str, hosts: Tuple[str, ...] = ("github.com", "api.github.com")):
+    """
+    Temporarily injects scoped /32 host routes exclusively for GitHub hosts via `iface`
+    without modifying the default gateway or disrupting relay forwarding, then cleans them up.
+    """
+    if sys.platform == "win32" or not iface:
+        yield False
+        return
+    try:
+        from core.config_manager import IFACE_NAME_REGEX
+    except ImportError:
+        from config_manager import IFACE_NAME_REGEX
+    if not IFACE_NAME_REGEX.fullmatch(iface):
+        yield False
+        return
+
+    with _IFACE_ROUTE_LOCK:
+        local_ip, peer_ip = _get_iface_ipv4_endpoints(iface)
+        target_ips = _resolve_public_ipv4s(hosts)
+        added_ips: List[str] = []
+        try:
+            for ip_str in target_ips:
+                # Skip if kernel already routes this host IP out via the target interface
+                already_via_iface = False
+                try:
+                    rt = subprocess.check_output(
+                        ["ip", "-o", "route", "get", ip_str],
+                        text=True, stderr=subprocess.DEVNULL, timeout=1.5
+                    )
+                    if f" dev {iface} " in f" {rt} ":
+                        already_via_iface = True
+                except Exception:
+                    pass
+                if already_via_iface:
+                    continue
+
+                cmd = ["ip", "route", "replace", f"{ip_str}/32"]
+                if peer_ip:
+                    cmd.extend(["via", peer_ip])
+                cmd.extend(["dev", iface])
+                if local_ip:
+                    cmd.extend(["src", local_ip])
+                res = subprocess.run(cmd, capture_output=True, text=True, timeout=2.0)
+                if res.returncode != 0 and peer_ip:
+                    # Fallback without `via` for L3 p2p devices like WireGuard/tun
+                    cmd_p2p = ["ip", "route", "replace", f"{ip_str}/32", "dev", iface]
+                    if local_ip:
+                        cmd_p2p.extend(["src", local_ip])
+                    res = subprocess.run(cmd_p2p, capture_output=True, text=True, timeout=2.0)
+                if res.returncode == 0:
+                    added_ips.append(ip_str)
+            yield True
+        finally:
+            for ip_str in added_ips:
+                try:
+                    subprocess.run(
+                        ["ip", "route", "del", f"{ip_str}/32", "dev", iface],
+                        capture_output=True, timeout=2.0
+                    )
+                except Exception:
+                    pass
+
+
+def discover_update_transports(config: Optional[dict] = None) -> Dict[str, Any]:
+    """Discovers active server L3 tunnels and local proxies usable for GitHub system updates."""
+    try:
+        from core.config_manager import load_config, normalize_update_transport_config
+    except ImportError:
+        from config_manager import load_config, normalize_update_transport_config
+
+    cfg = config if isinstance(config, dict) else load_config()
+    norm_cfg = normalize_update_transport_config(cfg.get("system_update"))
+
+    tunnels: List[Dict[str, Any]] = []
+    try:
+        try:
+            from core.system_info import get_network_interfaces_info
+        except ImportError:
+            from system_info import get_network_interfaces_info
+        net_info = get_network_interfaces_info(config_loader_fn=lambda: cfg)
+        for t in net_info.get("tunnel_interfaces", []):
+            state = str(t.get("state", "DOWN")).upper()
+            ip = str(t.get("ip", "") or "")
+            peer_ip = str(t.get("peer_ip", "") or "")
+            usable = (state == "UP") and (bool(peer_ip) or (bool(ip) and ip != "No IP assigned"))
+            tunnels.append({
+                "name": t.get("name"),
+                "type": t.get("type", "Tunnel"),
+                "state": state,
+                "ip": ip,
+                "peer_ip": peer_ip,
+                "reachable": bool(t.get("reachable", False)),
+                "latency_ms": t.get("latency_ms"),
+                "usable": usable,
+            })
+        tunnels.sort(key=lambda x: (0 if x["usable"] else 1, 0 if x["reachable"] else 1, x["latency_ms"] or 9999.0, str(x["name"])))
+    except Exception:
+        pass
+
+    local_proxies = discover_local_proxies(config=cfg)
+    return {
+        "ok": True,
+        "config": norm_cfg,
+        "tunnels": tunnels,
+        "local_proxies": local_proxies,
     }
 
-    api_success = False
-    url = "https://api.github.com/repos/PouryaDe/XForwarder/commits/main"
+
+def _fetch_github_commit_single(
+    mode: str,
+    tunnel_iface: str = "",
+    proxy_url: str = "",
+    mirror_url: str = "",
+    timeout: float = 4.0,
+) -> Tuple[bool, Dict[str, Optional[str]], Optional[str]]:
+    """
+    Attempts a single GitHub remote version check via the requested transport (`direct`, `iface`, `proxy`, or `mirror`).
+    Uses pure Python stdlib (including RFC 1928 SOCKS5 CONNECT) with bounded git `ls-remote` fallback.
+    """
     headers = {
         "User-Agent": "XForwarder-Updater/1.0",
-        "Accept": "application/vnd.github.v3+json"
+        "Accept": "application/vnd.github.v3+json",
     }
     gh_token = os.environ.get("GITHUB_TOKEN") or os.environ.get("GH_TOKEN")
     if gh_token:
         headers["Authorization"] = f"Bearer {gh_token.strip()}"
 
-    req = urllib.request.Request(url, headers=headers)
-    try:
-        with urllib.request.urlopen(req, timeout=4.0) as resp:
-            if resp.status == 200:
-                raw = resp.read().decode("utf-8")
-                body = json.loads(raw)
-                sha = body.get("sha", "")
-                remote["remote_commit"] = sha[:7] if sha else None
-                commit_info = body.get("commit", {})
-                msg = commit_info.get("message", "").strip().split("\n")[0]
-                remote["remote_commit_msg"] = msg
-                author_date = commit_info.get("author", {}).get("date") or commit_info.get("committer", {}).get("date", "")
-                if author_date:
-                    remote["remote_date"] = author_date[:10]
-                api_success = True
-    except Exception as e:
-        remote["error"] = str(e)
+    api_url = build_mirror_api_url(mirror_url) if mode == "mirror" else _GITHUB_API_URL
+    git_url = build_mirror_git_url(mirror_url) if mode == "mirror" else _GITHUB_REPO_URL
 
-    if not api_success:
+    result = {
+        "remote_commit": None,
+        "remote_commit_msg": None,
+        "remote_date": None,
+        "repo_url": "https://github.com/PouryaDe/XForwarder",
+    }
+    last_err: Optional[str] = None
+
+    def _parse_api_json(raw_text: str) -> bool:
+        body = json.loads(raw_text)
+        sha = body.get("sha", "")
+        if not sha:
+            return False
+        result["remote_commit"] = sha[:7]
+        commit_info = body.get("commit", {})
+        result["remote_commit_msg"] = commit_info.get("message", "").strip().split("\n")[0]
+        author_date = commit_info.get("author", {}).get("date") or commit_info.get("committer", {}).get("date", "")
+        if author_date:
+            result["remote_date"] = author_date[:10]
+        return True
+
+    def _run_http_and_git(active_proxy: str = "") -> bool:
+        nonlocal last_err
+        # 1. HTTP/HTTPS API check
         try:
-            res = subprocess.run(
-                ["git", "ls-remote", "https://github.com/PouryaDe/XForwarder.git", "refs/heads/main"],
-                capture_output=True, text=True, timeout=5.0
-            )
+            if active_proxy:
+                parsed_p = urllib.parse.urlparse(active_proxy)
+                scheme = parsed_p.scheme.lower()
+                if scheme in ("socks5", "socks5h"):
+                    parsed_api = urllib.parse.urlparse(api_url)
+                    conn = _HttpsViaSocks5Connection(
+                        parsed_api.hostname,
+                        proxy_host=parsed_p.hostname,
+                        proxy_port=parsed_p.port or 1080,
+                        proxy_user=parsed_p.username,
+                        proxy_pass=parsed_p.password,
+                        port=parsed_api.port or 443,
+                        timeout=timeout,
+                    )
+                    try:
+                        path = parsed_api.path or "/"
+                        if parsed_api.query:
+                            path += f"?{parsed_api.query}"
+                        conn.request("GET", path, headers=headers)
+                        resp = conn.getresponse()
+                        if resp.status == 200:
+                            if _parse_api_json(resp.read().decode("utf-8")):
+                                return True
+                        else:
+                            last_err = f"HTTP {resp.status}"
+                    finally:
+                        conn.close()
+                else:
+                    opener = urllib.request.build_opener(
+                        urllib.request.ProxyHandler({"http": active_proxy, "https": active_proxy})
+                    )
+                    req = urllib.request.Request(api_url, headers=headers)
+                    with opener.open(req, timeout=timeout) as resp:
+                        if resp.status == 200 and _parse_api_json(resp.read().decode("utf-8")):
+                            return True
+            else:
+                req = urllib.request.Request(api_url, headers=headers)
+                with urllib.request.urlopen(req, timeout=timeout) as resp:
+                    if resp.status == 200 and _parse_api_json(resp.read().decode("utf-8")):
+                        return True
+        except Exception as e:
+            last_err = str(e)
+
+        # 2. Fallback: git ls-remote (works reliably even on API rate limits or Git mirrors)
+        try:
+            env = os.environ.copy()
+            env["GIT_TERMINAL_PROMPT"] = "0"
+            env["GIT_HTTP_LOW_SPEED_LIMIT"] = "1024"
+            env["GIT_HTTP_LOW_SPEED_TIME"] = "5"
+            git_cmd = ["git"]
+            if active_proxy:
+                git_cmd.extend(["-c", f"http.proxy={active_proxy}"])
+            git_cmd.extend(["ls-remote", git_url, "refs/heads/main"])
+            res = subprocess.run(git_cmd, capture_output=True, text=True, timeout=max(4.0, timeout + 1.0), env=env)
             if res.returncode == 0 and res.stdout.strip():
                 parts = res.stdout.strip().split()
                 if parts and len(parts[0]) >= 7:
-                    remote["remote_commit"] = parts[0][:7]
-                    remote["remote_commit_msg"] = "Latest release on main"
-                    remote["error"] = None
-                    api_success = True
-        except Exception:
-            pass
+                    result["remote_commit"] = parts[0][:7]
+                    result["remote_commit_msg"] = "Latest release on main"
+                    return True
+            elif res.stderr.strip() and not last_err:
+                last_err = res.stderr.strip().splitlines()[-1]
+        except Exception as e:
+            if not last_err:
+                last_err = str(e)
+        return False
+
+    if mode == "iface" and tunnel_iface:
+        with _transient_iface_routes(tunnel_iface):
+            ok = _run_http_and_git("")
+        return ok, result, (None if ok else (last_err or f"Tunnel {tunnel_iface} could not reach GitHub"))
+    if mode == "proxy" and proxy_url:
+        ok = _run_http_and_git(proxy_url)
+        return ok, result, (None if ok else (last_err or f"Proxy {proxy_url} could not reach GitHub"))
+    ok = _run_http_and_git("")
+    return ok, result, (None if ok else (last_err or "Could not reach GitHub"))
+
+
+def get_remote_version_info(force: bool = False, transport_override: Optional[dict] = None) -> dict:
+    """Checks remote GitHub repository for latest commit using configured/auto-discovered tunnel or proxy."""
+    try:
+        from core.config_manager import load_config, normalize_update_transport_config
+    except ImportError:
+        from config_manager import load_config, normalize_update_transport_config
+
+    cfg = load_config()
+    saved_t = normalize_update_transport_config(cfg.get("system_update"))
+    if isinstance(transport_override, dict):
+        eff_t = normalize_update_transport_config({**saved_t, **transport_override})
+    else:
+        eff_t = saved_t
+
+    cache_key = (eff_t["transport_mode"], eff_t["tunnel_iface"], eff_t["proxy_url"], eff_t["mirror_url"])
+    now = time.time()
+    with _REMOTE_VERSION_LOCK:
+        if (
+            not force
+            and _REMOTE_VERSION_CACHE["data"]
+            and _REMOTE_VERSION_CACHE.get("key") == cache_key
+            and now < _REMOTE_VERSION_CACHE["expires"]
+        ):
+            return _REMOTE_VERSION_CACHE["data"]
+
+    remote: Dict[str, Any] = {
+        "remote_commit": None,
+        "remote_commit_msg": None,
+        "remote_date": None,
+        "repo_url": "https://github.com/PouryaDe/XForwarder",
+        "checked_at": int(now),
+        "error": None,
+        "used_transport": None,
+    }
+
+    mode = eff_t["transport_mode"]
+    api_success = False
+    first_error: Optional[str] = None
+
+    attempts: List[Tuple[str, str, str, str, str]] = []
+    if mode == "direct":
+        attempts.append(("direct", "", "", "", "Direct Internet"))
+    elif mode == "iface" and eff_t["tunnel_iface"]:
+        attempts.append(("iface", eff_t["tunnel_iface"], "", "", f"Tunnel ({eff_t['tunnel_iface']})"))
+    elif mode == "proxy" and eff_t["proxy_url"]:
+        attempts.append(("proxy", "", eff_t["proxy_url"], "", f"Proxy ({eff_t['proxy_url']})"))
+    elif mode == "mirror" and eff_t["mirror_url"]:
+        attempts.append(("mirror", "", "", eff_t["mirror_url"], "GitHub Mirror"))
+    else:
+        # Auto mode: Direct -> saved proxy/mirror/iface -> discovered local proxies -> active UP L3 tunnels
+        attempts.append(("direct", "", "", "", "Direct Internet"))
+        if eff_t["proxy_url"]:
+            attempts.append(("proxy", "", eff_t["proxy_url"], "", f"Proxy ({eff_t['proxy_url']})"))
+        if eff_t["tunnel_iface"]:
+            attempts.append(("iface", eff_t["tunnel_iface"], "", "", f"Tunnel ({eff_t['tunnel_iface']})"))
+        if eff_t["mirror_url"]:
+            attempts.append(("mirror", "", "", eff_t["mirror_url"], "GitHub Mirror"))
+
+        disc = discover_update_transports(config=cfg)
+        for p in disc.get("local_proxies", []):
+            if p["url"] != eff_t["proxy_url"]:
+                attempts.append(("proxy", "", p["url"], "", p.get("label") or p["url"]))
+        for t_info in disc.get("tunnels", []):
+            if t_info.get("usable") and t_info.get("name") and t_info["name"] != eff_t["tunnel_iface"]:
+                attempts.append(("iface", t_info["name"], "", "", f"Tunnel ({t_info['name']})"))
+
+    seen_attempts: Set[Tuple[str, str, str, str]] = set()
+    for a_mode, a_iface, a_proxy, a_mirror, a_label in attempts:
+        akey = (a_mode, a_iface, a_proxy, a_mirror)
+        if akey in seen_attempts:
+            continue
+        seen_attempts.add(akey)
+        ok, data, err = _fetch_github_commit_single(
+            a_mode,
+            tunnel_iface=a_iface,
+            proxy_url=a_proxy,
+            mirror_url=a_mirror,
+            timeout=3.5 if mode == "auto" else 5.0,
+        )
+        if ok:
+            remote.update(data)
+            remote["error"] = None
+            remote["used_transport"] = {
+                "mode": a_mode,
+                "target": a_iface or a_proxy or a_mirror or "direct",
+                "label": a_label,
+            }
+            api_success = True
+            break
+        elif first_error is None:
+            first_error = err
+
+    if not api_success:
+        remote["error"] = first_error or "Could not reach GitHub"
 
     with _REMOTE_VERSION_LOCK:
         _REMOTE_VERSION_CACHE["data"] = remote
+        _REMOTE_VERSION_CACHE["key"] = cache_key
         _REMOTE_VERSION_CACHE["expires"] = now + (180.0 if api_success else 30.0)
 
     return remote
@@ -256,7 +840,8 @@ def get_full_version_status(
         "repo_url": remote_info.get("repo_url"),
         "checked_at": remote_info.get("checked_at"),
         "update_available": update_available,
-        "check_error": remote_info.get("error")
+        "check_error": remote_info.get("error"),
+        "used_transport": remote_info.get("used_transport"),
     }
 
 
@@ -289,8 +874,20 @@ def get_script_path() -> Optional[str]:
     return None
 
 
-def start_system_update() -> Tuple[bool, str]:
-    """Triggers an unattended background update via systemd-run or detached process."""
+def start_system_update(transport_override: Optional[dict] = None) -> Tuple[bool, str]:
+    """Triggers an unattended background update via systemd-run or detached process using active transport settings."""
+    try:
+        from core.config_manager import load_config, normalize_update_transport_config, validate_update_transport_config
+    except ImportError:
+        from config_manager import load_config, normalize_update_transport_config, validate_update_transport_config
+
+    if transport_override is not None:
+        ok_v, err_v, eff_t = validate_update_transport_config(transport_override, require_target=True)
+        if not ok_v:
+            return False, err_v
+    else:
+        eff_t = normalize_update_transport_config(load_config().get("system_update"))
+
     with _UPDATE_LOCK:
         now = time.time()
         if _UPDATE_STATE["status"] == "running" and (now - _UPDATE_STATE["start_time"]) < 180:
@@ -318,7 +915,17 @@ def start_system_update() -> Tuple[bool, str]:
 
         def _worker():
             try:
-                cmd_str = f"DEBIAN_FRONTEND=noninteractive bash '{script}' update >> '{log_path}' 2>&1"
+                env_prefix = " ".join([
+                    "DEBIAN_FRONTEND=noninteractive",
+                    "NONINTERACTIVE=1",
+                    "YES=1",
+                    "GIT_TERMINAL_PROMPT=0",
+                    f"XFWD_UPDATE_MODE={shlex.quote(eff_t['transport_mode'])}",
+                    f"XFWD_UPDATE_IFACE={shlex.quote(eff_t['tunnel_iface'])}",
+                    f"XFWD_UPDATE_PROXY={shlex.quote(eff_t['proxy_url'])}",
+                    f"XFWD_UPDATE_MIRROR={shlex.quote(eff_t['mirror_url'])}",
+                ])
+                cmd_str = f"{env_prefix} bash {shlex.quote(script)} update >> {shlex.quote(log_path)} 2>&1"
                 if has_systemd_run:
                     unit_name = f"xfwd-updater-{ts}"
                     run_cmd = [
@@ -1160,3 +1767,13 @@ def restart_services_action(service: str, sync_rules_func=None, notify_func=None
         return True, f"{msg}. Reconnecting in ~2 seconds...", True
 
     return False, "Unknown action", False
+
+
+if __name__ == "__main__":
+    if len(sys.argv) >= 2 and sys.argv[1] == "--discover-update-transports":
+        print(json.dumps(discover_update_transports(), ensure_ascii=False))
+    elif len(sys.argv) >= 2 and sys.argv[1] == "--resolve-github-ips":
+        print("\n".join(_resolve_public_ipv4s(_GITHUB_HOSTS)))
+    elif len(sys.argv) >= 2 and sys.argv[1] == "--build-mirror-url":
+        raw_m = sys.argv[2] if len(sys.argv) >= 3 else ""
+        print(build_mirror_git_url(raw_m))

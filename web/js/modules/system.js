@@ -9,6 +9,144 @@ import { t } from "./i18n.js";
 let updatePollTimer = null;
 let updatePollingActive = false;
 let updateReconnectTries = 0;
+let updateTransportsLoaded = false;
+
+function getSelectedUpdateTransportPayload() {
+    const mode = document.getElementById("selUpdateTransportMode")?.value || "auto";
+    const tunnel_iface = (document.getElementById("selUpdateTunnelIface")?.value || "").trim();
+    const proxy_url = (document.getElementById("inpUpdateProxyUrl")?.value || "").trim();
+    const mirror_url = (document.getElementById("inpUpdateMirrorUrl")?.value || "").trim();
+    return { transport_mode: mode, tunnel_iface, proxy_url, mirror_url };
+}
+
+function syncUpdateTransportVisibility() {
+    const mode = document.getElementById("selUpdateTransportMode")?.value || "auto";
+    const wrapIface = document.getElementById("wrapUpdateIface");
+    const wrapProxy = document.getElementById("wrapUpdateProxy");
+    const wrapMirror = document.getElementById("wrapUpdateMirror");
+    const wrapAuto = document.getElementById("wrapUpdateAutoInfo");
+    if (wrapIface) wrapIface.style.display = mode === "iface" ? "flex" : "none";
+    if (wrapProxy) wrapProxy.style.display = mode === "proxy" ? "flex" : "none";
+    if (wrapMirror) wrapMirror.style.display = mode === "mirror" ? "flex" : "none";
+    if (wrapAuto) wrapAuto.style.display = (mode === "auto" || mode === "direct") ? "flex" : "none";
+}
+
+function validateUpdateTransportClient(payload) {
+    if (payload.transport_mode === "iface" && !payload.tunnel_iface) {
+        return "Please select an active server tunnel interface first.";
+    }
+    if (payload.transport_mode === "proxy" && !payload.proxy_url) {
+        return "Please enter a SOCKS5 or HTTP proxy URL (e.g. socks5h://127.0.0.1:10808).";
+    }
+    if (payload.transport_mode === "mirror" && !payload.mirror_url) {
+        return "Please enter a GitHub mirror URL (e.g. https://ghproxy.net/).";
+    }
+    return null;
+}
+
+export async function fetchUpdateTransports(showFeedback = false, preserveInputs = false) {
+    const selMode = document.getElementById("selUpdateTransportMode");
+    const selIface = document.getElementById("selUpdateTunnelIface");
+    const inpProxy = document.getElementById("inpUpdateProxyUrl");
+    const inpMirror = document.getElementById("inpUpdateMirrorUrl");
+    const proxyChipsWrap = document.getElementById("updateProxyChipsWrap");
+    const proxyChips = document.getElementById("updateProxyChips");
+    const valCounts = document.getElementById("valDetectedTransportCounts");
+
+    try {
+        const res = await fetch(`${API_BASE}/system/update/transports`, {
+            headers: { "Accept": "application/json" }
+        });
+        if (!res.ok) return null;
+        const data = await res.json();
+        updateTransportsLoaded = true;
+
+        const tunnels = Array.isArray(data.tunnels) ? data.tunnels : [];
+        const proxies = Array.isArray(data.local_proxies) ? data.local_proxies : [];
+        const cfg = data.config || {};
+
+        if (!preserveInputs) {
+            if (selMode && cfg.transport_mode) selMode.value = cfg.transport_mode;
+            if (inpProxy && typeof cfg.proxy_url === "string") inpProxy.value = cfg.proxy_url;
+            if (inpMirror && typeof cfg.mirror_url === "string") inpMirror.value = cfg.mirror_url;
+        }
+
+        if (selIface) {
+            const currentVal = preserveInputs ? selIface.value : (cfg.tunnel_iface || "");
+            selIface.innerHTML = "";
+            if (tunnels.length === 0) {
+                const opt = document.createElement("option");
+                opt.value = "";
+                opt.textContent = t("updates.iface_empty", {}, "No active tunnel interfaces detected");
+                selIface.appendChild(opt);
+            } else {
+                tunnels.forEach((tun) => {
+                    const opt = document.createElement("option");
+                    opt.value = tun.name || "";
+                    const latText = (tun.latency_ms !== null && tun.latency_ms !== undefined) ? ` · ${tun.latency_ms}ms` : "";
+                    const stateText = tun.state === "UP" ? "UP" : "DOWN";
+                    opt.textContent = `${tun.name} · ${tun.type || "Tunnel"} (${stateText}${latText})`;
+                    selIface.appendChild(opt);
+                });
+                if (currentVal && Array.from(selIface.options).some((o) => o.value === currentVal)) {
+                    selIface.value = currentVal;
+                } else {
+                    const firstUsable = tunnels.find((tun) => tun.usable);
+                    if (firstUsable) selIface.value = firstUsable.name;
+                }
+            }
+        }
+
+        if (proxyChipsWrap && proxyChips) {
+            proxyChips.innerHTML = "";
+            if (proxies.length > 0) {
+                proxyChipsWrap.style.display = "block";
+                proxies.forEach((prx) => {
+                    const btn = document.createElement("button");
+                    btn.type = "button";
+                    btn.className = "update-proxy-chip";
+                    btn.textContent = `${String(prx.proto || "proxy").toUpperCase()} :${prx.port}`;
+                    btn.title = prx.url;
+                    btn.addEventListener("click", () => {
+                        if (inpProxy) inpProxy.value = prx.url;
+                        if (selMode) {
+                            selMode.value = "proxy";
+                            syncUpdateTransportVisibility();
+                        }
+                    });
+                    proxyChips.appendChild(btn);
+                });
+            } else {
+                proxyChipsWrap.style.display = "none";
+            }
+        }
+
+        if (valCounts) {
+            const upTunnels = tunnels.filter((tun) => tun.usable).length;
+            valCounts.textContent = t(
+                "updates.detected_summary",
+                { tunnels: upTunnels, proxies: proxies.length },
+                `${upTunnels} UP tunnel(s) · ${proxies.length} local proxy(s) ready`
+            );
+        }
+
+        syncUpdateTransportVisibility();
+        if (showFeedback) {
+            const upTunnels = tunnels.filter((tun) => tun.usable).length;
+            showToast(
+                t(
+                    "updates.detected_summary",
+                    { tunnels: upTunnels, proxies: proxies.length },
+                    `${upTunnels} UP tunnel(s) · ${proxies.length} local proxy(s) ready`
+                ),
+                "info"
+            );
+        }
+        return data;
+    } catch (_) {
+        return null;
+    }
+}
 
 export function initSystemUpdateManager() {
     const btnCheckUpdates = document.getElementById("btnCheckUpdates");
@@ -17,6 +155,60 @@ export function initSystemUpdateManager() {
     const btnCancelUpdateModal = document.getElementById("btnCancelUpdateModal");
     const btnConfirmStartUpdate = document.getElementById("btnConfirmStartUpdate");
     const iconCheckUpdates = document.getElementById("iconCheckUpdates");
+    const selUpdateTransportMode = document.getElementById("selUpdateTransportMode");
+    const btnScanUpdateTunnels = document.getElementById("btnScanUpdateTunnels");
+    const btnSaveUpdateTransport = document.getElementById("btnSaveUpdateTransport");
+
+    if (selUpdateTransportMode) {
+        selUpdateTransportMode.addEventListener("change", syncUpdateTransportVisibility);
+        syncUpdateTransportVisibility();
+    }
+
+    if (btnScanUpdateTunnels) {
+        btnScanUpdateTunnels.addEventListener("click", async () => {
+            btnScanUpdateTunnels.disabled = true;
+            await fetchUpdateTransports(true, true);
+            btnScanUpdateTunnels.disabled = false;
+        });
+    }
+
+    if (btnSaveUpdateTransport) {
+        btnSaveUpdateTransport.addEventListener("click", async () => {
+            const payload = getSelectedUpdateTransportPayload();
+            const valErr = validateUpdateTransportClient(payload);
+            if (valErr) {
+                showToast(valErr, "error");
+                return;
+            }
+            btnSaveUpdateTransport.disabled = true;
+            try {
+                const res = await fetch(`${API_BASE}/system/update/transports`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json", "Accept": "application/json" },
+                    body: JSON.stringify({ ...payload, test: true })
+                });
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok) {
+                    throw new Error(data.error || `HTTP ${res.status}`);
+                }
+                if (data.version_status) {
+                    renderVersionStatusData(data.version_status);
+                    if (data.version_status.check_error) {
+                        showToast(`Saved, but GitHub check failed: ${data.version_status.check_error}`, "warn");
+                    } else {
+                        const viaLabel = data.version_status.used_transport?.label || payload.transport_mode;
+                        showToast(`Update route verified cleanly (${viaLabel})`, "success");
+                    }
+                } else {
+                    showToast("Update connection settings saved", "success");
+                }
+            } catch (err) {
+                showToast("Failed to save update transport: " + err.message, "error");
+            } finally {
+                btnSaveUpdateTransport.disabled = false;
+            }
+        });
+    }
 
     if (btnTriggerUpdate) {
         btnTriggerUpdate.disabled = true;
@@ -83,7 +275,7 @@ export function initSystemUpdateManager() {
     }
 }
 
-export async function fetchSystemVersionInfo(force = false) {
+function renderVersionStatusData(data) {
     const valInstalledVersion = document.getElementById("valInstalledVersion");
     const valLocalCommit = document.getElementById("valLocalCommit");
     const valRemoteCommit = document.getElementById("valRemoteCommit");
@@ -92,111 +284,131 @@ export async function fetchSystemVersionInfo(force = false) {
     const updateStatusNotice = document.getElementById("updateStatusNotice");
     const btnTriggerUpdate = document.getElementById("btnTriggerUpdate");
     const btnTriggerUpdateText = document.getElementById("btnTriggerUpdateText");
+    const badgeTransportSummary = document.getElementById("badgeUpdateTransportSummary");
 
+    if (valInstalledVersion && data.current_version) {
+        valInstalledVersion.textContent = `v${data.current_version}`;
+    }
+    const brandVersionBadge = document.getElementById("brandVersionBadge");
+    if (brandVersionBadge && data.current_version) {
+        brandVersionBadge.textContent = `v${data.current_version}`;
+    }
+    if (badgeTransportSummary) {
+        const used = data.used_transport;
+        if (used && used.label) {
+            badgeTransportSummary.textContent = t("updates.via_prefix", { label: used.label }, `Route: ${used.label}`);
+            badgeTransportSummary.className = "stat-badge badge-good ltr-mono";
+        } else if (data.transport_config && data.transport_config.transport_mode) {
+            const tm = data.transport_config.transport_mode;
+            badgeTransportSummary.textContent = tm === "auto"
+                ? t("updates.transport_auto_short", {}, "Auto Discovery")
+                : String(tm).toUpperCase();
+            badgeTransportSummary.className = "stat-badge badge-neutral ltr-mono";
+        }
+    }
+    if (valLocalCommit) {
+        if (data.current_commit) {
+            const dateStr = data.current_date ? ` (${data.current_date})` : "";
+            valLocalCommit.textContent = `#${data.current_commit}${dateStr}`;
+        } else {
+            valLocalCommit.textContent = "Release package";
+        }
+    }
+    if (valRemoteCommit) {
+        if (data.remote_commit) {
+            const msg = data.remote_commit_msg ? ` - ${data.remote_commit_msg.substring(0, 32)}` : "";
+            valRemoteCommit.textContent = `#${data.remote_commit}${msg}`;
+            valRemoteCommit.title = data.remote_commit_msg || `#${data.remote_commit}`;
+        } else if (data.check_error) {
+            const errStr = String(data.check_error);
+            const isRateLimit = errStr.toLowerCase().includes("rate limit") || errStr.includes("403");
+            valRemoteCommit.textContent = isRateLimit ? "Rate Limited (GitHub API)" : "Check Failed";
+            valRemoteCommit.title = data.check_error;
+        } else {
+            valRemoteCommit.textContent = "Up to date";
+            valRemoteCommit.title = "Running latest commit";
+        }
+    }
+    if (valLastChecked) {
+        valLastChecked.textContent = data.checked_at
+            ? new Date(data.checked_at * 1000).toLocaleTimeString()
+            : "Just now";
+    }
+
+    const navUpdateDot = document.getElementById("navUpdateDot");
+    if (navUpdateDot) {
+        navUpdateDot.style.display = data.update_available ? "inline-block" : "none";
+    }
+
+    if (data.update_available) {
+        if (badgeUpdateStatus) {
+            badgeUpdateStatus.className = "stat-badge badge-amber";
+            badgeUpdateStatus.textContent = "UPDATE AVAILABLE";
+        }
+        if (updateStatusNotice) {
+            updateStatusNotice.style.display = "block";
+            updateStatusNotice.className = "update-notice notice-amber";
+            const commitLabel = data.remote_commit ? `#${escapeHtml(data.remote_commit)}` : "Latest Release";
+            const msgLabel = data.remote_commit_msg ? ` &mdash; <em>${escapeHtml(data.remote_commit_msg)}</em>` : "";
+            updateStatusNotice.innerHTML = `<strong>Update Available:</strong> A newer release (<code class="font-mono">${commitLabel}</code>${msgLabel}) is available on GitHub. Click <strong>Update to Latest</strong> below to upgrade.`;
+        }
+        if (btnTriggerUpdate) {
+            btnTriggerUpdate.disabled = false;
+            btnTriggerUpdate.classList.add("pulse-glow");
+            btnTriggerUpdate.title = "Click to apply software update";
+        }
+        if (btnTriggerUpdateText) {
+            btnTriggerUpdateText.textContent = data.remote_commit ? `Update to #${data.remote_commit}` : "Update to Latest";
+        }
+    } else if (data.check_error) {
+        if (badgeUpdateStatus) {
+            badgeUpdateStatus.className = "stat-badge badge-warn";
+            badgeUpdateStatus.textContent = "CHECK FAILED";
+        }
+        if (updateStatusNotice) {
+            updateStatusNotice.style.display = "block";
+            updateStatusNotice.className = "update-notice notice-rose";
+            const errText = escapeHtml(String(data.check_error));
+            updateStatusNotice.innerHTML = `<strong>Could Not Reach GitHub:</strong> ${errText}. Select an active server tunnel or local proxy below and click <strong>Save &amp; Test</strong>.`;
+        }
+        if (btnTriggerUpdate) {
+            btnTriggerUpdate.disabled = false;
+            btnTriggerUpdate.classList.remove("pulse-glow");
+            btnTriggerUpdate.title = "Force software update from GitHub repository";
+        }
+        if (btnTriggerUpdateText) {
+            btnTriggerUpdateText.textContent = "Force Update";
+        }
+    } else {
+        if (badgeUpdateStatus) {
+            badgeUpdateStatus.className = "stat-badge badge-good";
+            badgeUpdateStatus.textContent = "UP TO DATE";
+        }
+        if (updateStatusNotice) {
+            updateStatusNotice.style.display = "none";
+        }
+        if (btnTriggerUpdate) {
+            btnTriggerUpdate.disabled = false;
+            btnTriggerUpdate.classList.remove("pulse-glow");
+            btnTriggerUpdate.title = "Re-pull latest code from repository";
+        }
+        if (btnTriggerUpdateText) {
+            btnTriggerUpdateText.textContent = "Reinstall / Update";
+        }
+    }
+}
+
+export async function fetchSystemVersionInfo(force = false) {
     try {
+        if (!updateTransportsLoaded) {
+            fetchUpdateTransports(false, false);
+        }
         const res = await fetch(`${API_BASE}/system/version${force ? "?check=1" : ""}`, {
             headers: { "Accept": "application/json" }
         });
         if (!res.ok) return null;
         const data = await res.json();
-
-        if (valInstalledVersion && data.current_version) {
-            valInstalledVersion.textContent = `v${data.current_version}`;
-        }
-        const brandVersionBadge = document.getElementById("brandVersionBadge");
-        if (brandVersionBadge && data.current_version) {
-            brandVersionBadge.textContent = `v${data.current_version}`;
-        }
-        if (valLocalCommit) {
-            if (data.current_commit) {
-                const dateStr = data.current_date ? ` (${data.current_date})` : "";
-                valLocalCommit.textContent = `#${data.current_commit}${dateStr}`;
-            } else {
-                valLocalCommit.textContent = "Release package";
-            }
-        }
-        if (valRemoteCommit) {
-            if (data.remote_commit) {
-                const msg = data.remote_commit_msg ? ` - ${data.remote_commit_msg.substring(0, 32)}` : "";
-                valRemoteCommit.textContent = `#${data.remote_commit}${msg}`;
-                valRemoteCommit.title = data.remote_commit_msg || `#${data.remote_commit}`;
-            } else if (data.check_error) {
-                const errStr = String(data.check_error);
-                const isRateLimit = errStr.toLowerCase().includes("rate limit") || errStr.includes("403");
-                valRemoteCommit.textContent = isRateLimit ? "Rate Limited (GitHub API)" : "Check Failed";
-                valRemoteCommit.title = data.check_error;
-            } else {
-                valRemoteCommit.textContent = "Up to date";
-                valRemoteCommit.title = "Running latest commit";
-            }
-        }
-        if (valLastChecked) {
-            valLastChecked.textContent = data.checked_at
-                ? new Date(data.checked_at * 1000).toLocaleTimeString()
-                : "Just now";
-        }
-
-        const navUpdateDot = document.getElementById("navUpdateDot");
-        if (navUpdateDot) {
-            navUpdateDot.style.display = data.update_available ? "inline-block" : "none";
-        }
-
-        if (data.update_available) {
-            if (badgeUpdateStatus) {
-                badgeUpdateStatus.className = "stat-badge badge-amber";
-                badgeUpdateStatus.textContent = "UPDATE AVAILABLE";
-            }
-            if (updateStatusNotice) {
-                updateStatusNotice.style.display = "block";
-                updateStatusNotice.className = "update-notice notice-amber";
-                const commitLabel = data.remote_commit ? `#${escapeHtml(data.remote_commit)}` : "Latest Release";
-                const msgLabel = data.remote_commit_msg ? ` &mdash; <em>${escapeHtml(data.remote_commit_msg)}</em>` : "";
-                updateStatusNotice.innerHTML = `<strong>Update Available:</strong> A newer release (<code class="font-mono">${commitLabel}</code>${msgLabel}) is available on GitHub. Click <strong>Update to Latest</strong> below to upgrade.`;
-            }
-            if (btnTriggerUpdate) {
-                btnTriggerUpdate.disabled = false;
-                btnTriggerUpdate.classList.add("pulse-glow");
-                btnTriggerUpdate.title = "Click to apply software update";
-            }
-            if (btnTriggerUpdateText) {
-                btnTriggerUpdateText.textContent = data.remote_commit ? `Update to #${data.remote_commit}` : "Update to Latest";
-            }
-        } else if (data.check_error) {
-            if (badgeUpdateStatus) {
-                badgeUpdateStatus.className = "stat-badge badge-warn";
-                badgeUpdateStatus.textContent = "CHECK FAILED";
-            }
-            if (updateStatusNotice) {
-                updateStatusNotice.style.display = "block";
-                updateStatusNotice.className = "update-notice notice-rose";
-                const errText = escapeHtml(String(data.check_error));
-                updateStatusNotice.innerHTML = `<strong>Could Not Reach GitHub:</strong> ${errText}. Updates will continue on the next scheduled interval.`;
-            }
-            if (btnTriggerUpdate) {
-                btnTriggerUpdate.disabled = false;
-                btnTriggerUpdate.classList.remove("pulse-glow");
-                btnTriggerUpdate.title = "Force software update from GitHub repository";
-            }
-            if (btnTriggerUpdateText) {
-                btnTriggerUpdateText.textContent = "Force Update";
-            }
-        } else {
-            if (badgeUpdateStatus) {
-                badgeUpdateStatus.className = "stat-badge badge-good";
-                badgeUpdateStatus.textContent = "UP TO DATE";
-            }
-            if (updateStatusNotice) {
-                updateStatusNotice.style.display = "none";
-            }
-            if (btnTriggerUpdate) {
-                btnTriggerUpdate.disabled = false;
-                btnTriggerUpdate.classList.remove("pulse-glow");
-                btnTriggerUpdate.title = "Re-pull latest code from repository";
-            }
-            if (btnTriggerUpdateText) {
-                btnTriggerUpdateText.textContent = "Reinstall / Update";
-            }
-        }
+        renderVersionStatusData(data);
         return data;
     } catch (_) {
         return null;
@@ -277,6 +489,13 @@ export async function startSystemUpdateProcedure() {
     const updateStatusText = document.getElementById("updateStatusText");
     const updateConsole = document.getElementById("updateConsole");
 
+    const transportPayload = getSelectedUpdateTransportPayload();
+    const valErr = validateUpdateTransportClient(transportPayload);
+    if (valErr) {
+        showToast(valErr, "error");
+        return;
+    }
+
     if (updateModal) updateModal.classList.remove("show");
     if (btnCheckUpdates) btnCheckUpdates.disabled = true;
     if (btnTriggerUpdate) btnTriggerUpdate.disabled = true;
@@ -303,7 +522,7 @@ export async function startSystemUpdateProcedure() {
                 "Content-Type": "application/json",
                 "Accept": "application/json"
             },
-            body: JSON.stringify({})
+            body: JSON.stringify(transportPayload)
         });
         const data = await res.json().catch(() => ({}));
         if (!res.ok && res.status !== 409) {

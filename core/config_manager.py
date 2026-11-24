@@ -13,6 +13,7 @@ import re
 import ipaddress
 import socket
 import subprocess
+from urllib.parse import urlparse
 from typing import Dict, Any, Tuple, Optional, List, Set
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -30,6 +31,113 @@ LB_SUPPORTED_TYPES = ("nftables", "nginx")
 VALID_LB_MODES_NFT = ("ip_hash", "round_robin", "random")
 VALID_LB_MODES_NGINX = ("ip_hash", "least_conn", "round_robin", "random")
 MAX_LB_TARGETS = 16
+VALID_UPDATE_TRANSPORT_MODES = ("auto", "direct", "iface", "proxy", "mirror")
+VALID_PROXY_SCHEMES = ("http", "https", "socks5", "socks5h", "socks4")
+_UNSAFE_URL_CHARS = set(";`$\\\"'<>|&\r\n\t ")
+
+
+def _has_unsafe_url_chars(val: str) -> bool:
+    """Returns True if a URL/proxy string contains control chars or shell metacharacters."""
+    return any(ord(c) < 32 or ord(c) == 127 or c in _UNSAFE_URL_CHARS for c in val)
+
+
+def validate_update_transport_config(raw: Any, require_target: bool = True) -> Tuple[bool, str, Dict[str, str]]:
+    """Validates and normalizes `system_update` transport configuration against injection and malformed URLs."""
+    if raw is None:
+        raw = {}
+    if not isinstance(raw, dict):
+        return False, "system_update configuration must be an object", {}
+
+    mode = str(raw.get("transport_mode", "auto") or "auto").strip().lower()
+    if mode not in VALID_UPDATE_TRANSPORT_MODES:
+        return False, f"Invalid transport_mode '{mode}'. Allowed: {', '.join(VALID_UPDATE_TRANSPORT_MODES)}", {}
+
+    tunnel_iface = str(raw.get("tunnel_iface", "") or "").strip()
+    if tunnel_iface:
+        if not IFACE_NAME_REGEX.fullmatch(tunnel_iface):
+            return False, f"Invalid tunnel_iface '{tunnel_iface}'", {}
+    elif require_target and mode == "iface":
+        return False, "tunnel_iface is required when transport_mode is 'iface'", {}
+
+    proxy_url = str(raw.get("proxy_url", "") or "").strip()[:256]
+    if proxy_url:
+        if _has_unsafe_url_chars(proxy_url):
+            return False, "Invalid characters in proxy_url", {}
+        try:
+            parsed = urlparse(proxy_url)
+            if parsed.scheme.lower() not in VALID_PROXY_SCHEMES:
+                return False, "proxy_url scheme must be socks5h, socks5, socks4, http, or https", {}
+            if not parsed.hostname:
+                return False, "proxy_url must include a valid host", {}
+            if parsed.port is not None and not (1 <= parsed.port <= 65535):
+                return False, "proxy_url port must be between 1 and 65535", {}
+        except ValueError as e:
+            return False, f"Invalid proxy_url: {e}", {}
+    elif require_target and mode == "proxy":
+        return False, "proxy_url is required when transport_mode is 'proxy'", {}
+
+    mirror_url = str(raw.get("mirror_url", "") or "").strip()[:256]
+    if mirror_url:
+        if _has_unsafe_url_chars(mirror_url):
+            return False, "Invalid characters in mirror_url", {}
+        try:
+            parsed = urlparse(mirror_url)
+            if parsed.scheme.lower() not in ("http", "https"):
+                return False, "mirror_url scheme must be http or https", {}
+            if not parsed.hostname:
+                return False, "mirror_url must include a valid host", {}
+            if parsed.port is not None and not (1 <= parsed.port <= 65535):
+                return False, "mirror_url port must be between 1 and 65535", {}
+        except ValueError as e:
+            return False, f"Invalid mirror_url: {e}", {}
+    elif require_target and mode == "mirror":
+        return False, "mirror_url is required when transport_mode is 'mirror'", {}
+
+    clean = {
+        "transport_mode": mode,
+        "tunnel_iface": tunnel_iface,
+        "proxy_url": proxy_url,
+        "mirror_url": mirror_url,
+    }
+    return True, "", clean
+
+
+def normalize_update_transport_config(raw: Any) -> Dict[str, str]:
+    """Self-healing normalizer for `system_update` block inside config.json."""
+    default_cfg = {
+        "transport_mode": "auto",
+        "tunnel_iface": "",
+        "proxy_url": "",
+        "mirror_url": "",
+    }
+    if not isinstance(raw, dict):
+        return default_cfg
+    mode = str(raw.get("transport_mode", "auto") or "auto").strip().lower()
+    if mode not in VALID_UPDATE_TRANSPORT_MODES:
+        mode = "auto"
+
+    iface = str(raw.get("tunnel_iface", "") or "").strip()
+    if iface and not IFACE_NAME_REGEX.fullmatch(iface):
+        iface = ""
+
+    proxy_url = str(raw.get("proxy_url", "") or "").strip()[:256]
+    if proxy_url:
+        ok_p, _, _ = validate_update_transport_config({"transport_mode": "proxy", "proxy_url": proxy_url}, require_target=False)
+        if not ok_p:
+            proxy_url = ""
+
+    mirror_url = str(raw.get("mirror_url", "") or "").strip()[:256]
+    if mirror_url:
+        ok_m, _, _ = validate_update_transport_config({"transport_mode": "mirror", "mirror_url": mirror_url}, require_target=False)
+        if not ok_m:
+            mirror_url = ""
+
+    return {
+        "transport_mode": mode,
+        "tunnel_iface": iface,
+        "proxy_url": proxy_url,
+        "mirror_url": mirror_url,
+    }
 
 
 def is_nftables_type(dest_type: Any) -> bool:
@@ -739,6 +847,11 @@ def migrate_and_normalize_config(cfg: Dict[str, Any]) -> Tuple[Dict[str, Any], b
                     if lb_k in d:
                         d.pop(lb_k, None)
                         modified = True
+
+    norm_update = normalize_update_transport_config(cfg.get("system_update"))
+    if cfg.get("system_update") != norm_update:
+        cfg["system_update"] = norm_update
+        modified = True
 
     return cfg, modified
 
