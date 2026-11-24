@@ -568,6 +568,12 @@ export function initAuth(onLoginSuccess, onLogout) {
     initPanelAccessForm();
 }
 
+function getSafeOriginHost() {
+    const h = window.location.hostname || "localhost";
+    return (h.includes(":") && !h.startsWith("[")) ? `[${h}]` : h;
+}
+
+/** Updates the live URL preview beneath the Panel Access form inputs. */
 function updatePanelUrlPreview() {
     const previewEl = document.getElementById("secPanelUrlPreview");
     const portEl = document.getElementById("secPanelPort");
@@ -576,9 +582,10 @@ function updatePanelUrlPreview() {
     const port = parseInt(portEl.value, 10) || window.location.port || 8090;
     const cleanPath = String(pathEl.value || "").trim().replace(/^\/+|\/+$/g, "");
     const prefix = cleanPath ? `/${cleanPath}` : "";
-    previewEl.textContent = `${window.location.protocol}//${window.location.hostname}:${port}${prefix}/`;
+    previewEl.textContent = `${window.location.protocol}//${getSafeOriginHost()}:${port}${prefix}/`;
 }
 
+/** Syncs Panel Access form inputs from server config without clobbering active edits. */
 export function syncPanelAccessInputs(webCfg) {
     if (!webCfg || typeof webCfg !== "object") return;
     const portEl = document.getElementById("secPanelPort");
@@ -592,10 +599,11 @@ export function syncPanelAccessInputs(webCfg) {
     updatePanelUrlPreview();
 }
 
+/** Polls the restarted web service on its new port/path using no-cors, then redirects. */
 async function waitAndRedirectToNewPanel(newPort, newSecretPath) {
     const cleanPath = String(newSecretPath || "").trim().replace(/^\/+|\/+$/g, "");
     const prefix = cleanPath ? `/${cleanPath}` : "";
-    const newOrigin = `${window.location.protocol}//${window.location.hostname}:${newPort}`;
+    const newOrigin = `${window.location.protocol}//${getSafeOriginHost()}:${newPort}`;
     const targetUrl = `${newOrigin}${prefix}/security`;
     const pingUrl = `${newOrigin}${prefix}/favicon.ico`;
 

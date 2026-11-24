@@ -2177,7 +2177,7 @@ stream {
         self.assertIn('document.readyState === "loading"', utils_js)
 
     def test_isolated_ping_latency_and_packet_loss_badges_and_v1_4_0_standards(self):
-        """Verifies version 1.6.0 alignment, glassmorphism sidebar, and strict separation of ping & loss badges."""
+        """Verifies version 1.6.1 alignment, glassmorphism sidebar, and strict separation of ping & loss badges."""
         html_path = os.path.join(REPO_ROOT, "web", "index.html")
         app_js_path = os.path.join(REPO_ROOT, "web", "app.js")
         rules_js_path = os.path.join(REPO_ROOT, "web", "js", "modules", "rules.js")
@@ -2204,11 +2204,11 @@ stream {
         with open(sh_path, "r", encoding="utf-8") as f:
             sh_code = f.read()
 
-        # 1. Version 1.6.0 alignment across stack
-        self.assertIn('APP_VERSION = "1.6.0"', svc_mgr)
-        self.assertIn('SCRIPT_VERSION="1.6.0"', sh_code)
-        self.assertIn('id="brandVersionBadge">v1.6.0</span>', html)
-        self.assertIn('id="valInstalledVersion">v1.6.0</span>', html)
+        # 1. Version 1.6.1 alignment across stack
+        self.assertIn('APP_VERSION = "1.6.1"', svc_mgr)
+        self.assertIn('SCRIPT_VERSION="1.6.1"', sh_code)
+        self.assertIn('id="brandVersionBadge">v1.6.1</span>', html)
+        self.assertIn('id="valInstalledVersion">v1.6.1</span>', html)
 
         # 2. Topbar manual refresh button completely removed
         self.assertNotIn('id="btnManualRefresh"', html)
@@ -3445,15 +3445,18 @@ stream {
             free_sock.close()
 
             try:
-                t = threading.Thread(target=serve_n, args=(7,), daemon=True)
+                t = threading.Thread(target=serve_n, args=(8,), daemon=True)
                 t.start()
 
                 # 1. Unauthenticated -> 401
                 code, _ = post_panel({"port": free_port}, with_auth=False)
                 self.assertEqual(code, 401)
 
-                # 2. Invalid port -> 400
+                # 2. Invalid port (out of range or boolean) -> 400
                 code, body = post_panel({"port": 70000, "secret_path": "ok-path"})
+                self.assertEqual(code, 400)
+                self.assertFalse(body["ok"])
+                code, body = post_panel({"port": True, "secret_path": "ok-path"})
                 self.assertEqual(code, 400)
                 self.assertFalse(body["ok"])
 

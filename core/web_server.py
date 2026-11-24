@@ -851,6 +851,9 @@ class XForwarderWebHandler(BaseHTTPRequestHandler):
             old_secret = str(web_cfg.get("secret_path", "xfwd-admin") or "").strip().strip("/")
 
             raw_port = body.get("port", old_port)
+            if isinstance(raw_port, bool):
+                self.send_json({"ok": False, "error": "Panel port must be a valid integer between 1 and 65535"}, 400)
+                return
             try:
                 new_port = int(raw_port)
             except (ValueError, TypeError):
