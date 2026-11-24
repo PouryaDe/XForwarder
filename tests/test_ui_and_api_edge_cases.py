@@ -2177,7 +2177,7 @@ stream {
         self.assertIn('document.readyState === "loading"', utils_js)
 
     def test_isolated_ping_latency_and_packet_loss_badges_and_v1_4_0_standards(self):
-        """Verifies version 1.6.3 alignment, glassmorphism sidebar, and strict separation of ping & loss badges."""
+        """Verifies version 1.6.4 alignment, glassmorphism sidebar, and strict separation of ping & loss badges."""
         html_path = os.path.join(REPO_ROOT, "web", "index.html")
         app_js_path = os.path.join(REPO_ROOT, "web", "app.js")
         rules_js_path = os.path.join(REPO_ROOT, "web", "js", "modules", "rules.js")
@@ -2204,11 +2204,11 @@ stream {
         with open(sh_path, "r", encoding="utf-8") as f:
             sh_code = f.read()
 
-        # 1. Version 1.6.3 alignment across stack
-        self.assertIn('APP_VERSION = "1.6.3"', svc_mgr)
-        self.assertIn('SCRIPT_VERSION="1.6.3"', sh_code)
-        self.assertIn('id="brandVersionBadge">v1.6.3</span>', html)
-        self.assertIn('id="valInstalledVersion">v1.6.3</span>', html)
+        # 1. Version 1.6.4 alignment across stack
+        self.assertIn('APP_VERSION = "1.6.4"', svc_mgr)
+        self.assertIn('SCRIPT_VERSION="1.6.4"', sh_code)
+        self.assertIn('id="brandVersionBadge">v1.6.4</span>', html)
+        self.assertIn('id="valInstalledVersion">v1.6.4</span>', html)
 
         # 2. Topbar manual refresh button completely removed
         self.assertNotIn('id="btnManualRefresh"', html)

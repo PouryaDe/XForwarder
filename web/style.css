@@ -8886,6 +8886,65 @@ input#formCategory::-webkit-list-button {
     font-size: 0.9rem;
 }
 
+/* Fixed Header & Footer with Scrollable Body for Add/Edit Rule Modal */
+#ruleModal .modal-card {
+    display: flex;
+    flex-direction: column;
+    padding: 0;
+    overflow: hidden;
+}
+
+#ruleModal .modal-header {
+    flex-shrink: 0;
+    margin-bottom: 0;
+    padding: 20px 26px 14px;
+    background: var(--raise);
+    z-index: 2;
+}
+
+#ruleModal #ruleForm {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: hidden;
+}
+
+#ruleModal .modal-body-scroll {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    padding: 20px 26px;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+#ruleModal .modal-body-scroll::-webkit-scrollbar {
+    display: none;
+    width: 0;
+    height: 0;
+}
+
+#ruleModal .modal-footer {
+    flex-shrink: 0;
+    margin-top: 0;
+    padding: 14px 26px 20px;
+    background: var(--raise);
+    z-index: 2;
+}
+
+@media (max-width: 640px) {
+    #ruleModal .modal-header {
+        padding: 16px 18px 12px;
+    }
+    #ruleModal .modal-body-scroll {
+        padding: 16px 18px;
+    }
+    #ruleModal .modal-footer {
+        padding: 12px 18px 16px;
+    }
+}
+
 /* Confirmation Modal */
 .modal-confirm {
     max-width: 440px;
