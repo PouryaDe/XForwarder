@@ -2487,13 +2487,27 @@ input:-webkit-autofill:active {
 }
 
 .tunnel-type-tag {
+    display: inline-flex;
+    align-items: center;
     font-size: 0.68rem;
     font-weight: 700;
-    padding: 2px 6px;
-    border-radius: 4px;
-    background: rgba(167, 139, 250, 0.14);
-    color: var(--accent-violet);
-    border: 1px solid rgba(167, 139, 250, 0.25);
+    padding: 3px 10px;
+    border-radius: 9999px;
+    background: var(--accent-wash);
+    color: var(--accent-text);
+    border: 1px solid color-mix(in srgb, var(--accent) 28%, transparent);
+    line-height: 1.2;
+}
+
+.metrics-header-controls .btn-sm {
+    border-radius: 9999px;
+}
+
+#btnRefreshOvTraffic {
+    width: 32px;
+    height: 32px;
+    padding: 0 !important;
+    border-radius: 9999px;
 }
 
 .tunnel-status-pill {
