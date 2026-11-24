@@ -17,7 +17,8 @@ All DNAT routing managed by XForwarder must strictly reside inside the dedicated
   ```
 - **Masquerading Interface Masks**: The postrouting chain masquerades outbound traffic on recognized tunnel interfaces:
   `oifname { "gre*", "ipip*", "ftcp*", "awg*", "gnv*", "vxlan*", "wg*", "tun*" } masquerade`
-- **TCP MSS Clamping**: The forward chain must clamp TCP MSS to the path MTU (`tcp flags syn tcp option maxseg size set rt mtu`) to prevent tunnel MTU packet drops and fragmentation over GRE, IPIP, and AWG tunnels.
+- **TCP MSS Clamping & `syn_mss` Subchain**: Standard forward chains clamp TCP MSS via `tcp flags syn tcp option maxseg size set rt mtu`; when DSR `dsr_mss_rules` are present, MSS rules are isolated into `chain syn_mss` jumped via `tcp flags & (syn|rst) == syn jump syn_mss` so 99% of established packets skip per-target MSS evaluation.
+- **O(1) NFTables `map` / `vmap` & Zero-Hook Empty IPv6 Table**: `generate_nftables_ruleset()` groups multi-port 1:1 rules by `(iif_clause, daddr_clause, has_notrack)` into O(1) `tcp`/`udp dport` `map`s (using separate `@raw_nt_set_*` for `notrack` rules and avoiding `th`/`dnat ip to` for `nftables >= 0.9.3` compatibility, with automatic `nft -c -f` linear fallback) and replaces single-port `forward` counters with `vmap_in`/`vmap_out` while keeping `cnt_in_<port>`/`cnt_out_<port>` names intact. When `table ip6 xfwd_orchestrator` has zero active IPv6 rules, Netfilter hook chains are omitted (retaining counters only).
 - **NFTables-Only Port Ranges (`port_range`) & Excluded Ports (`excluded_ports` / `!= { ... }`)**:
   - Contiguous inbound/outbound port ranges (`start-end`) and wildcard excluded-port rules (`excluded_ports`, e.g., `!= { 22, 443, 1001 }`) are permitted exclusively on `nftables` destinations (`haproxy` and `nginx` forbid both). Outbound must either preserve ports 1:1 (`dnat to <ip>`, matching `port_range`) or target a single fixed port (`dnat to <ip>:<port>`).
   - Range traffic counters use `cnt_in_<start>_<end>` / `cnt_out_<start>_<end>`, wildcard `!=` rules use `cnt_in_1_excl` / `cnt_out_1_excl`, wide range flushes (>32 ports) skip per-port conntrack loops, and `nftables_parser.py` imports negated sets (`dport != { 22, 443, 1001 }`) as a single unified `excluded_ports` rule while tracking all merged TCP/UDP handles for atomic deactivation.
@@ -48,7 +49,8 @@ All DNAT routing managed by XForwarder must strictly reside inside the dedicated
 - **Unconfigured Inactive Devices Excluded**: Skip virtual interfaces that have no assigned local IP, no peer IP, and are in state `DOWN`.
 - **Primary WAN Excluded from Tunnels**: Primary WAN interface (e.g. `eth0`) IPs are categorized strictly under `server_ips`, never under `tunnel_interfaces`.
 
-## 5. Golden NIC Offload Profile (`tso on gso on gro off`)
-- **Transmit Offloading (TSO/GSO on)**: Required for high-throughput HAProxy and proxy relays to delegate packet fragmentation to the NIC, reducing CPU software interrupt load (`ksoftirqd` / `si`).
-- **Generic Receive Offload (GRO off)**: Must be disabled on physical interfaces handling GRE or IPIP encapsulation. If GRO is enabled, incoming packets are aggregated into 64KB super-packets which cannot be encapsulated over smaller MTU tunnels without hardware tunnel offload, causing silent packet drops and tunnel throttling.
+## 5. Golden NIC Offload, Qdisc & NAPI Tuning Profile
+- **Transmit Offloading (TSO/GSO on) & UDP Tunnel TSO Off**: Required for high-throughput HAProxy and proxy relays to delegate packet fragmentation to the NIC while disabling `tx-udp_tnl-segmentation` and `tx-udp_tnl-csum-segmentation` to prevent virtual/NIC checksum & GSO drops on FOU/UDP-encapsulated tunnels.
+- **Generic Receive Offload (GRO off)**: Must remain disabled (`tso on gso on gro off`) on physical interfaces handling GRE or IPIP encapsulation to prevent silent MTU drops on super-packets.
+- **Qdisc & NAPI Polling**: Set `tc qdisc replace dev <wan> root fq flow_limit 1000` (in `tune_network` and at daemon startup via `ensure_fq_qdisc`), `net.core.netdev_budget = 1200`, `net.core.netdev_budget_usecs = 8000`, `net.core.dev_weight = 128`, `net.core.netdev_max_backlog = 100000`, and conntrack timeouts (`3600s` TCP established, `30s` UDP, `60s` UDP stream).
 

@@ -587,7 +587,7 @@ tune_network() {
 
 # Connection backlog & socket queues
 net.core.somaxconn = $dyn_somaxconn
-net.core.netdev_max_backlog = 16384
+net.core.netdev_max_backlog = 100000
 net.ipv4.tcp_max_syn_backlog = $dyn_somaxconn
 
 # Ephemeral outgoing port range & rapid connection recycling
@@ -622,6 +622,19 @@ EOF
         if (( ${cur_files:-0} < 2097152 )); then
             echo "fs.file-max = 2097152"
         fi
+        local _napi_written=0 _sk _sk_name _sk_path
+        for _sk in net.core.netdev_budget=1200 net.core.netdev_budget_usecs=8000 net.core.dev_weight=128; do
+            _sk_name="${_sk%%=*}"
+            _sk_path="/proc/sys/${_sk_name//./\/}"
+            if [[ -e "$_sk_path" ]]; then
+                if (( _napi_written == 0 )); then
+                    echo
+                    echo "# NAPI SoftIRQ polling budget (reduces time_squeeze & NET_RX bottlenecks)"
+                    _napi_written=1
+                fi
+                echo "${_sk_name} = ${_sk#*=}"
+            fi
+        done
         local cur_ct
         cur_ct=$(sysctl -n net.netfilter.nf_conntrack_max 2>/dev/null | tr -cd '0-9' || true)
         if [[ -n "$cur_ct" && "$cur_ct" =~ ^[0-9]+$ ]]; then
@@ -630,13 +643,16 @@ EOF
             if (( cur_ct < dyn_conntrack_max )); then
                 echo "net.netfilter.nf_conntrack_max = $dyn_conntrack_max"
             fi
-            echo "net.netfilter.nf_conntrack_tcp_timeout_established = 7200"
+            echo "net.netfilter.nf_conntrack_tcp_timeout_established = 3600"
+            if [[ -e /proc/sys/net/netfilter/nf_conntrack_udp_timeout ]]; then
+                echo "net.netfilter.nf_conntrack_udp_timeout = 30"
+            fi
             echo "net.netfilter.nf_conntrack_udp_timeout_stream = 60"
         fi
     } > "$sysctl_conf"
 
     # Apply sysctl settings safely
-    sysctl -p "$sysctl_conf" >/dev/null 2>&1 || sysctl --system >/dev/null 2>&1 || true
+    sysctl -e -p "$sysctl_conf" >/dev/null 2>&1 || sysctl --system >/dev/null 2>&1 || true
 
     # Systemd LimitNOFILE override for HAProxy
     mkdir -p /etc/systemd/system/haproxy.service.d
@@ -646,13 +662,19 @@ LimitNOFILE=1048576
 EOF
     systemctl daemon-reload >/dev/null 2>&1 || true
 
-    # Golden NIC offload tuning: TSO/GSO on for low CPU proxying, GRO off to prevent GRE/IPIP tunnel drops
-    if command -v ethtool >/dev/null 2>&1; then
-        local def_iface
-        def_iface=$(ip route show default 2>/dev/null | awk '{print $5; exit}')
-        if [[ -n "$def_iface" ]]; then
-            ethtool -K "$def_iface" tso on gso on gro off >/dev/null 2>&1 || true
-        fi
+    local def_iface
+    def_iface=$(detect_wan_iface)
+
+    # Golden NIC offload tuning: TSO/GSO on for low CPU proxying, GRO off to prevent GRE/IPIP tunnel drops;
+    # disable UDP tunnel segmentation offload to prevent virtual/NIC checksum & GSO bugs on FOU tunnels
+    if command -v ethtool >/dev/null 2>&1 && [[ -n "$def_iface" ]]; then
+        ethtool -K "$def_iface" tso on gso on gro off >/dev/null 2>&1 || true
+        ethtool -K "$def_iface" tx-udp_tnl-segmentation off tx-udp_tnl-csum-segmentation off >/dev/null 2>&1 || true
+    fi
+
+    # Raise fq flow_limit from kernel default 100p to 1000p to prevent tail drops on single-tuple UDP tunnels
+    if (( bbr )) && command -v tc >/dev/null 2>&1 && [[ -n "$def_iface" ]]; then
+        tc qdisc replace dev "$def_iface" root fq flow_limit 1000 >/dev/null 2>&1 || tc qdisc replace dev "$def_iface" root fq >/dev/null 2>&1 || true
     fi
 
     msg_ok "Kernel network tuning and system limits applied (Profile: ${sys_mem_mb}MB RAM, BBR=$(( bbr )))."

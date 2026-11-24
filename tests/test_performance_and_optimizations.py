@@ -568,6 +568,221 @@ class TestPerformanceAndOptimizations(unittest.TestCase):
             self.assertIn("proxy_timeout 60s;", entries[0])
             self.assertIn("proxy_protocol on;", entries[0])
 
+    def test_nftables_o1_maps_vmaps_syn_mss_and_grouping(self):
+        """Verifies O(1) map/vmap generation without `th`/`dnat ip to`, strict raw_prerouting grouping, and syn_mss."""
+        from core.firewall import generate_nftables_ruleset
+
+        dnat_rules = [
+            '        tcp dport 1000 dnat to 5.199.136.72:1000',
+            '        udp dport 1000 dnat to 5.199.136.72:1000',
+            '        tcp dport 9102 dnat to 5.199.130.135:9102',
+            '        udp dport 9102 dnat to 5.199.130.135:9102',
+            # Port-translated rule must remain linear (cannot go into 1:1 map)
+            '        tcp dport 443 dnat to 10.88.1.2:8443',
+            # Range and exclusion rules must remain linear
+            '        tcp dport 20000-20010 dnat to 10.88.1.2',
+            '        iifname "eth0" tcp dport != { 22, 443, 1000, 9102, 8090 } dnat to 10.10.1.2',
+        ]
+        raw_rules = [
+            # Stateful DSR relay rules (no notrack, iifname != "eth0")
+            '        iifname != "eth0" tcp dport 3001 ip daddr set 185.215.229.193',
+            '        iifname != "eth0" tcp dport 3002 ip daddr set 185.215.229.194',
+            # Stateless DSR rules (with notrack, iifname "eth0")
+            '        iifname "eth0" tcp dport 4001 notrack ip daddr set 10.10.10.2',
+            '        iifname "eth0" tcp dport 4002 notrack ip daddr set 10.10.10.3',
+        ]
+        dsr_mss_rules = [
+            '        tcp flags syn ip daddr 5.199.136.72 tcp option maxseg size > 1340 tcp option maxseg size set 1340',
+            '        tcp flags syn ip saddr 5.199.136.72 tcp option maxseg size > 1340 tcp option maxseg size set 1340',
+        ]
+        rs = generate_nftables_ruleset(
+            dnat_rules,
+            rule_ports={1000, 9102, 443, 3001, 3002, 4001, 4002},
+            rule_ranges={"20000-20010"},
+            raw_rules=raw_rules,
+            dsr_mss_rules=dsr_mss_rules,
+            has_untracked=True,
+            enable_ipv6=True,
+        )
+
+        # Compatibility guard: zero `th` or `dnat ip to` syntax (must work on nftables 0.9.3 / Ubuntu 20.04)
+        self.assertNotIn("th dport", rs)
+        self.assertNotIn("th sport", rs)
+        self.assertNotIn("dnat ip to", rs)
+
+        # Shared O(1) DNAT map for 1000 and 9102 (separate tcp/udp dport lookups)
+        self.assertIn("map dnat_map_0", rs)
+        self.assertIn("1000 : 5.199.136.72, 9102 : 5.199.130.135", rs)
+        self.assertIn("dnat to tcp dport map @dnat_map_0", rs)
+        self.assertIn("dnat to udp dport map @dnat_map_0", rs)
+        # Port-translated, range, and excluded rules remain linear and excluded comes after specific maps
+        self.assertIn("tcp dport 443 dnat to 10.88.1.2:8443", rs)
+        self.assertIn("tcp dport 20000-20010 dnat to 10.88.1.2", rs)
+        self.assertLess(rs.index("dnat to tcp dport map @dnat_map_0"), rs.index("tcp dport != { 22, 443, 1000, 9102, 8090 }"))
+
+        # Mixed raw_rules: MUST NOT prepend `iifname "eth0" accept` because stateless DSR uses `iifname "eth0"`
+        raw_section = rs.split("chain raw_prerouting {", 1)[1].split("}", 1)[0]
+        self.assertNotIn('iifname "eth0" accept', raw_section)
+        # Separate maps for stateful vs notrack raw rules, and safe @raw_nt_set for notrack
+        self.assertIn("map raw_dst_map_0", rs)
+        self.assertIn("map raw_dst_map_1", rs)
+        self.assertIn("set raw_nt_set_1", rs)
+        self.assertIn('iifname "eth0" tcp dport @raw_nt_set_1 notrack', raw_section)
+        self.assertIn('iifname "eth0" ip daddr set tcp dport map @raw_dst_map_1', raw_section)
+        self.assertIn('iifname != "eth0" ip daddr set tcp dport map @raw_dst_map_0', raw_section)
+
+        # syn_mss subchain & O(1) vmap counters preserving cnt_in_* / cnt_out_*
+        self.assertIn("chain syn_mss {", rs)
+        self.assertIn("tcp flags & (syn|rst) == syn jump syn_mss", rs)
+        self.assertIn("map vmap_in {", rs)
+        self.assertIn("map vmap_out {", rs)
+        self.assertIn("chain c_in_1000 { counter name cnt_in_1000; }", rs)
+        self.assertIn("chain c_out_9102 { counter name cnt_out_9102; }", rs)
+        self.assertIn("tcp dport vmap @vmap_in", rs)
+        self.assertIn("udp dport vmap @vmap_in", rs)
+        self.assertIn("tcp sport vmap @vmap_out", rs)
+        self.assertIn("udp sport vmap @vmap_out", rs)
+        self.assertIn("tcp dport 20000-20010 counter name cnt_in_20000_20010", rs)
+
+        # Change B: IPv6 table must have ZERO hook chains when no IPv6 rules exist, keeping only counters
+        ip6_section = rs.split("table ip6 xfwd_orchestrator {", 1)[1]
+        self.assertIn("counter cnt_in_1000 { }", ip6_section)
+        self.assertNotIn("chain prerouting", ip6_section)
+        self.assertNotIn("chain postrouting", ip6_section)
+        self.assertNotIn("chain forward", ip6_section)
+
+    def test_nftables_early_wan_bypass_and_linear_fallback(self):
+        """Verifies early WAN accept when all raw/dnat rules use `iifname !=` and linear fallback on nft -c -f failure."""
+        import core.firewall as fw
+
+        # 1. Early WAN accept when ALL raw & dnat rules exclude WAN
+        rs_bypass = fw.generate_nftables_ruleset(
+            ['        iifname != "eth0" tcp dport 1001 dnat to 5.199.136.72:1001'],
+            raw_rules=['        iifname != "eth0" tcp dport 1001 ip daddr set 185.215.229.193'],
+            rule_ports={1001},
+            enable_ipv6=False,
+        )
+        raw_sec = rs_bypass.split("chain raw_prerouting {", 1)[1].split("}", 1)[0]
+        pre_sec = rs_bypass.split("chain prerouting {", 1)[1].split("}", 1)[0]
+        self.assertTrue(raw_sec.strip().splitlines()[1].strip() == 'iifname "eth0" accept')
+        self.assertTrue(pre_sec.strip().splitlines()[1].strip() == 'iifname "eth0" accept')
+
+        # 2. Linear fallback when `nft -c -f` rejects map/vmap on legacy kernels
+        dnat_multi = [
+            '        tcp dport 1001 dnat to 10.88.1.2:1001',
+            '        tcp dport 1002 dnat to 10.88.1.3:1002',
+        ]
+        called_inputs = []
+
+        def fake_popen(*args, **kwargs):
+            proc = MagicMock()
+            def fake_comm(input=None):
+                called_inputs.append(input)
+                if input and "vmap" in input:
+                    proc.returncode = 1
+                    return ("", "syntax error, unexpected vmap")
+                proc.returncode = 0
+                return ("", "")
+            proc.communicate.side_effect = fake_comm
+            return proc
+
+        orig_flag = fw._NFT_MAPS_SUPPORTED
+        try:
+            fw._NFT_MAPS_SUPPORTED = None
+            with patch("shutil.which", return_value="/usr/sbin/nft"), \
+                 patch("subprocess.run", return_value=MagicMock(returncode=0)), \
+                 patch("subprocess.Popen", side_effect=fake_popen):
+                ok, err, new_content = fw.apply_nftables(dnat_multi, rule_ports={1001, 1002})
+            self.assertTrue(ok, err)
+            self.assertIsNone(err)
+            self.assertFalse(fw._NFT_MAPS_SUPPORTED)
+            self.assertNotIn("vmap", new_content)
+            self.assertIn("tcp dport 1001 dnat to 10.88.1.2:1001", new_content)
+            self.assertGreaterEqual(len(called_inputs), 3)
+        finally:
+            fw._NFT_MAPS_SUPPORTED = orig_flag
+
+    def test_qdisc_fq_flow_limit_and_xforwarder_tuning_flags(self):
+        """Verifies startup `ensure_fq_qdisc` helper and xforwarder.sh Change D tuning invariants."""
+        from core.firewall import ensure_fq_qdisc
+
+        with patch("core.firewall.sys.platform", "linux"), \
+             patch("core.firewall.os.path.isfile", return_value=True), \
+             patch("builtins.open", unittest.mock.mock_open(read_data="fq\n")), \
+             patch("core.firewall._find_tc_bin", return_value="/sbin/tc"), \
+             patch("subprocess.run", return_value=MagicMock(returncode=0)) as mock_tc:
+            self.assertTrue(ensure_fq_qdisc("eth0", flow_limit=1000))
+            mock_tc.assert_called_once_with(
+                ["/sbin/tc", "qdisc", "replace", "dev", "eth0", "root", "fq", "flow_limit", "1000"],
+                stdout=-3,
+                stderr=-3,
+                timeout=2.0,
+                check=False,
+            )
+
+        # Invalid interface name is rejected cleanly
+        self.assertFalse(ensure_fq_qdisc("eth0; rm -rf /", flow_limit=1000))
+
+        # Verify xforwarder.sh enforces gro off + udp tnl off + fq flow_limit 1000 + NAPI/conntrack values
+        sh_path = os.path.join(REPO_ROOT, "xforwarder.sh")
+        with open(sh_path, "r", encoding="utf-8") as f:
+            sh_text = f.read()
+        self.assertIn("ethtool -K \"$def_iface\" tso on gso on gro off", sh_text)
+        self.assertIn("tx-udp_tnl-segmentation off tx-udp_tnl-csum-segmentation off", sh_text)
+        self.assertIn("tc qdisc replace dev \"$def_iface\" root fq flow_limit 1000", sh_text)
+        self.assertIn("net.core.netdev_max_backlog = 100000", sh_text)
+        self.assertIn("net.core.netdev_budget=1200", sh_text)
+        self.assertIn("net.core.netdev_budget_usecs=8000", sh_text)
+        self.assertIn("net.core.dev_weight=128", sh_text)
+        self.assertIn("net.netfilter.nf_conntrack_tcp_timeout_established = 3600", sh_text)
+        self.assertIn("net.netfilter.nf_conntrack_udp_timeout = 30", sh_text)
+        self.assertIn("net.netfilter.nf_conntrack_udp_timeout_stream = 60", sh_text)
+
+    def test_nftables_optimization_edge_cases_and_ipv6_multiport(self):
+        """Verifies IPv6 multi-port O(1) maps, invalid-port/IP passthrough guards, and ensure_fq_qdisc fallbacks."""
+        import core.firewall as fw
+
+        # 1. IPv6 multi-port rules produce IPv6 map (without brackets inside map) + vmap + syn_mss
+        rs_v6 = fw.generate_nftables_ruleset(
+            [
+                '        tcp dport 8443 dnat to [2001:db8::1]:8443',
+                '        tcp dport 9443 dnat to [2001:db8::2]:9443',
+                # Out-of-range port must never enter map
+                '        tcp dport 99999 dnat to [2001:db8::3]:99999',
+            ],
+            rule_ports={8443, 9443},
+            dsr_mss_rules=['        tcp flags syn ip6 daddr 2001:db8::1 tcp option maxseg size > 1340 tcp option maxseg size set 1340'],
+            enable_ipv6=True,
+        )
+        ip6_part = rs_v6.split("table ip6 xfwd_orchestrator {", 1)[1]
+        self.assertIn("type inet_service : ipv6_addr", ip6_part)
+        self.assertIn("8443 : 2001:db8::1, 9443 : 2001:db8::2", ip6_part)
+        self.assertNotIn("99999 :", ip6_part)
+        self.assertIn("tcp dport 99999 dnat to [2001:db8::3]:99999", ip6_part)
+        self.assertIn("chain syn_mss {", ip6_part)
+        self.assertIn("tcp dport vmap @vmap_in", ip6_part)
+
+        # 2. ensure_fq_qdisc skips when default_qdisc is not fq, and falls back to plain `root fq` if flow_limit fails
+        with patch("core.firewall.sys.platform", "linux"), \
+             patch("core.firewall.os.path.isfile", return_value=True), \
+             patch("builtins.open", unittest.mock.mock_open(read_data="fq_codel\n")), \
+             patch("core.firewall._find_tc_bin", return_value="/sbin/tc"), \
+             patch("subprocess.run") as mock_tc_skip:
+            self.assertFalse(fw.ensure_fq_qdisc("eth0", flow_limit=1000))
+            mock_tc_skip.assert_not_called()
+
+        with patch("core.firewall.sys.platform", "linux"), \
+             patch("core.firewall.os.path.isfile", return_value=True), \
+             patch("builtins.open", unittest.mock.mock_open(read_data="fq\n")), \
+             patch("core.firewall._find_tc_bin", return_value="/sbin/tc"), \
+             patch("subprocess.run", side_effect=[MagicMock(returncode=1), MagicMock(returncode=0)]) as mock_tc_fb:
+            self.assertTrue(fw.ensure_fq_qdisc("eth0", flow_limit=1000))
+            self.assertEqual(mock_tc_fb.call_count, 2)
+            self.assertEqual(
+                mock_tc_fb.call_args_list[1][0][0],
+                ["/sbin/tc", "qdisc", "replace", "dev", "eth0", "root", "fq"],
+            )
+
 
 if __name__ == "__main__":
     unittest.main()

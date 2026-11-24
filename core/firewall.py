@@ -29,15 +29,70 @@ def is_ipv6_supported() -> bool:
         return False
 
 
-def _find_conntrack_bin() -> Optional[str]:
-    """Locate the conntrack binary even when systemd restricts PATH."""
-    found = shutil.which("conntrack")
+def _find_system_bin(name: str, extra_dirs: Tuple[str, ...] = ("/usr/sbin", "/sbin", "/usr/bin", "/bin")) -> Optional[str]:
+    """Locate a system binary even when systemd restricts PATH."""
+    found = shutil.which(name)
     if found:
         return found
-    for candidate in ("/usr/sbin/conntrack", "/sbin/conntrack", "/usr/bin/conntrack"):
+    for d in extra_dirs:
+        candidate = f"{d}/{name}"
         if os.path.isfile(candidate) and os.access(candidate, os.X_OK):
             return candidate
     return None
+
+
+def _find_conntrack_bin() -> Optional[str]:
+    """Locate the conntrack binary even when systemd restricts PATH."""
+    return _find_system_bin("conntrack", ("/usr/sbin", "/sbin", "/usr/bin"))
+
+
+def _find_tc_bin() -> Optional[str]:
+    """Locate the tc binary even when systemd restricts PATH."""
+    return _find_system_bin("tc", ("/sbin", "/usr/sbin", "/bin", "/usr/bin"))
+
+
+def ensure_fq_qdisc(wan_iface: str, flow_limit: int = 1000) -> bool:
+    """
+    Re-applies `tc qdisc replace dev <wan> root fq flow_limit <N>` on Linux startup
+    when `fq` is the active default qdisc (e.g. with BBR) so high-PPS tunnel flows
+    avoid the kernel default 100p `flows_plimit` tail drops across reboots.
+    """
+    if sys.platform == "win32":
+        return False
+    clean_iface = str(wan_iface or "").strip()
+    if not clean_iface or not IFACE_NAME_REGEX.match(clean_iface):
+        return False
+    safe_limit = max(100, min(int(flow_limit or 1000), 100000))
+    try:
+        if os.path.isfile("/proc/sys/net/core/default_qdisc"):
+            with open("/proc/sys/net/core/default_qdisc", "r", encoding="utf-8") as f:
+                if f.read().strip() != "fq":
+                    return False
+    except Exception:
+        pass
+    tc_bin = _find_tc_bin()
+    if not tc_bin:
+        return False
+    try:
+        res = subprocess.run(
+            [tc_bin, "qdisc", "replace", "dev", clean_iface, "root", "fq", "flow_limit", str(safe_limit)],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            timeout=2.0,
+            check=False,
+        )
+        if res.returncode == 0:
+            return True
+        res_fb = subprocess.run(
+            [tc_bin, "qdisc", "replace", "dev", clean_iface, "root", "fq"],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            timeout=2.0,
+            check=False,
+        )
+        return res_fb.returncode == 0
+    except Exception:
+        return False
 
 
 def flush_conntrack(port: Any, proto: Optional[str] = None, reply_src: Optional[str] = None) -> None:
@@ -264,6 +319,25 @@ def _format_postrouting_masquerades(custom_oifs: Optional[Set[str]] = None) -> s
 
 DSR_SYSCTL_CONF_PATH = "/etc/sysctl.d/99-xforwarder-dsr.conf"
 _DSR_SYSCTL_APPLIED = False
+_NFT_MAPS_SUPPORTED: Optional[bool] = None
+
+_IIF_NEQ_PREFIX_RE = re.compile(r'^\s*iifname\s+!=\s+"([^"]+)"\s+')
+_RAW_SINGLE_RE = re.compile(
+    r"^\s*"
+    r'(?:(iifname\s+(?:!=\s*)?"[^"]+")\s+)?'
+    r"(?:(ip6?\s+daddr\s+\S+)\s+)?"
+    r"(tcp|udp)\s+dport\s+(\d+)\s+"
+    r"(notrack\s+)?"
+    r"(ip6?)\s+daddr\s+set\s+(\S+)\s*$"
+)
+_DNAT_SINGLE_RE = re.compile(
+    r"^\s*"
+    r'(?:(iifname\s+(?:!=\s*)?"[^"]+")\s+)?'
+    r"(?:(ip6?\s+daddr\s+\S+)\s+)?"
+    r"(tcp|udp)\s+dport\s+(\d+)\s+"
+    r"dnat\s+to\s+(?:\[([0-9a-fA-F:]+)\]|([0-9.]+)):(\d+)\s*$"
+)
+_EXCL_DPORT_RE = re.compile(r"\bdport\s+!=")
 
 
 def cleanup_dsr_sysctl(sysctl_conf_path: str = DSR_SYSCTL_CONF_PATH) -> None:
@@ -310,12 +384,7 @@ def ensure_dsr_sysctl(
     except Exception:
         pass
 
-    sysctl_bin = shutil.which("sysctl")
-    if not sysctl_bin:
-        for candidate in ("/sbin/sysctl", "/usr/sbin/sysctl", "/bin/sysctl"):
-            if os.path.isfile(candidate) and os.access(candidate, os.X_OK):
-                sysctl_bin = candidate
-                break
+    sysctl_bin = _find_system_bin("sysctl", ("/sbin", "/usr/sbin", "/bin"))
     if not sysctl_bin:
         return
 
@@ -345,6 +414,374 @@ def _is_ipv6_nft_statement(stmt: str) -> bool:
     )
 
 
+def _detect_early_wan_bypass(rules: List[str]) -> Optional[str]:
+    """Returns WAN iface if every rule in the chain explicitly excludes it via `iifname != "<wan>"`."""
+    if not rules:
+        return None
+    ifaces: Set[str] = set()
+    for r in rules:
+        m = _IIF_NEQ_PREFIX_RE.match(r)
+        if not m:
+            return None
+        ifaces.add(m.group(1))
+    return next(iter(ifaces)) if len(ifaces) == 1 else None
+
+
+def _format_nft_map_block(name: str, key_type: str, val_type: str, elements: List[str], kind: str = "map") -> str:
+    """Formats a named NFTables map or set declaration block."""
+    if kind == "set":
+        elems = ", ".join(elements)
+        return (
+            f"    set {name} {{\n"
+            f"        type {key_type}\n"
+            f"        elements = {{ {elems} }}\n"
+            f"    }}"
+        )
+    elems = ", ".join(elements)
+    return (
+        f"    map {name} {{\n"
+        f"        type {key_type} : {val_type}\n"
+        f"        elements = {{ {elems} }}\n"
+        f"    }}"
+    )
+
+
+def _optimize_raw_rules(raw_rules: List[str], ip_kw: str, optimize_maps: bool = True) -> Tuple[List[str], List[str]]:
+    """
+    Optimizes raw_prerouting rules with optional early WAN bypass and O(1) maps
+    grouped strictly by (iif_clause, daddr_clause, has_notrack, ip_kw).
+    """
+    if not raw_rules:
+        return [], []
+
+    wan_bypass = _detect_early_wan_bypass(raw_rules)
+    bypass_lines = [f'        iifname "{wan_bypass}" accept'] if wan_bypass else []
+
+    if not optimize_maps:
+        return [], bypass_lines + list(raw_rules)
+
+    grouped: Dict[Tuple[str, str, bool, str], Dict[str, Dict[int, str]]] = {}
+    group_order: List[Tuple[str, str, bool, str]] = []
+    group_raw_lines: Dict[Tuple[str, str, bool, str, str], List[str]] = {}
+    passthrough: List[str] = []
+
+    for r in raw_rules:
+        m = _RAW_SINGLE_RE.match(r)
+        if not m:
+            passthrough.append(r)
+            continue
+        iif_c, daddr_c, proto, port_s, nt_kw, r_ip_kw, target_ip = m.groups()
+        port_i = int(port_s)
+        try:
+            ip_obj = ipaddress.ip_address(target_ip)
+        except ValueError:
+            passthrough.append(r)
+            continue
+        if not (1 <= port_i <= 65535) or (ip_obj.version == 6) != ((r_ip_kw or ip_kw) == "ip6"):
+            passthrough.append(r)
+            continue
+        gkey = (iif_c or "", daddr_c or "", bool(nt_kw), r_ip_kw or ip_kw)
+        if gkey not in grouped:
+            grouped[gkey] = {"tcp": {}, "udp": {}}
+            group_order.append(gkey)
+        p_map = grouped[gkey][proto]
+        if port_i not in p_map:
+            p_map[port_i] = str(ip_obj)
+            group_raw_lines.setdefault((*gkey, proto), []).append(r)
+        else:
+            passthrough.append(r)
+
+    addr_type = "ipv6_addr" if ip_kw == "ip6" else "ipv4_addr"
+    map_defs: List[str] = []
+    opt_rules: List[str] = list(bypass_lines)
+    map_idx = 0
+
+    for gkey in group_order:
+        iif_c, daddr_c, has_nt, r_ip_kw = gkey
+        prefix = "".join(f"{c} " for c in (iif_c, daddr_c) if c)
+        tcp_map = grouped[gkey]["tcp"]
+        udp_map = grouped[gkey]["udp"]
+
+        if len(tcp_map) >= 2 and tcp_map == udp_map:
+            map_name = f"raw_dst_map_{map_idx}"
+            elems = [f"{p} : {tcp_map[p]}" for p in sorted(tcp_map)]
+            map_defs.append(_format_nft_map_block(map_name, "inet_service", addr_type, elems))
+            if has_nt:
+                set_name = f"raw_nt_set_{map_idx}"
+                set_elems = [str(p) for p in sorted(tcp_map)]
+                map_defs.append(_format_nft_map_block(set_name, "inet_service", "", set_elems, kind="set"))
+                for p_name in ("tcp", "udp"):
+                    opt_rules.append(f"        {prefix}{p_name} dport @{set_name} notrack")
+                    opt_rules.append(f"        {prefix}{r_ip_kw} daddr set {p_name} dport map @{map_name}")
+            else:
+                for p_name in ("tcp", "udp"):
+                    opt_rules.append(f"        {prefix}{r_ip_kw} daddr set {p_name} dport map @{map_name}")
+            map_idx += 1
+            continue
+
+        for p_name in ("tcp", "udp"):
+            p_map = grouped[gkey][p_name]
+            if len(p_map) >= 2:
+                map_name = f"raw_dst_map_{map_idx}"
+                elems = [f"{p} : {p_map[p]}" for p in sorted(p_map)]
+                map_defs.append(_format_nft_map_block(map_name, "inet_service", addr_type, elems))
+                if has_nt:
+                    set_name = f"raw_nt_set_{map_idx}"
+                    set_elems = [str(p) for p in sorted(p_map)]
+                    map_defs.append(_format_nft_map_block(set_name, "inet_service", "", set_elems, kind="set"))
+                    opt_rules.append(f"        {prefix}{p_name} dport @{set_name} notrack")
+                opt_rules.append(f"        {prefix}{r_ip_kw} daddr set {p_name} dport map @{map_name}")
+                map_idx += 1
+            elif len(p_map) == 1:
+                opt_rules.extend(group_raw_lines.get((*gkey, p_name), []))
+
+    opt_rules.extend(passthrough)
+    return map_defs, opt_rules
+
+
+def _optimize_dnat_rules(dnat_rules: List[str], ip_kw: str, optimize_maps: bool = True) -> Tuple[List[str], List[str]]:
+    """
+    Optimizes prerouting DNAT rules with optional early WAN bypass and O(1) maps
+    for same-port 1:1 mappings grouped by (iif_clause, daddr_clause, ip_kw).
+    """
+    if not dnat_rules:
+        return [], []
+
+    wan_bypass = _detect_early_wan_bypass(dnat_rules)
+    bypass_lines = [f'        iifname "{wan_bypass}" accept'] if wan_bypass else []
+
+    if not optimize_maps:
+        return [], bypass_lines + list(dnat_rules)
+
+    grouped: Dict[Tuple[str, str, str], Dict[str, Dict[int, str]]] = {}
+    group_order: List[Tuple[str, str, str]] = []
+    group_raw_lines: Dict[Tuple[str, str, str, str], List[str]] = {}
+    specific_passthrough: List[str] = []
+    wildcard_passthrough: List[str] = []
+
+    for r in dnat_rules:
+        m = _DNAT_SINGLE_RE.match(r)
+        if m:
+            iif_c, daddr_c, proto, in_p_s, v6_t, v4_t, out_p_s = m.groups()
+            in_p, out_p = int(in_p_s), int(out_p_s)
+            if in_p == out_p and 1 <= in_p <= 65535:
+                r_ip_kw = "ip6" if v6_t else "ip"
+                try:
+                    ip_obj = ipaddress.ip_address(v6_t or v4_t)
+                except ValueError:
+                    ip_obj = None
+                if ip_obj is not None and (ip_obj.version == 6) == (r_ip_kw == "ip6"):
+                    gkey = (iif_c or "", daddr_c or "", r_ip_kw)
+                    if gkey not in grouped:
+                        grouped[gkey] = {"tcp": {}, "udp": {}}
+                        group_order.append(gkey)
+                    p_map = grouped[gkey][proto]
+                    if in_p not in p_map:
+                        p_map[in_p] = str(ip_obj)
+                        group_raw_lines.setdefault((*gkey, proto), []).append(r)
+                        continue
+        if _EXCL_DPORT_RE.search(r):
+            wildcard_passthrough.append(r)
+        else:
+            specific_passthrough.append(r)
+
+    addr_type = "ipv6_addr" if ip_kw == "ip6" else "ipv4_addr"
+    map_defs: List[str] = []
+    opt_rules: List[str] = list(bypass_lines)
+    map_idx = 0
+
+    for gkey in group_order:
+        iif_c, daddr_c, _ = gkey
+        prefix = "".join(f"{c} " for c in (iif_c, daddr_c) if c)
+        tcp_map = grouped[gkey]["tcp"]
+        udp_map = grouped[gkey]["udp"]
+
+        if len(tcp_map) >= 2 and tcp_map == udp_map:
+            map_name = f"dnat_map_{map_idx}"
+            elems = [f"{p} : {tcp_map[p]}" for p in sorted(tcp_map)]
+            map_defs.append(_format_nft_map_block(map_name, "inet_service", addr_type, elems))
+            for p_name in ("tcp", "udp"):
+                opt_rules.append(f"        {prefix}dnat to {p_name} dport map @{map_name}")
+            map_idx += 1
+            continue
+
+        for p_name in ("tcp", "udp"):
+            p_map = grouped[gkey][p_name]
+            if len(p_map) >= 2:
+                map_name = f"dnat_map_{map_idx}"
+                elems = [f"{p} : {p_map[p]}" for p in sorted(p_map)]
+                map_defs.append(_format_nft_map_block(map_name, "inet_service", addr_type, elems))
+                opt_rules.append(f"        {prefix}dnat to {p_name} dport map @{map_name}")
+                map_idx += 1
+            elif len(p_map) == 1:
+                opt_rules.extend(group_raw_lines.get((*gkey, p_name), []))
+
+    opt_rules.extend(specific_passthrough)
+    opt_rules.extend(wildcard_passthrough)
+    return map_defs, opt_rules
+
+
+def _build_forward_counter_vmaps(
+    all_ports: Set[int],
+    all_ranges: Set[str],
+    excl_counters: List[Tuple[str, str]],
+    has_untracked: bool,
+    optimize_maps: bool = True
+) -> Tuple[List[str], List[str], List[str]]:
+    """
+    Builds O(1) vmap counter chains & maps when >= 2 single ports exist,
+    plus linear rules for port ranges and negated exclusion rules.
+    Returns (vmap_defs, vmap_chains, forward_counter_lines).
+    """
+    vmap_defs: List[str] = []
+    vmap_chains: List[str] = []
+    forward_lines: List[str] = []
+    sorted_ports = sorted(all_ports)
+
+    if optimize_maps and len(sorted_ports) >= 2:
+        in_elems: List[str] = []
+        out_elems: List[str] = []
+        for p in sorted_ports:
+            vmap_chains.append(f"    chain c_in_{p} {{ counter name cnt_in_{p}; }}")
+            vmap_chains.append(f"    chain c_out_{p} {{ counter name cnt_out_{p}; }}")
+            in_elems.append(f"{p} : jump c_in_{p}")
+            out_elems.append(f"{p} : jump c_out_{p}")
+        vmap_defs.append(_format_nft_map_block("vmap_in", "inet_service", "verdict", in_elems))
+        vmap_defs.append(_format_nft_map_block("vmap_out", "inet_service", "verdict", out_elems))
+        forward_lines.extend([
+            "        tcp dport vmap @vmap_in",
+            "        udp dport vmap @vmap_in",
+            "        tcp sport vmap @vmap_out",
+            "        udp sport vmap @vmap_out",
+        ])
+    else:
+        for p in sorted_ports:
+            forward_lines.append(f"        tcp dport {p} counter name cnt_in_{p}")
+            forward_lines.append(f"        tcp sport {p} counter name cnt_out_{p}")
+            forward_lines.append(f"        udp dport {p} counter name cnt_in_{p}")
+            forward_lines.append(f"        udp sport {p} counter name cnt_out_{p}")
+
+    for pr in sorted(all_ranges):
+        cname = pr.replace("-", "_")
+        forward_lines.append(f"        tcp dport {pr} counter name cnt_in_{cname}")
+        forward_lines.append(f"        tcp sport {pr} counter name cnt_out_{cname}")
+        forward_lines.append(f"        udp dport {pr} counter name cnt_in_{cname}")
+        forward_lines.append(f"        udp sport {pr} counter name cnt_out_{cname}")
+
+    for proto_e, expr_e in excl_counters:
+        forward_lines.append(f"        {proto_e} dport {expr_e} ct status dnat counter name cnt_in_1_excl")
+        if has_untracked:
+            forward_lines.append(f"        {proto_e} dport {expr_e} ct state untracked counter name cnt_in_1_excl")
+        forward_lines.append(f"        {proto_e} sport {expr_e} counter name cnt_out_1_excl")
+
+    return vmap_defs, vmap_chains, forward_lines
+
+
+def _build_family_table(
+    family: str,
+    dnat_rules: List[str],
+    raw_rules: List[str],
+    snat_rules: List[str],
+    mss_rules: List[str],
+    extra_chains: List[str],
+    counter_defs_str: str,
+    all_ports: Set[int],
+    all_ranges: Set[str],
+    excl_counters: List[Tuple[str, str]],
+    base_postrouting: str,
+    has_untracked: bool,
+    optimize_maps: bool
+) -> str:
+    """Renders an isolated table ip/ip6 xfwd_orchestrator block."""
+    if family == "ip6" and not (dnat_rules or raw_rules or snat_rules or mss_rules or extra_chains):
+        # Emit counter declarations only (zero active Netfilter hooks when IPv6 is unused)
+        body = counter_defs_str.rstrip()
+        inner = f"\n{body}\n" if body else "\n"
+        return (
+            f"table ip6 xfwd_orchestrator\n"
+            f"delete table ip6 xfwd_orchestrator\n\n"
+            f"table ip6 xfwd_orchestrator {{{inner}}}"
+        )
+
+    raw_defs, opt_raw_rules = _optimize_raw_rules(raw_rules, family, optimize_maps=optimize_maps)
+    dnat_defs, opt_dnat_rules = _optimize_dnat_rules(dnat_rules, family, optimize_maps=optimize_maps)
+    vmap_defs, vmap_chains, forward_counter_lines = _build_forward_counter_vmaps(
+        all_ports, all_ranges, excl_counters, has_untracked=has_untracked, optimize_maps=optimize_maps
+    )
+
+    decl_blocks: List[str] = []
+    if counter_defs_str.strip():
+        decl_blocks.append(counter_defs_str.strip("\n"))
+    if raw_defs:
+        decl_blocks.append("\n\n".join(raw_defs))
+    if dnat_defs:
+        decl_blocks.append("\n\n".join(dnat_defs))
+    if vmap_defs:
+        decl_blocks.append("\n\n".join(vmap_defs))
+    if extra_chains:
+        decl_blocks.append("\n\n".join(extra_chains))
+    if vmap_chains:
+        decl_blocks.append("\n".join(vmap_chains))
+
+    syn_mss_chain = ""
+    if mss_rules:
+        stripped_mss = [re.sub(r"^\s*tcp\s+flags\s+syn\s+", "        ", r) for r in mss_rules]
+        syn_mss_chain = (
+            "    chain syn_mss {\n"
+            "        tcp option maxseg size set rt mtu\n"
+            + "\n".join(stripped_mss)
+            + "\n    }"
+        )
+        decl_blocks.append(syn_mss_chain)
+        forward_mss_line = "        tcp flags & (syn|rst) == syn jump syn_mss"
+    else:
+        forward_mss_line = "        tcp flags syn tcp option maxseg size set rt mtu"
+
+    if opt_raw_rules:
+        decl_blocks.append(
+            "    chain raw_prerouting {\n"
+            "        type filter hook prerouting priority raw; policy accept;\n"
+            + "\n".join(opt_raw_rules)
+            + "\n    }"
+        )
+
+    no_dnat_comment = f"        # No active NFTables {'IPv6' if family == 'ip6' else 'IPv4'} DNAT rules"
+    dnat_block = "\n".join(opt_dnat_rules) if opt_dnat_rules else no_dnat_comment
+    postrouting_block = ("\n".join(snat_rules) + "\n" + base_postrouting) if snat_rules else base_postrouting
+    forward_counters_str = "\n".join(forward_counter_lines) + "\n" if forward_counter_lines else ""
+    pmtu_line = (
+        ("        icmpv6 type packet-too-big accept\n" if family == "ip6" else "        icmp type destination-unreachable accept\n")
+        if has_untracked else ""
+    )
+    ct_accept_line = (
+        "        ct state { established, related, untracked } accept"
+        if has_untracked else "        ct state { established, related } accept"
+    )
+
+    decl_prefix = ("\n\n".join(decl_blocks) + "\n\n") if decl_blocks else ""
+    return (
+        f"table {family} xfwd_orchestrator\n"
+        f"delete table {family} xfwd_orchestrator\n\n"
+        f"table {family} xfwd_orchestrator {{\n"
+        f"{decl_prefix}    chain prerouting {{\n"
+        f"        type nat hook prerouting priority dstnat; policy accept;\n"
+        f"{dnat_block}\n"
+        f"    }}\n\n"
+        f"    chain postrouting {{\n"
+        f"        type nat hook postrouting priority srcnat; policy accept;\n"
+        f"{postrouting_block}\n"
+        f"    }}\n\n"
+        f"    chain forward {{\n"
+        f"        type filter hook forward priority filter; policy accept;\n"
+        f"        # Automatically clamp TCP MSS to path MTU to prevent packet loss in GRE/IPIP tunnels\n"
+        f"{forward_mss_line}\n"
+        f"{forward_counters_str}{pmtu_line}        ct status dnat accept\n"
+        f"{ct_accept_line}\n"
+        f"    }}\n"
+        f"}}"
+    )
+
+
 def generate_nftables_ruleset(
     dnat_rules: List[str],
     rule_ports: Optional[Set[int]] = None,
@@ -355,9 +792,10 @@ def generate_nftables_ruleset(
     snat_rules: Optional[List[str]] = None,
     dsr_mss_rules: Optional[List[str]] = None,
     has_untracked: bool = False,
-    extra_chains: Optional[List[str]] = None
+    extra_chains: Optional[List[str]] = None,
+    optimize_maps: bool = True
 ) -> str:
-    """Generates a complete, isolated NFTables ruleset string (DNAT, LB maps/vmaps, DSR stateless/relay, single ports & ranges)."""
+    """Generates a complete, isolated NFTables ruleset string (O(1) maps/vmaps, syn_mss, DSR stateless/relay, single ports & ranges)."""
     if enable_ipv6 is None:
         enable_ipv6 = is_ipv6_supported()
 
@@ -393,8 +831,6 @@ def generate_nftables_ruleset(
         else:
             ipv4_snat_rules.append(r)
 
-    ipv4_block = "\n".join(ipv4_rules) if ipv4_rules else "        # No active NFTables IPv4 DNAT rules"
-
     all_ports = set(rule_ports or [])
     all_ranges = set(rule_ranges or [])
     excl_counters: List[Tuple[str, str]] = []
@@ -413,122 +849,68 @@ def generate_nftables_ruleset(
                 sp = int(m.group(1))
                 if m.group(2):
                     ep = int(m.group(2))
-                    if sp < ep:
+                    if 1 <= sp < ep <= 65535:
                         all_ranges.add(f"{sp}-{ep}")
-                    else:
+                    elif 1 <= sp <= 65535:
                         all_ports.add(sp)
-                else:
+                elif 1 <= sp <= 65535:
                     all_ports.add(sp)
             except ValueError:
                 pass
 
-    counter_defs = []
-    forward_counters = []
+    counter_defs: List[str] = []
     for p in sorted(list(all_ports)):
         counter_defs.append(f"    counter cnt_in_{p} {{ }}")
         counter_defs.append(f"    counter cnt_out_{p} {{ }}")
-        forward_counters.append(f"        tcp dport {p} counter name cnt_in_{p}")
-        forward_counters.append(f"        tcp sport {p} counter name cnt_out_{p}")
-        forward_counters.append(f"        udp dport {p} counter name cnt_in_{p}")
-        forward_counters.append(f"        udp sport {p} counter name cnt_out_{p}")
-
     for pr in sorted(list(all_ranges)):
         cname = pr.replace("-", "_")
         counter_defs.append(f"    counter cnt_in_{cname} {{ }}")
         counter_defs.append(f"    counter cnt_out_{cname} {{ }}")
-        forward_counters.append(f"        tcp dport {pr} counter name cnt_in_{cname}")
-        forward_counters.append(f"        tcp sport {pr} counter name cnt_out_{cname}")
-        forward_counters.append(f"        udp dport {pr} counter name cnt_in_{cname}")
-        forward_counters.append(f"        udp sport {pr} counter name cnt_out_{cname}")
-
     if excl_counters:
         counter_defs.append("    counter cnt_in_1_excl { }")
         counter_defs.append("    counter cnt_out_1_excl { }")
-        for proto_e, expr_e in excl_counters:
-            forward_counters.append(f"        {proto_e} dport {expr_e} ct status dnat counter name cnt_in_1_excl")
-            if has_untracked:
-                forward_counters.append(f"        {proto_e} dport {expr_e} ct state untracked counter name cnt_in_1_excl")
-            forward_counters.append(f"        {proto_e} sport {expr_e} counter name cnt_out_1_excl")
 
     counter_defs_str = "\n".join(counter_defs) + "\n\n" if counter_defs else ""
-    forward_counters_str = "\n".join(forward_counters) + "\n" if forward_counters else ""
 
     ipv4_mss_rules = [r for r in (dsr_mss_rules or []) if "ip6 daddr" not in r]
     ipv6_mss_rules = [r for r in (dsr_mss_rules or []) if "ip6 daddr" in r]
-    ipv4_mss_str = ("\n" + "\n".join(ipv4_mss_rules)) if ipv4_mss_rules else ""
-    ipv6_mss_str = ("\n" + "\n".join(ipv6_mss_rules)) if ipv6_mss_rules else ""
-    ct_accept_line = "        ct state { established, related, untracked } accept" if has_untracked else "        ct state { established, related } accept"
-    ipv4_pmtu_line = "        icmp type destination-unreachable accept\n" if has_untracked else ""
-    ipv6_pmtu_line = "        icmpv6 type packet-too-big accept\n" if has_untracked else ""
-
     base_postrouting = _format_postrouting_masquerades(custom_oifs)
-    ipv4_postrouting = ("\n".join(ipv4_snat_rules) + "\n" + base_postrouting) if ipv4_snat_rules else base_postrouting
-    ipv4_extra_block = ("\n\n".join(ipv4_extra_chains) + "\n\n") if ipv4_extra_chains else ""
-    ipv4_raw_chain = (
-        f"    chain raw_prerouting {{\n"
-        f"        type filter hook prerouting priority raw; policy accept;\n"
-        f"{chr(10).join(ipv4_raw_rules)}\n"
-        f"    }}\n\n"
-    ) if ipv4_raw_rules else ""
 
     tables_content = [
-        f"""table ip xfwd_orchestrator
-delete table ip xfwd_orchestrator
-
-table ip xfwd_orchestrator {{
-{counter_defs_str}{ipv4_extra_block}{ipv4_raw_chain}    chain prerouting {{
-        type nat hook prerouting priority dstnat; policy accept;
-{ipv4_block}
-    }}
-
-    chain postrouting {{
-        type nat hook postrouting priority srcnat; policy accept;
-{ipv4_postrouting}
-    }}
-
-    chain forward {{
-        type filter hook forward priority filter; policy accept;
-        # Automatically clamp TCP MSS to path MTU to prevent packet loss in GRE/IPIP tunnels
-        tcp flags syn tcp option maxseg size set rt mtu{ipv4_mss_str}
-{forward_counters_str}{ipv4_pmtu_line}        ct status dnat accept
-{ct_accept_line}
-    }}
-}}"""
+        _build_family_table(
+            family="ip",
+            dnat_rules=ipv4_rules,
+            raw_rules=ipv4_raw_rules,
+            snat_rules=ipv4_snat_rules,
+            mss_rules=ipv4_mss_rules,
+            extra_chains=ipv4_extra_chains,
+            counter_defs_str=counter_defs_str,
+            all_ports=all_ports,
+            all_ranges=all_ranges,
+            excl_counters=excl_counters,
+            base_postrouting=base_postrouting,
+            has_untracked=has_untracked,
+            optimize_maps=optimize_maps,
+        )
     ]
 
     if enable_ipv6:
-        ipv6_block = "\n".join(ipv6_rules) if ipv6_rules else "        # No active NFTables IPv6 DNAT rules"
-        ipv6_postrouting = ("\n".join(ipv6_snat_rules) + "\n" + base_postrouting) if ipv6_snat_rules else base_postrouting
-        ipv6_extra_block = ("\n\n".join(ipv6_extra_chains) + "\n\n") if ipv6_extra_chains else ""
-        ipv6_raw_chain = (
-            f"    chain raw_prerouting {{\n"
-            f"        type filter hook prerouting priority raw; policy accept;\n"
-            f"{chr(10).join(ipv6_raw_rules)}\n"
-            f"    }}\n\n"
-        ) if ipv6_raw_rules else ""
         tables_content.append(
-            f"""table ip6 xfwd_orchestrator
-delete table ip6 xfwd_orchestrator
-
-table ip6 xfwd_orchestrator {{
-{counter_defs_str}{ipv6_extra_block}{ipv6_raw_chain}    chain prerouting {{
-        type nat hook prerouting priority dstnat; policy accept;
-{ipv6_block}
-    }}
-
-    chain postrouting {{
-        type nat hook postrouting priority srcnat; policy accept;
-{ipv6_postrouting}
-    }}
-
-    chain forward {{
-        type filter hook forward priority filter; policy accept;
-        # Automatically clamp TCP MSS to path MTU to prevent packet loss in GRE/IPIP tunnels
-        tcp flags syn tcp option maxseg size set rt mtu{ipv6_mss_str}
-{forward_counters_str}{ipv6_pmtu_line}        ct status dnat accept
-{ct_accept_line}
-    }}
-}}"""
+            _build_family_table(
+                family="ip6",
+                dnat_rules=ipv6_rules,
+                raw_rules=ipv6_raw_rules,
+                snat_rules=ipv6_snat_rules,
+                mss_rules=ipv6_mss_rules,
+                extra_chains=ipv6_extra_chains,
+                counter_defs_str=counter_defs_str,
+                all_ports=all_ports,
+                all_ranges=all_ranges,
+                excl_counters=excl_counters,
+                base_postrouting=base_postrouting,
+                has_untracked=has_untracked,
+                optimize_maps=optimize_maps,
+            )
         )
 
     return "#!/usr/sbin/nft -f\n# Generated by XForwarder Core Engine\n" + "\n\n".join(tables_content) + "\n"
@@ -549,21 +931,23 @@ def apply_nftables(
 ) -> Tuple[bool, Optional[str], Optional[str]]:
     """
     Validates and atomically applies NFTables ruleset.
+    Falls back automatically to linear ruleset generation if `nft -c -f` fails on legacy kernels.
     Returns (success: bool, error_msg: Optional[str], new_content: Optional[str]).
     """
-    nft_content = generate_nftables_ruleset(
-        dnat_rules,
-        rule_ports=rule_ports,
-        rule_ranges=rule_ranges,
-        custom_oifs=custom_oifs,
-        raw_rules=raw_rules,
-        snat_rules=snat_rules,
-        dsr_mss_rules=dsr_mss_rules,
-        has_untracked=has_untracked,
-        extra_chains=extra_chains
-    )
+    global _DSR_SYSCTL_APPLIED, _NFT_MAPS_SUPPORTED
+    use_opt = (_NFT_MAPS_SUPPORTED is not False)
+    gen_kwargs: Dict[str, Any] = {
+        "rule_ports": rule_ports,
+        "rule_ranges": rule_ranges,
+        "custom_oifs": custom_oifs,
+        "raw_rules": raw_rules,
+        "snat_rules": snat_rules,
+        "dsr_mss_rules": dsr_mss_rules,
+        "has_untracked": has_untracked,
+        "extra_chains": extra_chains,
+    }
+    nft_content = generate_nftables_ruleset(dnat_rules, optimize_maps=use_opt, **gen_kwargs)
 
-    global _DSR_SYSCTL_APPLIED
     if not shutil.which("nft"):
         return True, None, nft_content
 
@@ -581,6 +965,16 @@ def apply_nftables(
                        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False)
         proc = subprocess.Popen(["nft", "-c", "-f", "-"], stdin=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
         out, err = proc.communicate(input=nft_content)
+        if proc.returncode != 0 and use_opt:
+            linear_content = generate_nftables_ruleset(dnat_rules, optimize_maps=False, **gen_kwargs)
+            if linear_content != nft_content:
+                lin_proc = subprocess.Popen(["nft", "-c", "-f", "-"], stdin=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+                _, lin_err = lin_proc.communicate(input=linear_content)
+                if lin_proc.returncode == 0:
+                    _NFT_MAPS_SUPPORTED = False
+                    nft_content = linear_content
+                    proc = lin_proc
+                    err = lin_err
         if proc.returncode == 0:
             if raw_rules:
                 ensure_dsr_sysctl(dsr_ifaces)

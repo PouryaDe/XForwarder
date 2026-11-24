@@ -258,9 +258,11 @@ class TestNFTablesDSRMethods(unittest.TestCase):
             self.assertNotIn("notrack", rs)
             self.assertIn('iifname "tun1" ip daddr 185.215.229.193 tcp dport 1001 dnat to 5.199.136.72:1001', rs)
             self.assertIn('oifname "eth0" ip daddr 5.199.136.72 snat to 81.180.93.42', rs)
-            self.assertIn("tcp flags syn tcp option maxseg size set rt mtu", rs)
-            self.assertIn("tcp flags syn ip daddr 5.199.136.72 tcp option maxseg size > 1340 tcp option maxseg size set 1340", rs)
-            self.assertIn("tcp flags syn ip saddr 5.199.136.72 tcp option maxseg size > 1340 tcp option maxseg size set 1340", rs)
+            self.assertIn("chain syn_mss", rs)
+            self.assertIn("tcp flags & (syn|rst) == syn jump syn_mss", rs)
+            self.assertIn("tcp option maxseg size set rt mtu", rs)
+            self.assertIn("ip daddr 5.199.136.72 tcp option maxseg size > 1340 tcp option maxseg size set 1340", rs)
+            self.assertIn("ip saddr 5.199.136.72 tcp option maxseg size > 1340 tcp option maxseg size set 1340", rs)
 
     def test_coexistence_standard_nftables_with_dsr_and_dsr_relay(self):
         """Standard nftables DNAT, nftables_dsr, and nftables_dsr_relay coexist in table xfwd_orchestrator without collision."""
@@ -351,7 +353,9 @@ class TestNFTablesDSRMethods(unittest.TestCase):
             self.assertNotIn('iifname "eth0" tcp dport 443 dnat to 10.88.1.2:443', rs)
             self.assertIn('oifname "gre1" masquerade', rs)
             self.assertNotIn('oifname "fou0" masquerade', rs)
-            self.assertIn("tcp flags syn tcp option maxseg size set rt mtu", rs)
+            self.assertIn("chain syn_mss", rs)
+            self.assertIn("tcp flags & (syn|rst) == syn jump syn_mss", rs)
+            self.assertIn("tcp option maxseg size set rt mtu", rs)
             # Stateless DSR rule uses raw notrack + untracked counter for excluded_ports
             self.assertIn('iifname "eth0" tcp dport 1001 notrack ip daddr set 10.10.10.2', rs)
             self.assertIn("ct state untracked counter name cnt_in_1_excl", rs)
@@ -359,8 +363,8 @@ class TestNFTablesDSRMethods(unittest.TestCase):
             self.assertIn('iifname "tun1" tcp dport 1002 ip daddr set 185.215.229.193', rs)
             self.assertIn('iifname "tun1" ip daddr 185.215.229.193 tcp dport 1002 dnat to 5.199.136.72:1002', rs)
             self.assertIn('oifname "eth0" ip daddr 5.199.136.72 snat to 81.180.93.42', rs)
-            self.assertIn("tcp flags syn ip daddr 5.199.136.72 tcp option maxseg size > 1340 tcp option maxseg size set 1340", rs)
-            self.assertIn("tcp flags syn ip saddr 5.199.136.72 tcp option maxseg size > 1340 tcp option maxseg size set 1340", rs)
+            self.assertIn("ip daddr 5.199.136.72 tcp option maxseg size > 1340 tcp option maxseg size set 1340", rs)
+            self.assertIn("ip saddr 5.199.136.72 tcp option maxseg size > 1340 tcp option maxseg size set 1340", rs)
 
     def test_ipv6_and_malformed_config_defense_in_depth(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -550,10 +554,13 @@ class TestNFTablesDSRMethods(unittest.TestCase):
         and symmetric 1380 MSS clamping for nftables_dsr targets."""
         from core.firewall import ensure_dsr_sysctl, cleanup_dsr_sysctl, generate_nftables_ruleset
 
-        # 1. ICMP PMTU rules appear only when has_untracked=True
+        # 1. ICMP PMTU rules appear only when has_untracked=True (and IPv6 chains only when IPv6 rules exist)
         rs_untracked = generate_nftables_ruleset(
-            ['        tcp dport 443 dnat to 10.10.10.2:443'],
-            rule_ports={443},
+            [
+                '        tcp dport 443 dnat to 10.10.10.2:443',
+                '        tcp dport 8443 dnat to [2001:db8::2]:8443',
+            ],
+            rule_ports={443, 8443},
             enable_ipv6=True,
             has_untracked=True
         )
@@ -561,8 +568,11 @@ class TestNFTablesDSRMethods(unittest.TestCase):
         self.assertIn("icmpv6 type packet-too-big accept", rs_untracked)
 
         rs_normal = generate_nftables_ruleset(
-            ['        tcp dport 443 dnat to 10.10.10.2:443'],
-            rule_ports={443},
+            [
+                '        tcp dport 443 dnat to 10.10.10.2:443',
+                '        tcp dport 8443 dnat to [2001:db8::2]:8443',
+            ],
+            rule_ports={443, 8443},
             enable_ipv6=True,
             has_untracked=False
         )

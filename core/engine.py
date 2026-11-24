@@ -44,7 +44,7 @@ from core.prober import (
     probe_destination_l4_tcp as prober_probe_destination_l4_tcp,
     is_interface_up, get_route_interface
 )
-from core.firewall import is_ipv6_supported, apply_nftables, flush_conntrack, build_nft_lb_dnat_entries
+from core.firewall import is_ipv6_supported, apply_nftables, flush_conntrack, build_nft_lb_dnat_entries, ensure_fq_qdisc
 from core.proxy_gen import (
     apply_haproxy, apply_nginx, build_nginx_lb_upstream,
     HAPROXY_CONF_PATH, UDP_CONF_PATH, NGINX_CONF_PATH
@@ -2155,6 +2155,10 @@ class XForwarderEngine:
                 pass
 
         self.sync_firewall_and_proxies()
+        try:
+            ensure_fq_qdisc(self._detect_wan_interface(), flow_limit=1000)
+        except Exception:
+            pass
 
         if LossMonitorScheduler and not self._loss_scheduler:
             self._loss_scheduler = LossMonitorScheduler(
