@@ -2158,6 +2158,11 @@ input#formCategory::-webkit-list-button {
     min-width: 0;
 }
 
+.lb-mode-wrap label,
+.lb-mode-wrap .label-with-tip {
+    margin-bottom: 6px;
+}
+
 .lb-mode-wrap .form-control {
     height: 38px;
     min-height: 38px;
@@ -2171,12 +2176,21 @@ input#formCategory::-webkit-list-button {
     flex-shrink: 0;
 }
 
+.lb-header-tools .btn-lb-equalize {
+    height: 38px;
+    min-height: 38px;
+    padding: 0 12px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
 .lb-count-pill {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    height: 32px;
-    padding: 0 10px;
+    height: 38px;
+    padding: 0 12px;
     border-radius: 8px;
     font-size: 0.75rem;
     font-weight: 700;
@@ -2246,11 +2260,11 @@ input#formCategory::-webkit-list-button {
 .lb-targets-list {
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 12px;
 }
 
 .lb-target-row {
-    padding: 10px 12px;
+    padding: 12px 14px;
     border-radius: 10px;
     background: var(--raise);
     border: 1px solid var(--line);
@@ -2270,8 +2284,8 @@ input#formCategory::-webkit-list-button {
     justify-content: space-between;
     gap: 8px;
     flex-wrap: wrap;
-    padding-bottom: 9px;
-    margin-bottom: 9px;
+    padding-bottom: 10px;
+    margin-bottom: 12px;
     border-bottom: 1px solid var(--line);
 }
 
@@ -2333,7 +2347,7 @@ input#formCategory::-webkit-list-button {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
     gap: 10px;
-    margin-top: 8px;
+    margin-top: 12px;
 }
 
 .lb-field {
@@ -2342,10 +2356,10 @@ input#formCategory::-webkit-list-button {
 
 .lb-field-label {
     display: block;
-    font-size: 0.71rem;
+    font-size: 0.72rem;
     font-weight: 600;
-    color: var(--text-muted);
-    margin: 0 0 4px 0;
+    color: var(--ink-2);
+    margin: 0 0 6px 0;
 }
 
 .lb-member-fields .form-control,
