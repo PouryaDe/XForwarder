@@ -2,7 +2,7 @@
 // XForwarder Web UI - Host Telemetry & Topology Renderer (Native ES Module)
 // ============================================================================
 
-import { formatBytes, formatTrafficMB, formatEngineVersion, escapeHtml, showToast, getRuleId } from "./utils.js";
+import { formatBytes, formatTrafficMB, formatEngineVersion, escapeHtml, showToast, getRuleId, copyText } from "./utils.js";
 import { lastTrafficData } from "./state.js";
 import { t } from "./i18n.js";
 
@@ -764,6 +764,9 @@ export function renderNetworkTopology(network) {
                     </div>
                 ` : '';
 
+                const localIpClean = String(t.ip || "").split("/")[0].trim();
+                const peerIpClean = String(t.peer_ip || "").split("/")[0].trim();
+                const copySvg = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>`;
                 return `
                     <div class="tunnel-card ${isUp ? 'is-up' : 'is-down'}">
                         <div class="tunnel-card-top">
@@ -779,12 +782,18 @@ export function renderNetworkTopology(network) {
                         <div class="tunnel-body">
                             <div class="tunnel-ip-row">
                                 <span class="tunnel-label">Local</span>
-                                <span class="tunnel-val">${escapeHtml(t.ip)}</span>
+                                <span class="tunnel-val-wrap">
+                                    <span class="tunnel-val">${escapeHtml(t.ip)}</span>
+                                    ${localIpClean && localIpClean !== "-" ? `<button type="button" class="btn-copy-ip" onclick="copyIpToClipboard(decodeURIComponent('${encodeURIComponent(localIpClean)}'), this)" title="Copy ${escapeHtml(localIpClean)}">${copySvg}</button>` : ""}
+                                </span>
                             </div>
                             ${t.peer_ip ? `
                             <div class="tunnel-ip-row">
                                 <span class="tunnel-label">Peer</span>
-                                <span class="tunnel-val text-cyan">${escapeHtml(t.peer_ip)}</span>
+                                <span class="tunnel-val-wrap">
+                                    <span class="tunnel-val text-cyan">${escapeHtml(t.peer_ip)}</span>
+                                    ${peerIpClean && peerIpClean !== "-" ? `<button type="button" class="btn-copy-ip" onclick="copyIpToClipboard(decodeURIComponent('${encodeURIComponent(peerIpClean)}'), this)" title="Copy ${escapeHtml(peerIpClean)}">${copySvg}</button>` : ""}
+                                </span>
                             </div>` : ""}
                         </div>
                         ${tTrafficHtml}
@@ -804,13 +813,5 @@ export function renderNetworkTopology(network) {
 
 export function copyIpToClipboard(ipText, btnEl) {
     if (!ipText) return;
-    navigator.clipboard.writeText(ipText).then(() => {
-        showToast(`IP ${ipText} copied to clipboard!`, "success");
-        if (btnEl) {
-            btnEl.classList.add("copied");
-            setTimeout(() => btnEl.classList.remove("copied"), 1200);
-        }
-    }).catch(() => {
-        showToast("Failed to copy IP", "warning");
-    });
+    copyText(ipText, btnEl);
 }

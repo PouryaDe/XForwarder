@@ -1081,6 +1081,13 @@
     color: var(--text-primary);
 }
 
+.tunnel-val-wrap {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    direction: ltr;
+}
+
 .tunnel-card-footer {
     display: flex;
     justify-content: space-between;
