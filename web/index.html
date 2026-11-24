@@ -1542,15 +1542,27 @@
                                         <span class="stat-badge badge-neutral ltr-mono" id="badgeUpdateTransportSummary" data-i18n="updates.transport_auto_short">Auto Discovery</span>
                                     </div>
                                     <div class="updates-transport-actions">
-                                        <button type="button" class="btn btn-secondary btn-xs" id="btnScanUpdateTunnels" data-i18n="updates.scan_tunnels">Scan Tunnels</button>
-                                        <button type="button" class="btn btn-primary btn-xs" id="btnSaveUpdateTransport" data-i18n="updates.save_test_transport">Save &amp; Test</button>
+                                        <button type="button" class="btn btn-secondary btn-sm" id="btnScanUpdateTunnels">
+                                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <path d="M23 4v6h-6" />
+                                                <path d="M1 20v-6h6" />
+                                                <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
+                                            </svg>
+                                            <span data-i18n="updates.scan_tunnels">Scan Tunnels</span>
+                                        </button>
+                                        <button type="button" class="btn btn-primary btn-sm" id="btnSaveUpdateTransport">
+                                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <polyline points="20 6 9 17 4 12" />
+                                            </svg>
+                                            <span data-i18n="updates.save_test_transport">Save &amp; Test</span>
+                                        </button>
                                     </div>
                                 </div>
 
                                 <div class="updates-transport-controls">
-                                    <div class="updates-transport-field">
+                                    <div class="updates-transport-field form-group">
                                         <label for="selUpdateTransportMode" data-i18n="updates.mode_label">Connection Method</label>
-                                        <select id="selUpdateTransportMode" class="form-input">
+                                        <select id="selUpdateTransportMode" class="form-control">
                                             <option value="auto" data-i18n="updates.mode_auto">Auto (Direct -&gt; Active Tunnels / Local Proxies)</option>
                                             <option value="direct" data-i18n="updates.mode_direct">Direct Internet Only</option>
                                             <option value="iface" data-i18n="updates.mode_iface">Active Server Tunnel Interface (L3)</option>
@@ -1559,28 +1571,28 @@
                                         </select>
                                     </div>
 
-                                    <div class="updates-transport-field" id="wrapUpdateIface" style="display:none;">
+                                    <div class="updates-transport-field form-group" id="wrapUpdateIface" style="display:none;">
                                         <label for="selUpdateTunnelIface" data-i18n="updates.iface_label">Select Active Tunnel Interface</label>
-                                        <select id="selUpdateTunnelIface" class="form-input ltr-mono"></select>
+                                        <select id="selUpdateTunnelIface" class="form-control font-mono ltr-mono"></select>
                                     </div>
 
-                                    <div class="updates-transport-field" id="wrapUpdateProxy" style="display:none;">
+                                    <div class="updates-transport-field form-group" id="wrapUpdateProxy" style="display:none;">
                                         <label for="inpUpdateProxyUrl" data-i18n="updates.proxy_label">Proxy Address (SOCKS5h / HTTP)</label>
-                                        <input type="text" id="inpUpdateProxyUrl" class="form-input ltr-mono" placeholder="socks5h://127.0.0.1:10808" autocomplete="off" />
-                                        <div id="updateProxyChipsWrap" style="display:none; margin-top:6px;">
+                                        <input type="text" id="inpUpdateProxyUrl" class="form-control font-mono ltr-mono" placeholder="socks5h://127.0.0.1:10808" autocomplete="off" />
+                                        <div id="updateProxyChipsWrap" style="display:none; margin-top:8px;">
                                             <span class="text-muted" style="font-size:0.74rem;" data-i18n="updates.proxy_detected">Detected Local Proxies</span>
                                             <div id="updateProxyChips" class="updates-proxy-chips"></div>
                                         </div>
                                     </div>
 
-                                    <div class="updates-transport-field" id="wrapUpdateMirror" style="display:none;">
+                                    <div class="updates-transport-field form-group" id="wrapUpdateMirror" style="display:none;">
                                         <label for="inpUpdateMirrorUrl" data-i18n="updates.mirror_label">Mirror Base or Repo URL</label>
-                                        <input type="text" id="inpUpdateMirrorUrl" class="form-input ltr-mono" placeholder="https://ghproxy.net/" autocomplete="off" />
+                                        <input type="text" id="inpUpdateMirrorUrl" class="form-control font-mono ltr-mono" placeholder="https://ghproxy.net/" autocomplete="off" />
                                     </div>
 
                                     <div class="updates-transport-field updates-transport-hint" id="wrapUpdateAutoInfo">
-                                        <span class="text-secondary" style="font-size:0.79rem; line-height:1.5;" data-i18n="updates.auto_hint">Tries Direct GitHub first; on timeout or block, automatically fails over through detected local proxies and UP tunnel interfaces using isolated host routes.</span>
-                                        <span class="text-muted ltr-mono" id="valDetectedTransportCounts" style="font-size:0.75rem; margin-top:4px; display:block;"></span>
+                                        <span class="text-secondary" style="font-size:0.79rem; line-height:1.55;" data-i18n="updates.auto_hint">Tries Direct GitHub first; on timeout or block, automatically fails over through detected local proxies and UP tunnel interfaces using isolated host routes.</span>
+                                        <span class="text-muted font-mono ltr-mono" id="valDetectedTransportCounts" style="font-size:0.75rem; margin-top:6px; display:block;"></span>
                                     </div>
                                 </div>
                             </div>
