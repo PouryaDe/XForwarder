@@ -954,3 +954,37 @@
     font-size: 0.84rem;
     line-height: 1.6;
 }
+
+/* 16. Load-Balanced Pool RTL & BiDi Preservation */
+[dir="rtl"] .lb-card-nodes,
+[dir="rtl"] .lb-node-row,
+[dir="rtl"] .lb-node-addr,
+[dir="rtl"] .lb-weight-badge,
+[dir="rtl"] .lb-weight-pct,
+[dir="rtl"] .lb-count-pill,
+[dir="rtl"] .lb-member-target,
+[dir="rtl"] .lb-member-port,
+[dir="rtl"] .lb-member-weight,
+[dir="rtl"] .lb-split-bar {
+    direction: ltr !important;
+    unicode-bidi: embed !important;
+}
+
+[dir="rtl"] .lb-member-target,
+[dir="rtl"] .lb-member-port {
+    text-align: left !important;
+}
+
+[dir="rtl"] .lb-mode-hint,
+[dir="rtl"] .lb-pool-note,
+[dir="rtl"] .lb-family-warning {
+    text-align: right !important;
+    font-family: var(--font-sans) !important;
+}
+
+[dir="rtl"] .lb-algo-pill,
+[dir="rtl"] .lb-health-pill {
+    font-family: var(--font-sans) !important;
+    letter-spacing: normal !important;
+}
+

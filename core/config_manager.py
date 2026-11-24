@@ -26,11 +26,102 @@ HOSTNAME_REGEX = re.compile(r"^[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(\.[a-
 IFACE_NAME_REGEX = re.compile(r"^[a-zA-Z0-9][a-zA-Z0-9_.\-]{0,14}$")
 NFTABLES_TYPES = ("nftables", "nftables_dsr", "nftables_dsr_relay")
 VALID_DEST_TYPES = ("haproxy", "nftables", "nftables_dsr", "nftables_dsr_relay", "nginx")
+LB_SUPPORTED_TYPES = ("nftables", "nginx")
+VALID_LB_MODES_NFT = ("ip_hash", "round_robin", "random")
+VALID_LB_MODES_NGINX = ("ip_hash", "least_conn", "round_robin", "random")
+MAX_LB_TARGETS = 16
 
 
 def is_nftables_type(dest_type: Any) -> bool:
     """Returns True for standard NFTables DNAT as well as NFTables DSR modes."""
     return str(dest_type or "").lower().strip() in NFTABLES_TYPES
+
+
+def sanitize_comment(raw: Any, max_len: int = 64) -> str:
+    """Sanitizes user comments/labels against control chars and config/HTML delimiters."""
+    s = str(raw or "").strip()[:max_len]
+    return "".join(c for c in s if ord(c) >= 32 and c not in "<>\";`$\\{}")
+
+
+def get_destination_backends(
+    dest: Dict[str, Any],
+    default_port: Optional[int] = None,
+    default_port_range: Optional[str] = None,
+    only_enabled: bool = True
+) -> List[Dict[str, Any]]:
+    """
+    Returns normalized backend target entries for a destination.
+    Supports both single-target destinations and load-balanced pools (`lb_enabled=True`).
+    """
+    if not isinstance(dest, dict):
+        return []
+
+    d_type = str(dest.get("type", "")).lower().strip()
+    d_port = dest.get("port") if dest.get("port") is not None else default_port
+    d_range = dest.get("port_range") or default_port_range
+    d_iface = str(dest.get("tunnel_iface") or "").strip()
+
+    if _coerce_bool(dest.get("lb_enabled"), False) and d_type in LB_SUPPORTED_TYPES:
+        raw_members = dest.get("lb_targets")
+        if isinstance(raw_members, list) and len(raw_members) > 0:
+            members: List[Dict[str, Any]] = []
+            for m in raw_members:
+                if not isinstance(m, dict):
+                    continue
+                m_enabled = _coerce_bool(m.get("enabled"), True)
+                if only_enabled and not m_enabled:
+                    continue
+                m_target = str(m.get("target", "")).strip().strip("[]")
+                if not m_target:
+                    continue
+                m_port = m.get("port") if m.get("port") is not None else d_port
+                try:
+                    m_port_int = int(m_port) if m_port is not None and str(m_port).strip() != "" else None
+                except (ValueError, TypeError):
+                    m_port_int = None
+                m_range = m.get("port_range")
+                if not m_range and m.get("port") is None and d_range:
+                    m_range = d_range
+                try:
+                    w = max(1, min(int(m.get("weight", 1)), 100))
+                except (ValueError, TypeError):
+                    w = 1
+                m_iface = str(m.get("tunnel_iface") or "").strip()
+                if d_type == "nftables" and not m_iface:
+                    m_iface = d_iface
+                elif d_type != "nftables":
+                    m_iface = ""
+                members.append({
+                    "target": m_target,
+                    "port": m_port_int,
+                    "port_range": m_range,
+                    "weight": w,
+                    "tunnel_iface": m_iface,
+                    "enabled": m_enabled,
+                    "comment": sanitize_comment(m.get("comment", ""))
+                })
+            if members or only_enabled:
+                return members
+
+    d_enabled = _coerce_bool(dest.get("enabled"), True)
+    if only_enabled and not d_enabled:
+        return []
+    raw_t = str(dest.get("target", "")).strip().strip("[]")
+    if not raw_t:
+        return []
+    try:
+        d_port_int = int(d_port) if d_port is not None and str(d_port).strip() != "" else None
+    except (ValueError, TypeError):
+        d_port_int = None
+    return [{
+        "target": raw_t,
+        "port": d_port_int,
+        "port_range": d_range,
+        "weight": 1,
+        "tunnel_iface": d_iface if d_type in ("nftables", "nftables_dsr") else "",
+        "enabled": d_enabled,
+        "comment": sanitize_comment(dest.get("comment", ""))
+    }]
 
 
 def get_config_path(override_path: Optional[str] = None) -> str:
@@ -509,6 +600,11 @@ def migrate_and_normalize_config(cfg: Dict[str, Any]) -> Tuple[Dict[str, Any], b
             if "comment" not in d:
                 d["comment"] = ""
                 modified = True
+            else:
+                clean_c = sanitize_comment(d.get("comment", ""))
+                if d.get("comment") != clean_c:
+                    d["comment"] = clean_c
+                    modified = True
 
             dtype = str(d.get("type", "")).lower().strip()
             if not dtype:
@@ -570,6 +666,79 @@ def migrate_and_normalize_config(cfg: Dict[str, Any]) -> Tuple[Dict[str, Any], b
             elif d.get("is_relay") != is_relay:
                 d["is_relay"] = is_relay
                 modified = True
+
+            # Normalize load-balancing pool fields (backward-compatible opt-in)
+            lb_enabled = _coerce_bool(d.get("lb_enabled"), False)
+            if lb_enabled and dtype in LB_SUPPORTED_TYPES and isinstance(d.get("lb_targets"), list) and len(d["lb_targets"]) > 0:
+                valid_modes = VALID_LB_MODES_NFT if dtype == "nftables" else VALID_LB_MODES_NGINX
+                lb_mode = str(d.get("lb_mode") or "ip_hash").lower().strip()
+                if lb_mode not in valid_modes:
+                    lb_mode = "ip_hash"
+                if d.get("lb_enabled") is not True:
+                    d["lb_enabled"] = True
+                    modified = True
+                if d.get("lb_mode") != lb_mode:
+                    d["lb_mode"] = lb_mode
+                    modified = True
+                norm_members: List[Dict[str, Any]] = []
+                for m in d["lb_targets"][:MAX_LB_TARGETS]:
+                    if not isinstance(m, dict):
+                        modified = True
+                        continue
+                    m_target = str(m.get("target", "")).strip().strip("[]")
+                    if not m_target:
+                        modified = True
+                        continue
+                    m_obj: Dict[str, Any] = {
+                        "target": m_target,
+                        "weight": 1,
+                        "enabled": _coerce_bool(m.get("enabled"), True),
+                        "comment": sanitize_comment(m.get("comment", ""))
+                    }
+                    try:
+                        m_obj["weight"] = max(1, min(int(m.get("weight", 1)), 100))
+                    except (ValueError, TypeError):
+                        m_obj["weight"] = 1
+                    raw_mport = m.get("port_range") or m.get("port")
+                    if raw_mport is not None and str(raw_mport).strip() != "":
+                        msp, _, mrange = parse_port_spec(raw_mport)
+                        if msp is not None:
+                            m_obj["port"] = msp
+                            if mrange:
+                                m_obj["port_range"] = mrange
+                        else:
+                            m_obj["port"] = d.get("port", port)
+                            if prange:
+                                m_obj["port_range"] = prange
+                    else:
+                        m_obj["port"] = d.get("port", port)
+                        if prange:
+                            m_obj["port_range"] = prange
+                    m_iface = str(m.get("tunnel_iface") or "").strip()
+                    if dtype == "nftables" and m_iface:
+                        m_obj["tunnel_iface"] = m_iface
+                    norm_members.append(m_obj)
+                if norm_members:
+                    if d.get("lb_targets") != norm_members:
+                        d["lb_targets"] = norm_members
+                        modified = True
+                    primary_m = next((x for x in norm_members if x.get("enabled", True)), norm_members[0])
+                    if d.get("target") != primary_m["target"]:
+                        d["target"] = primary_m["target"]
+                        modified = True
+                    if d.get("port") != primary_m.get("port"):
+                        d["port"] = primary_m.get("port")
+                        modified = True
+                else:
+                    for lb_k in ("lb_enabled", "lb_mode", "lb_targets"):
+                        if lb_k in d:
+                            d.pop(lb_k, None)
+                            modified = True
+            else:
+                for lb_k in ("lb_enabled", "lb_mode", "lb_targets"):
+                    if lb_k in d:
+                        d.pop(lb_k, None)
+                        modified = True
 
     return cfg, modified
 
@@ -946,6 +1115,130 @@ def validate_rule(body: dict) -> Tuple[bool, str]:
     for d in dests:
         if not isinstance(d, dict):
             return False, "Invalid destination item"
+        d["comment"] = sanitize_comment(d.get("comment", ""))
+        lb_enabled = _coerce_bool(d.get("lb_enabled"), False)
+
+        # Peek at type early so LB pools can auto-sync primary target before top-level validation
+        raw_d_type = str(d.get("type", "")).lower().strip()
+        if lb_enabled:
+            if not raw_d_type:
+                raw_d_type = "nftables" if port_range_str else "nginx"
+            if raw_d_type not in LB_SUPPORTED_TYPES:
+                return False, f"Load balancing is only supported for 'nftables' and 'nginx' (not '{raw_d_type}')"
+            d["type"] = raw_d_type
+            raw_lb_targets = d.get("lb_targets")
+            if not isinstance(raw_lb_targets, list) or len(raw_lb_targets) < 2:
+                return False, "Load balancing requires at least 2 backend targets"
+            if len(raw_lb_targets) > MAX_LB_TARGETS:
+                return False, f"Load-balanced pool cannot exceed {MAX_LB_TARGETS} targets"
+
+            valid_modes = VALID_LB_MODES_NFT if raw_d_type == "nftables" else VALID_LB_MODES_NGINX
+            lb_mode = str(d.get("lb_mode") or "ip_hash").lower().strip()
+            if lb_mode not in valid_modes:
+                return False, f"Invalid load-balancing mode '{lb_mode}' for {raw_d_type}. Allowed: {', '.join(valid_modes)}"
+            d["lb_enabled"] = True
+            d["lb_mode"] = lb_mode
+
+            seen_endpoints: Set[Tuple[str, Any]] = set()
+            nft_ip_versions: Set[int] = set()
+            range_port_modes: Set[str] = set()
+            enabled_members_count = 0
+            sanitized_members: List[Dict[str, Any]] = []
+
+            for m_idx, m in enumerate(raw_lb_targets):
+                if not isinstance(m, dict):
+                    return False, f"Invalid load-balance target item at #{m_idx + 1}"
+                m_target = str(m.get("target", "")).strip()
+                if not m_target:
+                    return False, f"Load-balance target #{m_idx + 1} cannot be empty"
+                if any(c in m_target for c in ";&|`$ \t\n\r<>\"'"):
+                    return False, f"Load-balance target #{m_idx + 1} contains invalid characters"
+                if not is_valid_target(m_target):
+                    return False, f"Invalid load-balance target '{m_target}'. Must be a valid IPv4, IPv6, or hostname"
+
+                clean_m_target = m_target.strip("[]")
+                if raw_d_type == "nftables":
+                    try:
+                        m_ip_obj = ipaddress.ip_address(clean_m_target)
+                        nft_ip_versions.add(m_ip_obj.version)
+                    except ValueError:
+                        return False, f"NFTables load-balance target must be a valid IPv4 or IPv6 address (got '{m_target}')"
+                    if len(nft_ip_versions) > 1:
+                        return False, "NFTables load-balanced pool requires all targets to use the same IP version (all IPv4 or all IPv6)"
+
+                raw_mport = m.get("port_range") if m.get("port_range") else m.get("port")
+                m_obj: Dict[str, Any] = {
+                    "target": clean_m_target,
+                    "enabled": _coerce_bool(m.get("enabled"), True),
+                    "comment": sanitize_comment(m.get("comment", ""))
+                }
+                if m_obj["enabled"]:
+                    enabled_members_count += 1
+
+                if raw_mport is None or str(raw_mport).strip() == "":
+                    m_obj["port"] = start_p
+                    if port_range_str:
+                        m_obj["port_range"] = port_range_str
+                        range_port_modes.add("range")
+                else:
+                    m_sp, _, m_range_str = parse_port_spec(raw_mport)
+                    if m_sp is None:
+                        return False, f"Load-balance target #{m_idx + 1} port must be between 1 and 65535 (or a valid matching range)"
+                    if m_range_str:
+                        if raw_d_type != "nftables":
+                            return False, f"Destination port range '{m_range_str}' is only supported for 'nftables'"
+                        if not port_range_str or m_range_str != port_range_str:
+                            return False, f"NFTables outbound port range must match inbound range ({port_range_str or start_p}) or be a single target port"
+                        m_obj["port"] = m_sp
+                        m_obj["port_range"] = m_range_str
+                        range_port_modes.add("range")
+                    else:
+                        m_obj["port"] = m_sp
+                        if port_range_str:
+                            range_port_modes.add("fixed")
+
+                if port_range_str and raw_d_type == "nftables" and len(range_port_modes) > 1:
+                    return False, "NFTables range load-balanced pool requires all targets to either preserve the 1:1 range or target a single port"
+
+                ep_key = (clean_m_target.lower(), m_obj.get("port_range") or m_obj["port"])
+                if ep_key in seen_endpoints:
+                    return False, f"Duplicate backend endpoint '{clean_m_target}:{ep_key[1]}' in load-balanced pool"
+                seen_endpoints.add(ep_key)
+
+                try:
+                    m_weight = int(m.get("weight", 1))
+                except (ValueError, TypeError):
+                    return False, f"Load-balance target #{m_idx + 1} weight must be an integer"
+                if m_weight < 1 or m_weight > 100:
+                    return False, f"Load-balance target #{m_idx + 1} weight must be between 1 and 100"
+                m_obj["weight"] = m_weight
+
+                raw_m_iface = str(m.get("tunnel_iface") or "").strip()
+                if raw_m_iface and raw_d_type == "nftables":
+                    if not IFACE_NAME_REGEX.match(raw_m_iface):
+                        return False, f"Invalid tunnel interface '{raw_m_iface}' on load-balance target #{m_idx + 1}"
+                    m_obj["tunnel_iface"] = raw_m_iface
+
+                sanitized_members.append(m_obj)
+
+            if enabled_members_count < 1:
+                return False, "Load-balanced pool must have at least 1 enabled target"
+
+            d["lb_targets"] = sanitized_members
+            primary_m = next((x for x in sanitized_members if x["enabled"]), sanitized_members[0])
+            d["target"] = primary_m["target"]
+            d["port"] = primary_m["port"]
+            if primary_m.get("port_range"):
+                d["port_range"] = primary_m["port_range"]
+            else:
+                d.pop("port_range", None)
+            if primary_m.get("tunnel_iface") and not d.get("tunnel_iface"):
+                d["tunnel_iface"] = primary_m["tunnel_iface"]
+        else:
+            d.pop("lb_enabled", None)
+            d.pop("lb_mode", None)
+            d.pop("lb_targets", None)
+
         target = str(d.get("target", "")).strip()
         if not target:
             return False, "Destination target cannot be empty"

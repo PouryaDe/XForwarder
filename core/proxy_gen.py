@@ -7,9 +7,12 @@ and Nginx stream configurations with bounded buffer management.
 
 import os
 import sys
+import re
 import shutil
 import subprocess
 from typing import Dict, Any, Tuple, Optional, List
+
+_UPSTREAM_NAME_REGEX = re.compile(r"^[a-zA-Z0-9_.-]{1,64}$")
 
 HAPROXY_CONF_PATH = "/etc/haproxy/haproxy.cfg"
 UDP_CONF_PATH = "/etc/haproxy/forwarder-udp.conf"
@@ -142,6 +145,50 @@ def apply_haproxy(haproxy_entries: List[str], conf_path: Optional[str] = None) -
         return True, None
     except Exception as ex:
         return False, f"HAProxy error: {str(ex)}"
+
+
+def build_nginx_lb_upstream(
+    upstream_name: str,
+    backends: List[Tuple[str, int, int]],
+    lb_mode: str = "ip_hash"
+) -> str:
+    """
+    Builds an Nginx stream `upstream` block with weighted servers and passive failure detection.
+    `backends` is a list of (target_host, port, weight).
+    """
+    clean_up_name = str(upstream_name or "").strip()
+    if not backends or not _UPSTREAM_NAME_REGEX.match(clean_up_name):
+        return ""
+    mode = str(lb_mode or "ip_hash").lower().strip()
+    server_lines: List[str] = []
+    for host, port, weight in backends:
+        clean_host = str(host or "").strip().strip("[]")
+        if not clean_host or any(c in clean_host for c in " \t\r\n;{}#\"'"):
+            continue
+        try:
+            port_int = int(port)
+        except (TypeError, ValueError):
+            continue
+        if not (1 <= port_int <= 65535):
+            continue
+        addr = f"[{clean_host}]:{port_int}" if ":" in clean_host else f"{clean_host}:{port_int}"
+        w = max(1, min(int(weight or 1), 100))
+        server_lines.append(f"        server {addr} weight={w} max_fails=2 fail_timeout=15s;")
+
+    if not server_lines:
+        return ""
+
+    lines = [f"    upstream {clean_up_name} {{"]
+    if mode == "ip_hash":
+        lines.append("        hash $remote_addr consistent;")
+    elif mode == "least_conn":
+        lines.append("        least_conn;")
+    elif mode == "random":
+        lines.append("        random two least_conn;")
+    # round_robin uses Nginx default weighted round-robin without extra directive
+    lines.extend(server_lines)
+    lines.append("    }")
+    return "\n".join(lines)
 
 
 def generate_nginx_cfg(nginx_entries: List[str]) -> str:
@@ -284,6 +331,18 @@ def apply_nginx(nginx_entries: List[str], conf_path: Optional[str] = None) -> Tu
                 stderr=subprocess.PIPE,
                 text=True
             )
+            if test_res.returncode != 0 and "random two least_conn;" in nginx_content:
+                err_low = (test_res.stderr or "").lower()
+                if "random" in err_low or "unknown directive" in err_low:
+                    nginx_content = nginx_content.replace("        random two least_conn;\n", "")
+                    with open(tmp_nginx, "w", encoding="utf-8") as f:
+                        f.write(nginx_content)
+                    test_res = subprocess.run(
+                        ["nginx", "-t", "-c", tmp_nginx],
+                        stdout=subprocess.DEVNULL,
+                        stderr=subprocess.PIPE,
+                        text=True
+                    )
             if test_res.returncode == 0:
                 os.replace(tmp_nginx, target_path)
                 if shutil.which("systemctl"):

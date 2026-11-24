@@ -34,7 +34,7 @@ from core.config_manager import (
     CONFIG_PATH as DEFAULT_CONFIG_PATH, LEGACY_CONFIG_PATH, LOCAL_CONFIG_PATH,
     STATE_FILE_PATH, LEGACY_STATE_FILE_PATH, get_rule_port_bounds,
     split_port_interval_excluding, get_protected_ports, is_nftables_type,
-    IFACE_NAME_REGEX
+    get_destination_backends, IFACE_NAME_REGEX
 )
 from core.prober import (
     is_private_or_tunnel_target, validate_probe_route,
@@ -44,8 +44,11 @@ from core.prober import (
     probe_destination_l4_tcp as prober_probe_destination_l4_tcp,
     is_interface_up, get_route_interface
 )
-from core.firewall import is_ipv6_supported, apply_nftables, flush_conntrack
-from core.proxy_gen import apply_haproxy, apply_nginx, HAPROXY_CONF_PATH, UDP_CONF_PATH, NGINX_CONF_PATH
+from core.firewall import is_ipv6_supported, apply_nftables, flush_conntrack, build_nft_lb_dnat_entries
+from core.proxy_gen import (
+    apply_haproxy, apply_nginx, build_nginx_lb_upstream,
+    HAPROXY_CONF_PATH, UDP_CONF_PATH, NGINX_CONF_PATH
+)
 from core.route_quality import (
     summarize_cycle, aggregate_window, compute_score, classify_status, decide_route, pick_best_now
 )
@@ -110,6 +113,7 @@ class XForwarderEngine:
         self._haproxy_backend_cache: Dict[int, Dict[str, Any]] = {}
         self._haproxy_backend_cache_time: float = 0.0
         self._pending_conntrack_flushes: List[Tuple[int, Optional[str]]] = []
+        self._pending_targeted_conntrack_flushes: List[Tuple[int, Optional[str], str]] = []
         self.load_config()
 
     @property
@@ -291,9 +295,9 @@ class XForwarderEngine:
         )
         if not l4_is_mocked:
             if "Mock" in str(type(prober_probe_destination_icmp)) or getattr(prober_probe_destination_icmp, "_mock_return_value", None) is not None:
-                return {"healthy": True, "latency_ms": 10.0, "packet_loss": 0.0, "reason": ""}
+                return {"healthy": True, "latency_ms": 10.0, "packet_loss": 0.0, "reason": "", "_stub": True}
             if "Mock" in str(type(self.check_destination)) or getattr(self.check_destination, "_mock_return_value", None) is not None:
-                return {"healthy": True, "latency_ms": 10.0, "packet_loss": 0.0, "reason": ""}
+                return {"healthy": True, "latency_ms": 10.0, "packet_loss": 0.0, "reason": "", "_stub": True}
 
         clean_target = (sanitize_target_host(target) or str(target)).strip("[]").lower()
         key = (clean_target, port, iface)
@@ -366,23 +370,46 @@ class XForwarderEngine:
                 proto_flush = None if "nftables_dsr" in (old_type, new_type) else "udp"
                 self._queue_post_sync_conntrack_flush(port_int, proto_flush)
 
+    def _queue_targeted_conntrack_flush(self, port_spec: Any, proto: Optional[str], reply_src: str) -> None:
+        """Queues a deduplicated backend-scoped conntrack flush after firewall/proxy sync."""
+        if not reply_src or not port_spec:
+            return
+        if not hasattr(self, "_pending_targeted_conntrack_flushes"):
+            self._pending_targeted_conntrack_flushes = []
+        item = (port_spec, proto, str(reply_src).strip().strip("[]"))
+        if item not in self._pending_targeted_conntrack_flushes:
+            self._pending_targeted_conntrack_flushes.append(item)
+
     def _flush_pending_conntrack(self) -> None:
         """Executes deferred conntrack flushes after firewall and proxy rules are synchronized."""
         pending = getattr(self, "_pending_conntrack_flushes", None)
-        if not pending:
-            return
-        items = list(pending)
-        pending.clear()
-        full_flush_ports = {p for p, pr in items if pr is None}
-        seen = set()
-        for port_int, proto in items:
-            if proto is not None and port_int in full_flush_ports:
-                continue
-            key = (port_int, proto)
-            if key in seen:
-                continue
-            seen.add(key)
-            flush_conntrack(port_int, proto=proto)
+        targeted = getattr(self, "_pending_targeted_conntrack_flushes", None)
+        full_flush_ports: Set[int] = set()
+        if pending:
+            items = list(pending)
+            pending.clear()
+            full_flush_ports = {p for p, pr in items if pr is None}
+            seen = set()
+            for port_int, proto in items:
+                if proto is not None and port_int in full_flush_ports:
+                    continue
+                key = (port_int, proto)
+                if key in seen:
+                    continue
+                seen.add(key)
+                flush_conntrack(port_int, proto=proto)
+        if targeted:
+            t_items = list(targeted)
+            targeted.clear()
+            seen_t = set()
+            for port_int, proto, reply_src in t_items:
+                if port_int in full_flush_ports:
+                    continue
+                key = (port_int, proto, reply_src)
+                if key in seen_t:
+                    continue
+                seen_t.add(key)
+                flush_conntrack(port_int, proto=proto, reply_src=reply_src)
 
     def _probe_all_destinations(self, rules: List[Dict[str, Any]], now: Optional[float] = None) -> Dict[Any, Dict[str, Any]]:
         """
@@ -408,34 +435,47 @@ class XForwarderEngine:
             for dest in rule.get("destinations", []):
                 if not dest.get("enabled", True):
                     continue
-                raw_target = str(dest.get("target", "")).strip().strip("[]")
-                if not raw_target:
-                    continue
-                clean_target = (sanitize_target_host(raw_target) or raw_target).lower()
-                is_valid, iface, reason = self._validate_probe_route(dest)
-                if not is_valid:
-                    invalid_results[clean_target] = {
-                        "healthy": False,
-                        "packets_sent": count,
-                        "packets_received": 0,
-                        "packet_loss": 100.0,
-                        "latency_ms": None,
-                        "jitter_ms": 0.0,
-                        "reason": reason
+                backends = get_destination_backends(
+                    dest,
+                    default_port=rule.get("port"),
+                    default_port_range=rule.get("port_range"),
+                    only_enabled=True
+                )
+                for b in backends:
+                    raw_target = str(b.get("target", "")).strip().strip("[]")
+                    if not raw_target:
+                        continue
+                    clean_target = (sanitize_target_host(raw_target) or raw_target).lower()
+                    probe_dest = {
+                        "target": raw_target,
+                        "type": dest.get("type"),
+                        "tunnel_iface": b.get("tunnel_iface", ""),
+                        "port": b.get("port")
                     }
-                    # Immediately invalidate previous cached entries if route became invalid
-                    with self._target_lock:
-                        self._target_probe_cache.pop(clean_target, None)
-                        self._target_last_probe_time.pop(clean_target, None)
-                        self._target_last_fast_check.pop(clean_target, None)
-                        self._target_history.pop(clean_target, None)
-                else:
-                    if clean_target not in unique_targets or (iface and not unique_targets[clean_target].get("iface")):
-                        unique_targets[clean_target] = {
-                            "target": clean_target,
-                            "iface": iface,
-                            "dest": dest
+                    is_valid, iface, reason = self._validate_probe_route(probe_dest)
+                    if not is_valid:
+                        invalid_results[clean_target] = {
+                            "healthy": False,
+                            "packets_sent": count,
+                            "packets_received": 0,
+                            "packet_loss": 100.0,
+                            "latency_ms": None,
+                            "jitter_ms": 0.0,
+                            "reason": reason
                         }
+                        # Immediately invalidate previous cached entries if route became invalid
+                        with self._target_lock:
+                            self._target_probe_cache.pop(clean_target, None)
+                            self._target_last_probe_time.pop(clean_target, None)
+                            self._target_last_fast_check.pop(clean_target, None)
+                            self._target_history.pop(clean_target, None)
+                    else:
+                        if clean_target not in unique_targets or (iface and not unique_targets[clean_target].get("iface")):
+                            unique_targets[clean_target] = {
+                                "target": clean_target,
+                                "iface": iface,
+                                "dest": probe_dest
+                            }
 
         # Evict stale target entries for rules that have been removed
         with self._target_lock:
@@ -642,6 +682,391 @@ class XForwarderEngine:
                 print(f"[ERROR] Failed to persist active priorities: {e}", file=sys.stderr)
                 return False
 
+    def _lookup_probe_result(
+        self,
+        probe_cache: Optional[Dict[Any, Dict[str, Any]]],
+        dest: Dict[str, Any],
+        rule: Dict[str, Any],
+        target: str,
+        clean_tgt: str,
+        iface: Optional[str]
+    ) -> Dict[str, Any]:
+        """Retrieves cached probe result or executes an on-demand destination check."""
+        probe_key = (clean_tgt, iface)
+        if probe_cache is not None and probe_key in probe_cache:
+            return probe_cache[probe_key]
+        if probe_cache is not None and (target, iface) in probe_cache:
+            return probe_cache[(target, iface)]
+        if probe_cache is not None and clean_tgt in probe_cache:
+            return probe_cache[clean_tgt]
+        if probe_cache is not None and target in probe_cache:
+            return probe_cache[target]
+        if probe_cache is not None and (clean_tgt, None) in probe_cache:
+            return probe_cache[(clean_tgt, None)]
+        if probe_cache is not None and (target, None) in probe_cache:
+            return probe_cache[(target, None)]
+        try:
+            return self.check_destination(
+                dest,
+                rule_port=dest.get("port") or rule.get("port"),
+                protocol=dest.get("protocol") or rule.get("protocol"),
+                count=int(self.config.get("probe_count", 10))
+            )
+        except TypeError:
+            return self.check_destination(
+                dest,
+                rule_port=dest.get("port") or rule.get("port"),
+                protocol=dest.get("protocol") or rule.get("protocol")
+            )
+
+    def _get_effective_lb_backends(self, rule: Dict[str, Any], dest: Dict[str, Any]) -> List[Dict[str, Any]]:
+        """Returns active healthy LB backends from runtime state, falling back safely to all enabled backends."""
+        all_enabled = get_destination_backends(
+            dest,
+            default_port=rule.get("port"),
+            default_port_range=rule.get("port_range"),
+            only_enabled=True
+        )
+        if not all_enabled:
+            return []
+        rule_id = rule.get("id", f"rule-{rule.get('port')}")
+        prio = dest.get("priority", 1)
+        r_state = self.runtime_state.get("rules_state", {}).get(rule_id, {})
+        d_stat = (r_state.get("dest_stats") or {}).get(f"prio_{prio}", {})
+        active_keys = d_stat.get("lb_active_keys")
+        if isinstance(active_keys, list) and len(active_keys) > 0:
+            active_set = set(active_keys)
+            filtered = []
+            for b in all_enabled:
+                b_clean = (sanitize_target_host(b["target"]) or b["target"]).lower()
+                b_key = f"{b_clean}:{b.get('port_range') or b.get('port') or rule.get('port')}"
+                if b_key in active_set:
+                    filtered.append(b)
+            if filtered:
+                return filtered
+        return all_enabled
+
+    def _evaluate_lb_destination(
+        self,
+        rule: Dict[str, Any],
+        dest: Dict[str, Any],
+        stat: Dict[str, Any],
+        probe_cache: Optional[Dict[Any, Dict[str, Any]]],
+        now: float,
+        is_active_dest: bool,
+        params: Dict[str, float]
+    ) -> Dict[str, Any]:
+        """Evaluates all members of a load-balanced pool, prunes failed/critical nodes, and aggregates pool health."""
+        prio = dest.get("priority", 1)
+        dest_type = str(dest.get("type", "nftables")).lower()
+        dest_proto = str(dest.get("protocol") or rule.get("protocol") or "both").lower()
+        rule_port = int(rule.get("port") or 0)
+        window_sec = params["window_sec"]
+        max_loss = params["max_loss"]
+        crit_loss = params["crit_loss"]
+        loss_weight = params["loss_weight"]
+        jitter_weight = params["jitter_weight"]
+        priority_bias = params["priority_bias"]
+        fail_thresh = int(params["fail_thresh"])
+
+        all_members = get_destination_backends(
+            dest,
+            default_port=rule.get("port"),
+            default_port_range=rule.get("port_range"),
+            only_enabled=False
+        )
+        curr_fp = (
+            f"{dest_type}:lb:{dest.get('lb_mode', 'ip_hash')}:"
+            + "|".join(
+                f"{m['target']}:{m.get('port_range') or m.get('port')}:{m.get('weight', 1)}:{m.get('tunnel_iface', '')}:{m.get('enabled', True)}"
+                for m in all_members
+            )
+        )
+        if stat.get("fingerprint") != curr_fp:
+            stat["fingerprint"] = curr_fp
+            stat["samples"] = []
+            stat.pop("lb_active_keys", None)
+
+        prev_active_list = stat.get("lb_active_keys")
+        prev_active_keys: Optional[Set[str]] = set(prev_active_list) if isinstance(prev_active_list, list) else None
+
+        member_summaries: List[Dict[str, Any]] = []
+        active_candidates: List[Dict[str, Any]] = []
+        re_admit_fallback: List[Dict[str, Any]] = []
+        critical_non_failed: List[Dict[str, Any]] = []
+        enabled_count = 0
+
+        for m in all_members:
+            m_target = str(m["target"]).strip().strip("[]")
+            clean_m = (sanitize_target_host(m_target) or m_target).lower()
+            m_port = int(m.get("port") or rule_port or 0)
+            m_key = f"{clean_m}:{m.get('port_range') or m_port}"
+            m_weight = int(m.get("weight", 1))
+            m_iface_cfg = str(m.get("tunnel_iface") or "").strip()
+
+            if not m.get("enabled", True):
+                member_summaries.append({
+                    "target": m_target,
+                    "port": m_port,
+                    "port_range": m.get("port_range"),
+                    "weight": m_weight,
+                    "tunnel_iface": m_iface_cfg,
+                    "comment": m.get("comment", ""),
+                    "enabled": False,
+                    "active_in_pool": False,
+                    "status": "disabled",
+                    "latency_ms": None,
+                    "jitter_ms": 0.0,
+                    "packet_loss": 0.0,
+                    "reason": "Disabled by user"
+                })
+                continue
+
+            enabled_count += 1
+            m_probe_dest = {
+                "target": m_target,
+                "type": dest_type,
+                "tunnel_iface": m_iface_cfg,
+                "port": m_port
+            }
+            is_valid, m_iface, route_err = self._validate_probe_route(m_probe_dest)
+            check_res = self._lookup_probe_result(probe_cache, m_probe_dest, rule, m_target, clean_m, m_iface)
+
+            l4_override_failed = False
+            l4_override_healthy = False
+            if dest_type == "nginx" and dest_proto in ("tcp", "both") and m_port > 0 and is_valid:
+                l4_check = self._check_l4_port_cached(m_target, m_port, iface=m_iface)
+                if not l4_check.get("healthy"):
+                    l4_override_failed = True
+                    check_res = dict(
+                        check_res,
+                        healthy=False,
+                        packet_loss=100.0,
+                        packets_received=0,
+                        latency_ms=None,
+                        reason=l4_check.get("reason") or f"TCP port {m_port} unreachable"
+                    )
+                elif not l4_check.get("_stub") and (not check_res.get("healthy", True) or float(check_res.get("packet_loss", 0.0)) >= 100.0):
+                    l4_override_healthy = True
+                    check_res = dict(
+                        check_res,
+                        healthy=True,
+                        packet_loss=0.0,
+                        packets_received=check_res.get("packets_sent", 10),
+                        latency_ms=l4_check.get("latency_ms"),
+                        jitter_ms=l4_check.get("jitter_ms", 0.0),
+                        reason=""
+                    )
+
+            m_last_loss = float(check_res.get("packet_loss", 0.0))
+            m_short_agg: Optional[Dict[str, Any]] = None
+            m_long_agg: Optional[Dict[str, Any]] = None
+            m_status = "unknown"
+            m_reason = str(check_res.get("reason") or "")
+
+            if not l4_override_failed and not l4_override_healthy and check_res.get("healthy", True) and m_last_loss < 100.0:
+                with self._target_lock:
+                    thist = self._target_history.get(clean_m)
+                    if thist and "short_agg" in thist:
+                        m_short_agg = dict(thist["short_agg"])
+                        m_long_agg = dict(thist["long_agg"])
+                        m_status = thist.get("status", "healthy")
+                        m_reason = thist.get("reason", "")
+
+            if m_short_agg is None or m_long_agg is None:
+                m_sample = summarize_cycle(check_res, now)
+                m_short_agg = aggregate_window([m_sample], window_seconds=window_sec, now=now)
+                m_long_agg = dict(m_short_agg)
+                is_m_route_inv = (not is_valid and not check_res.get("healthy", False))
+                m_status, m_reason = classify_status(
+                    short_loss=m_short_agg["packet_loss"],
+                    long_loss=m_long_agg["packet_loss"],
+                    last_cycle_loss=m_last_loss,
+                    burst_confirmed_dead=(l4_override_failed or (m_last_loss >= 100.0 and not l4_override_healthy)),
+                    route_invalid=is_m_route_inv,
+                    max_acceptable_loss=max_loss,
+                    critical_loss=crit_loss,
+                    lossy_cycles=1 if m_last_loss > 0 else 0,
+                    return_reason=True
+                )
+
+            m_lat = m_long_agg.get("avg_latency_ms") if m_long_agg.get("avg_latency_ms") is not None else check_res.get("latency_ms")
+            m_jit = float(m_long_agg.get("jitter_ms", 0.0) or 0.0)
+            m_loss = float(m_long_agg.get("packet_loss", m_last_loss))
+
+            is_viable = (m_status not in ("failed", "critical") and m_loss < 100.0 and check_res.get("healthy", True))
+            cand_entry = {
+                "m_key": m_key,
+                "target": m_target,
+                "weight": m_weight,
+                "status": m_status,
+                "latency_ms": m_lat,
+                "jitter_ms": m_jit,
+                "packet_loss": m_loss
+            }
+            if is_viable:
+                if prev_active_keys is not None and m_key not in prev_active_keys:
+                    # Hysteresis on re-admission: require clean 'healthy' status to prevent jhash thrashing
+                    if m_status == "healthy":
+                        active_candidates.append(cand_entry)
+                    else:
+                        re_admit_fallback.append(cand_entry)
+                else:
+                    active_candidates.append(cand_entry)
+            elif m_status != "failed" and m_loss < 100.0 and check_res.get("healthy", True):
+                critical_non_failed.append(cand_entry)
+
+            member_summaries.append({
+                "target": m_target,
+                "port": m_port,
+                "port_range": m.get("port_range"),
+                "weight": m_weight,
+                "tunnel_iface": m_iface_cfg,
+                "comment": m.get("comment", ""),
+                "enabled": True,
+                "active_in_pool": False,
+                "status": m_status,
+                "latency_ms": m_lat,
+                "jitter_ms": m_jit,
+                "packet_loss": m_loss,
+                "reason": m_reason
+            })
+
+        if not active_candidates and re_admit_fallback:
+            active_candidates = re_admit_fallback
+
+        surviving = active_candidates if active_candidates else critical_non_failed
+        new_active_keys = {c["m_key"] for c in surviving}
+
+        # Check aggregate asymmetric blackhole on the active LB priority
+        bh_reason = ""
+        if is_active_dest and self._traffic_collector and rule_port > 0:
+            is_bh, bh_r = self._traffic_collector.check_traffic_blackhole(rule_port)
+            if is_bh:
+                bh_reason = bh_r
+                new_active_keys = set()
+                surviving = []
+                active_candidates = []
+
+        for ms in member_summaries:
+            clean_ms = (sanitize_target_host(ms["target"]) or ms["target"]).lower()
+            ms_key = f"{clean_ms}:{ms.get('port_range') or ms['port']}"
+            ms["active_in_pool"] = (ms_key in new_active_keys)
+
+        # Targeted per-backend conntrack flush when an active NFTables node is evicted from pool
+        if is_active_dest and dest_type == "nftables" and rule_port > 0 and prev_active_keys:
+            flush_spec: Any = rule.get("port_range") or rule_port
+            removed_keys = prev_active_keys - new_active_keys
+            for rk in removed_keys:
+                dead_ip = rk.rsplit(":", 1)[0]
+                self._queue_targeted_conntrack_flush(flush_spec, None, dead_ip)
+
+        if surviving and not bh_reason:
+            total_w = sum(c["weight"] for c in surviving) or 1
+            lat_items = [(c["latency_ms"], c["weight"]) for c in surviving if c["latency_ms"] is not None]
+            agg_lat = round(sum(l * w for l, w in lat_items) / sum(w for _, w in lat_items), 1) if lat_items else None
+            agg_jit = round(sum(c["jitter_ms"] * c["weight"] for c in surviving) / total_w, 1)
+            agg_loss = round(sum(c["packet_loss"] * c["weight"] for c in surviving) / total_w, 1)
+            synth_res = {
+                "healthy": True,
+                "packets_sent": 10,
+                "packets_received": max(1, round(10 * (1.0 - agg_loss / 100.0))),
+                "packet_loss": agg_loss,
+                "latency_ms": agg_lat,
+                "jitter_ms": agg_jit
+            }
+            if active_candidates:
+                if any(c["status"] == "degraded" for c in active_candidates) or agg_loss >= 5.0:
+                    pool_status = "degraded"
+                    pool_reason = f"LB Pool degraded ({len(active_candidates)}/{enabled_count} active)"
+                else:
+                    pool_status = "healthy"
+                    pool_reason = f"LB Pool healthy ({len(active_candidates)}/{enabled_count} active)"
+            else:
+                pool_status = "critical"
+                pool_reason = f"All surviving LB nodes critical ({len(surviving)}/{enabled_count})"
+            burst_dead = False
+        else:
+            agg_lat = None
+            agg_jit = 0.0
+            agg_loss = 100.0
+            synth_res = {
+                "healthy": False,
+                "packets_sent": 10,
+                "packets_received": 0,
+                "packet_loss": 100.0,
+                "latency_ms": None,
+                "jitter_ms": 0.0
+            }
+            pool_status = "failed"
+            pool_reason = bh_reason or f"All {enabled_count} LB pool targets unreachable"
+            burst_dead = bool(is_active_dest)
+
+        sample = summarize_cycle(synth_res, now)
+        if "samples" not in stat or not isinstance(stat["samples"], list):
+            stat["samples"] = []
+        stat["samples"].append(sample)
+        stat["samples"] = [s for s in stat["samples"] if (now - float(s[0])) <= window_sec]
+
+        probe_interval = float(self.config.get("target_probe_interval_seconds", 60.0))
+        short_window_sec = max(120.0, probe_interval * 2.5)
+        short_agg = aggregate_window(stat["samples"][-3:], window_seconds=short_window_sec, now=now)
+        long_agg = aggregate_window(stat["samples"], window_seconds=window_sec, now=now)
+
+        bias = priority_bias if prio == 1 else 0.0
+        short_score = compute_score(
+            avg_lat=short_agg["avg_latency_ms"],
+            jitter=short_agg["jitter_ms"],
+            loss_pct=short_agg["packet_loss"],
+            loss_weight=loss_weight,
+            jitter_weight=jitter_weight,
+            priority_bias=bias
+        )
+        long_score = compute_score(
+            avg_lat=long_agg["avg_latency_ms"],
+            jitter=long_agg["jitter_ms"],
+            loss_pct=long_agg["packet_loss"],
+            loss_weight=loss_weight,
+            jitter_weight=jitter_weight,
+            priority_bias=bias
+        )
+
+        stat["status"] = pool_status
+        stat["reason"] = pool_reason
+        stat["packet_loss"] = long_agg["packet_loss"] if surviving else 100.0
+        stat["short_loss"] = short_agg["packet_loss"] if surviving else 100.0
+        stat["latency_ms"] = long_agg["avg_latency_ms"] if long_agg["avg_latency_ms"] is not None else agg_lat
+        stat["jitter_ms"] = long_agg["jitter_ms"]
+        stat["composite_score"] = long_score if surviving else 999.0
+        stat["fill_ratio"] = long_agg["fill_ratio"]
+        stat["lb_healthy_count"] = len(active_candidates)
+        stat["lb_total_count"] = enabled_count
+        stat["lb_members"] = member_summaries
+        stat["lb_active_keys"] = sorted(new_active_keys)
+
+        if pool_status == "healthy":
+            stat["consecutive_fails"] = 0
+            stat["consecutive_success"] = stat.get("consecutive_success", 0) + 1
+        else:
+            stat["consecutive_success"] = 0
+            if burst_dead:
+                stat["consecutive_fails"] = max(stat.get("consecutive_fails", 0) + 1, fail_thresh)
+            else:
+                stat["consecutive_fails"] = stat.get("consecutive_fails", 0) + 1
+
+        return {
+            "status": pool_status,
+            "reason": pool_reason,
+            "short_loss": stat["short_loss"],
+            "long_loss": stat["packet_loss"],
+            "short_score": short_score if surviving else 999.0,
+            "long_score": stat["composite_score"],
+            "fill_ratio": long_agg["fill_ratio"],
+            "avg_latency_ms": stat["latency_ms"],
+            "latency_ms": stat["latency_ms"],
+            "is_relay": bool(dest.get("is_relay", False))
+        }
+
     def evaluate_rule(
         self,
         rule: Dict[str, Any],
@@ -751,6 +1176,37 @@ class XForwarderEngine:
             if not stat["enabled"]:
                 stat["status"] = "disabled"
                 continue
+
+            dest_type = str(dest.get("type", "haproxy")).lower()
+            is_lb_pool = (
+                bool(dest.get("lb_enabled", False))
+                and dest_type in ("nftables", "nginx")
+                and isinstance(dest.get("lb_targets"), list)
+                and len(dest.get("lb_targets", [])) > 0
+            )
+            if is_lb_pool:
+                dest_metrics[prio] = self._evaluate_lb_destination(
+                    rule=rule,
+                    dest=dest,
+                    stat=stat,
+                    probe_cache=probe_cache,
+                    now=now,
+                    is_active_dest=(prio == current_active),
+                    params={
+                        "window_sec": window_sec,
+                        "max_loss": max_loss,
+                        "crit_loss": crit_loss,
+                        "loss_weight": loss_weight,
+                        "jitter_weight": jitter_weight,
+                        "priority_bias": priority_bias if prio == 1 else 0.0,
+                        "fail_thresh": fail_thresh
+                    }
+                )
+                continue
+            else:
+                for lb_s_key in ("lb_members", "lb_healthy_count", "lb_total_count", "lb_active_keys"):
+                    stat.pop(lb_s_key, None)
+
             target = str(dest.get("target", "")).strip().strip("[]")
             clean_tgt = (sanitize_target_host(target) or target).lower()
             is_valid, iface, route_err = self._validate_probe_route(dest)
@@ -761,34 +1217,7 @@ class XForwarderEngine:
                 stat["fingerprint"] = curr_fp
                 stat["samples"] = []
 
-            # Retrieve probe from cache or execute on demand
-            probe_key = (clean_tgt, iface)
-            if probe_cache is not None and probe_key in probe_cache:
-                check_res = probe_cache[probe_key]
-            elif probe_cache is not None and (target, iface) in probe_cache:
-                check_res = probe_cache[(target, iface)]
-            elif probe_cache is not None and clean_tgt in probe_cache:
-                check_res = probe_cache[clean_tgt]
-            elif probe_cache is not None and target in probe_cache:
-                check_res = probe_cache[target]
-            elif probe_cache is not None and (clean_tgt, None) in probe_cache:
-                check_res = probe_cache[(clean_tgt, None)]
-            elif probe_cache is not None and (target, None) in probe_cache:
-                check_res = probe_cache[(target, None)]
-            else:
-                try:
-                    check_res = self.check_destination(
-                        dest,
-                        rule_port=dest.get("port") or rule.get("port"),
-                        protocol=dest.get("protocol") or rule.get("protocol"),
-                        count=int(self.config.get("probe_count", 10))
-                    )
-                except TypeError:
-                    check_res = self.check_destination(
-                        dest,
-                        rule_port=dest.get("port") or rule.get("port"),
-                        protocol=dest.get("protocol") or rule.get("protocol")
-                    )
+            check_res = self._lookup_probe_result(probe_cache, dest, rule, target, clean_tgt, iface)
 
             # If active priority destination suffered 100% loss in this cycle:
             # Run adaptive fast burst to confirm total outage in < 1s
@@ -801,7 +1230,6 @@ class XForwarderEngine:
             rule_port = int(rule.get("port") or 0)
             target_port = int(dest.get("port") or rule_port or 0)
             dest_proto = str(dest.get("protocol") or rule.get("protocol") or "both").lower()
-            dest_type = str(dest.get("type", "haproxy")).lower()
 
             l4_fail_reason = ""
             if is_active_dest and dest_type == "haproxy" and rule_port > 0:
@@ -1139,20 +1567,33 @@ class XForwarderEngine:
 
     def _get_rules_fingerprint(self) -> str:
         rules = self.config.get("rules", [])
+        rule_entries = []
+        for r in rules:
+            act_prio = r.get("active_priority", 1)
+            act_dest = next((d for d in r.get("destinations", []) if d.get("enabled", True) and d.get("priority") == act_prio), None)
+            if not act_dest:
+                act_dest = next((d for d in r.get("destinations", []) if d.get("enabled", True)), None)
+            lb_active_sig = None
+            if act_dest and act_dest.get("lb_enabled") and str(act_dest.get("type", "")).lower() in ("nftables", "nginx"):
+                eff = self._get_effective_lb_backends(r, act_dest)
+                lb_active_sig = [
+                    f"{(sanitize_target_host(b['target']) or b['target']).lower()}:{b.get('port_range') or b.get('port') or r.get('port')}:{b.get('weight', 1)}"
+                    for b in eff
+                ]
+            rule_entries.append({
+                "id": r.get("id"),
+                "port": r.get("port"),
+                "port_range": r.get("port_range"),
+                "excluded_ports": r.get("excluded_ports"),
+                "protocol": r.get("protocol"),
+                "active_priority": act_prio,
+                "force_override": r.get("force_override", 0),
+                "destinations": r.get("destinations"),
+                "lb_active": lb_active_sig
+            })
         return json.dumps({
             "web_port": int((self.config.get("web") or {}).get("port", 8090) or 8090),
-            "rules": [
-                {
-                    "id": r.get("id"),
-                    "port": r.get("port"),
-                    "port_range": r.get("port_range"),
-                    "excluded_ports": r.get("excluded_ports"),
-                    "protocol": r.get("protocol"),
-                    "active_priority": r.get("active_priority"),
-                    "force_override": r.get("force_override", 0),
-                    "destinations": r.get("destinations")
-                } for r in rules
-            ]
+            "rules": rule_entries
         }, sort_keys=True)
 
     @staticmethod
@@ -1260,6 +1701,7 @@ class XForwarderEngine:
         udp_entries = []
         nginx_entries = []
         nft_dnat_rules = []
+        nft_extra_chains = []
         nft_raw_rules = []
         nft_snat_rules = []
         nft_dsr_mss_rules = []
@@ -1272,7 +1714,7 @@ class XForwarderEngine:
         web_port = int((self.config.get("web") or {}).get("port", 8090) or 8090)
 
         rules = self.config.get("rules", [])
-        for rule in rules:
+        for rule_idx, rule in enumerate(rules):
             start_p, end_p, port_range = get_rule_port_bounds(rule)
             port = start_p if start_p is not None else rule.get("port")
             if not port_range and port == web_port:
@@ -1338,23 +1780,42 @@ class XForwarderEngine:
                     tcp_listens.append(f"listen [::]:{port} ipv6only=on reuseport so_keepalive=on;")
                     udp_listens.append(f"listen [::]:{port} udp ipv6only=on reuseport;")
 
+                eff_backends = self._get_effective_lb_backends(rule, dest) if dest.get("lb_enabled") else []
+                if len(eff_backends) >= 2:
+                    up_name = f"xfwd_lb_{port}"
+                    up_backends = [
+                        (b["target"], int(b.get("port") or port), int(b.get("weight", 1)))
+                        for b in eff_backends
+                    ]
+                    up_block = build_nginx_lb_upstream(up_name, up_backends, lb_mode=dest.get("lb_mode", "ip_hash"))
+                    if up_block:
+                        nginx_entries.append(up_block)
+                    pass_target = up_name
+                elif len(eff_backends) == 1:
+                    b0 = eff_backends[0]
+                    b0_t = str(b0["target"]).strip().strip("[]")
+                    b0_p = int(b0.get("port") or port)
+                    pass_target = f"[{b0_t}]:{b0_p}" if ":" in b0_t else f"{b0_t}:{b0_p}"
+                else:
+                    pass_target = target_str
+
                 if proto in ("both", ""):
                     listens_str = " ".join(tcp_listens + udp_listens)
                     nginx_entries.append(
                         f"    # [{comment_clean}]\n"
-                        f"    server {{ {listens_str} proxy_pass {target_str};{pp_ngx} }}"
+                        f"    server {{ {listens_str} proxy_pass {pass_target};{pp_ngx} }}"
                     )
                 elif proto == "tcp":
                     listens_str = " ".join(tcp_listens)
                     nginx_entries.append(
                         f"    # [{comment_clean}]\n"
-                        f"    server {{ {listens_str} proxy_pass {target_str};{pp_ngx} }}"
+                        f"    server {{ {listens_str} proxy_pass {pass_target};{pp_ngx} }}"
                     )
                 elif proto == "udp":
                     listens_str = " ".join(udp_listens)
                     nginx_entries.append(
                         f"    # [{comment_clean}]\n"
-                        f"    server {{ {listens_str} proxy_pass {target_str};{pp_ngx} proxy_timeout 60s; }}"
+                        f"    server {{ {listens_str} proxy_pass {pass_target};{pp_ngx} proxy_timeout 60s; }}"
                     )
             elif is_nftables_type(dest_type):
                 clean_target = target.strip("[]")
@@ -1458,12 +1919,60 @@ class XForwarderEngine:
                                 f'        oifname "{wan_iface}" {ip_kw} daddr {clean_target} masquerade'
                             )
                 else:
+                    eff_nft_backends = self._get_effective_lb_backends(rule, dest) if dest.get("lb_enabled") else []
+                    iif_prefix = f'iifname "{wan_iface}" ' if excl_expr else ""
+                    protos_tuple = ("tcp", "udp") if proto == "both" else (proto,)
+                    if len(eff_nft_backends) >= 2:
+                        valid_lb_tuples: List[Tuple[str, Optional[int], int]] = []
+                        lb_ip_ver: Optional[int] = None
+                        preserve_r = bool(port_range and all(b.get("port_range") for b in eff_nft_backends))
+                        for b in eff_nft_backends:
+                            bt = str(b.get("target", "")).strip().strip("[]")
+                            try:
+                                b_ip_obj = ipaddress.ip_address(bt)
+                            except ValueError:
+                                continue
+                            if lb_ip_ver is None:
+                                lb_ip_ver = b_ip_obj.version
+                            elif b_ip_obj.version != lb_ip_ver:
+                                continue
+                            bp = None if preserve_r else int(b.get("port") or port)
+                            valid_lb_tuples.append((bt, bp, int(b.get("weight", 1))))
+                        if valid_lb_tuples and lb_ip_ver is not None:
+                            lb_rules, lb_chains = build_nft_lb_dnat_entries(
+                                backends=valid_lb_tuples,
+                                lb_mode=dest.get("lb_mode", "ip_hash"),
+                                ip_version=lb_ip_ver,
+                                protos=protos_tuple,
+                                dport_selectors=dport_selectors,
+                                iif_prefix=iif_prefix,
+                                inbound_start_port=int(port or 0),
+                                rule_idx=rule_idx,
+                                preserve_range=preserve_r,
+                                is_inbound_range=bool(port_range)
+                            )
+                            nft_dnat_rules.extend(lb_rules)
+                            nft_extra_chains.extend(lb_chains)
+                            continue
+                    elif len(eff_nft_backends) == 1:
+                        b0 = eff_nft_backends[0]
+                        b0_clean = str(b0["target"]).strip().strip("[]")
+                        try:
+                            b0_ip_obj = ipaddress.ip_address(b0_clean)
+                            b0_v6 = (b0_ip_obj.version == 6)
+                            if port_range and b0.get("port_range"):
+                                dnat_target = f"[{b0_clean}]" if b0_v6 else b0_clean
+                            else:
+                                b0_port = int(b0.get("port") or port)
+                                dnat_target = f"[{b0_clean}]:{b0_port}" if b0_v6 else f"{b0_clean}:{b0_port}"
+                        except ValueError:
+                            pass
+
                     for listen_spec in dport_selectors:
                         # For wildcard excluded-ports rules (dport != { ... }), bind to wan_iface
                         # to prevent capturing outbound or inter-tunnel traffic across all 65k ports.
                         # For standard single ports and port ranges, omit iifname so multi-hop tunnel
                         # packets (e.g. gre*, ipip*, wg*) forward seamlessly without interface drop.
-                        iif_prefix = f'iifname "{wan_iface}" ' if excl_expr else ""
                         if proto in ("tcp", "both"):
                             nft_dnat_rules.append(
                                 f'        {iif_prefix}tcp dport {listen_spec} dnat to {dnat_target}'
@@ -1475,6 +1984,8 @@ class XForwarderEngine:
 
         errors: List[str] = []
         nft_kwargs: Dict[str, Any] = {}
+        if nft_extra_chains:
+            nft_kwargs["extra_chains"] = nft_extra_chains
         if nft_raw_rules:
             nft_kwargs["raw_rules"] = nft_raw_rules
         if nft_snat_rules:
@@ -1508,7 +2019,8 @@ class XForwarderEngine:
         snat_rules: Optional[List[str]] = None,
         dsr_mss_rules: Optional[List[str]] = None,
         has_untracked: bool = False,
-        dsr_ifaces: Optional[Set[str]] = None
+        dsr_ifaces: Optional[Set[str]] = None,
+        extra_chains: Optional[List[str]] = None
     ) -> Tuple[bool, Optional[str]]:
         rule_ports: Set[int] = set()
         rule_ranges: Set[str] = set()
@@ -1521,6 +2033,11 @@ class XForwarderEngine:
                     t_iface = str(d.get("tunnel_iface") or "").strip()
                     if t_iface:
                         custom_oifs.add(t_iface)
+                    for m in (d.get("lb_targets") or []):
+                        if isinstance(m, dict) and m.get("enabled", True):
+                            m_iface = str(m.get("tunnel_iface") or "").strip()
+                            if m_iface:
+                                custom_oifs.add(m_iface)
             if self._build_nft_excl_expr(r, protected_ports):
                 continue
             for sub_s, sub_e in self._resolve_safe_nft_intervals(r, protected_ports, web_port):
@@ -1535,6 +2052,8 @@ class XForwarderEngine:
         }
         if custom_oifs:
             apply_kwargs["custom_oifs"] = custom_oifs
+        if extra_chains:
+            apply_kwargs["extra_chains"] = extra_chains
         if raw_rules:
             apply_kwargs["raw_rules"] = raw_rules
         if snat_rules:

@@ -14,7 +14,20 @@ let searchQuery = "";
 let draggedPathInfo = null;
 let lastRenderedRulesFingerprint = null;
 const pendingOverrides = new Map();
+const expandedLbPools = new Set();
 let collapsedCategories = new Set();
+
+if (typeof window !== "undefined") {
+    window.toggleLbPoolExpand = function (poolKey) {
+        if (!poolKey) return;
+        if (expandedLbPools.has(poolKey)) {
+            expandedLbPools.delete(poolKey);
+        } else {
+            expandedLbPools.add(poolKey);
+        }
+        renderRules(currentRules, lastRuntime);
+    };
+}
 try {
     const savedCollapsed = JSON.parse(localStorage.getItem("xfwd_collapsed_cats") || "[]");
     if (Array.isArray(savedCollapsed)) collapsedCategories = new Set(savedCollapsed.map(String));
@@ -112,6 +125,14 @@ function formatDestTypeLabel(destType) {
     return s.toUpperCase();
 }
 
+function formatLbAlgoShort(lbMode) {
+    const m = String(lbMode || "ip_hash").toLowerCase();
+    if (m === "least_conn") return "Least Conn";
+    if (m === "round_robin") return "Round-Robin";
+    if (m === "random") return "Random";
+    return "IP Hash";
+}
+
 export function sortRulesList(rulesList, sortMode, rulesState) {
     if (!Array.isArray(rulesList)) return [];
     const copy = [...rulesList];
@@ -201,7 +222,15 @@ export function computeRulesFingerprint(filteredRules, rulesState) {
         const st = rulesState[id] || {};
         const activePrio = r.active_priority || 1;
         const ds = (st.dest_stats && st.dest_stats[`prio_${activePrio}`]) || {};
-        const destSummary = (r.destinations || []).map(d => `${d.priority}:${d.type || ''}:${d.target}:${d.port}:${d.spoof_ip || ''}:${d.ingress_iface || ''}:${d.tunnel_iface || ''}:${d.snat_ip || ''}:${d.enabled !== false}`).join('|');
+        const destSummary = (r.destinations || []).map(d => {
+            const lbList = (d.lb_enabled && Array.isArray(d.lb_targets))
+                ? d.lb_targets.map(m => `${m.target}:${m.port_range || m.port || ''}:${m.weight || 1}:${m.tunnel_iface || ''}:${m.enabled !== false}`).join(',')
+                : '';
+            const mStats = (st.dest_stats && st.dest_stats[`prio_${d.priority}`] && Array.isArray(st.dest_stats[`prio_${d.priority}`].lb_members))
+                ? st.dest_stats[`prio_${d.priority}`].lb_members.map(ms => `${ms.target}:${ms.active_in_pool}:${ms.status}:${ms.latency_ms}`).join(',')
+                : '';
+            return `${d.priority}:${d.type || ''}:${d.target}:${d.port}:${d.spoof_ip || ''}:${d.ingress_iface || ''}:${d.tunnel_iface || ''}:${d.snat_ip || ''}:${d.enabled !== false}:${Boolean(d.lb_enabled)}:${d.lb_mode || ''}:${lbList}:${mStats}`;
+        }).join('|');
         parts.push(`${id}:${r.port}:${activePrio}:${r.force_override || 0}:${r.category || ''}:${ds.status || ''}:${ds.latency_ms || ''}:${destSummary}`);
     });
     return parts.join(';');
@@ -405,6 +434,93 @@ export function renderRuleCard(rule, rulesState) {
             dest.spoof_ip ? `<span class="mono-tag">spoof ${escapeHtml(dest.spoof_ip)}</span>` : ''
         ].filter(Boolean).join('');
 
+        const isLbPool = Boolean(dest.lb_enabled && Array.isArray(dest.lb_targets) && dest.lb_targets.length > 0);
+        const algoLabel = isLbPool ? formatLbAlgoShort(dest.lb_mode) : '';
+        const lbRuntimeMembers = (isLbPool && Array.isArray(stat.lb_members) && stat.lb_members.length > 0)
+            ? stat.lb_members
+            : (isLbPool ? dest.lb_targets.map(m => ({
+                target: m.target,
+                port: m.port_range || m.port || rule.port,
+                port_range: m.port_range || null,
+                weight: m.weight || 1,
+                tunnel_iface: m.tunnel_iface || '',
+                comment: m.comment || '',
+                enabled: m.enabled !== false,
+                active_in_pool: m.enabled !== false,
+                status: 'unknown',
+                latency_ms: null,
+                packet_loss: 0
+            })) : []);
+        const lbTotalEnabled = isLbPool ? lbRuntimeMembers.filter(m => m.enabled !== false).length : 0;
+        const lbHealthyCount = isLbPool ? (stat.lb_healthy_count !== undefined ? stat.lb_healthy_count : lbRuntimeMembers.filter(m => m.enabled !== false && m.active_in_pool).length) : 0;
+        const lbHealthCls = lbHealthyCount === 0 ? 'is-down' : (lbHealthyCount < lbTotalEnabled ? 'is-partial' : 'is-full');
+        const lbPoolTip = isLbPool
+            ? t("rules.lb_pool_tooltip", { algo: algoLabel, healthy: lbHealthyCount, total: lbTotalEnabled }, `Load-Balanced Pool (${algoLabel}) · ${lbHealthyCount}/${lbTotalEnabled} healthy nodes`)
+            : '';
+
+        let destBodyHtml = '';
+        if (isLbPool) {
+            const totalW = lbRuntimeMembers.reduce((acc, m) => acc + (m.enabled !== false ? (parseInt(m.weight || 1, 10) || 1) : 0), 0) || 1;
+            const poolKey = `${ruleId}::${prio}`;
+            const isExpanded = expandedLbPools.has(poolKey);
+            const visibleLimit = 4;
+            const visibleMembers = isExpanded ? lbRuntimeMembers : lbRuntimeMembers.slice(0, visibleLimit);
+            const hiddenCount = Math.max(0, lbRuntimeMembers.length - visibleLimit);
+
+            const memberRowsHtml = visibleMembers.map(m => {
+                const mRawT = String(m.target || '');
+                const mCleanT = mRawT.toLowerCase().replace(/^\[|\]$/g, "");
+                const mDispT = mRawT.includes(':') ? `[${escapeHtml(mRawT)}]` : escapeHtml(mRawT);
+                const mPortTxt = escapeHtml(m.port_range ? `${m.port_range} (1:1)` : (m.port || rule.port));
+                const mEn = m.enabled !== false;
+                const mDown = mEn && (m.status === 'failed' || m.status === 'down' || (m.packet_loss !== undefined && parseInt(m.packet_loss, 10) >= 100));
+                const mDegraded = mEn && (m.status === 'degraded' || m.status === 'critical');
+                const mPct = mEn ? Math.round(((parseInt(m.weight || 1, 10) || 1) / totalW) * 100) : 0;
+                const mDotCls = !mEn ? 'is-off' : (mDown ? 'is-down' : (mDegraded ? 'is-degraded' : (m.active_in_pool ? 'is-up' : 'is-standby')));
+                const mLossInfo = m.loss_50 || (lastLatestLoss && lastLatestLoss[mCleanT]) || null;
+                const mLatBadge = mEn ? formatLatencyBadge(m) : `<span class="latency-pill latency-good">${escapeHtml(t("status.off", {}, "Off"))}</span>`;
+                const mLossBadge = mEn ? formatLoss50Badge(mLossInfo, m.packet_loss) : '';
+                const mTitle = [m.comment || '', m.reason || ''].filter(Boolean).join(' · ');
+
+                return `
+                    <div class="lb-node-row ${!mEn ? 'is-off' : (mDown ? 'is-down' : '')}" ${mTitle ? `title="${escapeHtml(mTitle)}"` : ''}>
+                        <div class="lb-node-left">
+                            <span class="lb-node-dot ${mDotCls}"></span>
+                            <span class="lb-node-addr font-mono">${mDispT}:${mPortTxt}</span>
+                            ${m.tunnel_iface ? `<span class="mono-tag lb-node-iface">${escapeHtml(m.tunnel_iface)}</span>` : ''}
+                            <button class="btn-copy" onclick="copyText(decodeURIComponent('${encodeURIComponent(mRawT)}'), this)" title="${escapeHtml(t("rules.copy_dest_ip", {}, "Copy Destination IP"))}">${copyPortSvg}</button>
+                        </div>
+                        <div class="lb-node-right">
+                            ${mEn ? `<span class="lb-weight-badge font-mono">${mPct}%</span>` : ''}
+                            <div class="telemetry-capsule lb-node-capsule">
+                                ${mLatBadge}
+                                ${mLossBadge}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            const expandBtnHtml = hiddenCount > 0
+                ? `<button type="button" class="btn-lb-expand" onclick="toggleLbPoolExpand(decodeURIComponent('${encodeInlineParam(poolKey)}'))">${escapeHtml(isExpanded ? t("rules.lb_show_less", {}, "Show less") : t("rules.lb_show_more", { count: hiddenCount }, `+${hiddenCount} more`))}</button>`
+                : '';
+
+            destBodyHtml = `
+                <div class="lb-card-nodes">
+                    ${memberRowsHtml}
+                    ${expandBtnHtml}
+                </div>
+            `;
+        } else {
+            destBodyHtml = `
+                <div class="path-dest">
+                    <span class="path-dest-addr"><span class="dest-ip-host">${targetDisplay}</span><span class="dest-colon">:</span><span class="dest-port ${isActive && isEnabled ? 'is-active' : ''}">${destPortText}</span></span>
+                    ${extraTags}
+                    <button class="btn-copy" onclick="copyText(decodeURIComponent('${encodeURIComponent(rawTarget)}'), this)" title="${escapeHtml(t("rules.copy_dest_ip", {}, "Copy Destination IP"))}">${copyPortSvg}</button>
+                </div>
+            `;
+        }
+
         return `
             <div class="${pathBoxClasses.join(' ')}"
                  data-prio="${prio}"
@@ -421,6 +537,7 @@ export function renderRuleCard(rule, rulesState) {
                             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="9" cy="6" r="1.5"/><circle cx="15" cy="6" r="1.5"/><circle cx="9" cy="12" r="1.5"/><circle cx="15" cy="12" r="1.5"/><circle cx="9" cy="18" r="1.5"/><circle cx="15" cy="18" r="1.5"/></svg>
                         </span>
                         <span class="mono-tag ${isActive && isEnabled ? 'is-accent' : ''}">${escapeHtml(formatDestTypeLabel(dest.type))}</span>
+                        ${isLbPool ? `<span class="lb-algo-pill" title="${escapeHtml(lbPoolTip)}">${escapeHtml(t("rules.lb_badge", {}, "LB"))} · ${escapeHtml(algoLabel)}</span><span class="lb-health-pill ${lbHealthCls}" title="${escapeHtml(lbPoolTip)}">${escapeHtml(t("rules.lb_pool_up", { healthy: lbHealthyCount, total: lbTotalEnabled }, `${lbHealthyCount}/${lbTotalEnabled} UP`))}</span>` : ''}
                         ${dest.is_relay ? `<span class="mono-tag" title="${escapeHtml(t("rules.relay_tooltip", {}, "Mid Server: The engine anchors on Priority 1 and only fails over here on outage, packet loss, or latency > 150ms."))}">${escapeHtml(t("rules.relay", {}, "RELAY"))}</span>` : ''}
                     </div>
                     <div class="path-header-right">
@@ -437,11 +554,7 @@ export function renderRuleCard(rule, rulesState) {
                         </button>
                     </div>
                 </div>
-                <div class="path-dest">
-                    <span class="path-dest-addr"><span class="dest-ip-host">${targetDisplay}</span><span class="dest-colon">:</span><span class="dest-port ${isActive && isEnabled ? 'is-active' : ''}">${destPortText}</span></span>
-                    ${extraTags}
-                    <button class="btn-copy" onclick="copyText(decodeURIComponent('${encodeURIComponent(rawTarget)}'), this)" title="${escapeHtml(t("rules.copy_dest_ip", {}, "Copy Destination IP"))}">${copyPortSvg}</button>
-                </div>
+                ${destBodyHtml}
                 <div class="path-meta">
                     <span class="path-meta-comment">${metaText}</span>
                     <div class="path-meta-badges">
@@ -566,12 +679,19 @@ export function renderRuleListRow(rule, rulesState) {
             dest.ingress_iface ? `in:${dest.ingress_iface}` : "",
             dest.spoof_ip ? `spoof:${dest.spoof_ip}` : ""
         ].filter(Boolean).join(" · ");
+        const isLbPool = Boolean(dest.lb_enabled && Array.isArray(dest.lb_targets) && dest.lb_targets.length > 0);
+        const lbSummaryLabel = isLbPool
+            ? `LB (${stat.lb_healthy_count !== undefined ? stat.lb_healthy_count : dest.lb_targets.filter(m => m.enabled !== false).length}/${dest.lb_targets.filter(m => m.enabled !== false).length}) · ${formatLbAlgoShort(dest.lb_mode)} · ${targetDisplay} +${Math.max(0, dest.lb_targets.length - 1)}`
+            : `${targetDisplay}:${escapeHtml(destPortLabel)}${destExtraNote ? ` (${escapeHtml(destExtraNote)})` : ''}`;
+        const lbTitleDetail = isLbPool
+            ? ` | Pool: ${dest.lb_targets.map(m => `${m.target}:${m.port_range || m.port || rule.port}(w=${m.weight || 1})`).join(', ')}`
+            : '';
         return `
-            <div class="${pillClass}" title="Priority #${prio}: ${escapeHtml(formatDestTypeLabel(dest.type))} ${targetDisplay}:${escapeHtml(destPortLabel)}${destExtraNote ? ` (${escapeHtml(destExtraNote)})` : ''}${latText}${escapeHtml(statusDetail)}">
+            <div class="${pillClass}" title="Priority #${prio}: ${escapeHtml(formatDestTypeLabel(dest.type))} ${targetDisplay}:${escapeHtml(destPortLabel)}${destExtraNote ? ` (${escapeHtml(destExtraNote)})` : ''}${escapeHtml(lbTitleDetail)}${latText}${escapeHtml(statusDetail)}">
                 <span style="width:7px; height:7px; border-radius:50%; background:${dotColor}; display:inline-block;"></span>
                 <span style="font-weight:700; color:var(--text-primary); font-family:var(--font-mono);">#${prio}</span>
                 ${dest.is_relay ? `<span class="badge-relay-pill" style="font-size:0.62rem; padding:1px 4px;" title="${escapeHtml(t("rules.relay_tooltip", {}, "Mid Server"))}">${escapeHtml(t("rules.relay", {}, "Mid Server"))}</span>` : ''}
-                <span class="font-mono" style="color:var(--text-secondary); font-size:0.75rem;">${targetDisplay}:${escapeHtml(destPortLabel)}${destExtraNote ? ` (${escapeHtml(destExtraNote)})` : ''}</span>
+                <span class="font-mono" style="color:var(--text-secondary); font-size:0.75rem;">${lbSummaryLabel}</span>
                 ${latText && isEnabled ? `<span class="font-mono" style="color:var(--accent-mint); font-size:0.72rem;">${latText}</span>` : ''}
                 ${isEnabled ? loss50Inline : ''}
                 ${isActive && isEnabled ? `<span style="font-size:0.68rem; font-weight:700; color:${isFailover ? 'var(--accent-amber)' : 'var(--accent-mint)'}; text-transform:uppercase;">${isFailover ? escapeHtml(t("status.failover", {}, "FAILOVER")) : escapeHtml(t("status.active", {}, "ACTIVE"))}</span>` : ''}
@@ -670,7 +790,12 @@ export function renderRules(rules, runtime) {
             const matchesDest = (rule.destinations || []).some(d =>
                 String(d.target || "").toLowerCase().includes(searchQuery) ||
                 String(d.comment || "").toLowerCase().includes(searchQuery) ||
-                String(d.type || "").toLowerCase().includes(searchQuery)
+                String(d.type || "").toLowerCase().includes(searchQuery) ||
+                (Array.isArray(d.lb_targets) && d.lb_targets.some(m =>
+                    String(m.target || "").toLowerCase().includes(searchQuery) ||
+                    String(m.comment || "").toLowerCase().includes(searchQuery) ||
+                    String(m.tunnel_iface || "").toLowerCase().includes(searchQuery)
+                ))
             );
             if (!matchesBasic && !matchesDest) return false;
         }

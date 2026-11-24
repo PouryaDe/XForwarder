@@ -549,6 +549,19 @@ class XForwarderWebHandler(BaseHTTPRequestHandler):
                                     tgt_ip = target_map.get(d_key)
                                     if tgt_ip and tgt_ip in latest_loss:
                                         ds["loss_50"] = latest_loss[tgt_ip]
+                                    if isinstance(ds.get("lb_members"), list):
+                                        enriched_members = []
+                                        for m in ds["lb_members"]:
+                                            if isinstance(m, dict):
+                                                m_copy = dict(m)
+                                                raw_m_t = str(m_copy.get("target", "")).strip().strip("[]")
+                                                clean_m_t = (sanitize_target_host(raw_m_t) or raw_m_t).lower()
+                                                if clean_m_t and clean_m_t in latest_loss:
+                                                    m_copy["loss_50"] = latest_loss[clean_m_t]
+                                                enriched_members.append(m_copy)
+                                            else:
+                                                enriched_members.append(m)
+                                        ds["lb_members"] = enriched_members
                                     cleaned_dest_stats[d_key] = ds
                                 else:
                                     cleaned_dest_stats[d_key] = d_val

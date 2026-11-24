@@ -45,7 +45,8 @@ XForwarder/
 │   ├── test_metrics_subsystem.py # Native Python unittest suite (50-probe ping, deduplication & SQLite retention)
 │   ├── test_ui_and_api_edge_cases.py # Native Python unittest suite (UI, API edge cases & static asset integrity)
 │   ├── test_i18n_and_rtl.py   # Native Python unittest suite (i18n dictionaries, Vazirmatn font, RTL BiDi & DOM)
-│   └── test_traffic_aware_failover.py # Dual-feedback L4 TCP probing, HAProxy DOWN & traffic blackhole tests
+│   ├── test_traffic_aware_failover.py # Dual-feedback L4 TCP probing, HAProxy DOWN & traffic blackhole tests
+│   └── test_load_balancing.py         # NFTables/Nginx LB pools, pruning, targeted conntrack & edge cases
 ├── .agents/               # Antigravity agent configuration (constitution, rules, workflows, skills, scripts)
 │   ├── AGENTS.md          # Master architecture constitution
 │   ├── hooks.json         # Antigravity lifecycle hooks (pre-invocation and stop syntax checks)
@@ -181,8 +182,11 @@ XForwarder/
     - `nftables_dsr` (Iran Ingress / Upload-Only): Emits `notrack ip/ip6 daddr set <target>` inside `chain raw_prerouting` (`priority raw`) within `table ip/ip6 xfwd_orchestrator` alongside `ct state { established, related, untracked } accept` in `chain forward`, enforcing 1:1 port parity (no port translation) and bypassing asymmetric blackhole false positives.
     - `nftables_dsr_relay` (Spoof-Capable Intermediate Relay): Restores `ip/ip6 daddr set <spoof_ip>` in `chain raw_prerouting` (stateful, no `notrack`), applies `dnat to <target>` in `chain prerouting`, applies `snat to <wan_ip>` (or `masquerade` fallback) in `chain postrouting`, and scopes `tcp option maxseg size set 1380` to the DSR exit target in `chain forward` so coexisting standard `nftables` DNAT rules keep `rt mtu` untouched. Applies `net.ipv4.ip_forward=1` and `rp_filter=0` via `ensure_dsr_sysctl()`.
 
-
-
+22. **Health-Aware Load Balancing for NFTables & Nginx Pools (Mandatory)**:
+    - Standard `nftables` and `nginx` destinations support optional multi-target pools (`lb_enabled: true`, `lb_mode`, `lb_targets` up to `MAX_LB_TARGETS = 16` with `ip`, optional `port`, `weight` `1..100`, `enabled`, `tunnel_iface`, `note`), while `haproxy`, `nftables_dsr`, and `nftables_dsr_relay` remain single-target.
+    - Supported modes: `ip_hash` (default, persistent client affinity via `jhash ip saddr mod` on NFTables and `hash $remote_addr consistent` on Nginx), `round_robin` (`numgen inc mod` on NFTables, weighted round-robin on Nginx), `random` (`numgen random mod` on NFTables, `random two least_conn` fallback on Nginx), and Nginx `least_conn`.
+    - Kernel NFTables LB pools emit named weighted `map` (1:1 forwarding) or `vmap` + `chain xfwd_lb_<key>` subchains (when port translation or `port_range -> fixed_port` is active), normalizing weights (`normalize_lb_weights`) and enforcing single IPv4/IPv6 family consistency per rule.
+    - Dynamic Node Pruning & Targeted Conntrack Flushing: Individual dead backends are pruned from the active pool in `_evaluate_lb_destination()` while healthy nodes keep forwarding, with hysteresis before re-admission. Pruning an active backend queues a targeted `reply_src` conntrack flush (`conntrack -D -f <ipv4|ipv6> -r <backend_ip>`) executed after sync without dropping healthy sessions on surviving nodes; only total pool exhaustion triggers failover to backup priorities.
 
 ---
 

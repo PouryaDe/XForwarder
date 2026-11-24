@@ -91,5 +91,12 @@ A port must **NEVER** be bound by HAProxy and forwarded by NFTables DNAT at the 
   - Sequence deduplication prevents rapid engine loops (`run_loop`) from double-counting the same delta sample; silent periods (`RX == 0`) reset deltas and streaks; priority transitions invoke `reset_port_blackhole(rule_port)` so newly activated routes start clean.
   - Exempts `nftables_dsr` (stateless upload-only DSR) where zero `TX` on the ingress relay is expected by design.
 
+## 8. Health-Aware Load-Balanced Pools (NFTables & Nginx)
+- **Supported Paths & Limits:** Multi-target load balancing (`lb_enabled: true`) is allowed strictly on standard `nftables` and `nginx` destinations with up to `MAX_LB_TARGETS = 16` nodes (`ip`, optional `port`, `weight` `1..100`, `enabled`, `tunnel_iface`). Single-target paths (`haproxy`, `nftables_dsr`, `nftables_dsr_relay`) ignore/reject `lb_enabled`.
+- **Pool Evaluation & Dynamic Pruning:** `_evaluate_lb_destination()` probes every enabled pool member (reusing the 60s/15s IP cache) and builds the effective active subset (`_effective_lb_ips`), applying re-admission hysteresis so recovered nodes do not flap back immediately.
+- **Targeted Session Cleanup:** Removing a dead node from a live pool queues `reply_src` conntrack flushes (`_pending_targeted_conntrack_flushes`) executed *after* NFTables/Nginx sync, dropping only sessions bound to the failed backend IP while preserving live client connections on surviving nodes.
+- **Pool Exhaustion Failover:** Priority-level failover activates only when zero healthy enabled backends remain in the pool (or an asymmetric blackhole affects the active pool).
+- **Zero-Redundancy Metrics & Import Sync:** `core/metrics.py` (`get_unique_targets_from_config`) deduplicates all `lb_targets` IPs alongside primary destination IPs, and `core/service_manager.py` preserves Nginx multi-server `upstream` blocks cleanly across sync/import.
+
 
 

@@ -93,6 +93,188 @@ function isNftablesType(destType) {
     return s === "nftables" || s === "nftables_dsr" || s === "nftables_dsr_relay";
 }
 
+function isLbSupportedType(destType) {
+    const s = String(destType || "").toLowerCase().trim();
+    return s === "nftables" || s === "nginx";
+}
+
+const LB_MODES_NFT = ["ip_hash", "round_robin", "random"];
+const LB_MODES_NGINX = ["ip_hash", "least_conn", "round_robin", "random"];
+const LB_SPLIT_COLORS = [
+    "var(--accent, #34e0a1)",
+    "var(--accent-2, #46d6e6)",
+    "#f59e0b",
+    "#a78bfa",
+    "#fb7185",
+    "#38bdf8"
+];
+
+function getLbModeOptions(destType) {
+    return String(destType || "").toLowerCase().trim() === "nginx" ? LB_MODES_NGINX : LB_MODES_NFT;
+}
+
+function normalizeLbModeForType(destType, mode) {
+    const allowed = getLbModeOptions(destType);
+    const clean = String(mode || "ip_hash").toLowerCase().trim();
+    return allowed.includes(clean) ? clean : "ip_hash";
+}
+
+function buildLbModeOptionsHtml(destType, selectedMode) {
+    const allowed = getLbModeOptions(destType);
+    const sel = normalizeLbModeForType(destType, selectedMode);
+    const labels = {
+        ip_hash: t("modal.lb_algo_ip_hash", {}, "IP Hash (Sticky Session)"),
+        least_conn: t("modal.lb_algo_least_conn", {}, "Least Connections"),
+        round_robin: t("modal.lb_algo_round_robin", {}, "Round-Robin"),
+        random: t("modal.lb_algo_random", {}, "Random")
+    };
+    return allowed.map(m => `<option value="${m}" ${sel === m ? "selected" : ""}>${escapeHtml(labels[m] || m)}</option>`).join("");
+}
+
+function getLbModeHintText(mode) {
+    const clean = String(mode || "ip_hash").toLowerCase().trim();
+    if (clean === "least_conn") return t("modal.lb_hint_least_conn", {}, "Routes each new connection to the backend with the fewest active connections (weighted).");
+    if (clean === "round_robin") return t("modal.lb_hint_round_robin", {}, "Distributes each new connection sequentially across healthy backends according to their weights.");
+    if (clean === "random") return t("modal.lb_hint_random", {}, "Randomly selects a healthy backend per new connection according to weights.");
+    return t("modal.lb_hint_ip_hash", {}, "Sticky per client IP — recommended for VPN, Xray, Reality & WireGuard so active sessions never jump servers.");
+}
+
+function detectIpVersion(rawIp) {
+    const s = String(rawIp || "").trim().replace(/^\[|\]$/g, "");
+    if (!s) return 0;
+    if (/^\d{1,3}(\.\d{1,3}){3}$/.test(s)) {
+        const octs = s.split(".").map(Number);
+        return octs.every(o => o >= 0 && o <= 255) ? 4 : 0;
+    }
+    if (s.includes(":")) return 6;
+    return 0;
+}
+
+function refreshLbBoxState(box) {
+    if (!box) return;
+    const panel = box.querySelector(".lb-pool-panel");
+    if (!panel) return;
+    const destType = (box.querySelector(".dest-type")?.value || "nftables").toLowerCase();
+    const modeSelect = panel.querySelector(".lb-mode-select");
+    const hintEl = panel.querySelector(".lb-mode-hint");
+    if (modeSelect && hintEl) {
+        hintEl.textContent = getLbModeHintText(modeSelect.value);
+    }
+    const noteEl = panel.querySelector(".lb-pool-note");
+    if (noteEl) {
+        noteEl.textContent = destType === "nftables"
+            ? t("modal.lb_nft_family_note", {}, "NFTables requires all pool IPs to be the same family (all IPv4 or all IPv6). Down nodes are auto-excluded.")
+            : t("modal.lb_nginx_note", {}, "Nginx passively skips failed TCP targets (max_fails=2) and the engine auto-prunes dead nodes every 15s.");
+    }
+
+    const rows = Array.from(panel.querySelectorAll(".lb-target-row"));
+    const countEl = panel.querySelector(".lb-count-pill");
+    if (countEl) countEl.textContent = `${rows.length} / 16`;
+
+    const addBtn = panel.querySelector(".btn-add-lb-target");
+    if (addBtn) addBtn.disabled = rows.length >= 16;
+
+    let totalWeight = 0;
+    const ipVersions = new Set();
+    const rowMeta = rows.map((row, idx) => {
+        const enabled = row.querySelector(".lb-member-enabled")?.checked !== false;
+        const rawW = parseInt(row.querySelector(".lb-member-weight")?.value || "1", 10);
+        const weight = isNaN(rawW) ? 1 : Math.max(1, Math.min(100, rawW));
+        const target = (row.querySelector(".lb-member-target")?.value || "").trim();
+        const rmBtn = row.querySelector(".btn-remove-lb-member");
+        if (rmBtn) rmBtn.disabled = rows.length <= 2;
+        if (enabled) {
+            totalWeight += weight;
+            const ver = detectIpVersion(target);
+            if (ver > 0) ipVersions.add(ver);
+        }
+        return { row, idx, enabled, weight, target };
+    });
+
+    const splitBar = panel.querySelector(".lb-split-bar");
+    const segmentsHtml = [];
+    rowMeta.forEach((item) => {
+        const pctEl = item.row.querySelector(".lb-weight-pct");
+        if (!item.enabled || totalWeight <= 0) {
+            if (pctEl) pctEl.textContent = t("status.off", {}, "Off");
+            item.row.classList.add("is-member-disabled");
+        } else {
+            item.row.classList.remove("is-member-disabled");
+            const pct = Math.round((item.weight / totalWeight) * 100);
+            if (pctEl) pctEl.textContent = `${pct}%`;
+            const color = LB_SPLIT_COLORS[item.idx % LB_SPLIT_COLORS.length];
+            const label = escapeHtml(item.target || `#${item.idx + 1}`);
+            segmentsHtml.push(`<div class="lb-split-seg" style="flex:${item.weight}; background:${color};" title="${label}: ${pct}%"><span>${pct >= 12 ? `${pct}%` : ""}</span></div>`);
+        }
+    });
+    if (splitBar) {
+        splitBar.innerHTML = segmentsHtml.join("");
+    }
+
+    const warnEl = panel.querySelector(".lb-family-warning");
+    if (warnEl) {
+        const hasMixed = (destType === "nftables" && ipVersions.size > 1);
+        warnEl.style.display = hasMixed ? "flex" : "none";
+    }
+}
+
+function buildLbMemberRowHtml(member, mIdx, destType, isRangeRule, totalCount) {
+    const mTarget = member.target || "";
+    const mPort = member.port_range || (member.port !== undefined && member.port !== null ? member.port : "");
+    const mWeight = Math.max(1, Math.min(100, parseInt(member.weight || 1, 10) || 1));
+    const mComment = member.comment || "";
+    const mIface = member.tunnel_iface || "";
+    const mEnabled = member.enabled !== false;
+    const isNft = (destType === "nftables");
+    const targetPh = isNft ? "10.88.1.2 / 2001:db8::2" : "192.0.2.1 or host";
+    const portPh = isRangeRule ? t("modal.dest_port_range_placeholder", {}, "Same range or port") : "Default";
+
+    return `
+        <div class="lb-target-row ${mEnabled ? "" : "is-member-disabled"}" data-member-index="${mIdx}">
+            <div class="lb-member-main">
+                <label class="dest-switch-control lb-member-switch" title="Enable or disable this backend IP">
+                    <input type="checkbox" class="lb-member-enabled" ${mEnabled ? "checked" : ""}>
+                    <span class="dest-switch-slider"></span>
+                </label>
+                <div class="lb-col-target">
+                    <input type="text" class="form-control font-mono lb-member-target" placeholder="${escapeHtml(targetPh)}" value="${escapeHtml(mTarget)}">
+                </div>
+                <div class="lb-col-port">
+                    <input type="text" inputmode="numeric" class="form-control font-mono lb-member-port" placeholder="${escapeHtml(portPh)}" value="${escapeHtml(mPort)}">
+                </div>
+                <div class="lb-col-weight">
+                    <input type="number" min="1" max="100" class="form-control font-mono lb-member-weight" value="${mWeight}" title="${escapeHtml(t("modal.tip_lb_weight", {}, "Relative traffic share (1-100)"))}">
+                    <span class="lb-weight-pct font-mono">--%</span>
+                </div>
+                <button type="button" class="btn-remove-lb-member" title="Remove backend IP" ${totalCount <= 2 ? "disabled" : ""}>&times;</button>
+            </div>
+            <div class="lb-member-sub">
+                <div class="lb-member-iface-group" style="display:${isNft ? "block" : "none"};">
+                    <input type="hidden" class="lb-member-iface" value="${escapeHtml(mIface)}">
+                    <div class="iface-multiselect" data-auto-mode="outbound">
+                        <button type="button" class="form-control iface-select-trigger">
+                            <span class="iface-trigger-text">${buildTunnelIfaceTriggerHtml(mIface, false)}</span>
+                            <svg class="iface-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="6 9 12 15 18 9"/></svg>
+                        </button>
+                        <div class="iface-dropdown-menu">${buildTunnelIfaceMenuHtml(mIface, false, mTarget)}</div>
+                    </div>
+                </div>
+                <div class="lb-member-comment-wrap">
+                    <input type="text" class="form-control lb-member-comment" placeholder="${escapeHtml(t("modal.comment_placeholder", {}, "e.g. Node 1"))}" value="${escapeHtml(mComment)}">
+                </div>
+                <div class="lb-member-test-wrap">
+                    <button type="button" class="btn-test-dest btn-test-lb-member">
+                        <span class="test-pulse-ring"></span>
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+                        <span>${escapeHtml(t("common.test", {}, "Test"))}</span>
+                    </button>
+                    <span class="test-dest-result lb-member-test-result"></span>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
 function buildDestTypeOptionsHtml(selectedType, isRange) {
     const sel = isRange
         ? (isNftablesType(selectedType) ? String(selectedType).toLowerCase() : "nftables")
@@ -133,6 +315,11 @@ function refreshRangeConstraintUI() {
                 ? (t("modal.dest_port_range_placeholder", {}, "Same range or single port"))
                 : "Default";
         }
+        box.querySelectorAll(".lb-member-port").forEach(mpEl => {
+            mpEl.placeholder = isRange
+                ? t("modal.dest_port_range_placeholder", {}, "Same range or port")
+                : "Default";
+        });
     });
 }
 
@@ -230,21 +417,35 @@ export function openEditRuleModal(ruleId) {
     const ruleCreatedAtInput = document.getElementById("ruleCreatedAt");
     if (ruleCreatedAtInput) ruleCreatedAtInput.value = rule.created_at !== undefined ? String(rule.created_at) : "";
 
-    currentModalDestinations = (rule.destinations || []).map(d => ({
-        priority: d.priority || 1,
-        type: (rule.port_range && !isNftablesType(d.type)) ? "nftables" : (d.type || "haproxy"),
-        target: d.target || "",
-        port: d.port_range ? d.port_range : (d.port !== undefined && d.port !== null ? d.port : ""),
-        port_range: d.port_range || null,
-        tunnel_iface: d.tunnel_iface || "",
-        ingress_iface: d.ingress_iface || "",
-        spoof_ip: d.spoof_ip || "",
-        snat_ip: d.snat_ip || "",
-        comment: d.comment || "",
-        proxy_protocol: Boolean(d.proxy_protocol),
-        is_relay: Boolean(d.is_relay),
-        enabled: d.enabled !== undefined ? Boolean(d.enabled) : true
-    }));
+    currentModalDestinations = (rule.destinations || []).map(d => {
+        const normType = (rule.port_range && !isNftablesType(d.type)) ? "nftables" : (d.type || "haproxy");
+        return {
+            priority: d.priority || 1,
+            type: normType,
+            target: d.target || "",
+            port: d.port_range ? d.port_range : (d.port !== undefined && d.port !== null ? d.port : ""),
+            port_range: d.port_range || null,
+            tunnel_iface: d.tunnel_iface || "",
+            ingress_iface: d.ingress_iface || "",
+            spoof_ip: d.spoof_ip || "",
+            snat_ip: d.snat_ip || "",
+            comment: d.comment || "",
+            proxy_protocol: Boolean(d.proxy_protocol),
+            is_relay: Boolean(d.is_relay),
+            enabled: d.enabled !== undefined ? Boolean(d.enabled) : true,
+            lb_enabled: Boolean(d.lb_enabled) && isLbSupportedType(normType),
+            lb_mode: normalizeLbModeForType(normType, d.lb_mode || "ip_hash"),
+            lb_targets: Array.isArray(d.lb_targets) ? d.lb_targets.map(m => ({
+                target: m.target || "",
+                port: m.port_range ? m.port_range : (m.port !== undefined && m.port !== null ? m.port : ""),
+                port_range: m.port_range || null,
+                weight: parseInt(m.weight || 1, 10) || 1,
+                tunnel_iface: m.tunnel_iface || "",
+                comment: m.comment || "",
+                enabled: m.enabled !== undefined ? Boolean(m.enabled) : true
+            })) : []
+        };
+    });
 
     if (currentModalDestinations.length === 0) {
         currentModalDestinations.push({
@@ -571,6 +772,17 @@ export function renderDestinationRow(dest, index, totalCount) {
     const showOutIface = (type === "nftables" || type === "nftables_dsr");
     const showDsrRow = (type === "nftables_dsr" || type === "nftables_dsr_relay");
     const isDsrRelay = (type === "nftables_dsr_relay");
+    const lbSupported = isLbSupportedType(type);
+    const lbEnabled = lbSupported && Boolean(dest.lb_enabled);
+    const lbMode = normalizeLbModeForType(type, dest.lb_mode || "ip_hash");
+    const defaultMemberPort = port || (inboundSpec ? (inboundSpec.rangeStr || inboundSpec.start) : "");
+    const lbMembers = (Array.isArray(dest.lb_targets) && dest.lb_targets.length >= 2)
+        ? dest.lb_targets
+        : [
+            { target: target, port: defaultMemberPort, weight: 1, tunnel_iface: dest.tunnel_iface || "", comment: "", enabled: true },
+            { target: "", port: defaultMemberPort, weight: 1, tunnel_iface: dest.tunnel_iface || "", comment: "", enabled: true }
+        ];
+    const lbMembersHtml = lbMembers.map((m, mIdx) => buildLbMemberRowHtml(m, mIdx, type, isRangeRule, lbMembers.length)).join("");
     const spoofLabelText = isDsrRelay
         ? t("modal.spoof_ip", {}, "Iran / Spoof IP")
         : t("modal.spoof_ip_opt", {}, "Ingress IP (Optional)");
@@ -626,13 +838,70 @@ export function renderDestinationRow(dest, index, totalCount) {
                     ${buildDestTypeOptionsHtml(type, isRangeRule)}
                 </select>
             </div>
-            <div class="form-group dest-col-target">
+            <div class="form-group dest-col-target" style="display:${lbEnabled ? "none" : "block"};">
                 <label>${escapeHtml(t("modal.dest_target"))}</label>
-                <input type="text" class="form-control dest-target" placeholder="${targetPlaceholder}" value="${escapeHtml(target)}" required>
+                <input type="text" class="form-control dest-target" placeholder="${targetPlaceholder}" value="${escapeHtml(target)}" ${lbEnabled ? "" : "required"}>
             </div>
-            <div class="form-group dest-col-port">
+            <div class="form-group dest-col-port" style="display:${lbEnabled ? "none" : "block"};">
                 <label>${escapeHtml(t("modal.dest_port"))}</label>
                 <input type="text" inputmode="numeric" class="form-control dest-port" placeholder="${isRangeRule ? escapeHtml(t("modal.dest_port_range_placeholder", {}, "Same range or single port")) : "Default"}" value="${escapeHtml(port)}">
+            </div>
+            <div class="dest-lb-toggle-bar" style="display:${lbSupported ? "flex" : "none"};">
+                <label class="dest-lb-switch-label">
+                    <span class="dest-switch-control">
+                        <input type="checkbox" class="dest-lb-enabled" ${lbEnabled ? "checked" : ""}>
+                        <span class="dest-switch-slider"></span>
+                    </span>
+                    <span>${escapeHtml(t("modal.lb_toggle", {}, "Load Balance"))}</span>
+                </label>
+                <span class="xfwd-info-tip" tabindex="0" data-tip="${escapeHtml(t("modal.tip_lb_toggle", {}, "Distribute traffic across multiple backend IPs within this priority."))}" aria-label="Info">
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                </span>
+            </div>
+        </div>
+        <div class="lb-pool-panel" style="display:${lbEnabled ? "block" : "none"};">
+            <div class="lb-pool-header">
+                <div class="lb-mode-wrap">
+                    <label class="label-with-tip">
+                        <span>${escapeHtml(t("modal.lb_mode_label", {}, "Distribution Algorithm"))}</span>
+                        <span class="xfwd-info-tip" tabindex="0" data-tip="${escapeHtml(t("modal.tip_lb_mode", {}, "Choose how connections are distributed across healthy servers."))}" aria-label="Info">
+                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                        </span>
+                    </label>
+                    <select class="form-control lb-mode-select">
+                        ${buildLbModeOptionsHtml(type, lbMode)}
+                    </select>
+                </div>
+                <div class="lb-header-tools">
+                    <button type="button" class="btn btn-secondary btn-sm btn-lb-equalize">${escapeHtml(t("modal.lb_equalize", {}, "Equalize"))}</button>
+                    <span class="lb-count-pill font-mono">${lbMembers.length} / 16</span>
+                </div>
+            </div>
+            <div class="lb-mode-hint">${escapeHtml(getLbModeHintText(lbMode))}</div>
+            <div class="lb-split-bar" aria-label="Traffic split preview"></div>
+            <div class="lb-family-warning" style="display:none;">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                <span>${escapeHtml(t("rules.lb_ip_family_warn", {}, "NFTables LB pool cannot mix IPv4 and IPv6 addresses"))}</span>
+            </div>
+            <div class="lb-columns-head">
+                <span></span>
+                <span>${escapeHtml(t("modal.dest_target", {}, "Target Host"))}</span>
+                <span>${escapeHtml(t("modal.dest_port", {}, "Port"))}</span>
+                <span class="label-with-tip">
+                    <span>${escapeHtml(t("modal.lb_weight_label", {}, "Weight"))}</span>
+                    <span class="xfwd-info-tip" tabindex="0" data-tip="${escapeHtml(t("modal.tip_lb_weight", {}, "Relative traffic share (1-100)."))}" aria-label="Info">
+                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                    </span>
+                </span>
+                <span></span>
+            </div>
+            <div class="lb-targets-list">${lbMembersHtml}</div>
+            <div class="lb-pool-footer">
+                <button type="button" class="btn btn-secondary btn-sm btn-add-lb-target">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                    <span>${escapeHtml(t("modal.lb_add_target", {}, "Add Backend IP"))}</span>
+                </button>
+                <span class="lb-pool-note">${escapeHtml(type === "nftables" ? t("modal.lb_nft_family_note", {}, "NFTables requires all pool IPs to be the same family.") : t("modal.lb_nginx_note", {}, "Nginx passively skips failed TCP targets (max_fails=2)."))}</span>
             </div>
         </div>
         <div class="dest-meta-row dest-dsr-row" style="display:${showDsrRow ? "flex" : "none"};">
@@ -679,7 +948,7 @@ export function renderDestinationRow(dest, index, totalCount) {
             </div>
         </div>
         <div class="dest-meta-row">
-            <div class="form-group dest-iface-group" style="display:${showOutIface ? "block" : "none"};">
+            <div class="form-group dest-iface-group" style="display:${(showOutIface && !lbEnabled) ? "block" : "none"};">
                 <label class="label-with-tip">
                     <span>${escapeHtml(t("modal.tunnel_iface", {}, "Outbound Interface"))}</span>
                     <span class="xfwd-info-tip" tabindex="0" data-tip="${escapeHtml(t("modal.tip_outbound_iface", {}, "Optional (NFTables). Bind probes & routing to a specific tunnel or WAN interface."))}" aria-label="Info">
@@ -720,7 +989,7 @@ export function renderDestinationRow(dest, index, totalCount) {
                     <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
                 </span>
             </label>
-            <div class="dest-test-group">
+            <div class="dest-test-group" style="display:${lbEnabled ? "none" : "inline-flex"};">
                 <button type="button" class="btn-test-dest" id="btnTestDest_${index}" onclick="testModalDestination(${index})">
                     <span class="test-pulse-ring"></span>
                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
@@ -742,6 +1011,10 @@ export function renderDestinationRow(dest, index, totalCount) {
         });
     }
 
+    if (lbEnabled) {
+        refreshLbBoxState(div);
+    }
+
     return div;
 }
 
@@ -749,19 +1022,69 @@ export function handleDestTypeChange(selectEl) {
     const row = selectEl.closest(".priority-box");
     if (!row) return;
     const targetInput = row.querySelector(".dest-target");
+    const targetCol = row.querySelector(".dest-col-target");
+    const portCol = row.querySelector(".dest-col-port");
     const ifaceGroup = row.querySelector(".dest-iface-group");
     const dsrRow = row.querySelector(".dest-dsr-row");
     const ingressGroup = row.querySelector(".dest-ingress-iface-group");
     const snatGroup = row.querySelector(".dest-snat-ip-group");
     const spoofLabel = row.querySelector(".dest-spoof-label");
     const spoofInput = row.querySelector(".dest-spoof-ip");
+    const testGroup = row.querySelector(".dest-test-group");
+    const lbBar = row.querySelector(".dest-lb-toggle-bar");
+    const lbCheck = row.querySelector(".dest-lb-enabled");
+    const lbPanel = row.querySelector(".lb-pool-panel");
+    const lbModeSelect = row.querySelector(".lb-mode-select");
     const val = selectEl.value;
     const showOutIface = (val === "nftables" || val === "nftables_dsr");
     const showDsrRow = (val === "nftables_dsr" || val === "nftables_dsr_relay");
     const isDsrRelay = (val === "nftables_dsr_relay");
+    const lbSupported = isLbSupportedType(val);
+
+    if (lbBar) {
+        lbBar.style.display = lbSupported ? "flex" : "none";
+    }
+    let lbActive = Boolean(lbSupported && lbCheck && lbCheck.checked);
+    if (!lbSupported && lbCheck && lbCheck.checked) {
+        // Restore first LB target into single-target input before disabling LB
+        const firstT = row.querySelector(".lb-member-target")?.value?.trim() || "";
+        const firstP = row.querySelector(".lb-member-port")?.value?.trim() || "";
+        if (targetInput && !targetInput.value.trim() && firstT) {
+            targetInput.value = firstT;
+        }
+        const singlePortEl = row.querySelector(".dest-port");
+        if (singlePortEl && !singlePortEl.value.trim() && firstP) {
+            singlePortEl.value = firstP;
+        }
+        lbCheck.checked = false;
+        lbActive = false;
+    }
+
+    if (lbPanel) {
+        lbPanel.style.display = lbActive ? "block" : "none";
+    }
+    if (targetCol) {
+        targetCol.style.display = lbActive ? "none" : "block";
+    }
+    if (portCol) {
+        portCol.style.display = lbActive ? "none" : "block";
+    }
+    if (targetInput) {
+        targetInput.required = !lbActive;
+    }
+    if (testGroup) {
+        testGroup.style.display = lbActive ? "none" : "inline-flex";
+    }
+    if (lbModeSelect) {
+        const prevMode = lbModeSelect.value;
+        lbModeSelect.innerHTML = buildLbModeOptionsHtml(val, prevMode);
+    }
+    row.querySelectorAll(".lb-member-iface-group").forEach(grp => {
+        grp.style.display = (val === "nftables") ? "block" : "none";
+    });
 
     if (ifaceGroup) {
-        ifaceGroup.style.display = showOutIface ? "block" : "none";
+        ifaceGroup.style.display = (showOutIface && !lbActive) ? "block" : "none";
     }
     if (dsrRow) {
         dsrRow.style.display = showDsrRow ? "flex" : "none";
@@ -780,6 +1103,9 @@ export function handleDestTypeChange(selectEl) {
     if (spoofInput) {
         spoofInput.placeholder = isDsrRelay ? "198.51.100.25 (Required)" : "Auto (WAN Interface)";
         spoofInput.required = isDsrRelay;
+    }
+    if (lbActive) {
+        refreshLbBoxState(row);
     }
     if (!targetInput) return;
     if (val === "haproxy") {
@@ -810,6 +1136,8 @@ export function syncDestinationsFromDom() {
         const proxyProtoEl = box.querySelector(".dest-proxy-proto");
         const relayEl = box.querySelector(".dest-is-relay");
         const enabledEl = box.querySelector(".dest-enabled-check");
+        const lbCheckEl = box.querySelector(".dest-lb-enabled");
+        const lbModeEl = box.querySelector(".lb-mode-select");
 
         const rawDPort = portEl ? portEl.value.trim() : "";
         const parsedDPort = rawDPort ? parsePortSpec(rawDPort) : null;
@@ -818,6 +1146,8 @@ export function syncDestinationsFromDom() {
         const rawIngressIface = ingressIfaceEl ? ingressIfaceEl.value.trim() : "";
         const rawSpoofIp = spoofIpEl ? spoofIpEl.value.trim() : "";
         const rawSnatIp = snatIpEl ? snatIpEl.value.trim() : "";
+        const lbEnabled = Boolean(isLbSupportedType(dType) && lbCheckEl && lbCheckEl.checked);
+
         const destObj = {
             priority: i + 1,
             type: dType,
@@ -842,6 +1172,46 @@ export function syncDestinationsFromDom() {
             destObj.port_range = parsedDPort.rangeStr;
         } else if (rawDPort && !parsedDPort) {
             destObj._invalidPortInput = rawDPort;
+        }
+
+        if (lbEnabled) {
+            const members = [];
+            box.querySelectorAll(".lb-targets-list .lb-target-row").forEach(mRow => {
+                const mTarget = mRow.querySelector(".lb-member-target")?.value.trim() || "";
+                const rawMPort = mRow.querySelector(".lb-member-port")?.value.trim() || "";
+                const parsedMPort = rawMPort ? parsePortSpec(rawMPort) : null;
+                const rawW = parseInt(mRow.querySelector(".lb-member-weight")?.value || "1", 10);
+                const mWeight = isNaN(rawW) ? 1 : Math.max(1, Math.min(100, rawW));
+                const mIface = mRow.querySelector(".lb-member-iface")?.value.trim() || "";
+                const mComment = mRow.querySelector(".lb-member-comment")?.value.trim() || "";
+                const mEnabled = mRow.querySelector(".lb-member-enabled")?.checked !== false;
+                const mObj = {
+                    target: mTarget,
+                    port: parsedMPort ? parsedMPort.start : null,
+                    weight: mWeight,
+                    comment: mComment,
+                    enabled: mEnabled
+                };
+                if (dType === "nftables" && mIface) {
+                    mObj.tunnel_iface = mIface;
+                }
+                if (parsedMPort && parsedMPort.rangeStr) {
+                    mObj.port_range = parsedMPort.rangeStr;
+                } else if (rawMPort && !parsedMPort) {
+                    mObj._invalidPortInput = rawMPort;
+                }
+                members.push(mObj);
+            });
+            destObj.lb_enabled = true;
+            destObj.lb_mode = normalizeLbModeForType(dType, lbModeEl ? lbModeEl.value : "ip_hash");
+            destObj.lb_targets = members;
+            const firstEn = members.find(m => m.enabled && m.target) || members[0];
+            if (firstEn) {
+                if (firstEn.target) destObj.target = firstEn.target;
+                if (firstEn.port !== null) destObj.port = firstEn.port;
+                if (firstEn.port_range) destObj.port_range = firstEn.port_range;
+                if (firstEn.tunnel_iface) destObj.tunnel_iface = firstEn.tunnel_iface;
+            }
         }
         updated.push(destObj);
     });
@@ -1048,7 +1418,121 @@ export function initRuleModal(fetchStatusCallback) {
     const destContainer = document.getElementById("destinationsContainer");
 
     if (destContainer) {
-        destContainer.addEventListener("click", (ev) => {
+        destContainer.addEventListener("click", async (ev) => {
+            const addLbBtn = ev.target.closest(".btn-add-lb-target");
+            if (addLbBtn) {
+                ev.stopPropagation();
+                const box = addLbBtn.closest(".priority-box");
+                const listEl = box?.querySelector(".lb-targets-list");
+                if (!box || !listEl) return;
+                const curRows = listEl.querySelectorAll(".lb-target-row");
+                if (curRows.length >= 16) return;
+                const dType = (box.querySelector(".dest-type")?.value || "nftables").toLowerCase();
+                const inboundSpec = getCurrentInboundSpec();
+                const isRangeRule = Boolean(inboundSpec && inboundSpec.rangeStr);
+                const defPort = inboundSpec ? (inboundSpec.rangeStr || inboundSpec.start) : "";
+                const tmp = document.createElement("div");
+                tmp.innerHTML = buildLbMemberRowHtml(
+                    { target: "", port: defPort, weight: 1, tunnel_iface: "", comment: "", enabled: true },
+                    curRows.length,
+                    dType,
+                    isRangeRule,
+                    curRows.length + 1
+                );
+                if (tmp.firstElementChild) {
+                    listEl.appendChild(tmp.firstElementChild);
+                    refreshLbBoxState(box);
+                }
+                return;
+            }
+
+            const rmLbBtn = ev.target.closest(".btn-remove-lb-member");
+            if (rmLbBtn) {
+                ev.stopPropagation();
+                const box = rmLbBtn.closest(".priority-box");
+                const listEl = box?.querySelector(".lb-targets-list");
+                const mRow = rmLbBtn.closest(".lb-target-row");
+                if (!box || !listEl || !mRow) return;
+                if (listEl.querySelectorAll(".lb-target-row").length <= 2) return;
+                mRow.remove();
+                refreshLbBoxState(box);
+                return;
+            }
+
+            const eqBtn = ev.target.closest(".btn-lb-equalize");
+            if (eqBtn) {
+                ev.stopPropagation();
+                const box = eqBtn.closest(".priority-box");
+                if (!box) return;
+                box.querySelectorAll(".lb-member-weight").forEach(inp => { inp.value = "1"; });
+                refreshLbBoxState(box);
+                return;
+            }
+
+            const testMemberBtn = ev.target.closest(".btn-test-lb-member");
+            if (testMemberBtn) {
+                ev.stopPropagation();
+                const box = testMemberBtn.closest(".priority-box");
+                const mRow = testMemberBtn.closest(".lb-target-row");
+                if (!box || !mRow) return;
+                const dType = (box.querySelector(".dest-type")?.value || "nftables").toLowerCase();
+                const target = (mRow.querySelector(".lb-member-target")?.value || "").trim().replace(/^\[|\]$/g, "");
+                const rawMPort = (mRow.querySelector(".lb-member-port")?.value || "").trim();
+                const listenRaw = document.getElementById("formPort")?.value.trim() || "";
+                const parsedP = parsePortSpec(rawMPort || listenRaw);
+                const port = parsedP ? parsedP.start : null;
+                const mIface = (mRow.querySelector(".lb-member-iface")?.value || "").trim();
+                const resEl = mRow.querySelector(".lb-member-test-result");
+                const setRes = (kind, txt, title = "") => {
+                    if (!resEl) return;
+                    const tAttr = title ? ` title="${escapeHtml(title)}"` : "";
+                    resEl.innerHTML = `<span class="test-pill is-${kind}"${tAttr}><span class="test-pill-dot"></span><span>${txt}</span></span>`;
+                };
+                if (!target) {
+                    setRes("warn", escapeHtml(t("status.enter_target", {}, "Enter IP")));
+                    return;
+                }
+                if (!port) {
+                    setRes("warn", escapeHtml(t("status.enter_port", {}, "Enter port")));
+                    return;
+                }
+                testMemberBtn.disabled = true;
+                testMemberBtn.classList.add("is-probing");
+                setRes("probing", escapeHtml(t("status.probing", {}, "Probing...")));
+                try {
+                    const res = await fetch(`${API_BASE}/test-target`, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            target,
+                            port: parseInt(port, 10),
+                            type: dType,
+                            tunnel_iface: mIface,
+                            protocol: document.getElementById("formProto")?.value || "both",
+                            packets: 10
+                        })
+                    });
+                    const data = await res.json().catch(() => ({}));
+                    if (res.ok && data.ok) {
+                        const loss = data.packet_loss !== undefined ? data.packet_loss : (data.healthy ? 0 : 100);
+                        if (data.healthy) {
+                            const lat = (data.latency_ms !== null && data.latency_ms !== undefined && data.latency_ms > 0) ? `${data.latency_ms}ms · ${loss}%` : `${loss}%`;
+                            setRes("ok", escapeHtml(lat));
+                        } else {
+                            setRes("fail", `${escapeHtml(t("status.down", {}, "DOWN"))} (${loss}%)`, data.reason || "");
+                        }
+                    } else {
+                        setRes("fail", escapeHtml(data.error || "Error"));
+                    }
+                } catch (_) {
+                    setRes("fail", escapeHtml(t("status.network_error", {}, "Error")));
+                } finally {
+                    testMemberBtn.disabled = false;
+                    testMemberBtn.classList.remove("is-probing");
+                }
+                return;
+            }
+
             const trigger = ev.target.closest(".iface-select-trigger");
             if (trigger) {
                 ev.stopPropagation();
@@ -1057,8 +1541,11 @@ export function initRuleModal(fetchStatusCallback) {
                 const wasOpen = ms.classList.contains("open");
                 document.querySelectorAll(".iface-multiselect.open").forEach(el => el.classList.remove("open"));
                 if (!wasOpen) {
+                    const mRow = ms.closest(".lb-target-row");
                     const box = ms.closest(".priority-box");
-                    const targetVal = (box && box.querySelector(".dest-target")) ? box.querySelector(".dest-target").value : "";
+                    const targetVal = mRow
+                        ? (mRow.querySelector(".lb-member-target")?.value || "")
+                        : ((box && box.querySelector(".dest-target")) ? box.querySelector(".dest-target").value : "");
                     const hidden = ms.parentElement ? ms.parentElement.querySelector("input[type='hidden']") : null;
                     const curVal = (hidden && hidden.value) || "";
                     const menu = ms.querySelector(".iface-dropdown-menu");
@@ -1081,21 +1568,61 @@ export function initRuleModal(fetchStatusCallback) {
             const clickedVal = opt.dataset.iface || "";
             const prevVal = (hidden && hidden.value) || "";
             const nextVal = (clickedVal && clickedVal === prevVal) ? "" : clickedVal;
+            const mRow = ms.closest(".lb-target-row");
             const box = ms.closest(".priority-box");
-            const targetVal = (box && box.querySelector(".dest-target")) ? box.querySelector(".dest-target").value : "";
+            const targetVal = mRow
+                ? (mRow.querySelector(".lb-member-target")?.value || "")
+                : ((box && box.querySelector(".dest-target")) ? box.querySelector(".dest-target").value : "");
             if (hidden) hidden.value = nextVal;
             if (menu) menu.innerHTML = buildTunnelIfaceMenuHtml(nextVal, isIngress, targetVal);
             if (triggerText) triggerText.innerHTML = buildTunnelIfaceTriggerHtml(nextVal, isIngress);
             ms.classList.remove("open");
         });
 
+        destContainer.addEventListener("change", (ev) => {
+            if (ev.target.classList?.contains("dest-lb-enabled")) {
+                const box = ev.target.closest(".priority-box");
+                const typeSel = box?.querySelector(".dest-type");
+                if (box && ev.target.checked) {
+                    // Seed first LB row from single target if empty
+                    const singleT = box.querySelector(".dest-target")?.value.trim() || "";
+                    const singleP = box.querySelector(".dest-port")?.value.trim() || "";
+                    const singleI = box.querySelector(".dest-tunnel-iface")?.value.trim() || "";
+                    const firstRow = box.querySelector(".lb-targets-list .lb-target-row");
+                    if (firstRow) {
+                        const mT = firstRow.querySelector(".lb-member-target");
+                        const mP = firstRow.querySelector(".lb-member-port");
+                        const mI = firstRow.querySelector(".lb-member-iface");
+                        if (mT && !mT.value.trim() && singleT) mT.value = singleT;
+                        if (mP && !mP.value.trim() && singleP) mP.value = singleP;
+                        if (mI && !mI.value.trim() && singleI) {
+                            mI.value = singleI;
+                            const tTxt = firstRow.querySelector(".iface-trigger-text");
+                            if (tTxt) tTxt.innerHTML = buildTunnelIfaceTriggerHtml(singleI, false);
+                        }
+                    }
+                }
+                if (typeSel) handleDestTypeChange(typeSel);
+                return;
+            }
+            if (ev.target.classList?.contains("lb-mode-select") || ev.target.classList?.contains("lb-member-enabled")) {
+                const box = ev.target.closest(".priority-box");
+                if (box) refreshLbBoxState(box);
+            }
+        });
+
         destContainer.addEventListener("input", (ev) => {
-            const targetInput = ev.target.closest(".dest-target");
+            if (ev.target.classList?.contains("lb-member-weight") || ev.target.classList?.contains("lb-member-target")) {
+                const box = ev.target.closest(".priority-box");
+                if (box) refreshLbBoxState(box);
+            }
+            const targetInput = ev.target.closest(".dest-target, .lb-member-target");
             if (!targetInput) return;
-            const box = targetInput.closest(".priority-box");
-            if (!box) return;
+            const mRow = targetInput.closest(".lb-target-row");
+            const scopeEl = mRow || targetInput.closest(".priority-box");
+            if (!scopeEl) return;
             const newTarget = targetInput.value.trim();
-            box.querySelectorAll(".iface-multiselect").forEach(ms => {
+            scopeEl.querySelectorAll(".iface-multiselect").forEach(ms => {
                 const hidden = ms.parentElement ? ms.parentElement.querySelector("input[type='hidden']") : null;
                 const curVal = (hidden && hidden.value) || "";
                 const menu = ms.querySelector(".iface-dropdown-menu");
@@ -1245,6 +1772,78 @@ export function initRuleModal(fetchStatusCallback) {
             const sanitizedDests = [];
             for (let i = 0; i < currentModalDestinations.length; i++) {
                 const d = currentModalDestinations[i];
+                if (d.lb_enabled) {
+                    if (!isLbSupportedType(d.type)) {
+                        showToast(`Priority #${i + 1}: Load balancing is only supported for NFTables and Nginx`, "error");
+                        return;
+                    }
+                    const members = Array.isArray(d.lb_targets) ? d.lb_targets : [];
+                    if (members.length < 2) {
+                        showToast(`Priority #${i + 1}: Load-balanced pool requires at least 2 backend IPs`, "error");
+                        return;
+                    }
+                    const seenEps = new Set();
+                    const ipVers = new Set();
+                    const rangeModes = new Set();
+                    let enabledCount = 0;
+                    const cleanMembers = [];
+                    for (let mIdx = 0; mIdx < members.length; mIdx++) {
+                        const m = members[mIdx];
+                        if (!m.target || !m.target.trim()) {
+                            showToast(`Priority #${i + 1}: Please enter IP/host for backend #${mIdx + 1}`, "error");
+                            return;
+                        }
+                        if (m._invalidPortInput) {
+                            showToast(`Priority #${i + 1}: Backend #${mIdx + 1} has invalid port '${m._invalidPortInput}'`, "error");
+                            return;
+                        }
+                        if (d.type === "nftables") {
+                            const ver = detectIpVersion(m.target);
+                            if (!ver) {
+                                showToast(`Priority #${i + 1}: NFTables backend #${mIdx + 1} must be a valid IPv4 or IPv6 address`, "error");
+                                return;
+                            }
+                            ipVers.add(ver);
+                            if (ipVers.size > 1) {
+                                showToast(t("rules.lb_ip_family_warn", {}, "NFTables LB pool cannot mix IPv4 and IPv6 addresses"), "error");
+                                return;
+                            }
+                        }
+                        if (inbound.rangeStr) {
+                            if (m.port_range && m.port_range !== inbound.rangeStr) {
+                                showToast(`Priority #${i + 1}: Backend #${mIdx + 1} port range must match ${inbound.rangeStr} or be a single port`, "error");
+                                return;
+                            }
+                            rangeModes.add((m.port_range || m.port === null) ? "range" : "fixed");
+                            if (rangeModes.size > 1) {
+                                showToast(`Priority #${i + 1}: Range pool members must all use 1:1 range or all target a single port`, "error");
+                                return;
+                            }
+                        } else if (m.port_range) {
+                            showToast(`Priority #${i + 1}: Backend #${mIdx + 1} port range requires an inbound range`, "error");
+                            return;
+                        }
+                        const effPortKey = m.port_range || m.port || (inbound.rangeStr || inbound.start);
+                        const epKey = `${m.target.trim().toLowerCase()}:${effPortKey}`;
+                        if (seenEps.has(epKey)) {
+                            showToast(`Priority #${i + 1}: Duplicate backend '${epKey}' in pool`, "error");
+                            return;
+                        }
+                        seenEps.add(epKey);
+                        if (m.enabled !== false) enabledCount += 1;
+                        const cleanM = { ...m };
+                        delete cleanM._invalidPortInput;
+                        cleanMembers.push(cleanM);
+                    }
+                    if (enabledCount < 1) {
+                        showToast(`Priority #${i + 1}: At least 1 backend in the LB pool must be enabled`, "error");
+                        return;
+                    }
+                    const cleanDest = { ...d, lb_targets: cleanMembers };
+                    delete cleanDest._invalidPortInput;
+                    sanitizedDests.push(cleanDest);
+                    continue;
+                }
                 if (!d.target || !d.target.trim()) {
                     showToast(`Please enter target IP for Priority #${i + 1}`, "error");
                     return;

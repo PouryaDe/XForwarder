@@ -467,7 +467,7 @@ def parse_nginx_stream_endpoints(
     if not paths:
         return {}
 
-    upstreams: Dict[str, Tuple[str, int]] = {}
+    upstreams: Dict[str, List[Tuple[str, int]]] = {}
     raw_entries: Dict[Tuple[int, str, int], Set[str]] = {}
 
     for path in paths:
@@ -503,11 +503,13 @@ def parse_nginx_stream_endpoints(
                 if in_server and depth <= server_depth:
                     if cur_proxy_raw:
                         tgt_host, tgt_port = _parse_nginx_host_port(cur_proxy_raw)
-                        if not tgt_host and cur_proxy_raw in upstreams:
-                            tgt_host, tgt_port = upstreams[cur_proxy_raw]
                         if tgt_host and tgt_port:
                             for lp, lproto in cur_listens:
                                 raw_entries.setdefault((lp, tgt_host, tgt_port), set()).add(lproto)
+                        elif cur_proxy_raw in upstreams:
+                            for uh, up in upstreams[cur_proxy_raw]:
+                                for lp, lproto in cur_listens:
+                                    raw_entries.setdefault((lp, uh, up), set()).add(lproto)
                     in_server = False
                     server_depth = -1
                     cur_listens = []
@@ -540,10 +542,10 @@ def parse_nginx_stream_endpoints(
 
             if upstream_name:
                 m_srv = re.match(r"^server\s+(\S+)", stmt, re.IGNORECASE)
-                if m_srv and upstream_name not in upstreams:
+                if m_srv:
                     uh, up = _parse_nginx_host_port(m_srv.group(1))
                     if uh and up:
-                        upstreams[upstream_name] = (uh, up)
+                        upstreams.setdefault(upstream_name, []).append((uh, up))
                 continue
 
             if low == "server" and (stream_depth >= 0 or in_stream_file):
@@ -594,6 +596,7 @@ def sync_xforwarder_from_nginx(
     removed_dests = 0
     removed_rules = 0
     added_rules = 0
+    updated_pools = 0
     new_rules: List[Dict[str, Any]] = []
     existing_nginx_keys: Set[Tuple[int, str, int]] = set()
     rules_by_port: Dict[int, Dict[str, Any]] = {}
@@ -616,6 +619,44 @@ def sync_xforwarder_from_nginx(
 
         for d in dests:
             if str(d.get("type", "")).lower() == "nginx":
+                if d.get("lb_enabled") and isinstance(d.get("lb_targets"), list):
+                    kept_members: List[Dict[str, Any]] = []
+                    for m in d["lb_targets"]:
+                        if not isinstance(m, dict):
+                            continue
+                        m_host = str(m.get("target", "")).strip().strip("[]")
+                        try:
+                            m_port = int(m.get("port") or d.get("port") or r_port)
+                        except (ValueError, TypeError):
+                            m_port = r_port
+                        if (m_host, m_port) in active_set:
+                            kept_members.append(m)
+                            existing_nginx_keys.add((r_port, m_host, m_port))
+                    if len(kept_members) >= 2:
+                        if len(kept_members) != len(d["lb_targets"]):
+                            updated_pools += 1
+                        d["lb_targets"] = kept_members
+                        first_m = next((x for x in kept_members if x.get("enabled", True)), kept_members[0])
+                        d["target"] = first_m["target"]
+                        d["port"] = first_m.get("port", r_port)
+                        kept_dests.append(d)
+                    elif len(kept_members) == 1:
+                        updated_pools += 1
+                        only_m = kept_members[0]
+                        d.pop("lb_enabled", None)
+                        d.pop("lb_mode", None)
+                        d.pop("lb_targets", None)
+                        d["target"] = only_m["target"]
+                        d["port"] = only_m.get("port", r_port)
+                        kept_dests.append(d)
+                    else:
+                        removed_dests += 1
+                        try:
+                            removed_prios.add(int(d.get("priority", 0)))
+                        except (ValueError, TypeError):
+                            pass
+                    continue
+
                 d_host = str(d.get("target", "")).strip().strip("[]")
                 try:
                     d_port = int(d.get("port") or r_port)
@@ -662,7 +703,59 @@ def sync_xforwarder_from_nginx(
 
     # Import any active Nginx stream servers missing from XForwarder
     for lp, entries in sorted(nginx_map.items()):
-        for proto, thost, tport in entries:
+        missing_entries = [
+            (proto, thost, tport)
+            for proto, thost, tport in entries
+            if (lp, thost.strip("[]"), tport) not in existing_nginx_keys
+        ]
+        if not missing_entries:
+            continue
+        existing_rule = rules_by_port.get(lp)
+        if existing_rule is None and len(missing_entries) >= 2:
+            merged_protos = {p for p, _, _ in missing_entries}
+            rule_proto = "both" if ("both" in merged_protos or merged_protos == {"tcp", "udp"}) else next(iter(merged_protos))
+            lb_targets = [
+                {
+                    "target": thost.strip("[]"),
+                    "port": tport,
+                    "weight": 1,
+                    "enabled": True,
+                    "comment": "Synced from Nginx upstream"
+                }
+                for _, thost, tport in missing_entries
+            ]
+            cand_rule: Dict[str, Any] = {
+                "id": f"rule-{lp}",
+                "port": lp,
+                "protocol": rule_proto,
+                "active_priority": 1,
+                "force_override": 0,
+                "destinations": [
+                    {
+                        "priority": 1,
+                        "type": "nginx",
+                        "target": lb_targets[0]["target"],
+                        "port": lb_targets[0]["port"],
+                        "proxy_protocol": False,
+                        "enabled": True,
+                        "is_relay": False,
+                        "lb_enabled": True,
+                        "lb_mode": "round_robin",
+                        "lb_targets": lb_targets,
+                        "comment": "Synced from Nginx upstream"
+                    }
+                ]
+            }
+            ok, _ = validate_rule(cand_rule)
+            if ok:
+                new_rules.append(cand_rule)
+                rules_by_port[lp] = cand_rule
+                added_rules += 1
+                for _, thost, tport in missing_entries:
+                    existing_nginx_keys.add((lp, thost.strip("[]"), tport))
+                continue
+
+        for proto, thost, tport in missing_entries:
             key = (lp, thost.strip("[]"), tport)
             if key in existing_nginx_keys:
                 continue
@@ -681,7 +774,7 @@ def sync_xforwarder_from_nginx(
                 })
                 added_rules += 1
             else:
-                cand_rule: Dict[str, Any] = {
+                cand_rule = {
                     "id": f"rule-{lp}",
                     "port": lp,
                     "protocol": proto,
@@ -707,7 +800,7 @@ def sync_xforwarder_from_nginx(
                     added_rules += 1
             existing_nginx_keys.add(key)
 
-    if removed_dests == 0 and removed_rules == 0 and added_rules == 0:
+    if removed_dests == 0 and removed_rules == 0 and added_rules == 0 and updated_pools == 0:
         return True, "XForwarder rules already match Nginx stream configuration", False
 
     if os.path.exists(path):
@@ -783,25 +876,51 @@ def discover_importable_nginx_rules(
     for lp, entries in sorted(stream_map.items()):
         if lp in prot or not entries:
             continue
-        proto, thost, tport = entries[0]
+        if len(entries) >= 2:
+            merged_protos = {p for p, _, _ in entries}
+            proto = "both" if ("both" in merged_protos or merged_protos == {"tcp", "udp"}) else next(iter(merged_protos))
+            lb_targets = [
+                {
+                    "target": thost.strip("[]"),
+                    "port": tport,
+                    "weight": 1,
+                    "enabled": True,
+                    "comment": "Imported from Nginx upstream"
+                }
+                for _, thost, tport in entries
+            ]
+            dest_obj: Dict[str, Any] = {
+                "priority": 1,
+                "type": "nginx",
+                "target": lb_targets[0]["target"],
+                "port": lb_targets[0]["port"],
+                "proxy_protocol": False,
+                "enabled": True,
+                "is_relay": False,
+                "lb_enabled": True,
+                "lb_mode": "round_robin",
+                "lb_targets": lb_targets,
+                "comment": "Imported from Nginx upstream"
+            }
+        else:
+            proto, thost, tport = entries[0]
+            dest_obj = {
+                "priority": 1,
+                "type": "nginx",
+                "target": thost,
+                "port": tport,
+                "proxy_protocol": False,
+                "enabled": True,
+                "is_relay": False,
+                "comment": "Imported from Nginx stream"
+            }
         cand: Dict[str, Any] = {
             "id": f"rule-{lp}",
             "port": lp,
             "protocol": proto,
             "active_priority": 1,
             "force_override": 0,
-            "destinations": [
-                {
-                    "priority": 1,
-                    "type": "nginx",
-                    "target": thost,
-                    "port": tport,
-                    "proxy_protocol": False,
-                    "enabled": True,
-                    "is_relay": False,
-                    "comment": "Imported from Nginx stream"
-                }
-            ],
+            "destinations": [dest_obj],
             "_source": "nginx"
         }
         ok, _ = validate_rule(dict(cand))

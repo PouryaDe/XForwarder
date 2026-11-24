@@ -543,7 +543,7 @@ def prune_old_metrics(retention_days: int = RETENTION_DAYS, db_path: Optional[st
 
 def get_unique_targets_from_config(cfg: Dict[str, Any]) -> List[str]:
     """
-    Extracts all unique destination targets across all forwarding rules.
+    Extracts all unique destination targets across all forwarding rules (including LB pools).
     Guarantees that an IP referenced across multiple ports is tested only ONCE.
     """
     unique_targets: Set[str] = set()
@@ -564,6 +564,12 @@ def get_unique_targets_from_config(cfg: Dict[str, Any]) -> List[str]:
             clean = sanitize_target_host(raw_target)
             if clean:
                 unique_targets.add(clean)
+            if dest.get("lb_enabled") and isinstance(dest.get("lb_targets"), list):
+                for m in dest["lb_targets"]:
+                    if isinstance(m, dict):
+                        m_clean = sanitize_target_host(m.get("target"))
+                        if m_clean:
+                            unique_targets.add(m_clean)
 
     return sorted(list(unique_targets))
 
@@ -576,7 +582,7 @@ def run_scheduled_ping_round(cfg: Dict[str, Any], db_path: Optional[str] = None)
     targets = get_unique_targets_from_config(cfg)
     results: List[Dict[str, Any]] = []
 
-    # Map each target to its tunnel interface if explicitly configured on any destination
+    # Map each target to its tunnel interface if explicitly configured on any destination or LB member
     target_ifaces: Dict[str, Optional[str]] = {}
     rules = cfg.get("rules", []) if isinstance(cfg, dict) else []
     for rule in rules:
@@ -585,13 +591,24 @@ def run_scheduled_ping_round(cfg: Dict[str, Any], db_path: Optional[str] = None)
         for dest in rule.get("destinations", []):
             if not isinstance(dest, dict):
                 continue
+            dest_iface = dest.get("tunnel_iface")
             clean = sanitize_target_host(dest.get("target"))
             if clean:
-                iface = dest.get("tunnel_iface")
-                if iface and clean not in target_ifaces:
-                    target_ifaces[clean] = str(iface).strip()
+                if dest_iface and clean not in target_ifaces:
+                    target_ifaces[clean] = str(dest_iface).strip()
                 elif clean not in target_ifaces:
                     target_ifaces[clean] = None
+            if dest.get("lb_enabled") and isinstance(dest.get("lb_targets"), list):
+                for m in dest["lb_targets"]:
+                    if not isinstance(m, dict):
+                        continue
+                    m_clean = sanitize_target_host(m.get("target"))
+                    if m_clean:
+                        m_iface = m.get("tunnel_iface") or dest_iface
+                        if m_iface and not target_ifaces.get(m_clean):
+                            target_ifaces[m_clean] = str(m_iface).strip()
+                        elif m_clean not in target_ifaces:
+                            target_ifaces[m_clean] = None
 
     for target in targets:
         iface = target_ifaces.get(target)

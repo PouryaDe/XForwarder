@@ -11,7 +11,11 @@ import shutil
 import socket
 import subprocess
 import re
+import math
+import ipaddress
 from typing import Dict, Any, Tuple, Optional, List, Set
+
+_IPV6_LITERAL_REGEX = re.compile(r"(?:\b[0-9a-fA-F]{0,4}:){2,}[0-9a-fA-F]{0,4}")
 
 
 def is_ipv6_supported() -> bool:
@@ -36,8 +40,8 @@ def _find_conntrack_bin() -> Optional[str]:
     return None
 
 
-def flush_conntrack(port: Any, proto: Optional[str] = None) -> None:
-    """Flushes stale conntrack states for TCP and UDP on a validated port or tiny range."""
+def flush_conntrack(port: Any, proto: Optional[str] = None, reply_src: Optional[str] = None) -> None:
+    """Flushes stale conntrack states for TCP and UDP on a validated port or tiny range (optionally scoped to a specific backend IP)."""
     ports_to_flush: List[int] = []
     s_port = str(port or "").strip()
     if "-" in s_port:
@@ -61,12 +65,32 @@ def flush_conntrack(port: Any, proto: Optional[str] = None) -> None:
     conntrack_bin = _find_conntrack_bin()
     if not conntrack_bin:
         return
+
+    clean_reply_src: Optional[str] = None
+    reply_family: Optional[str] = None
+    if reply_src is not None and str(reply_src).strip():
+        cand = str(reply_src).strip().strip("[]")
+        try:
+            ip_obj = ipaddress.ip_address(cand)
+            clean_reply_src = str(ip_obj)
+            reply_family = "ipv6" if ip_obj.version == 6 else "ipv4"
+        except ValueError:
+            return
+
     protos = [proto] if proto in ("tcp", "udp") else ["tcp", "udp"]
     for port_int in ports_to_flush:
         for p in protos:
             try:
+                if clean_reply_src and reply_family:
+                    cmd = [
+                        conntrack_bin, "-D", "-f", reply_family,
+                        "-p", p, "--orig-port-dst", str(port_int),
+                        "--reply-src", clean_reply_src
+                    ]
+                else:
+                    cmd = [conntrack_bin, "-D", "-p", p, "--dport", str(port_int)]
                 subprocess.run(
-                    [conntrack_bin, "-D", "-p", p, "--dport", str(port_int)],
+                    cmd,
                     stdout=subprocess.DEVNULL,
                     stderr=subprocess.DEVNULL,
                     timeout=5.0,
@@ -74,6 +98,144 @@ def flush_conntrack(port: Any, proto: Optional[str] = None) -> None:
                 )
             except Exception:
                 pass
+
+
+def normalize_lb_weights(weights: List[int], max_slots: int = 100) -> List[int]:
+    """Reduces integer weights via GCD and caps total slot count for compact discrete nftables maps."""
+    if not weights:
+        return []
+    clean = [max(1, min(int(w or 1), 100)) for w in weights]
+    g = clean[0]
+    for w in clean[1:]:
+        g = math.gcd(g, w)
+    reduced = [max(1, w // g) for w in clean]
+    total = sum(reduced)
+    if total > max_slots:
+        scale = 64.0 / float(total)
+        reduced = [max(1, int(round(w * scale))) for w in reduced]
+    return reduced
+
+
+def build_nft_lb_dnat_entries(
+    backends: List[Tuple[str, Optional[int], int]],
+    lb_mode: str,
+    ip_version: int,
+    protos: Tuple[str, ...],
+    dport_selectors: List[Any],
+    iif_prefix: str,
+    inbound_start_port: int,
+    rule_idx: int,
+    preserve_range: bool = False,
+    is_inbound_range: bool = False
+) -> Tuple[List[str], List[str]]:
+    """
+    Generates NFTables load-balancing DNAT rules (discrete anonymous maps for same-port/1:1
+    and vmap helper chains for port translation) compatible with Linux kernels >= 4.9.
+    Returns (dnat_rules: List[str], extra_chains: List[str]).
+    """
+    if not backends:
+        return [], []
+
+    valid_protos = [p for p in protos if p in ("tcp", "udp")]
+    if not valid_protos:
+        return [], []
+
+    is_ipv6 = (ip_version == 6)
+    ip_kw = "ip6" if is_ipv6 else "ip"
+    sanitized_backends: List[Tuple[str, Optional[int], int]] = []
+    for ip_str, b_port, b_weight in backends:
+        clean_ip = str(ip_str or "").strip().strip("[]")
+        try:
+            ip_obj = ipaddress.ip_address(clean_ip)
+        except ValueError:
+            continue
+        if ip_obj.version != ip_version:
+            continue
+        eff_bp: Optional[int] = None
+        if b_port is not None:
+            try:
+                p_int = int(b_port)
+                if 1 <= p_int <= 65535:
+                    eff_bp = p_int
+            except (TypeError, ValueError):
+                pass
+        sanitized_backends.append((str(ip_obj), eff_bp, max(1, min(int(b_weight or 1), 100))))
+
+    if not sanitized_backends:
+        return [], []
+
+    dnat_rules: List[str] = []
+    extra_chains: List[str] = []
+
+    if len(sanitized_backends) == 1:
+        clean_ip, b_port, _ = sanitized_backends[0]
+        if preserve_range or b_port is None:
+            dnat_target = f"[{clean_ip}]" if is_ipv6 else clean_ip
+        else:
+            dnat_target = f"[{clean_ip}]:{b_port}" if is_ipv6 else f"{clean_ip}:{b_port}"
+        for listen_spec in dport_selectors:
+            for p_name in valid_protos:
+                dnat_rules.append(
+                    f'        {iif_prefix}{p_name} dport {listen_spec} dnat to {dnat_target}'
+                )
+        return dnat_rules, extra_chains
+
+    weights = normalize_lb_weights([b[2] for b in sanitized_backends])
+    total_slots = sum(weights)
+
+    mode = str(lb_mode or "ip_hash").lower().strip()
+    if mode == "round_robin":
+        selector = f"numgen inc mod {total_slots}"
+    elif mode == "random":
+        selector = f"numgen random mod {total_slots}"
+    else:
+        selector = f"jhash {ip_kw} saddr mod {total_slots}"
+
+    # An inbound range mapped to a single fixed port always requires explicit :port DNAT,
+    # even when the fixed target port numerically equals inbound_start_port.
+    needs_port_translation = bool(is_inbound_range and not preserve_range)
+    if not preserve_range and not needs_port_translation:
+        for _, b_port, _ in sanitized_backends:
+            if b_port is not None and int(b_port) != int(inbound_start_port):
+                needs_port_translation = True
+                break
+
+    if not needs_port_translation:
+        slot_pairs: List[str] = []
+        slot_idx = 0
+        for (clean_ip, _, _), w in zip(sanitized_backends, weights):
+            for _ in range(w):
+                slot_pairs.append(f"{slot_idx} : {clean_ip}")
+                slot_idx += 1
+        map_body = ", ".join(slot_pairs)
+        for listen_spec in dport_selectors:
+            for p_name in valid_protos:
+                dnat_rules.append(
+                    f'        {iif_prefix}{p_name} dport {listen_spec} dnat to {selector} map {{ {map_body} }}'
+                )
+    else:
+        slot_pairs = []
+        slot_idx = 0
+        for m_idx, ((clean_ip, b_port, _), w) in enumerate(zip(sanitized_backends, weights)):
+            eff_port = int(b_port) if b_port is not None else int(inbound_start_port)
+            dnat_target = f"[{clean_ip}]:{eff_port}" if is_ipv6 else f"{clean_ip}:{eff_port}"
+            chain_name = f"xfwd_lb_r{int(rule_idx)}_m{m_idx}"
+            chain_lines = [f"    chain {chain_name} {{"]
+            for p_name in valid_protos:
+                chain_lines.append(f"        meta l4proto {p_name} dnat to {dnat_target}")
+            chain_lines.append("    }")
+            extra_chains.append("\n".join(chain_lines))
+            for _ in range(w):
+                slot_pairs.append(f"{slot_idx} : jump {chain_name}")
+                slot_idx += 1
+        vmap_body = ", ".join(slot_pairs)
+        for listen_spec in dport_selectors:
+            for p_name in valid_protos:
+                dnat_rules.append(
+                    f'        {iif_prefix}{p_name} dport {listen_spec} {selector} vmap {{ {vmap_body} }}'
+                )
+
+    return dnat_rules, extra_chains
 
 
 IFACE_NAME_REGEX = re.compile(r"^[a-zA-Z0-9][a-zA-Z0-9_.\-]{0,14}$")
@@ -170,6 +332,19 @@ def ensure_dsr_sysctl(
             pass
 
 
+def _is_ipv6_nft_statement(stmt: str) -> bool:
+    """Returns True if an NFTables rule or chain block targets IPv6 addresses or selectors."""
+    return (
+        "dnat to [" in stmt
+        or "]:" in stmt
+        or "ip6 daddr" in stmt
+        or "ip6 saddr" in stmt
+        or "dnat ip6 to" in stmt
+        or "snat to [" in stmt
+        or bool(_IPV6_LITERAL_REGEX.search(stmt))
+    )
+
+
 def generate_nftables_ruleset(
     dnat_rules: List[str],
     rule_ports: Optional[Set[int]] = None,
@@ -179,19 +354,28 @@ def generate_nftables_ruleset(
     raw_rules: Optional[List[str]] = None,
     snat_rules: Optional[List[str]] = None,
     dsr_mss_rules: Optional[List[str]] = None,
-    has_untracked: bool = False
+    has_untracked: bool = False,
+    extra_chains: Optional[List[str]] = None
 ) -> str:
-    """Generates a complete, isolated NFTables ruleset string (DNAT, DSR stateless/relay, single ports & ranges)."""
+    """Generates a complete, isolated NFTables ruleset string (DNAT, LB maps/vmaps, DSR stateless/relay, single ports & ranges)."""
     if enable_ipv6 is None:
         enable_ipv6 = is_ipv6_supported()
 
     ipv4_rules = []
     ipv6_rules = []
     for r in dnat_rules:
-        if "dnat to [" in r or "]:" in r or "ip6 daddr" in r:
+        if _is_ipv6_nft_statement(r):
             ipv6_rules.append(r)
         else:
             ipv4_rules.append(r)
+
+    ipv4_extra_chains = []
+    ipv6_extra_chains = []
+    for ch in (extra_chains or []):
+        if _is_ipv6_nft_statement(ch):
+            ipv6_extra_chains.append(ch)
+        else:
+            ipv4_extra_chains.append(ch)
 
     ipv4_raw_rules = []
     ipv6_raw_rules = []
@@ -279,6 +463,7 @@ def generate_nftables_ruleset(
 
     base_postrouting = _format_postrouting_masquerades(custom_oifs)
     ipv4_postrouting = ("\n".join(ipv4_snat_rules) + "\n" + base_postrouting) if ipv4_snat_rules else base_postrouting
+    ipv4_extra_block = ("\n\n".join(ipv4_extra_chains) + "\n\n") if ipv4_extra_chains else ""
     ipv4_raw_chain = (
         f"    chain raw_prerouting {{\n"
         f"        type filter hook prerouting priority raw; policy accept;\n"
@@ -291,7 +476,7 @@ def generate_nftables_ruleset(
 delete table ip xfwd_orchestrator
 
 table ip xfwd_orchestrator {{
-{counter_defs_str}{ipv4_raw_chain}    chain prerouting {{
+{counter_defs_str}{ipv4_extra_block}{ipv4_raw_chain}    chain prerouting {{
         type nat hook prerouting priority dstnat; policy accept;
 {ipv4_block}
     }}
@@ -314,6 +499,7 @@ table ip xfwd_orchestrator {{
     if enable_ipv6:
         ipv6_block = "\n".join(ipv6_rules) if ipv6_rules else "        # No active NFTables IPv6 DNAT rules"
         ipv6_postrouting = ("\n".join(ipv6_snat_rules) + "\n" + base_postrouting) if ipv6_snat_rules else base_postrouting
+        ipv6_extra_block = ("\n\n".join(ipv6_extra_chains) + "\n\n") if ipv6_extra_chains else ""
         ipv6_raw_chain = (
             f"    chain raw_prerouting {{\n"
             f"        type filter hook prerouting priority raw; policy accept;\n"
@@ -325,7 +511,7 @@ table ip xfwd_orchestrator {{
 delete table ip6 xfwd_orchestrator
 
 table ip6 xfwd_orchestrator {{
-{counter_defs_str}{ipv6_raw_chain}    chain prerouting {{
+{counter_defs_str}{ipv6_extra_block}{ipv6_raw_chain}    chain prerouting {{
         type nat hook prerouting priority dstnat; policy accept;
 {ipv6_block}
     }}
@@ -358,7 +544,8 @@ def apply_nftables(
     snat_rules: Optional[List[str]] = None,
     dsr_mss_rules: Optional[List[str]] = None,
     has_untracked: bool = False,
-    dsr_ifaces: Optional[Set[str]] = None
+    dsr_ifaces: Optional[Set[str]] = None,
+    extra_chains: Optional[List[str]] = None
 ) -> Tuple[bool, Optional[str], Optional[str]]:
     """
     Validates and atomically applies NFTables ruleset.
@@ -372,7 +559,8 @@ def apply_nftables(
         raw_rules=raw_rules,
         snat_rules=snat_rules,
         dsr_mss_rules=dsr_mss_rules,
-        has_untracked=has_untracked
+        has_untracked=has_untracked,
+        extra_chains=extra_chains
     )
 
     global _DSR_SYSCTL_APPLIED
