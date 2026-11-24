@@ -82,6 +82,10 @@ Authoritative visual guidelines, design tokens, and aesthetic rules for **all** 
   - Glass backdrop: `rgba(0, 0, 0, 0.65)` with `backdrop-filter: blur(8px)`.
   - Card radius: `18px`-`20px`, padding `26px`.
   - Invisible scrollbar (`scrollbar-width: none` / `::-webkit-scrollbar { display: none }`).
+- **Strict Centering Inside Frames & Buttons (Mandatory):**
+  - Every text label, badge, icon, SVG, or image placed inside a button, pill, circle, or framed container MUST be centered both vertically and horizontally (`display: inline-flex; align-items: center; justify-content: center;`).
+  - Explicitly reset browser defaults on framed controls (`padding: 0` on icon-only/circle buttons, `box-sizing: border-box`, `line-height: 1` for text/numbers or `line-height: 0` + `display: block` for SVGs/images).
+  - Match inner icon/SVG dimensions to the container's inner box parity (even-inside-even or odd-inside-odd, e.g., `12x12` SVG inside a `14x14` inner circle) to prevent subpixel off-center rendering.
 
 ---
 
