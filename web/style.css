@@ -7824,44 +7824,31 @@ select option {
 
 /* Destination Form Row Proportions */
 .dest-form-row {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: flex-end;
+    display: grid;
+    grid-template-columns: minmax(180px, 1.2fr) minmax(0, 1.5fr) minmax(84px, 0.55fr);
+    align-items: end;
     gap: 10px;
     margin-bottom: 12px;
 }
 
 .dest-form-row > .form-group {
     margin-bottom: 0;
-}
-
-.dest-col-type {
-    flex: 1 1 140px;
     min-width: 0;
-}
-
-.dest-col-target {
-    flex: 1.6 1 155px;
-    min-width: 0;
-}
-
-.dest-col-port {
-    flex: 0.55 1 78px;
-    min-width: 72px;
 }
 
 @media (max-width: 640px) {
     .dest-form-row {
-        flex-direction: column;
-        align-items: stretch;
+        grid-template-columns: minmax(0, 1fr) 96px;
         gap: 8px;
     }
-    .dest-col-type,
-    .dest-col-target,
-    .dest-col-port {
-        flex: 1 1 100%;
-        width: 100%;
-        min-width: 0;
+    .dest-col-type {
+        grid-column: 1 / -1;
+    }
+}
+
+@media (max-width: 420px) {
+    .dest-form-row {
+        grid-template-columns: 1fr;
     }
 }
 
@@ -8598,6 +8585,8 @@ input#formCategory::-webkit-list-button {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
     margin-bottom: 12px;
 }
 
@@ -8615,7 +8604,7 @@ input#formCategory::-webkit-list-button {
 [data-theme="light"] .prio-tag-4 { background: rgba(147, 51, 234, 0.12); color: #7E22CE; }
 [data-theme="light"] .prio-tag-5 { background: rgba(219, 39, 119, 0.12); color: #BE185D; }
 [data-theme="light"] .prio-tag-n { background: var(--raise-2); color: var(--ink-2); }
-.prio-sub { font-size: 0.75rem; color: var(--ink-3); margin-left: 8px; }
+.prio-sub { font-size: 0.75rem; color: var(--ink-2); margin-left: 8px; }
 
 .destinations-section {
     margin-top: 18px;
@@ -8688,6 +8677,7 @@ input#formCategory::-webkit-list-button {
 .prio-header-actions {
     display: flex;
     align-items: center;
+    flex-wrap: wrap;
     gap: 6px;
     direction: ltr;
 }
@@ -9818,17 +9808,32 @@ input#formCategory::-webkit-list-button {
 .dest-lb-toggle-bar {
     display: flex;
     align-items: center;
-    gap: 8px;
-    height: 38px;
-    padding: 0 10px;
+    gap: 6px;
+    height: 28px;
+    padding: 0 9px;
+    margin-right: 4px;
     margin-bottom: 0;
-    border-radius: var(--r);
+    border-radius: 8px;
     background: var(--raise-2);
     border: 1px solid var(--line);
     flex: 0 0 auto;
     max-width: 100%;
     box-sizing: border-box;
     transition: border-color 0.2s ease, background-color 0.2s ease;
+}
+
+.dest-lb-switch-label .dest-switch-control .dest-switch-slider {
+    width: 32px;
+    height: 18px;
+}
+
+.dest-lb-switch-label .dest-switch-control .dest-switch-slider::before {
+    width: 12px;
+    height: 12px;
+}
+
+.dest-lb-switch-label .dest-switch-control input[type="checkbox"]:checked + .dest-switch-slider::before {
+    transform: translate(14px, -50%);
 }
 
 .dest-lb-switch-label .dest-switch-control input[type="checkbox"]:not(:checked) + .dest-switch-slider {
@@ -10178,8 +10183,8 @@ input#formCategory::-webkit-list-button {
 
 @media (max-width: 640px) {
     .dest-lb-toggle-bar {
-        width: 100%;
-        justify-content: space-between;
+        height: 28px;
+        padding: 0 8px;
     }
     .lb-pool-panel {
         padding: 11px;

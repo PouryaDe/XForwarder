@@ -841,6 +841,18 @@ export function renderDestinationRow(dest, index, totalCount) {
                 <span class="prio-sub">${isPrimary ? escapeHtml(t("modal.primary_path")) : escapeHtml(t("modal.backup_path"))}</span>
             </div>
             <div class="prio-header-actions">
+                <div class="dest-lb-toggle-bar" style="display:${lbSupported ? "flex" : "none"};">
+                    <label class="dest-lb-switch-label">
+                        <span class="dest-switch-control">
+                            <input type="checkbox" class="dest-lb-enabled" ${lbEnabled ? "checked" : ""}>
+                            <span class="dest-switch-slider"></span>
+                        </span>
+                        <span>${escapeHtml(t("modal.lb_toggle", {}, "Load Balance"))}</span>
+                    </label>
+                    <span class="xfwd-info-tip" tabindex="0" data-tip="${escapeHtml(t("modal.tip_lb_toggle", {}, "Distribute traffic across multiple backend IPs within this priority."))}" aria-label="Info">
+                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                    </span>
+                </div>
                 <label class="dest-switch-control" title="Enable or disable this priority path">
                     <input type="checkbox" class="dest-enabled-check" ${dest.enabled !== false ? "checked" : ""}>
                     <span class="dest-switch-slider"></span>
@@ -871,18 +883,6 @@ export function renderDestinationRow(dest, index, totalCount) {
             <div class="form-group dest-col-port" style="display:${lbEnabled ? "none" : "block"};">
                 <label>${escapeHtml(t("modal.dest_port"))}</label>
                 <input type="text" inputmode="numeric" class="form-control dest-port" placeholder="${isRangeRule ? escapeHtml(t("modal.dest_port_range_placeholder", {}, "Same range or single port")) : "Default"}" value="${escapeHtml(port)}">
-            </div>
-            <div class="dest-lb-toggle-bar" style="display:${lbSupported ? "flex" : "none"};">
-                <label class="dest-lb-switch-label">
-                    <span class="dest-switch-control">
-                        <input type="checkbox" class="dest-lb-enabled" ${lbEnabled ? "checked" : ""}>
-                        <span class="dest-switch-slider"></span>
-                    </span>
-                    <span>${escapeHtml(t("modal.lb_toggle", {}, "Load Balance"))}</span>
-                </label>
-                <span class="xfwd-info-tip" tabindex="0" data-tip="${escapeHtml(t("modal.tip_lb_toggle", {}, "Distribute traffic across multiple backend IPs within this priority."))}" aria-label="Info">
-                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
-                </span>
             </div>
         </div>
         <div class="lb-pool-panel" style="display:${lbEnabled ? "block" : "none"};">
