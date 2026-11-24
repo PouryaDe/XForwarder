@@ -3314,6 +3314,38 @@ stream {
         self.assertIn("prefers-reduced-motion: reduce", comp_css)
         self.assertIn("is-deleting", rules_js)
 
+    def test_load_balance_modal_switch_and_responsive_layout(self):
+        """Verifies LB modal uses universal checkbox switches (with muted off state), wrapped dest-form-row, and responsive member cards."""
+        web_dir = os.path.join(REPO_ROOT, "web")
+        with open(os.path.join(web_dir, "style.css"), "r", encoding="utf-8") as f:
+            main_css = f.read()
+        with open(os.path.join(web_dir, "css", "components.css"), "r", encoding="utf-8") as f:
+            comp_css = f.read()
+        with open(os.path.join(web_dir, "css", "modals.css"), "r", encoding="utf-8") as f:
+            mod_css = f.read()
+        with open(os.path.join(web_dir, "js", "modules", "rule_modal.js"), "r", encoding="utf-8") as f:
+            modal_js = f.read()
+
+        # 1. Universal checkbox hiding & checked slider transition across all switches (dest-enabled, dest-lb-enabled, lb-member-enabled)
+        for css_text in (main_css, comp_css):
+            self.assertIn('.dest-switch-control input[type="checkbox"]', css_text)
+            self.assertIn('.dest-switch-control input[type="checkbox"]:checked + .dest-switch-slider', css_text)
+            self.assertIn("rgba(255, 107, 87, 0.16)", css_text)
+
+        # 2. Wrapped dest-form-row prevents Load Balance toggle overflow & clean responsive card grid
+        for css_text in (main_css, mod_css):
+            self.assertIn("flex-wrap: wrap;", css_text)
+            self.assertIn(".dest-lb-toggle-bar:has(.dest-lb-enabled:checked)", css_text)
+            self.assertIn(".lb-member-top", css_text)
+            self.assertIn(".lb-member-fields", css_text)
+            self.assertIn(".lb-weight-pct.is-off", css_text)
+
+        # 3. Simplified card-based LB member markup without misaligned floating column headers
+        self.assertIn("lb-member-top", modal_js)
+        self.assertIn("lb-member-fields", modal_js)
+        self.assertIn("lb-member-idx", modal_js)
+        self.assertNotIn("lb-columns-head", modal_js)
+
 
 if __name__ == "__main__":
     unittest.main()

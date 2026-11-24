@@ -194,14 +194,22 @@ function refreshLbBoxState(box) {
     const splitBar = panel.querySelector(".lb-split-bar");
     const segmentsHtml = [];
     rowMeta.forEach((item) => {
+        const idxEl = item.row.querySelector(".lb-member-idx");
+        if (idxEl) idxEl.textContent = `#${item.idx + 1}`;
         const pctEl = item.row.querySelector(".lb-weight-pct");
         if (!item.enabled || totalWeight <= 0) {
-            if (pctEl) pctEl.textContent = t("status.off", {}, "Off");
+            if (pctEl) {
+                pctEl.textContent = t("status.off", {}, "Off");
+                pctEl.classList.add("is-off");
+            }
             item.row.classList.add("is-member-disabled");
         } else {
             item.row.classList.remove("is-member-disabled");
             const pct = Math.round((item.weight / totalWeight) * 100);
-            if (pctEl) pctEl.textContent = `${pct}%`;
+            if (pctEl) {
+                pctEl.textContent = `${pct}%`;
+                pctEl.classList.remove("is-off");
+            }
             const color = LB_SPLIT_COLORS[item.idx % LB_SPLIT_COLORS.length];
             const label = escapeHtml(item.target || `#${item.idx + 1}`);
             segmentsHtml.push(`<div class="lb-split-seg" style="flex:${item.weight}; background:${color};" title="${label}: ${pct}%"><span>${pct >= 12 ? `${pct}%` : ""}</span></div>`);
@@ -229,27 +237,52 @@ function buildLbMemberRowHtml(member, mIdx, destType, isRangeRule, totalCount) {
     const targetPh = isNft ? "10.88.1.2 / 2001:db8::2" : "192.0.2.1 or host";
     const portPh = isRangeRule ? t("modal.dest_port_range_placeholder", {}, "Same range or port") : "Default";
 
+    const targetLbl = escapeHtml(t("modal.dest_target", {}, "Target Host"));
+    const portLbl = escapeHtml(t("modal.dest_port", {}, "Port"));
+    const weightLbl = escapeHtml(t("modal.lb_weight_label", {}, "Weight"));
+    const ifaceLbl = escapeHtml(t("modal.tunnel_iface", {}, "Outbound Interface"));
+    const commentLbl = escapeHtml(t("modal.comment_label", {}, "Label"));
+
     return `
         <div class="lb-target-row ${mEnabled ? "" : "is-member-disabled"}" data-member-index="${mIdx}">
-            <div class="lb-member-main">
-                <label class="dest-switch-control lb-member-switch" title="Enable or disable this backend IP">
-                    <input type="checkbox" class="lb-member-enabled" ${mEnabled ? "checked" : ""}>
-                    <span class="dest-switch-slider"></span>
-                </label>
-                <div class="lb-col-target">
+            <div class="lb-member-top">
+                <div class="lb-member-top-left">
+                    <span class="lb-member-idx font-mono">#${mIdx + 1}</span>
+                    <label class="dest-switch-control lb-member-switch" title="Enable or disable this backend IP">
+                        <input type="checkbox" class="lb-member-enabled" ${mEnabled ? "checked" : ""}>
+                        <span class="dest-switch-slider"></span>
+                    </label>
+                    <span class="lb-weight-pct font-mono ${mEnabled ? "" : "is-off"}">${mEnabled ? "--%" : escapeHtml(t("status.off", {}, "Off"))}</span>
+                </div>
+                <div class="lb-member-top-right">
+                    <div class="lb-member-test-wrap">
+                        <span class="test-dest-result lb-member-test-result"></span>
+                        <button type="button" class="btn-test-dest btn-test-lb-member">
+                            <span class="test-pulse-ring"></span>
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+                            <span>${escapeHtml(t("common.test", {}, "Test"))}</span>
+                        </button>
+                    </div>
+                    <button type="button" class="btn-remove-lb-member" title="Remove backend IP" ${totalCount <= 2 ? "disabled" : ""}>&times;</button>
+                </div>
+            </div>
+            <div class="lb-member-fields">
+                <div class="lb-field lb-col-target">
+                    <label class="lb-field-label">${targetLbl}</label>
                     <input type="text" class="form-control font-mono lb-member-target" placeholder="${escapeHtml(targetPh)}" value="${escapeHtml(mTarget)}">
                 </div>
-                <div class="lb-col-port">
+                <div class="lb-field lb-col-port">
+                    <label class="lb-field-label">${portLbl}</label>
                     <input type="text" inputmode="numeric" class="form-control font-mono lb-member-port" placeholder="${escapeHtml(portPh)}" value="${escapeHtml(mPort)}">
                 </div>
-                <div class="lb-col-weight">
+                <div class="lb-field lb-col-weight">
+                    <label class="lb-field-label">${weightLbl}</label>
                     <input type="number" min="1" max="100" class="form-control font-mono lb-member-weight" value="${mWeight}" title="${escapeHtml(t("modal.tip_lb_weight", {}, "Relative traffic share (1-100)"))}">
-                    <span class="lb-weight-pct font-mono">--%</span>
                 </div>
-                <button type="button" class="btn-remove-lb-member" title="Remove backend IP" ${totalCount <= 2 ? "disabled" : ""}>&times;</button>
             </div>
-            <div class="lb-member-sub">
-                <div class="lb-member-iface-group" style="display:${isNft ? "block" : "none"};">
+            <div class="lb-member-extra">
+                <div class="lb-field lb-member-iface-group" style="display:${isNft ? "block" : "none"};">
+                    <label class="lb-field-label">${ifaceLbl}</label>
                     <input type="hidden" class="lb-member-iface" value="${escapeHtml(mIface)}">
                     <div class="iface-multiselect" data-auto-mode="outbound">
                         <button type="button" class="form-control iface-select-trigger">
@@ -259,16 +292,9 @@ function buildLbMemberRowHtml(member, mIdx, destType, isRangeRule, totalCount) {
                         <div class="iface-dropdown-menu">${buildTunnelIfaceMenuHtml(mIface, false, mTarget)}</div>
                     </div>
                 </div>
-                <div class="lb-member-comment-wrap">
+                <div class="lb-field lb-member-comment-wrap">
+                    <label class="lb-field-label">${commentLbl}</label>
                     <input type="text" class="form-control lb-member-comment" placeholder="${escapeHtml(t("modal.comment_placeholder", {}, "e.g. Node 1"))}" value="${escapeHtml(mComment)}">
-                </div>
-                <div class="lb-member-test-wrap">
-                    <button type="button" class="btn-test-dest btn-test-lb-member">
-                        <span class="test-pulse-ring"></span>
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
-                        <span>${escapeHtml(t("common.test", {}, "Test"))}</span>
-                    </button>
-                    <span class="test-dest-result lb-member-test-result"></span>
                 </div>
             </div>
         </div>
@@ -882,18 +908,6 @@ export function renderDestinationRow(dest, index, totalCount) {
             <div class="lb-family-warning" style="display:none;">
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
                 <span>${escapeHtml(t("rules.lb_ip_family_warn", {}, "NFTables LB pool cannot mix IPv4 and IPv6 addresses"))}</span>
-            </div>
-            <div class="lb-columns-head">
-                <span></span>
-                <span>${escapeHtml(t("modal.dest_target", {}, "Target Host"))}</span>
-                <span>${escapeHtml(t("modal.dest_port", {}, "Port"))}</span>
-                <span class="label-with-tip">
-                    <span>${escapeHtml(t("modal.lb_weight_label", {}, "Weight"))}</span>
-                    <span class="xfwd-info-tip" tabindex="0" data-tip="${escapeHtml(t("modal.tip_lb_weight", {}, "Relative traffic share (1-100)."))}" aria-label="Info">
-                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
-                    </span>
-                </span>
-                <span></span>
             </div>
             <div class="lb-targets-list">${lbMembersHtml}</div>
             <div class="lb-pool-footer">
