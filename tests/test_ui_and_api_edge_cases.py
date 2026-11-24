@@ -2177,7 +2177,7 @@ stream {
         self.assertIn('document.readyState === "loading"', utils_js)
 
     def test_isolated_ping_latency_and_packet_loss_badges_and_v1_4_0_standards(self):
-        """Verifies version 1.5.5 alignment, glassmorphism sidebar, and strict separation of ping & loss badges."""
+        """Verifies version 1.6.0 alignment, glassmorphism sidebar, and strict separation of ping & loss badges."""
         html_path = os.path.join(REPO_ROOT, "web", "index.html")
         app_js_path = os.path.join(REPO_ROOT, "web", "app.js")
         rules_js_path = os.path.join(REPO_ROOT, "web", "js", "modules", "rules.js")
@@ -2204,11 +2204,11 @@ stream {
         with open(sh_path, "r", encoding="utf-8") as f:
             sh_code = f.read()
 
-        # 1. Version 1.5.5 alignment across stack
-        self.assertIn('APP_VERSION = "1.5.5"', svc_mgr)
-        self.assertIn('SCRIPT_VERSION="1.5.5"', sh_code)
-        self.assertIn('id="brandVersionBadge">v1.5.5</span>', html)
-        self.assertIn('id="valInstalledVersion">v1.5.5</span>', html)
+        # 1. Version 1.6.0 alignment across stack
+        self.assertIn('APP_VERSION = "1.6.0"', svc_mgr)
+        self.assertIn('SCRIPT_VERSION="1.6.0"', sh_code)
+        self.assertIn('id="brandVersionBadge">v1.6.0</span>', html)
+        self.assertIn('id="valInstalledVersion">v1.6.0</span>', html)
 
         # 2. Topbar manual refresh button completely removed
         self.assertNotIn('id="btnManualRefresh"', html)
@@ -3371,6 +3371,134 @@ stream {
 
         self.assertIn("parsed.port || parsed.port_range || parsed.excluded_ports", ie_js)
         self.assertIn("ports.slice(0, 12).map(p => escapeHtml(String(p)))", ie_js)
+
+    def test_security_panel_access_endpoint_and_ui(self):
+        """Verifies POST /api/security/panel validation, port collision guards, config persistence, and UI wiring."""
+        import socket
+        import tempfile
+        import threading
+        import urllib.request
+        from http.server import HTTPServer
+        from unittest.mock import patch
+        from core.web_server import XForwarderWebHandler, ACTIVE_SESSIONS, SESSION_LOCK
+
+        with open(os.path.join(REPO_ROOT, "web", "index.html"), "r", encoding="utf-8") as f:
+            html = f.read()
+        with open(os.path.join(REPO_ROOT, "web", "js", "modules", "auth.js"), "r", encoding="utf-8") as f:
+            auth_js = f.read()
+        self.assertIn('id="panelAccessForm"', html)
+        self.assertIn('id="secPanelPort"', html)
+        self.assertIn('id="secPanelPath"', html)
+        self.assertIn("syncPanelAccessInputs", auth_js)
+        self.assertIn("waitAndRedirectToNewPanel", auth_js)
+
+        orig_cfg_path = os.environ.get("XFWD_CONFIG_PATH")
+        with tempfile.TemporaryDirectory() as tmp:
+            cfg_path = os.path.join(tmp, "config.json")
+            os.environ["XFWD_CONFIG_PATH"] = cfg_path
+            with open(cfg_path, "w", encoding="utf-8") as f:
+                json.dump({
+                    "schema_version": 3,
+                    "web": {"port": 8090, "secret_path": "xfwd-admin", "auth": {"username": "admin", "password_hash": "x"}},
+                    "rules": [{"id": "rule-9214", "port": 9214, "protocol": "both", "destinations": [{"priority": 1, "type": "nginx", "target": "1.2.3.4", "port": 9214}]}]
+                }, f)
+
+            server = HTTPServer(("127.0.0.1", 0), XForwarderWebHandler)
+            port = server.server_port
+            token = "test_panel_access_token"
+            with SESSION_LOCK:
+                ACTIVE_SESSIONS[token] = {
+                    "username": "admin",
+                    "created_at": time.time(),
+                    "last_active": time.time(),
+                    "expires_at": time.time() + 3600
+                }
+
+            def post_panel(payload, with_auth=True, with_origin=True):
+                req = urllib.request.Request(
+                    f"http://127.0.0.1:{port}/xfwd-admin/api/security/panel",
+                    data=json.dumps(payload).encode("utf-8"),
+                    headers={"Content-Type": "application/json"},
+                )
+                if with_auth:
+                    req.add_header("Cookie", f"xfwd_session={token}")
+                if with_origin:
+                    req.add_header("Origin", f"http://127.0.0.1:{port}")
+                try:
+                    with urllib.request.urlopen(req, timeout=3.0) as resp:
+                        return resp.status, json.loads(resp.read().decode("utf-8"))
+                except urllib.error.HTTPError as e:
+                    return e.code, json.loads(e.read().decode("utf-8"))
+
+            def serve_n(n):
+                for _ in range(n):
+                    server.handle_request()
+
+            # Find a free port and an occupied port
+            busy_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            busy_sock.bind(("0.0.0.0", 0))
+            busy_port = busy_sock.getsockname()[1]
+
+            free_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            free_sock.bind(("0.0.0.0", 0))
+            free_port = free_sock.getsockname()[1]
+            free_sock.close()
+
+            try:
+                t = threading.Thread(target=serve_n, args=(7,), daemon=True)
+                t.start()
+
+                # 1. Unauthenticated -> 401
+                code, _ = post_panel({"port": free_port}, with_auth=False)
+                self.assertEqual(code, 401)
+
+                # 2. Invalid port -> 400
+                code, body = post_panel({"port": 70000, "secret_path": "ok-path"})
+                self.assertEqual(code, 400)
+                self.assertFalse(body["ok"])
+
+                # 3. Reserved path -> 400
+                code, body = post_panel({"port": 8090, "secret_path": "api"})
+                self.assertEqual(code, 400)
+
+                # 4. Overlap with forwarding rule -> 409
+                code, body = post_panel({"port": 9214, "secret_path": "xfwd-admin"})
+                self.assertEqual(code, 409)
+
+                # 5. Port already in use by another service -> 409
+                code, body = post_panel({"port": busy_port, "secret_path": "xfwd-admin"})
+                self.assertEqual(code, 409)
+
+                # 6. No-op -> 200 changed=False
+                code, body = post_panel({"port": 8090, "secret_path": "/xfwd-admin/"})
+                self.assertEqual(code, 200)
+                self.assertTrue(body["ok"])
+                self.assertFalse(body["changed"])
+
+                # 7. Valid update -> saves config, syncs rules, restarts web
+                with patch("core.web_server.sync_rules_and_notify", return_value=(True, [])) as mock_sync, \
+                     patch("core.web_server.restart_services_action", return_value=(True, "restarting", True)) as mock_restart:
+                    code, body = post_panel({"port": free_port, "secret_path": "/my-secure/"})
+                    self.assertEqual(code, 200)
+                    self.assertTrue(body["ok"])
+                    self.assertTrue(body["changed"])
+                    self.assertTrue(body["restarting"])
+                    self.assertEqual(body["port"], free_port)
+                    self.assertEqual(body["secret_path"], "my-secure")
+                    mock_sync.assert_called_once()
+                    mock_restart.assert_called_once()
+
+                with open(cfg_path, "r", encoding="utf-8") as f:
+                    saved = json.load(f)
+                self.assertEqual(saved["web"]["port"], free_port)
+                self.assertEqual(saved["web"]["secret_path"], "my-secure")
+            finally:
+                busy_sock.close()
+                server.server_close()
+                if orig_cfg_path is not None:
+                    os.environ["XFWD_CONFIG_PATH"] = orig_cfg_path
+                else:
+                    os.environ.pop("XFWD_CONFIG_PATH", None)
 
 
 if __name__ == "__main__":

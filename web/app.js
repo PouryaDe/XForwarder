@@ -30,7 +30,7 @@ import { initTheme, toggleTheme } from "./js/modules/theme.js";
 import { initAmbientEffects, updateNavIndicator } from "./js/modules/effects.js";
 import { initI18n, toggleLanguage, setLanguage, t, getCurrentLang } from "./js/modules/i18n.js";
 import { initNavigation, switchSection, openMobileSidebar, closeMobileSidebar } from "./js/modules/navigation.js";
-import { showLogin, showDashboard, checkSession, handleLogin, handleLogout, initAuth } from "./js/modules/auth.js";
+import { showLogin, showDashboard, checkSession, handleLogin, handleLogout, initAuth, syncPanelAccessInputs } from "./js/modules/auth.js";
 import { renderStats, renderSystemStats, renderServicesStatus, renderNetworkTopology, copyIpToClipboard } from "./js/modules/stats.js";
 import {
     sortRulesList,
@@ -234,6 +234,7 @@ export async function fetchStatus() {
         const data = await res.json();
 
         const cfg = data.config || {};
+        syncPanelAccessInputs(cfg.web);
         setLastRuntime(data.runtime || {});
         setCurrentRules(cfg.rules || []);
         setLastTrafficData(data.traffic || null);

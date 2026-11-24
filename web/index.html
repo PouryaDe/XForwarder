@@ -282,7 +282,7 @@
                     </div>
                     <div class="brand-text">
                         <span class="brand-title" data-i18n="brand.title">XForwarder</span>
-                        <span class="brand-badge" id="brandVersionBadge">v1.5.5</span>
+                        <span class="brand-badge" id="brandVersionBadge">v1.6.0</span>
                     </div>
                 </div>
                 <button class="btn-sidebar-close" id="btnCloseSidebar" title="Close Menu">
@@ -1402,6 +1402,40 @@
                         </div>
                     </div>
 
+                    <!-- Panel Access (Port & URL Path) Card -->
+                    <div class="overview-card" id="cardPanelAccess">
+                        <div class="overview-card-header">
+                            <div class="overview-card-title">
+                                <div class="stat-icon icon-cyan" style="width:36px;height:36px;">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <circle cx="12" cy="12" r="10" />
+                                        <line x1="2" y1="12" x2="22" y2="12" />
+                                        <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+                                    </svg>
+                                </div>
+                                <div>
+                                    <h3 data-i18n="security.panel_title">Panel Access (Port &amp; Path)</h3>
+                                    <span class="overview-card-sub" data-i18n="security.panel_sub">Change web dashboard listening port and secret URL path</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="overview-card-body">
+                            <form id="panelAccessForm">
+                                <div class="form-group">
+                                    <label for="secPanelPort" data-i18n="security.panel_port">Panel Port <span class="required">*</span></label>
+                                    <input type="number" id="secPanelPort" class="form-control font-mono ltr-mono" min="1" max="65535" placeholder="8090" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="secPanelPath" data-i18n="security.panel_path">Secret URL Path</label>
+                                    <input type="text" id="secPanelPath" class="form-control font-mono ltr-mono" maxlength="64" placeholder="xfwd-admin" data-i18n-placeholder="security.panel_path_placeholder" autocomplete="off">
+                                    <small class="text-muted font-mono ltr-mono" id="secPanelUrlPreview" style="display:block; margin-top:6px; word-break:break-all;"></small>
+                                </div>
+                                <div id="secPanelError" class="login-error" style="display:none;"></div>
+                                <button type="submit" class="btn btn-primary" id="btnSavePanelAccess" data-i18n="security.panel_save_btn">Save &amp; Restart Panel</button>
+                            </form>
+                        </div>
+                    </div>
+
                     <!-- Configuration Backup & Migration Card -->
                     <div class="overview-card">
                         <div class="overview-card-header">
@@ -1517,7 +1551,7 @@
                             <div class="updates-telemetry-grid">
                                 <div class="update-stat-tile">
                                     <span class="update-tile-label" data-i18n="security.installed_version">Installed Version</span>
-                                    <span class="update-tile-value font-mono text-emerald" id="valInstalledVersion">v1.5.5</span>
+                                    <span class="update-tile-value font-mono text-emerald" id="valInstalledVersion">v1.6.0</span>
                                 </div>
                                 <div class="update-stat-tile">
                                     <span class="update-tile-label" data-i18n="security.local_commit">Local Git Commit</span>

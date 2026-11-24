@@ -14,6 +14,8 @@ import secrets
 import ssl
 import gzip
 import signal
+import socket
+import re
 import tempfile
 import urllib.request
 from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
@@ -842,6 +844,96 @@ class XForwarderWebHandler(BaseHTTPRequestHandler):
                 self.send_json({"ok": False, "error": "Failed to save configuration"}, 500)
             return
 
+        elif subpath == "/api/security/panel":
+            cfg = load_config()
+            web_cfg = cfg.setdefault("web", {})
+            old_port = int(web_cfg.get("port", 8090) or 8090)
+            old_secret = str(web_cfg.get("secret_path", "xfwd-admin") or "").strip().strip("/")
+
+            raw_port = body.get("port", old_port)
+            try:
+                new_port = int(raw_port)
+            except (ValueError, TypeError):
+                self.send_json({"ok": False, "error": "Panel port must be a valid integer between 1 and 65535"}, 400)
+                return
+            if new_port < 1 or new_port > 65535:
+                self.send_json({"ok": False, "error": "Panel port must be between 1 and 65535"}, 400)
+                return
+
+            if "secret_path" in body:
+                new_secret = str(body.get("secret_path") or "").strip().strip("/")
+            else:
+                new_secret = old_secret
+
+            if new_secret:
+                if len(new_secret) > 64 or not re.fullmatch(r"[a-zA-Z0-9_-]+(?:/[a-zA-Z0-9_-]+)*", new_secret):
+                    self.send_json({"ok": False, "error": "Panel path must contain only letters, numbers, '-', '_', or '/' (max 64 chars)"}, 400)
+                    return
+                first_seg = new_secret.split("/", 1)[0].lower()
+                if first_seg in ("api", "css", "js", "rules", "overview", "traffic", "services", "updates", "security", "logs", "favicon.ico"):
+                    self.send_json({"ok": False, "error": f"Panel path '/{new_secret}' conflicts with reserved dashboard routes"}, 400)
+                    return
+
+            if new_port != old_port:
+                for r in cfg.get("rules", []):
+                    if not isinstance(r, dict) or r.get("excluded_ports"):
+                        continue
+                    sp, ep, _ = get_rule_port_bounds(r)
+                    if sp is not None and ep is not None and sp <= new_port <= ep:
+                        r_label = r.get("port_range") or r.get("port")
+                        self.send_json({"ok": False, "error": f"Port {new_port} overlaps with existing forwarding rule ({r_label})"}, 409)
+                        return
+
+                bind_host = str(web_cfg.get("bind_host", "0.0.0.0") or "0.0.0.0")
+                sock_family = socket.AF_INET6 if ":" in bind_host else socket.AF_INET
+                test_sock = socket.socket(sock_family, socket.SOCK_STREAM)
+                try:
+                    test_sock.bind((bind_host, new_port))
+                except OSError:
+                    self.send_json({"ok": False, "error": f"Port {new_port} is already in use by another service"}, 409)
+                    return
+                finally:
+                    try:
+                        test_sock.close()
+                    except Exception:
+                        pass
+
+            if new_port == old_port and new_secret == old_secret:
+                self.send_json({
+                    "ok": True,
+                    "changed": False,
+                    "restarting": False,
+                    "port": new_port,
+                    "secret_path": new_secret,
+                    "message": "Panel access settings are already up to date"
+                })
+                return
+
+            web_cfg["port"] = new_port
+            web_cfg["secret_path"] = new_secret
+            if not save_config(cfg):
+                self.send_json({"ok": False, "error": "Failed to save configuration"}, 500)
+                return
+
+            if new_port != old_port:
+                sync_rules_and_notify(max_retries=2)
+
+            ok, msg, is_reconnecting = restart_services_action("web", sync_rules_func=sync_rules_and_notify, notify_func=notify_engine_wakeup)
+            with _SERVICES_LOCK:
+                _SERVICES_CACHE["expires"] = 0.0
+            if ok:
+                self.send_json({
+                    "ok": True,
+                    "changed": True,
+                    "restarting": is_reconnecting,
+                    "port": new_port,
+                    "secret_path": new_secret,
+                    "message": msg
+                })
+            else:
+                self.send_json({"ok": False, "error": msg}, 500)
+            return
+
         elif subpath == "/api/rule":
             valid, err_msg = validate_rule(body)
             if not valid:
@@ -1424,7 +1516,6 @@ class XForwarderWebHandler(BaseHTTPRequestHandler):
                     return
 
             if entity_type in ("tunnel", "method", "tunnel_type") and entity_id.lower() != "all":
-                import re
                 if not re.match(r"^[a-zA-Z0-9_.-]{1,32}$", entity_id):
                     self.send_json({"ok": False, "error": f"Invalid {entity_type} identifier '{entity_id}'."}, 400)
                     return

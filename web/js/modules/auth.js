@@ -565,4 +565,137 @@ export function initAuth(onLoginSuccess, onLogout) {
 
     initSecurityModal();
     initInlineSecurityForm();
+    initPanelAccessForm();
+}
+
+function updatePanelUrlPreview() {
+    const previewEl = document.getElementById("secPanelUrlPreview");
+    const portEl = document.getElementById("secPanelPort");
+    const pathEl = document.getElementById("secPanelPath");
+    if (!previewEl || !portEl || !pathEl) return;
+    const port = parseInt(portEl.value, 10) || window.location.port || 8090;
+    const cleanPath = String(pathEl.value || "").trim().replace(/^\/+|\/+$/g, "");
+    const prefix = cleanPath ? `/${cleanPath}` : "";
+    previewEl.textContent = `${window.location.protocol}//${window.location.hostname}:${port}${prefix}/`;
+}
+
+export function syncPanelAccessInputs(webCfg) {
+    if (!webCfg || typeof webCfg !== "object") return;
+    const portEl = document.getElementById("secPanelPort");
+    const pathEl = document.getElementById("secPanelPath");
+    if (portEl && document.activeElement !== portEl && !portEl.dataset.dirty) {
+        portEl.value = webCfg.port !== undefined ? String(webCfg.port) : "";
+    }
+    if (pathEl && document.activeElement !== pathEl && !pathEl.dataset.dirty) {
+        pathEl.value = webCfg.secret_path !== undefined ? String(webCfg.secret_path) : "";
+    }
+    updatePanelUrlPreview();
+}
+
+async function waitAndRedirectToNewPanel(newPort, newSecretPath) {
+    const cleanPath = String(newSecretPath || "").trim().replace(/^\/+|\/+$/g, "");
+    const prefix = cleanPath ? `/${cleanPath}` : "";
+    const newOrigin = `${window.location.protocol}//${window.location.hostname}:${newPort}`;
+    const targetUrl = `${newOrigin}${prefix}/security`;
+    const pingUrl = `${newOrigin}${prefix}/favicon.ico`;
+
+    await new Promise((r) => setTimeout(r, 1200));
+    for (let attempt = 0; attempt < 14; attempt++) {
+        try {
+            await fetch(`${pingUrl}?t=${Date.now()}`, { mode: "no-cors", cache: "no-store" });
+            window.location.href = targetUrl;
+            return;
+        } catch (_) {
+            await new Promise((r) => setTimeout(r, 600));
+        }
+    }
+    window.location.href = targetUrl;
+}
+
+export function initPanelAccessForm() {
+    const form = document.getElementById("panelAccessForm");
+    if (!form) return;
+
+    const portEl = document.getElementById("secPanelPort");
+    const pathEl = document.getElementById("secPanelPath");
+    const errorEl = document.getElementById("secPanelError");
+    const submitBtn = document.getElementById("btnSavePanelAccess");
+
+    [portEl, pathEl].forEach((el) => {
+        if (!el) return;
+        el.addEventListener("input", () => {
+            el.dataset.dirty = "1";
+            updatePanelUrlPreview();
+        });
+    });
+
+    form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        if (errorEl) errorEl.style.display = "none";
+
+        const rawPort = portEl ? portEl.value.trim() : "";
+        const port = parseInt(rawPort, 10);
+        if (!rawPort || isNaN(port) || port < 1 || port > 65535) {
+            if (errorEl) {
+                errorEl.innerText = "Panel port must be between 1 and 65535";
+                errorEl.style.display = "block";
+            }
+            return;
+        }
+
+        const cleanPath = pathEl ? pathEl.value.trim().replace(/^\/+|\/+$/g, "") : "";
+        if (cleanPath && (cleanPath.length > 64 || !/^[a-zA-Z0-9_-]+(?:\/[a-zA-Z0-9_-]+)*$/.test(cleanPath))) {
+            if (errorEl) {
+                errorEl.innerText = "Panel path must contain only letters, numbers, '-', '_', or '/' (max 64 chars)";
+                errorEl.style.display = "block";
+            }
+            return;
+        }
+
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<span class="btn-spinner"></span> <span>Applying &amp; Restarting...</span>';
+        }
+
+        try {
+            const res = await fetch(`${API_BASE}/security/panel`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ port, secret_path: cleanPath })
+            });
+            const data = await res.json().catch(() => ({}));
+            if (res.ok && data.ok) {
+                if (portEl) delete portEl.dataset.dirty;
+                if (pathEl) delete pathEl.dataset.dirty;
+                if (!data.changed) {
+                    showToast(data.message || "Panel access settings are already up to date", "info");
+                    if (submitBtn) {
+                        submitBtn.disabled = false;
+                        submitBtn.innerText = "Save & Restart Panel";
+                    }
+                    return;
+                }
+                showToast("Panel settings saved! Restarting web service and redirecting...", "success");
+                await waitAndRedirectToNewPanel(data.port, data.secret_path);
+            } else {
+                if (errorEl) {
+                    errorEl.innerText = data.error || "Failed to update panel settings";
+                    errorEl.style.display = "block";
+                }
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.innerText = "Save & Restart Panel";
+                }
+            }
+        } catch (_) {
+            if (errorEl) {
+                errorEl.innerText = "Network error communicating with server";
+                errorEl.style.display = "block";
+            }
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.innerText = "Save & Restart Panel";
+            }
+        }
+    });
 }
