@@ -3233,16 +3233,45 @@ input:-webkit-autofill:active {
     border-color: var(--line-strong);
 }
 
+.rule-card.is-pending-delete,
+.rule-list-row.is-pending-delete,
+.rule-category-section.is-pending-delete {
+    opacity: 0.58;
+    pointer-events: none;
+    transition: opacity 0.18s ease;
+}
+
 .rule-card.is-deleting {
-    transition: all 0.28s cubic-bezier(0.16, 1, 0.3, 1) !important;
+    transition: opacity 0.34s cubic-bezier(0.22, 1, 0.36, 1),
+                transform 0.34s cubic-bezier(0.22, 1, 0.36, 1),
+                max-height 0.34s cubic-bezier(0.22, 1, 0.36, 1),
+                margin 0.34s cubic-bezier(0.22, 1, 0.36, 1),
+                padding 0.34s cubic-bezier(0.22, 1, 0.36, 1),
+                border-color 0.24s ease !important;
     opacity: 0 !important;
-    transform: scale(0.95) !important;
+    transform: scale(0.95) translateY(-6px) !important;
     max-height: 0 !important;
-    margin: 0 !important;
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
     padding-top: 0 !important;
     padding-bottom: 0 !important;
     overflow: hidden !important;
     border-color: transparent !important;
+    pointer-events: none !important;
+}
+
+.rule-category-section.is-deleting {
+    transition: opacity 0.36s cubic-bezier(0.22, 1, 0.36, 1),
+                transform 0.36s cubic-bezier(0.22, 1, 0.36, 1),
+                max-height 0.36s cubic-bezier(0.22, 1, 0.36, 1),
+                margin 0.36s cubic-bezier(0.22, 1, 0.36, 1) !important;
+    opacity: 0 !important;
+    transform: translateY(-8px) scale(0.98) !important;
+    max-height: 0 !important;
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+    overflow: hidden !important;
+    pointer-events: none !important;
 }
 
 .rule-top {
@@ -3916,6 +3945,36 @@ input:-webkit-autofill:active {
 
 .btn-dest-toggle.is-disabled .dest-toggle-slider {
     transform: translateX(0);
+}
+
+.btn-dest-toggle.is-pending {
+    cursor: wait;
+    opacity: 0.82;
+}
+
+.btn-dest-toggle.is-pending .dest-toggle-slider::after {
+    content: "";
+    position: absolute;
+    inset: 3px;
+    border-radius: 50%;
+    border: 2px solid rgba(0, 26, 15, 0.22);
+    border-top-color: #001a0f;
+    animation: xfwdSpin 0.65s linear infinite;
+}
+
+.path-box.is-pending {
+    position: relative;
+    border-color: color-mix(in srgb, var(--accent) 45%, var(--border-color)) !important;
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 12%, transparent);
+    pointer-events: none;
+}
+
+.rule-card.is-reordering {
+    border-color: color-mix(in srgb, var(--accent) 45%, var(--border-color));
+}
+
+@keyframes xfwdSpin {
+    to { transform: rotate(360deg); }
 }
 
 /* Light Theme Overrides */

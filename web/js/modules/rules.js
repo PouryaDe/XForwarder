@@ -91,6 +91,10 @@ export async function deleteCategoryRules(catKey, fetchStatusCallback) {
     if (!confirmed) return;
 
     const ruleIds = categoryRules.map(r => getRuleId(r)).filter(Boolean);
+    const catSection = Array.from(document.querySelectorAll(".rule-category-section"))
+        .find(el => el.dataset.cat === String(catKey));
+    if (catSection) catSection.classList.add("is-pending-delete");
+
     try {
         const res = await fetch(`${API_BASE}/rules/bulk-delete`, {
             method: "POST",
@@ -101,12 +105,21 @@ export async function deleteCategoryRules(catKey, fetchStatusCallback) {
         if (res.ok && data.ok) {
             collapsedCategories.delete(String(catKey));
             saveCollapsedCategories();
+            if (catSection) {
+                catSection.style.maxHeight = `${catSection.offsetHeight}px`;
+                void catSection.offsetHeight;
+                catSection.classList.remove("is-pending-delete");
+                catSection.classList.add("is-deleting");
+                await new Promise(resolve => setTimeout(resolve, 360));
+            }
             showToast(`Deleted ${data.deleted_count || ruleIds.length} ports from '${catName}'`, "success");
             if (fetchStatusCallback) await fetchStatusCallback();
         } else {
+            if (catSection) catSection.classList.remove("is-pending-delete");
             showToast(data.error || "Failed to delete category rules", "error");
         }
     } catch (e) {
+        if (catSection) catSection.classList.remove("is-pending-delete");
         showToast("Network error while deleting category", "error");
     }
 }
@@ -299,15 +312,78 @@ export async function handlePathDrop(e, ruleId, toIndex) {
     const rule = (currentRules || []).find(r => getRuleId(r) === ruleId);
     if (!rule || !rule.destinations) return;
 
+    const prevDests = [...rule.destinations];
     const dests = [...rule.destinations].sort((a, b) => (a.priority || 1) - (b.priority || 1));
     if (fromIndex < 0 || toIndex < 0 || fromIndex >= dests.length || toIndex >= dests.length) return;
 
+    const cardSelector = `#rule-card-${CSS.escape(encodeInlineParam(ruleId))}`;
+    const oldRects = new Map();
+    const oldCardEl = document.querySelector(cardSelector);
+    if (oldCardEl) {
+        oldCardEl.querySelectorAll(".path-box[data-prio]").forEach(el => {
+            oldRects.set(String(el.dataset.prio), el.getBoundingClientRect().top);
+        });
+    }
+
     const moved = dests.splice(fromIndex, 1)[0];
+    const movedOldPrio = String(moved.priority || (fromIndex + 1));
     dests.splice(toIndex, 0, moved);
     dests.forEach((d, i) => d.priority = i + 1);
     rule.destinations = dests;
 
     renderRules(currentRules, lastRuntime);
+
+    const newCardEl = document.querySelector(cardSelector);
+    if (newCardEl) {
+        newCardEl.classList.add("is-reordering");
+        const newBoxes = Array.from(newCardEl.querySelectorAll(".path-box[data-prio]"));
+        // Map old priorities to new positions for FLIP animation
+        const prioMapping = [];
+        dests.forEach((d, idx) => {
+            const newP = String(idx + 1);
+            let oldP = newP;
+            if (idx === toIndex) {
+                oldP = movedOldPrio;
+            } else {
+                // Reconstruct which old slot shifted into idx
+                const origIdx = idx < toIndex && idx >= fromIndex ? idx + 1
+                    : (idx > toIndex && idx <= fromIndex ? idx - 1 : idx);
+                oldP = String(origIdx + 1);
+            }
+            prioMapping.push({ newP, oldP });
+        });
+
+        newBoxes.forEach(box => {
+            const newP = String(box.dataset.prio);
+            const mapItem = prioMapping.find(m => m.newP === newP);
+            const oldTop = mapItem ? oldRects.get(mapItem.oldP) : undefined;
+            if (oldTop !== undefined) {
+                const deltaY = oldTop - box.getBoundingClientRect().top;
+                if (Math.abs(deltaY) > 1) {
+                    box.style.transition = "none";
+                    box.style.transform = `translateY(${deltaY}px)`;
+                }
+            }
+        });
+
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                newBoxes.forEach(box => {
+                    box.style.transition = "transform 0.36s cubic-bezier(0.22, 1, 0.36, 1)";
+                    box.style.transform = "translateY(0)";
+                    const onEnd = () => {
+                        box.style.transition = "";
+                        box.style.transform = "";
+                        box.removeEventListener("transitionend", onEnd);
+                    };
+                    box.addEventListener("transitionend", onEnd);
+                });
+            });
+        });
+
+        const movedBox = newCardEl.querySelector(`.path-box[data-prio="${toIndex + 1}"]`);
+        if (movedBox) movedBox.classList.add("is-pending");
+    }
 
     try {
         const res = await fetch(`${API_BASE}/rule`, {
@@ -316,12 +392,26 @@ export async function handlePathDrop(e, ruleId, toIndex) {
             body: JSON.stringify(rule)
         });
         const data = await res.json().catch(() => ({}));
+        const activeCardEl = document.querySelector(cardSelector);
+        if (activeCardEl) {
+            activeCardEl.classList.remove("is-reordering");
+            activeCardEl.querySelectorAll(".path-box.is-pending").forEach(b => b.classList.remove("is-pending"));
+        }
         if (res.ok && data.ok) {
+            const settledBox = activeCardEl?.querySelector(`.path-box[data-prio="${toIndex + 1}"]`);
+            if (settledBox) {
+                settledBox.classList.add("is-just-activated");
+                setTimeout(() => settledBox.classList.remove("is-just-activated"), 460);
+            }
             showToast(`Reordered: #${fromIndex + 1} -> #${toIndex + 1}`, "success");
         } else {
+            rule.destinations = prevDests;
+            renderRules(currentRules, lastRuntime);
             showToast(data.error || "Failed to save reordered priority", "error");
         }
     } catch (_) {
+        rule.destinations = prevDests;
+        renderRules(currentRules, lastRuntime);
         showToast("Network error reordering priority", "error");
     }
 }
@@ -878,7 +968,7 @@ export function renderRules(rules, runtime) {
             const itemsHtml = groupRules.map(r => currentViewMode === "list" ? renderRuleListRow(r, rulesState) : renderRuleCard(r, rulesState)).join("");
 
             return `
-                <div class="rule-category-section${isCollapsed ? " is-collapsed" : ""}">
+                <div class="rule-category-section${isCollapsed ? " is-collapsed" : ""}" data-cat="${escapeHtml(catKey)}">
                     <div class="rule-category-header">
                         <div class="rule-category-title-group">
                             <span class="rule-category-icon">
@@ -1066,9 +1156,14 @@ export async function toggleDestinationEnabled(event, ruleId, prio, fetchStatusC
     const cardEl = document.getElementById(`rule-card-${encodeInlineParam(ruleId)}`);
     const pathBox = cardEl ? cardEl.querySelector(`.path-box[data-prio="${prio}"]`) : null;
     const toggleBtn = pathBox ? pathBox.querySelector('.btn-dest-toggle') : null;
+    if (toggleBtn && toggleBtn.classList.contains('is-pending')) return;
+
     if (cardEl && pathBox && toggleBtn) {
         toggleBtn.classList.toggle('is-enabled', newEnabled);
         toggleBtn.classList.toggle('is-disabled', !newEnabled);
+        toggleBtn.classList.add('is-pending');
+        toggleBtn.disabled = true;
+        pathBox.classList.add('is-pending');
         pathBox.classList.toggle('is-disabled', !newEnabled);
         if (!newEnabled) {
             pathBox.classList.remove('is-active', 'is-failover');
@@ -1104,9 +1199,20 @@ export async function toggleDestinationEnabled(event, ruleId, prio, fetchStatusC
             })
         });
         const data = await res.json().catch(() => ({}));
+        if (toggleBtn) {
+            toggleBtn.classList.remove('is-pending');
+            toggleBtn.disabled = false;
+        }
+        if (pathBox) {
+            pathBox.classList.remove('is-pending');
+        }
         if (res.ok && data.ok) {
+            if (pathBox) {
+                pathBox.classList.add('is-just-activated');
+                setTimeout(() => pathBox.classList.remove('is-just-activated'), 440);
+            }
             showToast(`Priority #${prio} turned ${newEnabled ? "ON" : "OFF"}`);
-            if (typeof fetchStatusCallback === "function") setTimeout(() => fetchStatusCallback(), 220);
+            if (typeof fetchStatusCallback === "function") setTimeout(() => fetchStatusCallback(), 420);
         } else {
             // Revert on failure
             dest.enabled = currentEnabled;
@@ -1116,6 +1222,13 @@ export async function toggleDestinationEnabled(event, ruleId, prio, fetchStatusC
             showToast(data.error || "Failed to update priority status", "error");
         }
     } catch (_) {
+        if (toggleBtn) {
+            toggleBtn.classList.remove('is-pending');
+            toggleBtn.disabled = false;
+        }
+        if (pathBox) {
+            pathBox.classList.remove('is-pending');
+        }
         dest.enabled = currentEnabled;
         rule.force_override = prevForceOverride;
         rule.active_priority = prevActivePriority;
@@ -1133,20 +1246,27 @@ export async function deleteRule(ruleId, fetchStatusCallback) {
     if (!confirmed) return;
 
     const cardEl = document.getElementById(`rule-card-${encodeInlineParam(ruleId)}`);
-    if (cardEl) cardEl.classList.add("is-deleting");
+    if (cardEl) cardEl.classList.add("is-pending-delete");
 
     try {
         const res = await fetch(`${API_BASE}/rule/${encodeURIComponent(ruleId)}`, { method: "DELETE" });
         const data = await res.json().catch(() => ({}));
         if (res.ok && data.ok) {
+            if (cardEl) {
+                cardEl.style.maxHeight = `${cardEl.offsetHeight}px`;
+                void cardEl.offsetHeight;
+                cardEl.classList.remove("is-pending-delete");
+                cardEl.classList.add("is-deleting");
+                await new Promise(resolve => setTimeout(resolve, 340));
+            }
             showToast(`Rule '${ruleId}' removed`);
             if (typeof fetchStatusCallback === "function") fetchStatusCallback();
         } else {
-            if (cardEl) cardEl.classList.remove("is-deleting");
+            if (cardEl) cardEl.classList.remove("is-pending-delete");
             showToast(data.error || "Failed to delete rule", "error");
         }
     } catch (_) {
-        if (cardEl) cardEl.classList.remove("is-deleting");
+        if (cardEl) cardEl.classList.remove("is-pending-delete");
         showToast("Error deleting rule", "error");
     }
 }
