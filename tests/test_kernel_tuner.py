@@ -220,6 +220,19 @@ class TestKernelTuner(unittest.TestCase):
         self.assertIn("chkKernelOptReset", html)
         self.assertIn("tune_network_menu", sh)
         self.assertIn("kernel_tuner.py", sh)
+        self.assertIn("test-dsr-spoof.sh", sh)
+
+    def test_dsr_spoof_tester_script_integrity(self):
+        script_path = os.path.join(REPO_ROOT, "scripts", "test-dsr-spoof.sh")
+        self.assertTrue(os.path.isfile(script_path))
+        with open(script_path, "rb") as f:
+            raw = f.read()
+        self.assertNotIn(b"\r\n", raw, "scripts/test-dsr-spoof.sh must use LF line endings")
+        txt = raw.decode("utf-8")
+        self.assertIn("SOCK_RAW", txt)
+        self.assertIn("IP_HDRINCL", txt)
+        self.assertIn("--listen", txt)
+        self.assertIn("--outside", txt)
 
 
 if __name__ == "__main__":

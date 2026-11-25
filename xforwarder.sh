@@ -796,6 +796,7 @@ install_xforwarder() {
 
     cp -r "$script_dir/core" "$INSTALL_DIR/"
     cp -r "$script_dir/web" "$INSTALL_DIR/"
+    [[ -d "$script_dir/scripts" ]] && cp -r "$script_dir/scripts" "$INSTALL_DIR/" && chmod +x "$INSTALL_DIR/scripts/"*.sh 2>/dev/null || true
     cp "$script_dir/xforwarder.sh" "$INSTALL_DIR/xforwarder.sh.tmp.$$"
     chmod +x "$INSTALL_DIR/xforwarder.sh.tmp.$$"
     mv -f "$INSTALL_DIR/xforwarder.sh.tmp.$$" "$INSTALL_DIR/xforwarder.sh"
@@ -1254,6 +1255,7 @@ update_xforwarder() {
     mkdir -p "$INSTALL_DIR" "$CONFIG_DIR"
     cp -r "$script_dir/core" "$INSTALL_DIR/"
     cp -r "$script_dir/web" "$INSTALL_DIR/"
+    [[ -d "$script_dir/scripts" ]] && cp -r "$script_dir/scripts" "$INSTALL_DIR/" && chmod +x "$INSTALL_DIR/scripts/"*.sh 2>/dev/null || true
     cp "$script_dir/xforwarder.sh" "$INSTALL_DIR/xforwarder.sh.tmp.$$"
     chmod +x "$INSTALL_DIR/xforwarder.sh.tmp.$$"
     mv -f "$INSTALL_DIR/xforwarder.sh.tmp.$$" "$INSTALL_DIR/xforwarder.sh"
@@ -2217,6 +2219,20 @@ case "${1:-}" in
                 tune_network --apply
                 ;;
         esac
+        ;;
+    test-spoof|spoof-test)
+        shift || true
+        if [[ -f "$INSTALL_DIR/scripts/test-dsr-spoof.sh" ]]; then
+            bash "$INSTALL_DIR/scripts/test-dsr-spoof.sh" "$@"
+        else
+            local_script_dir="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" 2>/dev/null && pwd || true)"
+            if [[ -n "$local_script_dir" && -f "$local_script_dir/scripts/test-dsr-spoof.sh" ]]; then
+                bash "$local_script_dir/scripts/test-dsr-spoof.sh" "$@"
+            else
+                msg_err "scripts/test-dsr-spoof.sh not found. Run: xforwarder update"
+                exit 1
+            fi
+        fi
         ;;
     "")
         if ! is_installed; then
