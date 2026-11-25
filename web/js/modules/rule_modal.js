@@ -789,17 +789,60 @@ function getDetectedTunnelPresets() {
     return list;
 }
 
-/** Builds clickable tunnel preset chips for SYN-ACK / DSR Direct destination forms. */
-function buildDsrTunnelChipsHtml(type) {
+/** Builds dropdown options for DSR Tunnel IP combobox (mirrors Outbound Interface menu style). */
+function buildDsrTunnelMenuHtml(type, currentVal = "") {
     const isDsrDirect = (type === "nftables_dsr_direct");
     const isDsrSynack = (type === "nftables_dsr_synack");
     if (!isDsrDirect && !isDsrSynack) return "";
     const presets = getDetectedTunnelPresets().filter(p => isDsrDirect ? Boolean(p.localIp) : Boolean(p.peerIp));
     if (presets.length === 0) return "";
-    return `<div class="dest-tunnel-suggestions"><span class="suggestion-hint">${escapeHtml(t("modal.suggested_ip", {}, "Suggested:"))}</span>${presets.map(p => {
+    const cur = String(currentVal || "").trim().toLowerCase();
+    const checkSvg = `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>`;
+    const firstUp = presets.find(p => p.state === "UP");
+    return presets.map(p => {
         const chipIp = isDsrDirect ? p.localIp : p.peerIp;
-        return `<button type="button" class="ip-chip font-mono" onclick="window.fillDsrTunnelPreset(this, decodeURIComponent('${encodeURIComponent(p.name)}'), decodeURIComponent('${encodeURIComponent(chipIp)}'))">${escapeHtml(p.name)} · ${escapeHtml(chipIp)}</button>`;
-    }).join("")}</div>`;
+        const isSel = Boolean(cur && cur === chipIp.toLowerCase());
+        const isSugg = Boolean(firstUp && firstUp.name === p.name);
+        const isUp = p.state === "UP";
+        return `
+        <button type="button" class="iface-option ip-combo-option ${isSel ? "is-checked" : ""} ${isSugg ? "is-suggested" : ""}" data-combo-kind="tunnel" data-ip="${escapeHtml(chipIp)}" data-iface="${escapeHtml(p.name)}">
+            <span class="iface-checkbox">${isSel ? checkSvg : ""}</span>
+            <span class="iface-dot ${isUp ? "is-up" : "is-down"}"></span>
+            <span class="iface-opt-name font-mono">${escapeHtml(p.name)}</span>
+            <small class="iface-opt-ip font-mono">${escapeHtml(chipIp)}</small>
+            ${isSugg ? `<span class="iface-suggest-badge">${escapeHtml(t("modal.suggested", {}, "Suggested"))}</span>` : ""}
+        </button>`;
+    }).join("");
+}
+
+/** Builds dropdown options for Server WAN IP combobox (Iran Public IP / SNAT IP). */
+function buildServerIpMenuHtml(currentVal = "", allowAuto = true, comboKind = "spoof") {
+    const ips = getDetectedServerIps();
+    if (ips.length === 0) return "";
+    const cur = String(currentVal || "").trim().toLowerCase();
+    const checkSvg = `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>`;
+    let html = "";
+    if (allowAuto) {
+        const isAuto = !cur;
+        html += `
+        <button type="button" class="iface-option ip-combo-option ${isAuto ? "is-checked" : ""}" data-combo-kind="${comboKind}" data-ip="">
+            <span class="iface-checkbox">${isAuto ? checkSvg : ""}</span>
+            <span class="iface-opt-name">${escapeHtml(t("modal.tunnel_iface_auto_tag", {}, "Auto"))} (WAN)</span>
+        </button>`;
+    }
+    ips.forEach(s => {
+        const isSel = Boolean(cur && cur === s.ip.toLowerCase());
+        const isSugg = Boolean(s.isPrimary);
+        html += `
+        <button type="button" class="iface-option ip-combo-option ${isSel ? "is-checked" : ""} ${isSugg ? "is-suggested" : ""}" data-combo-kind="${comboKind}" data-ip="${escapeHtml(s.ip)}">
+            <span class="iface-checkbox">${isSel ? checkSvg : ""}</span>
+            <span class="iface-dot is-up"></span>
+            <span class="iface-opt-name font-mono">${escapeHtml(s.ip)}</span>
+            <small class="iface-opt-ip font-mono">${escapeHtml(s.iface)}</small>
+            ${isSugg ? `<span class="iface-suggest-badge">${escapeHtml(t("common.primary", {}, "Primary"))}</span>` : ""}
+        </button>`;
+    });
+    return html;
 }
 
 const DSR_STATELESS_TYPES = new Set(["nftables_dsr_synack", "nftables_dsr_direct"]);
@@ -905,22 +948,81 @@ function buildDsrFlowPreviewHtml(opts) {
         `;
     }
 
+    const flowIcon = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 12h14"/><path d="M13 6l6 6-6 6"/></svg>`;
+    const arrowSvg = `<span class="dsr-arrow" aria-hidden="true">→</span>`;
+
     if (type === "nftables_dsr_synack") {
+        const modeLabel = escapeHtml(t("modal.dsr_mode_synack", {}, "SYN-ACK Bypass"));
+        const directLabel = escapeHtml(t("modal.dsr_direct_outside", {}, "Download Direct from Outside"));
         return `
             ${conflictHtml}
-            <div class="dsr-flow-title">${escapeHtml(t("modal.dsr_flow_label", {}, "Traffic Flow Preview"))}</div>
-            <div class="dsr-flow-line font-mono"><span class="dsr-flow-tag is-up">UP</span> Client → <b>${spoofIp}:${inPort}</b> → <b>${tunIface}</b> → <b>${target}:${port}</b></div>
-            <div class="dsr-flow-line font-mono"><span class="dsr-flow-tag is-ret">RET</span> SYN-ACK returns via <b>${tunIface}</b> · Download goes <b>Direct</b> from Outside</div>
+            <div class="dsr-flow-header">
+                <span class="dsr-flow-title">${flowIcon}<span>${escapeHtml(t("modal.dsr_flow_label", {}, "Traffic Flow Preview"))}</span></span>
+                <span class="dsr-flow-mode-pill">${modeLabel}</span>
+            </div>
+            <div class="dsr-flow-rows">
+                <div class="dsr-flow-row">
+                    <span class="dsr-flow-tag is-up">↑ UP</span>
+                    <div class="dsr-flow-hops">
+                        <span class="dsr-hop is-client">Client</span>
+                        ${arrowSvg}
+                        <span class="dsr-hop is-endpoint font-mono">${spoofIp}:${inPort}</span>
+                        ${arrowSvg}
+                        <span class="dsr-hop is-iface font-mono">${tunIface}</span>
+                        ${arrowSvg}
+                        <span class="dsr-hop is-endpoint font-mono">${target}:${port}</span>
+                    </div>
+                </div>
+                <div class="dsr-flow-row">
+                    <span class="dsr-flow-tag is-ret">↓ RET</span>
+                    <div class="dsr-flow-hops">
+                        <span class="dsr-hop is-label">SYN-ACK</span>
+                        ${arrowSvg}
+                        <span class="dsr-hop is-iface font-mono">${tunIface}</span>
+                        <span class="dsr-hop-sep">·</span>
+                        <span class="dsr-hop is-direct">${directLabel}</span>
+                    </div>
+                </div>
+            </div>
         `;
     }
+    const modeLabel = exitTarget
+        ? escapeHtml(t("modal.dsr_mode_direct_3hop", {}, "3-Server Relay"))
+        : escapeHtml(t("modal.dsr_mode_direct_local", {}, "Local Service"));
     const hop2 = exitTarget
-        ? `→ <b>HAProxy</b> → <b>${exitTarget}:${exitPort}</b>`
-        : `→ <b>Local Service</b> <span class="dsr-flow-dim">(on this server)</span>`;
+        ? `${arrowSvg}<span class="dsr-hop is-label">HAProxy</span>${arrowSvg}<span class="dsr-hop is-endpoint font-mono">${exitTarget}:${exitPort}</span>`
+        : `${arrowSvg}<span class="dsr-hop is-client">Local Service</span>`;
     return `
         ${conflictHtml}
-        <div class="dsr-flow-title">${escapeHtml(t("modal.dsr_flow_label", {}, "Traffic Flow Preview"))}</div>
-        <div class="dsr-flow-line font-mono"><span class="dsr-flow-tag is-up">IN</span> <b>${tunIface}</b> → <b>${target}:${port}</b> ${hop2}</div>
-        <div class="dsr-flow-line font-mono"><span class="dsr-flow-tag is-ret">RET</span> SYN-ACK → <b>${tunIface}</b> · Download → <b>${wanIface}</b> as <b>${spoofIp}:${inPort}</b></div>
+        <div class="dsr-flow-header">
+            <span class="dsr-flow-title">${flowIcon}<span>${escapeHtml(t("modal.dsr_flow_label", {}, "Traffic Flow Preview"))}</span></span>
+            <span class="dsr-flow-mode-pill">${modeLabel}</span>
+        </div>
+        <div class="dsr-flow-rows">
+            <div class="dsr-flow-row">
+                <span class="dsr-flow-tag is-up">→ IN</span>
+                <div class="dsr-flow-hops">
+                    <span class="dsr-hop is-iface font-mono">${tunIface}</span>
+                    ${arrowSvg}
+                    <span class="dsr-hop is-endpoint font-mono">${target}:${port}</span>
+                    ${hop2}
+                </div>
+            </div>
+            <div class="dsr-flow-row">
+                <span class="dsr-flow-tag is-ret">↓ RET</span>
+                <div class="dsr-flow-hops">
+                    <span class="dsr-hop is-label">SYN-ACK</span>
+                    ${arrowSvg}
+                    <span class="dsr-hop is-iface font-mono">${tunIface}</span>
+                    <span class="dsr-hop-sep">·</span>
+                    <span class="dsr-hop is-label">Download</span>
+                    ${arrowSvg}
+                    <span class="dsr-hop is-iface font-mono">${wanIface}</span>
+                    <span class="dsr-hop-sep">as</span>
+                    <span class="dsr-hop is-endpoint font-mono">${spoofIp}:${inPort}</span>
+                </div>
+            </div>
+        </div>
     `;
 }
 
@@ -1084,25 +1186,13 @@ export function renderDestinationRow(dest, index, totalCount) {
     const hasSavedExitPort = (dest.exit_port !== undefined && dest.exit_port !== null && String(dest.exit_port).trim() !== "");
     const exitPortVal = hasSavedExitPort ? String(dest.exit_port) : inboundStart;
     const exitPortAutoSynced = !hasSavedExitPort;
-    const tunnelQuickChipsHtml = buildDsrTunnelChipsHtml(type);
-
-    const detectedServerIps = getDetectedServerIps();
-    const spoofDatalistId = `destSpoofIpList_${index}_${Math.random().toString(36).substr(2, 6)}`;
-    const snatDatalistId = `destSnatIpList_${index}_${Math.random().toString(36).substr(2, 6)}`;
-    const serverIpDatalistOptionsHtml = detectedServerIps.map(s =>
-        `<option value="${escapeHtml(s.ip)}">${escapeHtml(s.ip)} (${escapeHtml(s.iface)}${s.isPrimary ? ` · ${escapeHtml(t("common.primary", {}, "Primary"))}` : ""})</option>`
-    ).join("");
-
-    const spoofQuickChipsHtml = detectedServerIps.length > 0
-        ? `<div class="dest-spoof-suggestions">
-            <span class="suggestion-hint">${escapeHtml(t("modal.suggested_ip", {}, "Suggested:"))}</span>
-            ${detectedServerIps.map(s => `
-                <button type="button" class="ip-chip font-mono" title="${escapeHtml(s.iface)}${s.isPrimary ? " (Primary WAN)" : ""}" onclick="window.fillDestSpoofIp(this, '${escapeHtml(s.ip)}')">
-                    ${escapeHtml(s.ip)}
-                </button>
-            `).join("")}
-           </div>`
-        : "";
+    const tunnelMenuHtml = buildDsrTunnelMenuHtml(type, target);
+    const hasTunnelCombo = Boolean(tunnelMenuHtml);
+    const spoofMenuHtml = buildServerIpMenuHtml(dest.spoof_ip || "", !spoofRequired, "spoof");
+    const hasSpoofCombo = Boolean(spoofMenuHtml);
+    const snatMenuHtml = buildServerIpMenuHtml(dest.snat_ip || "", true, "snat");
+    const hasSnatCombo = Boolean(snatMenuHtml);
+    const chevronSvg = `<svg class="iface-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="6 9 12 15 18 9"/></svg>`;
 
     div.innerHTML = `
         <div class="priority-header">
@@ -1151,8 +1241,13 @@ export function renderDestinationRow(dest, index, totalCount) {
             </div>
             <div class="form-group dest-col-target" style="display:${lbEnabled ? "none" : "block"};">
                 <label class="dest-target-label">${escapeHtml(targetLabelText)}</label>
-                <input type="text" class="form-control dest-target" placeholder="${targetPlaceholder}" value="${escapeHtml(target)}" ${lbEnabled ? "" : "required"}>
-                <div class="dest-tunnel-chips-slot">${tunnelQuickChipsHtml}</div>
+                <div class="ip-combo-wrap ${hasTunnelCombo ? "has-combo" : ""}" data-combo-kind="tunnel">
+                    <input type="text" class="form-control dest-target" placeholder="${targetPlaceholder}" value="${escapeHtml(target)}" ${lbEnabled ? "" : "required"}>
+                    <button type="button" class="ip-combo-toggle" title="${escapeHtml(t("modal.suggested", {}, "Suggested"))}" aria-label="Show tunnel IP suggestions">
+                        ${chevronSvg}
+                    </button>
+                    <div class="iface-dropdown-menu ip-combo-menu">${tunnelMenuHtml}</div>
+                </div>
             </div>
             <div class="form-group dest-col-port" style="display:${lbEnabled ? "none" : "block"};">
                 <label class="dest-port-label">${escapeHtml(portLabelText)}</label>
@@ -1192,7 +1287,7 @@ export function renderDestinationRow(dest, index, totalCount) {
                 <span class="lb-pool-note">${escapeHtml(type === "nftables" ? t("modal.lb_nft_family_note", {}, "NFTables requires all pool IPs to be the same family.") : t("modal.lb_nginx_note", {}, "Nginx passively skips failed TCP targets (max_fails=2)."))}</span>
             </div>
         </div>
-        <div class="dest-meta-row dest-dsr-row" style="display:${showDsrRow ? "flex" : "none"};">
+        <div class="dest-meta-row dest-dsr-row" style="display:${showDsrRow ? "grid" : "none"};">
             <div class="form-group flex-1 dest-spoof-ip-group">
                 <label class="label-with-tip">
                     <span class="dest-spoof-label">${escapeHtml(spoofLabelText)}</span><span class="dest-spoof-required required" style="display:${spoofRequired ? "inline" : "none"};"> *</span>
@@ -1200,11 +1295,13 @@ export function renderDestinationRow(dest, index, totalCount) {
                         <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
                     </span>
                 </label>
-                <input type="text" list="${spoofDatalistId}" class="form-control font-mono dest-spoof-ip" placeholder="${spoofRequired ? "198.51.100.25 (Required)" : "Auto (WAN Interface)"}" value="${escapeHtml(dest.spoof_ip || "")}">
-                <datalist id="${spoofDatalistId}">
-                    ${serverIpDatalistOptionsHtml}
-                </datalist>
-                ${spoofQuickChipsHtml}
+                <div class="ip-combo-wrap ${hasSpoofCombo ? "has-combo" : ""}" data-combo-kind="spoof">
+                    <input type="text" class="form-control font-mono dest-spoof-ip" placeholder="${spoofRequired ? "198.51.100.25 (Required)" : "Auto (WAN Interface)"}" value="${escapeHtml(dest.spoof_ip || "")}">
+                    <button type="button" class="ip-combo-toggle" title="${escapeHtml(t("modal.suggested", {}, "Suggested"))}" aria-label="Show server IP suggestions">
+                        ${chevronSvg}
+                    </button>
+                    <div class="iface-dropdown-menu ip-combo-menu">${spoofMenuHtml}</div>
+                </div>
             </div>
             <div class="form-group flex-1 dest-ingress-iface-group" style="display:${showIngressIface ? "block" : "none"};">
                 <label class="label-with-tip">
@@ -1229,10 +1326,13 @@ export function renderDestinationRow(dest, index, totalCount) {
                         <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
                     </span>
                 </label>
-                <input type="text" list="${snatDatalistId}" class="form-control font-mono dest-snat-ip" placeholder="Auto (WAN IP)" value="${escapeHtml(dest.snat_ip || "")}">
-                <datalist id="${snatDatalistId}">
-                    ${serverIpDatalistOptionsHtml}
-                </datalist>
+                <div class="ip-combo-wrap ${hasSnatCombo ? "has-combo" : ""}" data-combo-kind="snat">
+                    <input type="text" class="form-control font-mono dest-snat-ip" placeholder="Auto (WAN IP)" value="${escapeHtml(dest.snat_ip || "")}">
+                    <button type="button" class="ip-combo-toggle" title="${escapeHtml(t("modal.suggested", {}, "Suggested"))}" aria-label="Show server IP suggestions">
+                        ${chevronSvg}
+                    </button>
+                    <div class="iface-dropdown-menu ip-combo-menu">${snatMenuHtml}</div>
+                </div>
             </div>
         </div>
         <div class="dest-exit-relay-box" style="display:${isDsrDirect ? "block" : "none"};">
@@ -1338,7 +1438,7 @@ export function handleDestTypeChange(selectEl) {
     const ifaceGroup = row.querySelector(".dest-iface-group");
     const dsrRow = row.querySelector(".dest-dsr-row");
     const exitRelayBox = row.querySelector(".dest-exit-relay-box");
-    const tunnelChipsSlot = row.querySelector(".dest-tunnel-chips-slot");
+    const targetCombo = row.querySelector('.ip-combo-wrap[data-combo-kind="tunnel"]');
     const targetLabel = row.querySelector(".dest-target-label");
     const portLabel = row.querySelector(".dest-port-label");
     const ingressGroup = row.querySelector(".dest-ingress-iface-group");
@@ -1409,7 +1509,7 @@ export function handleDestTypeChange(selectEl) {
         ifaceGroup.style.display = (showOutIface && !lbActive) ? "block" : "none";
     }
     if (dsrRow) {
-        dsrRow.style.display = showDsrRow ? "flex" : "none";
+        dsrRow.style.display = showDsrRow ? "grid" : "none";
     }
     if (ingressGroup) {
         ingressGroup.style.display = showIngressIface ? "block" : "none";
@@ -1430,8 +1530,17 @@ export function handleDestTypeChange(selectEl) {
             ? t("modal.port_tunnel_relay", {}, "Tunnel Relay Port")
             : (isDsrDirect ? t("modal.port_tunnel_listen", {}, "Tunnel Listen Port") : t("modal.dest_port", {}, "Port"));
     }
-    if (tunnelChipsSlot) {
-        tunnelChipsSlot.innerHTML = buildDsrTunnelChipsHtml(val);
+    if (targetCombo) {
+        const menuHtml = buildDsrTunnelMenuHtml(val, targetInput ? targetInput.value.trim() : "");
+        const menuEl = targetCombo.querySelector(".ip-combo-menu");
+        if (menuEl) menuEl.innerHTML = menuHtml;
+        targetCombo.classList.toggle("has-combo", Boolean(menuHtml));
+        targetCombo.classList.remove("open");
+    }
+    const spoofCombo = row.querySelector('.ip-combo-wrap[data-combo-kind="spoof"]');
+    if (spoofCombo) {
+        const menuEl = spoofCombo.querySelector(".ip-combo-menu");
+        if (menuEl) menuEl.innerHTML = buildServerIpMenuHtml(spoofInput ? spoofInput.value.trim() : "", !spoofRequired, "spoof");
     }
     if (spoofReqStar) {
         spoofReqStar.style.display = spoofRequired ? "inline" : "none";
@@ -1934,13 +2043,79 @@ export function initRuleModal(fetchStatusCallback) {
                 return;
             }
 
+            const comboToggle = ev.target.closest(".ip-combo-toggle");
+            if (comboToggle) {
+                ev.stopPropagation();
+                const wrap = comboToggle.closest(".ip-combo-wrap");
+                if (!wrap) return;
+                const wasOpen = wrap.classList.contains("open");
+                document.querySelectorAll(".iface-multiselect.open, .ip-combo-wrap.open").forEach(el => el.classList.remove("open"));
+                if (!wasOpen) {
+                    const box = wrap.closest(".priority-box");
+                    const kind = wrap.dataset.comboKind || "";
+                    const menu = wrap.querySelector(".ip-combo-menu");
+                    const inputEl = wrap.querySelector("input");
+                    const curVal = inputEl ? inputEl.value.trim() : "";
+                    if (menu) {
+                        if (kind === "tunnel") {
+                            const dType = box?.querySelector(".dest-type")?.value || "";
+                            menu.innerHTML = buildDsrTunnelMenuHtml(dType, curVal);
+                        } else if (kind === "spoof") {
+                            const dType = box?.querySelector(".dest-type")?.value || "";
+                            const req = (dType === "nftables_dsr_relay" || dType === "nftables_dsr_direct");
+                            menu.innerHTML = buildServerIpMenuHtml(curVal, !req, "spoof");
+                        } else if (kind === "snat") {
+                            menu.innerHTML = buildServerIpMenuHtml(curVal, true, "snat");
+                        }
+                    }
+                    wrap.classList.add("open");
+                }
+                return;
+            }
+
+            const comboOpt = ev.target.closest(".ip-combo-option");
+            if (comboOpt) {
+                ev.stopPropagation();
+                const wrap = comboOpt.closest(".ip-combo-wrap");
+                const box = comboOpt.closest(".priority-box");
+                if (!wrap) return;
+                const kind = comboOpt.dataset.comboKind || wrap.dataset.comboKind || "";
+                const ip = comboOpt.dataset.ip || "";
+                const ifaceName = comboOpt.dataset.iface || "";
+                const inputEl = wrap.querySelector("input");
+                if (inputEl) {
+                    inputEl.value = ip;
+                    inputEl.dispatchEvent(new Event("input", { bubbles: true }));
+                    inputEl.dispatchEvent(new Event("change", { bubbles: true }));
+                }
+                if (kind === "tunnel" && box && ifaceName) {
+                    const dType = box.querySelector(".dest-type")?.value || "";
+                    const isIngress = (dType === "nftables_dsr_direct");
+                    const ifaceClass = isIngress ? ".dest-ingress-iface" : ".dest-tunnel-iface";
+                    const hidden = box.querySelector(ifaceClass);
+                    const ms = hidden ? hidden.parentElement.querySelector(".iface-multiselect") : null;
+                    if (hidden) {
+                        hidden.value = ifaceName;
+                        if (ms) {
+                            const msMenu = ms.querySelector(".iface-dropdown-menu");
+                            const triggerText = ms.querySelector(".iface-trigger-text");
+                            if (msMenu) msMenu.innerHTML = buildTunnelIfaceMenuHtml(ifaceName, isIngress, ip);
+                            if (triggerText) triggerText.innerHTML = buildTunnelIfaceTriggerHtml(ifaceName, isIngress);
+                        }
+                    }
+                }
+                wrap.classList.remove("open");
+                if (box) refreshDsrFlowPreview(box);
+                return;
+            }
+
             const trigger = ev.target.closest(".iface-select-trigger");
             if (trigger) {
                 ev.stopPropagation();
                 const ms = trigger.closest(".iface-multiselect");
                 if (!ms) return;
                 const wasOpen = ms.classList.contains("open");
-                document.querySelectorAll(".iface-multiselect.open").forEach(el => el.classList.remove("open"));
+                document.querySelectorAll(".iface-multiselect.open, .ip-combo-wrap.open").forEach(el => el.classList.remove("open"));
                 if (!wasOpen) {
                     const mRow = ms.closest(".lb-target-row");
                     const box = ms.closest(".priority-box");
@@ -2039,8 +2214,8 @@ export function initRuleModal(fetchStatusCallback) {
     }
 
     document.addEventListener("click", (ev) => {
-        if (!ev.target.closest(".iface-multiselect")) {
-            document.querySelectorAll(".iface-multiselect.open").forEach(el => el.classList.remove("open"));
+        if (!ev.target.closest(".iface-multiselect") && !ev.target.closest(".ip-combo-wrap")) {
+            document.querySelectorAll(".iface-multiselect.open, .ip-combo-wrap.open").forEach(el => el.classList.remove("open"));
         }
     });
 
