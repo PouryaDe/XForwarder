@@ -518,6 +518,7 @@ export async function startSystemUpdateProcedure() {
     try {
         const res = await fetch(`${API_BASE}/system/update`, {
             method: "POST",
+            credentials: "same-origin",
             headers: {
                 "Content-Type": "application/json",
                 "Accept": "application/json"
@@ -551,14 +552,16 @@ export function pollUpdateProgress() {
     updatePollTimer = setTimeout(async () => {
         try {
             const res = await fetch(`${API_BASE}/system/update/status`, {
-                headers: { "Accept": "application/json" }
+                headers: { "Accept": "application/json" },
+                credentials: "same-origin"
             });
 
             if (!res.ok) {
                 if (res.status === 401) {
-                    setInlineUpdateVisualState("success");
+                    updatePollingActive = false;
+                    setInlineUpdateVisualState("error");
                     if (updateStatusText) {
-                        updateStatusText.innerHTML = "<strong>Update Complete!</strong> Reloading dashboard in 1.2s...";
+                        updateStatusText.textContent = "Session expired. Reloading dashboard...";
                     }
                     setTimeout(() => window.location.reload(), 1200);
                     return;

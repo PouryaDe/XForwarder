@@ -26,6 +26,7 @@ _API_USAGE_LOCK = threading.Lock()
 
 ACTIVE_SESSIONS: Dict[str, dict] = {}
 SESSION_LOCK = threading.Lock()
+_SESSION_DISK_LOCK = threading.Lock()
 SESSION_TTL_HOURS = 24
 SESSION_IDLE_TIMEOUT_SECONDS = 14400  # 4 hours idle limit
 MAX_ACTIVE_SESSIONS = 50
@@ -39,50 +40,92 @@ WINDOW_DURATION = 300    # 5 minutes failure evaluation window
 
 
 def get_sessions_file_path() -> str:
-    """Returns persistent sessions storage path in /run/xforwarder or system temp."""
-    for d in ["/run/xforwarder", "/run/forward-manager"]:
+    """Returns persistent sessions storage path in /etc/xforwarder (survives restarts & updates) or system temp."""
+    if sys.platform == "win32":
+        return os.path.join(tempfile.gettempdir(), "xfwd_sessions.json")
+    for d in ["/etc/xforwarder", "/etc/forward-manager"]:
         if os.path.isdir(d):
             return os.path.join(d, "sessions.json")
     try:
-        os.makedirs("/run/xforwarder", exist_ok=True)
-        return "/run/xforwarder/sessions.json"
+        os.makedirs("/etc/xforwarder", mode=0o755, exist_ok=True)
+        return "/etc/xforwarder/sessions.json"
     except Exception:
         return os.path.join(tempfile.gettempdir(), "xfwd_sessions.json")
 
 
+def _is_session_valid(sess: Any, now: float) -> bool:
+    """Returns True if a session dict is within both absolute TTL and idle timeout."""
+    if not isinstance(sess, dict):
+        return False
+    if sess.get("expires_at", 0) <= now:
+        return False
+    last_active = sess.get("last_active", sess.get("created_at", 0))
+    if (now - last_active) > SESSION_IDLE_TIMEOUT_SECONDS:
+        return False
+    return True
+
+
 def load_sessions_from_disk(path_override: Optional[str] = None) -> None:
-    """Loads active, unexpired sessions from disk to survive daemon restarts."""
-    path = path_override or get_sessions_file_path()
-    if not os.path.isfile(path):
-        return
-    try:
-        with open(path, "r", encoding="utf-8") as f:
-            data = json.load(f)
-        if isinstance(data, dict):
-            now = time.time()
-            valid = {}
-            for tok, sess in data.items():
-                if isinstance(sess, dict) and sess.get("expires_at", 0) > now:
-                    valid[tok] = sess
-            with SESSION_LOCK:
-                ACTIVE_SESSIONS.update(valid)
-    except Exception:
-        pass
+    """Loads active, unexpired sessions from disk to survive daemon restarts and updates."""
+    candidates = [path_override] if path_override else [
+        get_sessions_file_path(),
+        "/run/xforwarder/sessions.json",
+        "/run/forward-manager/sessions.json",
+    ]
+    now = time.time()
+    loaded_any = False
+    for path in candidates:
+        if not path or not os.path.isfile(path):
+            continue
+        try:
+            with open(path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            if isinstance(data, dict):
+                valid = {
+                    tok: sess for tok, sess in data.items()
+                    if isinstance(tok, str) and _is_session_valid(sess, now)
+                }
+                if valid:
+                    with SESSION_LOCK:
+                        for tok, sess in valid.items():
+                            ACTIVE_SESSIONS.setdefault(tok, sess)
+                    loaded_any = True
+        except Exception:
+            pass
+        if path_override or (loaded_any and path == candidates[0]):
+            break
 
 
 def save_sessions_to_disk(path_override: Optional[str] = None) -> None:
-    """Atomically persists active sessions to disk."""
+    """Atomically persists active sessions to disk with 0600 permissions."""
     path = path_override or get_sessions_file_path()
     now = time.time()
     with SESSION_LOCK:
-        data_to_save = {k: v for k, v in ACTIVE_SESSIONS.items() if v.get("expires_at", 0) > now}
-    try:
-        tmp = f"{path}.tmp.{os.getpid()}"
-        with open(tmp, "w", encoding="utf-8") as f:
-            json.dump(data_to_save, f)
-        os.replace(tmp, path)
-    except Exception:
-        pass
+        data_to_save = {}
+        for k, v in ACTIVE_SESSIONS.items():
+            if _is_session_valid(v, now):
+                data_to_save[k] = {sk: sv for sk, sv in v.items() if not sk.startswith("_")}
+    tmp = f"{path}.tmp.{os.getpid()}.{threading.get_ident()}"
+    with _SESSION_DISK_LOCK:
+        try:
+            parent = os.path.dirname(path)
+            if parent:
+                os.makedirs(parent, exist_ok=True)
+            if os.name == "posix":
+                fd = os.open(tmp, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+                with os.fdopen(fd, "w", encoding="utf-8") as f:
+                    json.dump(data_to_save, f)
+                os.chmod(tmp, 0o600)
+            else:
+                with open(tmp, "w", encoding="utf-8") as f:
+                    json.dump(data_to_save, f)
+            os.replace(tmp, path)
+        except Exception:
+            try:
+                if os.path.exists(tmp):
+                    os.remove(tmp)
+            except Exception:
+                pass
 
 
 def hash_password(password: str, salt_hex: Optional[str] = None) -> str:

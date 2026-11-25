@@ -222,6 +222,96 @@ class TestXForwarderSecurity(unittest.TestCase):
         self.assertIsInstance(server.ssl_key, str)
         self.assertFalse(server.is_ssl)
 
+    def test_session_persistence_prunes_idle_and_strips_internal_keys(self):
+        """Verifies save/load_sessions_from_disk strips internal keys and prunes idle-expired sessions."""
+        import json
+        import tempfile
+        import time
+        from unittest.mock import patch
+        from core.auth import (
+            ACTIVE_SESSIONS, SESSION_LOCK, SESSION_IDLE_TIMEOUT_SECONDS,
+            load_sessions_from_disk, save_sessions_to_disk,
+        )
+
+        tmp_file = os.path.join(tempfile.gettempdir(), f"xfwd_sec_sess_{os.getpid()}.json")
+        now = time.time()
+        try:
+            with SESSION_LOCK:
+                saved_backup = dict(ACTIVE_SESSIONS)
+                ACTIVE_SESSIONS.clear()
+                ACTIVE_SESSIONS["tok_active"] = {
+                    "username": "admin",
+                    "created_at": now - 100,
+                    "last_active": now - 10,
+                    "expires_at": now + 3600,
+                    "_last_saved": now - 10,
+                }
+                ACTIVE_SESSIONS["tok_idle"] = {
+                    "username": "admin",
+                    "created_at": now - 20000,
+                    "last_active": now - (SESSION_IDLE_TIMEOUT_SECONDS + 60),
+                    "expires_at": now + 3600,
+                }
+
+            save_sessions_to_disk(path_override=tmp_file)
+            with open(tmp_file, "r", encoding="utf-8") as f:
+                persisted = json.load(f)
+            self.assertIn("tok_active", persisted)
+            self.assertNotIn("tok_idle", persisted)
+            self.assertNotIn("_last_saved", persisted["tok_active"])
+
+            with SESSION_LOCK:
+                ACTIVE_SESSIONS.clear()
+            load_sessions_from_disk(path_override=tmp_file)
+            with SESSION_LOCK:
+                self.assertIn("tok_active", ACTIVE_SESSIONS)
+                self.assertNotIn("tok_idle", ACTIVE_SESSIONS)
+        finally:
+            with SESSION_LOCK:
+                ACTIVE_SESSIONS.clear()
+                ACTIVE_SESSIONS.update(saved_backup)
+            if os.path.exists(tmp_file):
+                os.remove(tmp_file)
+
+    def test_get_auth_context_throttled_session_persistence(self):
+        """Verifies get_auth_context updates last_active and persists to disk when >=60s elapsed."""
+        import tempfile
+        import time
+        from unittest.mock import MagicMock, patch
+        from core.web_server import XForwarderWebHandler, ACTIVE_SESSIONS, SESSION_LOCK
+
+        tmp_file = os.path.join(tempfile.gettempdir(), f"xfwd_ctx_sess_{os.getpid()}.json")
+        now = time.time()
+        try:
+            with SESSION_LOCK:
+                saved_backup = dict(ACTIVE_SESSIONS)
+                ACTIVE_SESSIONS.clear()
+                ACTIVE_SESSIONS["tok_throttle"] = {
+                    "username": "admin",
+                    "created_at": now - 500,
+                    "last_active": now - 120,
+                    "expires_at": now + 3600,
+                    "_last_saved": now - 120,
+                }
+
+            handler = MagicMock(spec=XForwarderWebHandler)
+            handler.headers = {"Cookie": "xfwd_session=tok_throttle"}
+            handler.get_session_token = lambda: XForwarderWebHandler.get_session_token(handler)
+            handler.get_api_key_from_headers = lambda: None
+
+            with patch("core.web_server.get_sessions_file_path", return_value=tmp_file):
+                ctx = XForwarderWebHandler.get_auth_context(handler)
+
+            self.assertIsNotNone(ctx)
+            self.assertTrue(ctx["authenticated"])
+            self.assertTrue(os.path.isfile(tmp_file))
+        finally:
+            with SESSION_LOCK:
+                ACTIVE_SESSIONS.clear()
+                ACTIVE_SESSIONS.update(saved_backup)
+            if os.path.exists(tmp_file):
+                os.remove(tmp_file)
+
 
 if __name__ == "__main__":
     unittest.main()

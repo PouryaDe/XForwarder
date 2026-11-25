@@ -536,6 +536,8 @@ class XForwarderWebHandler(BaseHTTPRequestHandler):
         token = self.get_session_token()
         if token:
             now = time.time()
+            should_persist = False
+            auth_ctx = None
             with SESSION_LOCK:
                 session = ACTIVE_SESSIONS.get(token)
                 if session:
@@ -543,6 +545,10 @@ class XForwarderWebHandler(BaseHTTPRequestHandler):
                         ACTIVE_SESSIONS.pop(token, None)
                     else:
                         session["last_active"] = now
+                        last_saved = session.get("_last_saved", session.get("created_at", 0))
+                        if (now - last_saved) >= 60:
+                            session["_last_saved"] = now
+                            should_persist = True
                         if len(ACTIVE_SESSIONS) > MAX_ACTIVE_SESSIONS:
                             stale = [
                                 k for k, v in ACTIVE_SESSIONS.items()
@@ -550,7 +556,7 @@ class XForwarderWebHandler(BaseHTTPRequestHandler):
                             ]
                             for k in stale:
                                 ACTIVE_SESSIONS.pop(k, None)
-                        return {
+                        auth_ctx = {
                             "authenticated": True,
                             "auth_type": "session",
                             "username": session.get("username", "admin"),
@@ -558,6 +564,10 @@ class XForwarderWebHandler(BaseHTTPRequestHandler):
                             "key_id": None,
                             "key_name": None,
                         }
+            if should_persist:
+                save_sessions_to_disk()
+            if auth_ctx is not None:
+                return auth_ctx
 
         raw_key = self.get_api_key_from_headers()
         if raw_key:
@@ -2331,11 +2341,21 @@ class XForwarderWebServer:
 
         scheme = "https" if self.is_ssl else "http"
         print(f"[INFO] XForwarder Web Server listening at {scheme}://{self.bind_host}:{self.port}/")
+        if threading.current_thread() is threading.main_thread():
+            def _graceful_shutdown(_signum, _frame):
+                save_sessions_to_disk()
+                if self.httpd:
+                    threading.Thread(target=self.httpd.shutdown, daemon=True).start()
+            try:
+                signal.signal(signal.SIGTERM, _graceful_shutdown)
+            except Exception:
+                pass
         try:
             self.httpd.serve_forever()
         except KeyboardInterrupt:
             pass
         finally:
+            save_sessions_to_disk()
             self.httpd.server_close()
             print("[INFO] Web server stopped.")
 

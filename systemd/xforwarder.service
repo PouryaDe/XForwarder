@@ -12,6 +12,7 @@ Restart=always
 RestartSec=3
 LimitNOFILE=1048576
 RuntimeDirectory=xforwarder haproxy
+RuntimeDirectoryPreserve=yes
 
 [Install]
 WantedBy=multi-user.target
