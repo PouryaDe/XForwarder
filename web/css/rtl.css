@@ -603,8 +603,8 @@
 
 [dir="rtl"] .btn-dest-toggle .dest-toggle-slider {
     position: absolute !important;
-    top: 2px !important;
-    left: 2px !important;
+    top: 1px !important;
+    left: 1px !important;
     right: auto !important;
     transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
 }

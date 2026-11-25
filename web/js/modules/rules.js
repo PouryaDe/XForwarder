@@ -14,6 +14,7 @@ let searchQuery = "";
 let draggedPathInfo = null;
 let lastRenderedRulesFingerprint = null;
 const pendingOverrides = new Map();
+const pendingDestToggles = new Map();
 const expandedLbPools = new Set();
 let collapsedCategories = new Set();
 
@@ -863,6 +864,22 @@ export function renderRules(rules, runtime) {
         return;
     }
 
+    // Preserve any in-flight or recently completed destination toggles so 3.5s polling never flashes stale state
+    const nowTs = Date.now();
+    if (Array.isArray(rules) && pendingDestToggles.size > 0) {
+        for (const [tKey, tInfo] of pendingDestToggles.entries()) {
+            if (!tInfo.inFlight && (nowTs - tInfo.ts > 1800)) {
+                pendingDestToggles.delete(tKey);
+                continue;
+            }
+            const rMatch = rules.find(r => getRuleId(r) === tInfo.ruleId);
+            const dMatch = rMatch && Array.isArray(rMatch.destinations)
+                ? rMatch.destinations.find(d => (d.priority || 1) === tInfo.prio)
+                : null;
+            if (dMatch) dMatch.enabled = tInfo.enabled;
+        }
+    }
+
     if (!rules || rules.length === 0) {
         lastRenderedRulesFingerprint = "__empty__";
         rulesContainer.className = "rules-container";
@@ -1153,6 +1170,15 @@ export async function toggleDestinationEnabled(event, ruleId, prio, fetchStatusC
         event.stopPropagation();
         event.preventDefault();
     }
+    const toggleKey = `${ruleId}::${prio}`;
+    const existingPending = pendingDestToggles.get(toggleKey);
+    if (existingPending && existingPending.inFlight) return;
+
+    const cardEl = document.getElementById(`rule-card-${encodeInlineParam(ruleId)}`);
+    const pathBox = cardEl ? cardEl.querySelector(`.path-box[data-prio="${prio}"]`) : null;
+    const toggleBtn = pathBox ? pathBox.querySelector('.btn-dest-toggle') : null;
+    if (toggleBtn && toggleBtn.classList.contains('is-pending')) return;
+
     const rule = (currentRules || []).find(r => getRuleId(r) === ruleId);
     if (!rule || !Array.isArray(rule.destinations)) return;
 
@@ -1164,7 +1190,15 @@ export async function toggleDestinationEnabled(event, ruleId, prio, fetchStatusC
     const prevForceOverride = rule.force_override || 0;
     const prevActivePriority = rule.active_priority || 1;
 
-    // Optimistic in-place DOM update so the toggle slider animates smoothly without wiping the DOM
+    pendingDestToggles.set(toggleKey, {
+        ruleId,
+        prio,
+        enabled: newEnabled,
+        inFlight: true,
+        ts: Date.now()
+    });
+
+    // Optimistic in-place DOM update so the toggle slider animates smoothly without wiping or jumping
     dest.enabled = newEnabled;
     if (!newEnabled && rule.force_override === prio) {
         rule.force_override = 0;
@@ -1176,17 +1210,13 @@ export async function toggleDestinationEnabled(event, ruleId, prio, fetchStatusC
         }
     }
 
-    const cardEl = document.getElementById(`rule-card-${encodeInlineParam(ruleId)}`);
-    const pathBox = cardEl ? cardEl.querySelector(`.path-box[data-prio="${prio}"]`) : null;
-    const toggleBtn = pathBox ? pathBox.querySelector('.btn-dest-toggle') : null;
-    if (toggleBtn && toggleBtn.classList.contains('is-pending')) return;
-
     if (cardEl && pathBox && toggleBtn) {
         toggleBtn.classList.toggle('is-enabled', newEnabled);
         toggleBtn.classList.toggle('is-disabled', !newEnabled);
+        toggleBtn.classList.remove('is-saved');
         toggleBtn.classList.add('is-pending');
         toggleBtn.disabled = true;
-        pathBox.classList.add('is-pending');
+        pathBox.classList.add('is-toggling');
         pathBox.classList.toggle('is-disabled', !newEnabled);
         if (!newEnabled) {
             pathBox.classList.remove('is-active', 'is-failover');
@@ -1227,16 +1257,28 @@ export async function toggleDestinationEnabled(event, ruleId, prio, fetchStatusC
             toggleBtn.disabled = false;
         }
         if (pathBox) {
-            pathBox.classList.remove('is-pending');
+            pathBox.classList.remove('is-toggling');
         }
         if (res.ok && data.ok) {
+            pendingDestToggles.set(toggleKey, {
+                ruleId,
+                prio,
+                enabled: newEnabled,
+                inFlight: false,
+                ts: Date.now()
+            });
+            if (toggleBtn) {
+                toggleBtn.classList.add('is-saved');
+                setTimeout(() => toggleBtn.classList.remove('is-saved'), 1000);
+            }
             if (pathBox) {
                 pathBox.classList.add('is-just-activated');
                 setTimeout(() => pathBox.classList.remove('is-just-activated'), 440);
             }
             showToast(`Priority #${prio} turned ${newEnabled ? "ON" : "OFF"}`);
-            if (typeof fetchStatusCallback === "function") setTimeout(() => fetchStatusCallback(), 420);
+            if (typeof fetchStatusCallback === "function") setTimeout(() => fetchStatusCallback(), 950);
         } else {
+            pendingDestToggles.delete(toggleKey);
             // Revert on failure
             dest.enabled = currentEnabled;
             rule.force_override = prevForceOverride;
@@ -1245,12 +1287,13 @@ export async function toggleDestinationEnabled(event, ruleId, prio, fetchStatusC
             showToast(data.error || "Failed to update priority status", "error");
         }
     } catch (_) {
+        pendingDestToggles.delete(toggleKey);
         if (toggleBtn) {
             toggleBtn.classList.remove('is-pending');
             toggleBtn.disabled = false;
         }
         if (pathBox) {
-            pathBox.classList.remove('is-pending');
+            pathBox.classList.remove('is-toggling');
         }
         dest.enabled = currentEnabled;
         rule.force_override = prevForceOverride;
