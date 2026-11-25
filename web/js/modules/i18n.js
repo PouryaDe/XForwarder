@@ -518,6 +518,18 @@ export const TRANSLATIONS = {
         "import.or_file": "or import from file",
         "import.apply": "Import & Apply",
 
+        // Modals: Export Config
+        "export.title": "Export Configuration",
+        "export.sub": "Choose to download a backup JSON file or copy the full JSON text",
+        "export.mode": "Export Format",
+        "export.file_title": "Download JSON File",
+        "export.file_desc": "Save sanitized configuration backup as a .json file.",
+        "export.text_title": "View & Copy JSON",
+        "export.text_desc": "Display full JSON in a text box with 1-click copy.",
+        "export.json_label": "Full Configuration JSON",
+        "export.copy_all": "Copy Full JSON",
+        "export.download_btn": "Download JSON File",
+
         // Modals: Traffic Modal
         "traffic_modal.title": "Traffic & Bandwidth Analytics",
         "traffic_modal.sub": "Real-time bandwidth accounting across ports and tunnels",
@@ -1150,6 +1162,18 @@ export const TRANSLATIONS = {
         "import.drop_text": "فایل JSON پشتیبان را اینجا بکشید یا کلیک کنید",
         "import.or_file": "یا درون‌ریزی از فایل",
         "import.apply": "درون‌ریزی و اعمال",
+
+        // Modals: Export Config
+        "export.title": "خروجی گرفتن از تنظیمات",
+        "export.sub": "فایل JSON پشتیبان را دانلود کنید یا متن کامل JSON را کپی نمایید",
+        "export.mode": "نوع خروجی",
+        "export.file_title": "دانلود فایل JSON",
+        "export.file_desc": "ذخیره نسخه پشتیبان به صورت فایل با پسوند .json",
+        "export.text_title": "نمایش و کپی JSON",
+        "export.text_desc": "نمایش کل JSON در کادر متنی همراه با دکمه کپی یک‌کلیکی",
+        "export.json_label": "کد کامل JSON تنظیمات",
+        "export.copy_all": "کپی کامل JSON",
+        "export.download_btn": "دانلود فایل JSON",
 
         // Modals: Traffic Modal
         "traffic_modal.title": "تحلیل ترافیک و مصرف پهنای باند",

@@ -2342,6 +2342,80 @@
         </div>
     </div>
 
+    <!-- Export Configuration Modal -->
+    <div class="modal-backdrop" id="exportConfigModal">
+        <div class="modal-card">
+            <div class="modal-header">
+                <div>
+                    <h3 data-i18n="export.title">Export Configuration</h3>
+                    <p class="modal-subtitle" data-i18n="export.sub">Choose to download a backup JSON file or copy the full JSON text</p>
+                </div>
+                <button type="button" class="modal-close" id="btnCloseExportModal">&times;</button>
+            </div>
+            <div class="form-group">
+                <label data-i18n="export.mode">Export Format</label>
+                <div class="import-mode-selector">
+                    <label class="import-mode-option">
+                        <input type="radio" name="exportMode" value="file" checked>
+                        <div class="import-mode-card">
+                            <span class="import-mode-title" data-i18n="export.file_title">Download JSON File</span>
+                            <span class="import-mode-desc" data-i18n="export.file_desc">Save sanitized configuration backup as a .json file.</span>
+                        </div>
+                    </label>
+                    <label class="import-mode-option">
+                        <input type="radio" name="exportMode" value="text">
+                        <div class="import-mode-card">
+                            <span class="import-mode-title" data-i18n="export.text_title">View &amp; Copy JSON</span>
+                            <span class="import-mode-desc" data-i18n="export.text_desc">Display full JSON in a text box with 1-click copy.</span>
+                        </div>
+                    </label>
+                </div>
+            </div>
+
+            <div id="exportTextContainer" class="paste-json-container" style="display:none; margin-top: 12px;">
+                <div class="paste-json-toolbar">
+                    <label class="paste-json-label" for="exportJsonTextarea" data-i18n="export.json_label">Full Configuration JSON</label>
+                    <div class="paste-json-actions">
+                        <button type="button" class="btn-paste-tool" id="btnCopyExportJson" title="Copy full JSON">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                            </svg>
+                            <span data-i18n="export.copy_all">Copy Full JSON</span>
+                        </button>
+                    </div>
+                </div>
+                <textarea id="exportJsonTextarea" class="form-control json-textarea font-mono" rows="11" readonly></textarea>
+            </div>
+
+            <div id="exportStatusInfo" class="import-preview-box" style="margin-top: 12px;">
+                <div class="preview-header">
+                    <span class="preview-badge" id="exportSummaryBadge">Loading...</span>
+                    <span class="preview-filename font-mono" id="exportFilenameLabel">xforwarder-backup.json</span>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" id="btnCancelExportModal" data-i18n="modal.cancel">Cancel</button>
+                <button type="button" class="btn btn-secondary" id="btnCopyExportJsonFooter" style="display:none;">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                    </svg>
+                    <span data-i18n="export.copy_all">Copy Full JSON</span>
+                </button>
+                <button type="button" class="btn btn-primary" id="btnDownloadExportJson">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                        <polyline points="7 10 12 15 17 10" />
+                        <line x1="12" y1="15" x2="12" y2="3" />
+                    </svg>
+                    <span data-i18n="export.download_btn">Download JSON File</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- System Update Modal (Fallback / Confirmation Shell) -->
     <div class="modal-backdrop" id="updateModal">
         <div class="modal-card" style="max-width: 680px; width: 95%;">

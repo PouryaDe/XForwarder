@@ -7,6 +7,8 @@ import { showToast, escapeHtml, copyJsonToClipboard, getRuleId } from "./utils.j
 import { currentRules } from "./state.js";
 
 let currentImportConfig = null;
+let currentExportJsonStr = "";
+let currentExportFilename = "";
 
 /**
  * Builds a clean, import-ready rule object, preserving DSR, range/exclusion,
@@ -155,30 +157,109 @@ export async function checkImportableRules() {
     } catch (_) {}
 }
 
+function buildFallbackExportJson() {
+    const cleanRules = Array.isArray(currentRules)
+        ? currentRules.map(getSanitizedRuleForExport).filter(Boolean)
+        : [];
+    return JSON.stringify({ rules: cleanRules }, null, 2);
+}
+
+function triggerJsonFileDownload(jsonText, filename) {
+    const blob = new Blob([jsonText], { type: "application/json;charset=utf-8" });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.style.display = "none";
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => {
+        window.URL.revokeObjectURL(url);
+        a.remove();
+    }, 1500);
+}
+
+function syncExportModalModeUI() {
+    const modeRadio = document.querySelector('input[name="exportMode"]:checked');
+    const mode = modeRadio ? modeRadio.value : "file";
+    const textContainer = document.getElementById("exportTextContainer");
+    const statusInfo = document.getElementById("exportStatusInfo");
+    const btnCopyFooter = document.getElementById("btnCopyExportJsonFooter");
+    const btnDownload = document.getElementById("btnDownloadExportJson");
+    if (textContainer) textContainer.style.display = (mode === "text") ? "flex" : "none";
+    if (statusInfo) statusInfo.style.display = (mode === "file") ? "block" : "none";
+    if (btnCopyFooter) btnCopyFooter.style.display = (mode === "text") ? "inline-flex" : "none";
+    if (btnDownload) btnDownload.style.display = (mode === "file") ? "inline-flex" : "none";
+}
+
+export function closeExportModal() {
+    const modal = document.getElementById("exportConfigModal");
+    if (modal) modal.classList.remove("show");
+}
+
+export async function openExportModal() {
+    const modal = document.getElementById("exportConfigModal");
+    if (!modal) {
+        return handleExportConfig();
+    }
+    const textarea = document.getElementById("exportJsonTextarea");
+    const badge = document.getElementById("exportSummaryBadge");
+    const fileLabel = document.getElementById("exportFilenameLabel");
+    const defaultFilename = `xforwarder-backup-${new Date().toISOString().replace(/[-:T]/g, "").slice(0, 14)}.json`;
+
+    currentExportFilename = defaultFilename;
+    currentExportJsonStr = "";
+    if (textarea) textarea.value = "Loading...";
+    if (badge) badge.innerText = "Loading...";
+    if (fileLabel) fileLabel.innerText = defaultFilename;
+
+    const fileRadio = document.querySelector('input[name="exportMode"][value="file"]');
+    if (fileRadio) fileRadio.checked = true;
+    syncExportModalModeUI();
+    modal.classList.add("show");
+
+    try {
+        const res = await fetch(`${API_BASE}/config/export`, { credentials: "same-origin" });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const disposition = res.headers.get("content-disposition") || "";
+        const match = disposition.match(/filename=["']?([^"';]+)["']?/);
+        if (match && match[1]) currentExportFilename = match[1];
+        const rawText = await res.text();
+        try {
+            const parsed = JSON.parse(rawText);
+            currentExportJsonStr = JSON.stringify(parsed, null, 2);
+            const rCount = Array.isArray(parsed.rules) ? parsed.rules.length : 0;
+            if (badge) badge.innerText = `${rCount} Rule(s) Ready`;
+        } catch (_) {
+            currentExportJsonStr = rawText;
+            if (badge) badge.innerText = "Ready";
+        }
+    } catch (_) {
+        currentExportJsonStr = buildFallbackExportJson();
+        const rCount = Array.isArray(currentRules) ? currentRules.length : 0;
+        if (badge) badge.innerText = `${rCount} Rule(s) Ready`;
+    }
+
+    if (textarea) textarea.value = currentExportJsonStr;
+    if (fileLabel) fileLabel.innerText = currentExportFilename;
+}
+
 export async function handleExportConfig() {
     try {
-        const res = await fetch(`${API_BASE}/config/export`);
+        const res = await fetch(`${API_BASE}/config/export`, { credentials: "same-origin" });
         if (!res.ok) {
             const err = await res.json().catch(() => ({}));
             showToast(err.error || "Failed to export configuration", "error");
             return;
         }
-        const blob = await res.blob();
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.style.display = "none";
-        a.href = url;
+        const text = await res.text();
         const disposition = res.headers.get("content-disposition");
         let filename = `xforwarder-backup-${new Date().toISOString().replace(/[-:T]/g, "").slice(0, 14)}.json`;
         if (disposition && disposition.includes("filename=")) {
             const match = disposition.match(/filename=["']?([^"';]+)["']?/);
             if (match && match[1]) filename = match[1];
         }
-        a.download = filename;
-        document.body.appendChild(a);
-        a.click();
-        window.URL.revokeObjectURL(url);
-        a.remove();
+        triggerJsonFileDownload(text, filename);
         showToast(`Configuration backup downloaded: ${filename}`, "success");
     } catch (_) {
         showToast("Error downloading configuration backup", "error");
@@ -298,10 +379,39 @@ export function parseAndValidateImportJson(rawText, sourceName) {
 
 export function initImportExport(fetchStatusCallback) {
     const btnExportConfig = document.getElementById("btnExportConfig");
-    if (btnExportConfig) btnExportConfig.addEventListener("click", handleExportConfig);
+    if (btnExportConfig) btnExportConfig.addEventListener("click", openExportModal);
 
     const btnExportConfigSec = document.getElementById("btnExportConfigSec");
-    if (btnExportConfigSec) btnExportConfigSec.addEventListener("click", handleExportConfig);
+    if (btnExportConfigSec) btnExportConfigSec.addEventListener("click", openExportModal);
+
+    const btnCloseExportModal = document.getElementById("btnCloseExportModal");
+    const btnCancelExportModal = document.getElementById("btnCancelExportModal");
+    if (btnCloseExportModal) btnCloseExportModal.addEventListener("click", closeExportModal);
+    if (btnCancelExportModal) btnCancelExportModal.addEventListener("click", closeExportModal);
+
+    document.querySelectorAll('input[name="exportMode"]').forEach(radio => {
+        radio.addEventListener("change", syncExportModalModeUI);
+    });
+
+    const btnDownloadExportJson = document.getElementById("btnDownloadExportJson");
+    if (btnDownloadExportJson) {
+        btnDownloadExportJson.addEventListener("click", () => {
+            const payload = currentExportJsonStr || buildFallbackExportJson();
+            const fname = currentExportFilename || `xforwarder-backup-${new Date().toISOString().replace(/[-:T]/g, "").slice(0, 14)}.json`;
+            triggerJsonFileDownload(payload, fname);
+            showToast(`Configuration backup downloaded: ${fname}`, "success");
+        });
+    }
+
+    const handleCopyFullExport = () => {
+        const payload = currentExportJsonStr || document.getElementById("exportJsonTextarea")?.value || buildFallbackExportJson();
+        if (!payload) return;
+        copyJsonToClipboard(payload, "Full configuration JSON copied to clipboard!");
+    };
+    const btnCopyExportJson = document.getElementById("btnCopyExportJson");
+    const btnCopyExportJsonFooter = document.getElementById("btnCopyExportJsonFooter");
+    if (btnCopyExportJson) btnCopyExportJson.addEventListener("click", handleCopyFullExport);
+    if (btnCopyExportJsonFooter) btnCopyExportJsonFooter.addEventListener("click", handleCopyFullExport);
 
     const btnOpenImportModal = document.getElementById("btnOpenImportModal");
     const btnOpenImportModalSec = document.getElementById("btnOpenImportModalSec");
