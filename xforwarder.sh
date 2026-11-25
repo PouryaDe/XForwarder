@@ -14,7 +14,7 @@ if [[ "${NONINTERACTIVE:-0}" != "1" && "${YES:-0}" != "1" && ! -t 0 && -r /dev/t
     fi
 fi
 
-SCRIPT_VERSION="1.10.0"
+SCRIPT_VERSION="1.10.1"
 INSTALL_DIR="/opt/xforwarder"
 CONFIG_DIR="/etc/xforwarder"
 CONFIG_FILE="$CONFIG_DIR/config.json"

@@ -46,8 +46,8 @@ from core.prober import (
 )
 from core.firewall import (
     is_ipv6_supported, apply_nftables, flush_conntrack, build_nft_lb_dnat_entries,
-    ensure_fq_qdisc, DSR_DIRECT_TABLE_BASE, DSR_DIRECT_PRIO_BASE, DSR_DIRECT_MARK_BASE,
-    DSR_DIRECT_MAX_SLOTS
+    ensure_fq_qdisc, reconcile_dsr_direct_kernel_routes, DSR_DIRECT_TABLE_BASE,
+    DSR_DIRECT_PRIO_BASE, DSR_DIRECT_MARK_BASE, DSR_DIRECT_MAX_SLOTS
 )
 from core.proxy_gen import (
     apply_haproxy, apply_nginx, build_nginx_lb_upstream,
@@ -2457,6 +2457,7 @@ class XForwarderEngine:
                         if config_changed and self._loss_scheduler:
                             self._loss_scheduler.trigger_now()
                     else:
+                        reconcile_dsr_direct_kernel_routes()
                         self._save_state_file()
 
                     interval = int(self.config.get("check_interval_seconds", 8))

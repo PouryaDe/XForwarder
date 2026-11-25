@@ -566,6 +566,7 @@ def ensure_dsr_direct_policy_routing(
                 return False, f"Route table {tid} is non-empty or returned unparseable output"
         if routes_list and tid not in prev_by_table and tid not in existing_own_rule:
             return False, f"Reserved route table {tid} is not empty and not owned by XForwarder"
+        prev_iface = str((prev_by_table.get(tid) or {}).get("iface") or "")
         for r in routes_list:
             if not isinstance(r, dict):
                 continue
@@ -573,7 +574,8 @@ def ensure_dsr_direct_policy_routing(
             rdst = str(r.get("dst") or "default")
             if rtype == "throw":
                 continue
-            if rdst == "default" and str(r.get("dev") or "") == slot["iface"] and not r.get("gateway"):
+            rdev = str(r.get("dev") or "")
+            if rdst == "default" and rdev in (slot["iface"], prev_iface) and rdev and not r.get("gateway"):
                 continue
             return False, f"Route table {tid} contains unrelated route entry"
         existing_routes_by_table[tid] = routes_list
@@ -629,6 +631,32 @@ def ensure_dsr_direct_policy_routing(
     _save_dsr_direct_state(state_path, [desired_by_table[k] for k in sorted(desired_by_table)])
     _DSR_DIRECT_POLICY_APPLIED = True
     return True, None
+
+
+def reconcile_dsr_direct_kernel_routes(state_path: str = DSR_DIRECT_STATE_PATH) -> None:
+    """
+    Re-installs missing `default dev <iface>` entries in active DSR Direct routing
+    tables when an underlying tunnel interface (e.g. esp*, tcptun*) flaps or rekeys.
+    """
+    ip_bin = shutil.which("ip")
+    if not ip_bin or not os.path.isfile(state_path):
+        return
+    slots = _load_dsr_direct_state(state_path)
+    if not slots:
+        return
+    for tid, slot in slots.items():
+        iface = str(slot.get("iface") or "").strip()
+        if not iface or not os.path.exists(f"/sys/class/net/{iface}"):
+            continue
+        rt_res = _run_ip_cmd(ip_bin, ["-4", "route", "show", "table", str(tid), "default"])
+        err_l = rt_res.stderr.lower()
+        has_default = (
+            rt_res.returncode == 0
+            and "fib table does not exist" not in err_l
+            and f"dev {iface}" in rt_res.stdout
+        )
+        if not has_default:
+            _run_ip_cmd(ip_bin, ["route", "replace", "default", "dev", iface, "table", str(tid)])
 
 
 DSR_SYSCTL_CONF_PATH = "/etc/sysctl.d/99-xforwarder-dsr.conf"
@@ -1348,6 +1376,8 @@ def apply_nftables(
             ok_pr, err_pr = ensure_dsr_direct_policy_routing(dsr_direct_routes)
             if not ok_pr:
                 return False, err_pr, last_content
+        elif dsr_direct_routes and _DSR_DIRECT_POLICY_APPLIED:
+            reconcile_dsr_direct_kernel_routes()
         elif not dsr_direct_routes and (_DSR_DIRECT_POLICY_APPLIED or os.path.isfile(DSR_DIRECT_STATE_PATH)):
             cleanup_dsr_direct_policy_routing()
         return True, None, nft_content

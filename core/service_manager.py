@@ -25,7 +25,7 @@ from contextlib import contextmanager
 from typing import Dict, Any, Tuple, Optional, List, Set
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-APP_VERSION = "1.10.0"
+APP_VERSION = "1.10.1"
 
 _GITHUB_REPO_URL = "https://github.com/PouryaDe/XForwarder.git"
 _GITHUB_API_URL = "https://api.github.com/repos/PouryaDe/XForwarder/commits/main"
