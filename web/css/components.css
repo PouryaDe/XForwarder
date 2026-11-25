@@ -999,12 +999,14 @@
     box-sizing: border-box;
     font-size: 0.68rem;
     font-weight: 700;
-    padding: 4px 10px;
+    padding: 5px 10px;
     border-radius: 9999px;
     background: var(--accent-wash);
     color: var(--accent-text);
     border: 1px solid color-mix(in srgb, var(--accent) 28%, transparent);
     line-height: 1;
+    text-box-trim: trim-both;
+    text-box-edge: cap alphabetic;
 }
 
 .metrics-header-controls .btn-sm {
@@ -1028,6 +1030,8 @@
     align-items: center;
     justify-content: center;
     line-height: 1;
+    text-box-trim: trim-both;
+    text-box-edge: cap alphabetic;
 }
 
 #btnRefreshOvTraffic {
@@ -1053,8 +1057,16 @@
     font-size: 0.7rem;
     font-weight: 700;
     line-height: 1;
-    padding: 4px 9px;
+    padding: 5px 10px;
     border-radius: 9999px;
+}
+
+.tunnel-status-pill > span:not(.pill-dot) {
+    display: inline-flex;
+    align-items: center;
+    line-height: 1;
+    text-box-trim: trim-both;
+    text-box-edge: cap alphabetic;
 }
 
 .tunnel-status-pill.pill-online {
@@ -1128,8 +1140,16 @@
     font-size: 0.74rem;
     font-weight: 700;
     line-height: 1;
-    padding: 4px 8px;
+    padding: 5px 9px;
     border-radius: 6px;
+}
+
+.tunnel-ping-pill span {
+    display: inline-flex;
+    align-items: center;
+    line-height: 1;
+    text-box-trim: trim-both;
+    text-box-edge: cap alphabetic;
 }
 
 .tunnel-ping-pill svg {
@@ -5997,6 +6017,14 @@
     cursor: pointer;
     transition: all var(--fast) var(--ease);
 }
+.btn-tunnel-traffic span {
+    display: inline-flex;
+    align-items: center;
+    line-height: 1;
+    text-box-trim: trim-both;
+    text-box-edge: cap alphabetic;
+}
+
 .btn-tunnel-traffic svg {
     display: block;
     flex-shrink: 0;

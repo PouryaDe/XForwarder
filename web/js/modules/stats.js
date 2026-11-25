@@ -754,11 +754,11 @@ export function renderNetworkTopology(network) {
                         </div>
                         <div class="tunnel-traffic-actions">
                             <button type="button" class="btn-tunnel-traffic" onclick="openTrafficModal('tunnel', decodeURIComponent('${encodedTName}'))" title="View Tunnel Bandwidth Analytics">
-                                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
                                 <span>Stats</span>
                             </button>
                             <button type="button" class="btn-tunnel-traffic btn-reset" onclick="promptResetTraffic('tunnel', decodeURIComponent('${encodedTName}'))" title="Reset Billing Cycle">
-                                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
                             </button>
                         </div>
                     </div>
@@ -774,10 +774,7 @@ export function renderNetworkTopology(network) {
                                 <span class="tunnel-name">${escapeHtml(t.name)}</span>
                                 <span class="tunnel-type-tag">${escapeHtml(t.type)}</span>
                             </div>
-                            <span class="tunnel-status-pill ${isUp ? 'pill-online' : 'pill-offline'}">
-                                <span class="pill-dot"></span>
-                                ${t.state}
-                            </span>
+                            <span class="tunnel-status-pill ${isUp ? 'pill-online' : 'pill-offline'}"><span class="pill-dot"></span><span>${escapeHtml(t.state)}</span></span>
                         </div>
                         <div class="tunnel-body">
                             <div class="tunnel-ip-row">

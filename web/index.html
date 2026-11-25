@@ -1180,8 +1180,9 @@
                         </div>
                     </div>
 
-                <!-- IP Spoof / DSR Capability Tester Card (Full Width in Network) -->
-                <div class="overview-card full-width-card" id="cardDsrSpoofTester" style="margin-top: 18px;">
+                <!-- IP Spoof / DSR Capability Tester Card (Half-Column in Network) -->
+                <div class="spoof-card-half-grid">
+                <div class="overview-card" id="cardDsrSpoofTester">
                     <div class="overview-card-header" style="flex-wrap: wrap; gap: 12px;">
                         <div class="overview-card-title">
                             <div class="stat-icon icon-cyan" style="width:34px;height:34px;">
@@ -1205,11 +1206,20 @@
                     </div>
                     <div class="overview-card-body">
                         <div class="spoof-local-pills" id="spoofLocalPills"></div>
+                        <div class="spoof-mode-tabs" role="tablist" aria-label="Spoof test role">
+                            <button type="button" class="spoof-mode-tab active" data-spoof-mode="listener" role="tab" aria-selected="true">
+                                <span class="spoof-step-badge">1</span>
+                                <span data-i18n="network.spoof_mode_listener">Listener (Iran)</span>
+                            </button>
+                            <button type="button" class="spoof-mode-tab" data-spoof-mode="sender" role="tab" aria-selected="false">
+                                <span class="spoof-step-badge is-run">2</span>
+                                <span data-i18n="network.spoof_mode_sender">Sender (Outside)</span>
+                            </button>
+                        </div>
                         <div class="spoof-tester-grid">
                             <!-- Listener Pane (Run on Iran / Peer Server) -->
-                            <div class="spoof-pane">
+                            <div class="spoof-pane" id="spoofPaneListener">
                                 <div class="spoof-pane-head">
-                                    <span class="spoof-step-badge">1</span>
                                     <div>
                                         <h4 data-i18n="network.spoof_listen_title">Peer Listener (Iran Server)</h4>
                                         <p data-i18n="network.spoof_listen_desc">Open a temporary UDP port to receive test probes.</p>
@@ -1235,9 +1245,8 @@
                             </div>
 
                             <!-- Egress Tester Pane (Run on Outside Server) -->
-                            <div class="spoof-pane">
+                            <div class="spoof-pane" id="spoofPaneSender" style="display:none;">
                                 <div class="spoof-pane-head">
-                                    <span class="spoof-step-badge is-run">2</span>
                                     <div>
                                         <h4 data-i18n="network.spoof_run_title">Egress Test (Outside VPS)</h4>
                                         <p data-i18n="network.spoof_run_desc">Send normal &amp; spoofed probes to your Peer Listener.</p>
@@ -1267,6 +1276,7 @@
                             </div>
                         </div>
                     </div>
+                </div>
                 </div>
             </section>
 

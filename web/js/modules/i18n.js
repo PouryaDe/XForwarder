@@ -264,6 +264,8 @@ export const TRANSLATIONS = {
         "services.kernel_opt_conflict_hdr": "Conflicts / legacy kernel settings detected (recommend checking 'Clean & replace' below):",
 
         "network.spoof_title": "IP Spoof / DSR Capability Tester",
+        "network.spoof_mode_listener": "Listener (Iran)",
+        "network.spoof_mode_sender": "Sender (Outside)",
         "network.spoof_sub": "Check if this server & datacenter allow spoofed-source packets for DSR.",
         "network.spoof_listen_title": "Peer Listener (Iran Server)",
         "network.spoof_listen_desc": "Open a temporary UDP port to receive test probes.",
@@ -895,6 +897,8 @@ export const TRANSLATIONS = {
         "services.kernel_opt_conflict_hdr": "تداخل یا تنظیمات قدیمی شناسایی شد (پیشنهاد می‌شود گزینه «پاک‌سازی تنظیمات قبلی» را تیک بزنید):",
 
         "network.spoof_title": "تست قابلیت IP Spoof / DSR",
+        "network.spoof_mode_listener": "گیرنده (ایران)",
+        "network.spoof_mode_sender": "فرستنده (خارج)",
         "network.spoof_sub": "بررسی مجاز بودن ارسال پکت با آی‌پی اسپوف‌شده در این سرور و دیتاسنتر.",
         "network.spoof_listen_title": "گیرنده تست (سرور ایران)",
         "network.spoof_listen_desc": "باز کردن پورت موقت UDP برای دریافت پکت‌های تست.",

@@ -1014,6 +1014,24 @@ export function initDsrSpoofTester() {
     const btnCopyCli = document.getElementById("btnCopySpoofCli");
     const btnRun = document.getElementById("btnRunSpoofTest");
     const inpListenPort = document.getElementById("inpSpoofListenPort");
+    const modeTabs = document.querySelectorAll("#cardDsrSpoofTester .spoof-mode-tab");
+    const paneListener = document.getElementById("spoofPaneListener");
+    const paneSender = document.getElementById("spoofPaneSender");
+
+    if (modeTabs.length > 0 && paneListener && paneSender) {
+        modeTabs.forEach(tab => {
+            tab.addEventListener("click", () => {
+                const mode = tab.dataset.spoofMode || "listener";
+                modeTabs.forEach(t => {
+                    const isAct = t === tab;
+                    t.classList.toggle("active", isAct);
+                    t.setAttribute("aria-selected", isAct ? "true" : "false");
+                });
+                paneListener.style.display = (mode === "listener") ? "flex" : "none";
+                paneSender.style.display = (mode === "sender") ? "flex" : "none";
+            });
+        });
+    }
 
     if (btnRefresh) {
         btnRefresh.addEventListener("click", async () => {
