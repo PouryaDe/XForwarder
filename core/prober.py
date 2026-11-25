@@ -113,6 +113,7 @@ def validate_probe_route(
     target_is_private = is_private_or_tunnel_target(target)
 
     if dest_type == "nftables_dsr_direct":
+        # DSR Direct binds its client-facing socket on the ingress tunnel interface and routes WAN via default gateway
         in_iface = str(dest.get("ingress_iface", "")).strip()
         if in_iface and not check_iface_up(in_iface):
             return False, in_iface, f"Tunnel interface '{in_iface}' is missing or down"

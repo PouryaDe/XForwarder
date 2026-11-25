@@ -98,5 +98,10 @@ A port must **NEVER** be bound by HAProxy and forwarded by NFTables DNAT at the 
 - **Pool Exhaustion Failover:** Priority-level failover activates only when zero healthy enabled backends remain in the pool (or an asymmetric blackhole affects the active pool).
 - **Zero-Redundancy Metrics & Import Sync:** `core/metrics.py` (`get_unique_targets_from_config`) deduplicates all `lb_targets` IPs alongside primary destination IPs, and `core/service_manager.py` preserves Nginx multi-server `upstream` blocks cleanly across sync/import.
 
+## 9. Asymmetric SYN-ACK & Direct-Return DSR (`nftables_dsr_synack` / `nftables_dsr_direct`)
+- **Iran Server (`nftables_dsr_synack`):** Forwards inbound client TCP traffic statelessly (`notrack`) via `tunnel_iface` to the Outside tunnel IP (`target:port`), translates `SYN-ACK` packets returned through the tunnel back to `spoof_ip` (Iran public IP) and client port, and exempts traffic blackhole checks since bulk download bypasses Iran.
+- **Outside Server (`nftables_dsr_direct`):** Marks local `SYN-ACK` responses with `fwmark 0x42600001+` to return through `ingress_iface` via isolated FIB table `42600+` (`throw <spoof_ip>/32`, `default dev <ingress_iface>`), while rewriting non-`SYN-ACK` download packets egressing WAN directly to `<spoof_ip>:<client_port>`. Policy routing inspection safely treats non-existent kernel FIB tables as empty before slot creation.
+- **Optional 3rd-Hop Exit Bridge (`exit_target` / `exit_port`):** When Xray/3x-ui runs on a 3rd server without spoof support, `nftables_dsr_direct` validates `exit_target` + `exit_port` (rejecting self-loops and protected-port collisions), emits a bound HAProxy zero-copy splice listener (`bind <local_tunnel_ip>:<backend_port>`) toward `<exit_target>:<exit_port>`, and monitors L4 TCP + ICMP health of the exit endpoint once `ingress_iface` is confirmed UP.
+
 
 

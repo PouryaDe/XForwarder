@@ -7,7 +7,7 @@ Generates machine-readable REST API schema using strictly fictional RFC document
 from typing import Dict, Any
 
 
-def build_openapi_spec(version: str = "1.8.0", server_url: str = "/") -> Dict[str, Any]:
+def build_openapi_spec(version: str = "1.9.0", server_url: str = "/") -> Dict[str, Any]:
     """Builds the complete OpenAPI 3.0.3 specification for XForwarder REST API."""
     clean_server = str(server_url or "/").rstrip("/") or "/"
     return {
@@ -117,6 +117,8 @@ def build_openapi_spec(version: str = "1.8.0", server_url: str = "/") -> Dict[st
                         "ingress_iface": {"type": "string", "example": "ipip1"},
                         "spoof_ip": {"type": "string", "example": "203.0.113.10"},
                         "snat_ip": {"type": "string", "example": "198.51.100.20"},
+                        "exit_target": {"type": "string", "example": "198.51.100.50"},
+                        "exit_port": {"type": "integer", "minimum": 1, "maximum": 65535, "example": 1036},
                         "proxy_protocol": {"type": "boolean", "default": False},
                         "is_relay": {"type": "boolean", "default": False},
                         "enabled": {"type": "boolean", "default": True},

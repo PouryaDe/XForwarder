@@ -869,7 +869,9 @@ class TestNFTablesDSRMethods(unittest.TestCase):
                 if cmd[1:4] == ["-4", "rule", "show"]:
                     res.stdout = "0:\tfrom all lookup local\n32766:\tfrom all lookup main\n"
                 elif cmd[1:5] == ["-j", "-4", "route", "show"]:
-                    res.stdout = "[]"
+                    res.returncode = 2
+                    res.stdout = ""
+                    res.stderr = "Error: ipv4: FIB table does not exist.\nDump terminated"
                 else:
                     res.stdout = ""
                 return res
@@ -997,6 +999,239 @@ class TestNFTablesDSRMethods(unittest.TestCase):
             self.assertIn("method:nftables_dsr_direct", keys)
             self.assertEqual(keys["method:nftables_dsr_synack"]["total_bytes"], 2700)
             self.assertEqual(keys["method:nftables_dsr_direct"]["total_bytes"], 21500)
+
+    def test_dsr_direct_third_hop_exit_relay_validation_haproxy_and_probe(self):
+        from core.config_manager import validate_rule
+        from core.engine import XForwarderEngine
+
+        ok_r, err_r = validate_rule({
+            "port": 1036,
+            "protocol": "tcp",
+            "destinations": [{
+                "priority": 1,
+                "type": "nftables_dsr_direct",
+                "target": "10.250.51.2",
+                "port": 24443,
+                "spoof_ip": "198.51.100.99",
+                "ingress_iface": "esp1",
+                "exit_target": "203.0.113.50",
+                "exit_port": 1036,
+            }]
+        })
+        self.assertTrue(ok_r, f"Expected valid 3rd-hop DSR Direct rule, got: {err_r}")
+
+        ok_bad, err_bad = validate_rule({
+            "port": 1036,
+            "protocol": "tcp",
+            "destinations": [{
+                "priority": 1,
+                "type": "nftables_dsr_direct",
+                "target": "10.250.51.2",
+                "port": 24443,
+                "spoof_ip": "198.51.100.99",
+                "ingress_iface": "esp1",
+                "exit_target": "not-an-ip",
+            }]
+        })
+        self.assertFalse(ok_bad)
+        self.assertIn("Exit", err_bad)
+
+        with tempfile.TemporaryDirectory() as tmp:
+            cfg_path = os.path.join(tmp, "config.json")
+            state_path = os.path.join(tmp, "state.json")
+            with open(cfg_path, "w", encoding="utf-8") as f:
+                json.dump({
+                    "schema_version": 3,
+                    "wan_interface": "eth0",
+                    "rules": [{
+                        "id": "rule-1036",
+                        "port": 1036,
+                        "protocol": "tcp",
+                        "active_priority": 1,
+                        "destinations": [{
+                            "priority": 1,
+                            "type": "nftables_dsr_direct",
+                            "target": "10.250.51.2",
+                            "port": 24443,
+                            "spoof_ip": "198.51.100.99",
+                            "ingress_iface": "esp1",
+                            "exit_target": "203.0.113.50",
+                            "exit_port": 1036,
+                            "enabled": True,
+                        }]
+                    }]
+                }, f)
+
+            eng = XForwarderEngine(config_path=cfg_path, state_file_path=state_path)
+            ha_captured = {}
+            def fake_ha(haproxy_entries, udp_entries):
+                ha_captured["haproxy"] = list(haproxy_entries)
+                return True, None
+
+            with patch.object(eng, "_detect_wan_interface", return_value="eth0"), \
+                 patch.object(eng, "_detect_dsr_mss", return_value=1340), \
+                 patch.object(eng, "_apply_nftables", return_value=(True, None)), \
+                 patch.object(eng, "_apply_haproxy", side_effect=fake_ha), \
+                 patch.object(eng, "_apply_nginx", return_value=(True, None)):
+                ok_sync, errs = eng.sync_firewall_and_proxies()
+
+            self.assertTrue(ok_sync, f"Sync failed: {errs}")
+            joined_ha = "\n".join(ha_captured.get("haproxy", []))
+            self.assertIn("listen dsr_exit_1036_24443", joined_ha)
+            self.assertIn("bind 10.250.51.2:24443", joined_ha)
+            self.assertIn("server srv_exit_1036_24443 203.0.113.50:1036 check inter 3s fall 2 rise 2", joined_ha)
+
+    def test_dsr_direct_third_hop_edge_cases_and_fib_error_guard(self):
+        from core.config_manager import validate_rule
+        from core.engine import XForwarderEngine
+        from core.firewall import ensure_dsr_direct_policy_routing
+
+        # 1. Self-loop exit_target == target on same port must be rejected
+        ok_loop, err_loop = validate_rule({
+            "port": 1036,
+            "protocol": "tcp",
+            "destinations": [{
+                "priority": 1,
+                "type": "nftables_dsr_direct",
+                "target": "10.250.51.2",
+                "port": 24443,
+                "spoof_ip": "198.51.100.99",
+                "ingress_iface": "esp1",
+                "exit_target": "10.250.51.2",
+                "exit_port": 24443,
+            }]
+        })
+        self.assertFalse(ok_loop)
+        self.assertIn("self-loop", err_loop.lower())
+
+        # 2. Invalid exit_port (range / out of bounds) rejected; empty exit_port defaults to rule port
+        ok_bad_ep, _ = validate_rule({
+            "port": 1036,
+            "protocol": "tcp",
+            "destinations": [{
+                "priority": 1,
+                "type": "nftables_dsr_direct",
+                "target": "10.250.51.2",
+                "port": 24443,
+                "spoof_ip": "198.51.100.99",
+                "ingress_iface": "esp1",
+                "exit_target": "203.0.113.50",
+                "exit_port": "1000-2000",
+            }]
+        })
+        self.assertFalse(ok_bad_ep)
+
+        def_rule = {
+            "port": 1036,
+            "protocol": "tcp",
+            "destinations": [{
+                "priority": 1,
+                "type": "nftables_dsr_direct",
+                "target": "10.250.51.2",
+                "port": 24443,
+                "spoof_ip": "198.51.100.99",
+                "ingress_iface": "esp1",
+                "exit_target": "203.0.113.50",
+            }]
+        }
+        ok_def, err_def = validate_rule(def_rule)
+        self.assertTrue(ok_def, err_def)
+        self.assertEqual(def_rule["destinations"][0]["exit_port"], 1036)
+
+        # 3. Stale exit_target/exit_port stripped when destination type is not nftables_dsr_direct
+        syn_rule = {
+            "port": 1036,
+            "protocol": "tcp",
+            "destinations": [{
+                "priority": 1,
+                "type": "nftables_dsr_synack",
+                "target": "10.250.51.2",
+                "port": 24443,
+                "tunnel_iface": "esp1",
+                "exit_target": "203.0.113.50",
+                "exit_port": 1036,
+            }]
+        }
+        self.assertTrue(validate_rule(syn_rule)[0])
+        self.assertNotIn("exit_target", syn_rule["destinations"][0])
+        self.assertNotIn("exit_port", syn_rule["destinations"][0])
+
+        # 4. Genuine kernel route inspection failure (other than missing FIB table) still aborts cleanly
+        with tempfile.TemporaryDirectory() as tmp:
+            st_file = os.path.join(tmp, "dsr_direct_routes.json")
+            def fake_run_perm_err(cmd, **kwargs):
+                res = MagicMock()
+                res.returncode = 0
+                res.stderr = ""
+                if cmd[1:4] == ["-4", "rule", "show"]:
+                    res.stdout = "0:\tfrom all lookup local\n"
+                elif cmd[1:5] == ["-j", "-4", "route", "show"]:
+                    res.returncode = 1
+                    res.stdout = ""
+                    res.stderr = "RTNETLINK answers: Operation not permitted"
+                else:
+                    res.stdout = ""
+                return res
+
+            with patch("core.firewall.sys.platform", "linux"), \
+                 patch("core.firewall._find_system_bin", return_value="/sbin/ip"), \
+                 patch("core.firewall.subprocess.run", side_effect=fake_run_perm_err):
+                ok_perm, err_perm = ensure_dsr_direct_policy_routing([{
+                    "iface": "esp1", "table_id": 42600, "priority": 12600, "fwmark": "0x42600001", "throw_ips": ["198.51.100.99"]
+                }], state_path=st_file)
+                self.assertFalse(ok_perm)
+                self.assertIn("Operation not permitted", err_perm)
+
+        # 5. Bind guard prevents HAProxy port conflict with wildcard rule or web dashboard port (8090),
+        #    and L4 TCP failure on 3rd-hop exit_target marks DSR Direct unhealthy
+        with tempfile.TemporaryDirectory() as tmp:
+            cfg_path = os.path.join(tmp, "config.json")
+            state_path = os.path.join(tmp, "state.json")
+            with open(cfg_path, "w", encoding="utf-8") as f:
+                json.dump({
+                    "schema_version": 3,
+                    "wan_interface": "eth0",
+                    "web": {"port": 8090},
+                    "rules": [
+                        {
+                            "id": "rule-1036",
+                            "port": 1036,
+                            "protocol": "tcp",
+                            "active_priority": 1,
+                            "destinations": [{
+                                "priority": 1,
+                                "type": "nftables_dsr_direct",
+                                "target": "10.250.51.2",
+                                "port": 8090,
+                                "spoof_ip": "198.51.100.99",
+                                "ingress_iface": "esp1",
+                                "exit_target": "203.0.113.50",
+                                "exit_port": 1036,
+                                "enabled": True,
+                            }]
+                        }
+                    ]
+                }, f)
+            eng = XForwarderEngine(config_path=cfg_path, state_file_path=state_path)
+            ha_cap = {}
+            with patch.object(eng, "_detect_wan_interface", return_value="eth0"), \
+                 patch.object(eng, "_detect_dsr_mss", return_value=1340), \
+                 patch.object(eng, "_apply_nftables", return_value=(True, None)), \
+                 patch.object(eng, "_apply_haproxy", side_effect=lambda ha, udp: ha_cap.update({"ha": list(ha)}) or (True, None)), \
+                 patch.object(eng, "_apply_nginx", return_value=(True, None)):
+                eng.sync_firewall_and_proxies()
+            self.assertEqual(ha_cap.get("ha"), [])
+
+            # L4 check failing on 203.0.113.50:1036 marks dest failed despite healthy ICMP ping
+            eng.config["rules"][0]["destinations"][0]["port"] = 24443
+            probe_cache = {"203.0.113.50": {"healthy": True, "packets_sent": 10, "packets_received": 10, "packet_loss": 0.0, "latency_ms": 12.0, "jitter_ms": 0.5}}
+            with patch.object(eng, "_validate_probe_route", return_value=(True, None, "")), \
+                 patch.object(eng, "_check_l4_port_cached", return_value={"healthy": False, "reason": "Connection refused"}) as mock_l4:
+                eng.evaluate_rule(eng.config["rules"][0], probe_cache=probe_cache)
+            mock_l4.assert_called_once_with("203.0.113.50", 1036, iface=None)
+            stat = eng.runtime_state["rules_state"]["rule-1036"]["dest_stats"]["prio_1"]
+            self.assertEqual(stat["status"], "failed")
+            self.assertEqual(stat["packet_loss"], 100.0)
 
 
 if __name__ == "__main__":

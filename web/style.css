@@ -10529,6 +10529,109 @@ input#formCategory::-webkit-list-button {
     }
 }
 
+/* ── DSR Direct 3rd-Hop Exit Relay & Live Flow Preview ── */
+.dest-tunnel-suggestions {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 5px;
+    margin-top: 6px;
+}
+
+.dest-exit-relay-box {
+    margin-top: 12px;
+    padding: 12px 14px;
+    border-radius: 12px;
+    background: color-mix(in srgb, var(--accent) 5%, var(--raise-2));
+    border: 1px dashed color-mix(in srgb, var(--accent) 28%, var(--line));
+}
+
+.dest-exit-relay-head {
+    margin-bottom: 10px;
+}
+
+.dest-exit-relay-head > label {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--accent-text);
+}
+
+.dest-exit-relay-sub {
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    margin-top: 2px;
+    line-height: 1.45;
+}
+
+.dest-dsr-flow-guide {
+    margin-top: 10px;
+    padding: 9px 12px;
+    border-radius: 10px;
+    background: var(--bg-subtle, rgba(255, 255, 255, 0.03));
+    border: 1px solid var(--border-color);
+    font-size: 0.72rem;
+    color: var(--text-secondary);
+}
+
+.dsr-flow-title {
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--text-muted);
+    margin-bottom: 4px;
+}
+
+.dsr-flow-line {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 5px;
+    line-height: 1.55;
+    direction: ltr;
+}
+
+.dsr-flow-tag {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1px 5px;
+    border-radius: 5px;
+    font-size: 0.64rem;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+}
+
+.dsr-flow-tag.is-up {
+    background: color-mix(in srgb, var(--accent) 16%, transparent);
+    color: var(--accent-text);
+}
+
+.dsr-flow-tag.is-ret {
+    background: color-mix(in srgb, var(--accent-2, #10b981) 16%, transparent);
+    color: var(--accent-emerald, #10b981);
+}
+
+.dsr-flow-dim {
+    color: var(--text-muted);
+}
+
+.dest-hop-arrow {
+    color: var(--accent-text);
+    font-weight: 700;
+    margin: 0 5px;
+    font-family: var(--font-mono);
+}
+
+[data-theme="light"] .dest-exit-relay-box {
+    background: color-mix(in srgb, var(--accent) 5%, #f8fafc);
+    border-color: color-mix(in srgb, var(--accent-text) 24%, var(--line));
+}
+
+[data-theme="light"] .dest-dsr-flow-guide {
+    background: #f8fafc;
+}
+
 /* ==========================================================================
    XForwarder - Persian (Farsi) & RTL Layout Styles
    Typography (Vazirmatn), BiDi Text Handling, & Directional Overrides

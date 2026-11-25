@@ -550,10 +550,13 @@ def ensure_dsr_direct_policy_routing(
     existing_routes_by_table: Dict[int, List[Dict[str, Any]]] = {}
     for tid, slot in desired_by_table.items():
         rt_res = _run_ip_cmd(ip_bin, ["-j", "-4", "route", "show", "table", str(tid)])
-        if rt_res.returncode != 0 and rt_res.stderr.strip():
-            return False, f"Failed inspecting route table {tid}: {rt_res.stderr.strip()}"
+        err_text = rt_res.stderr.strip()
+        err_lower = err_text.lower()
+        table_missing = "fib table does not exist" in err_lower or "does not exist" in err_lower
+        if rt_res.returncode != 0 and err_text and not table_missing:
+            return False, f"Failed inspecting route table {tid}: {err_text}"
         routes_list: List[Dict[str, Any]] = []
-        raw_out = rt_res.stdout.strip()
+        raw_out = "" if table_missing else rt_res.stdout.strip()
         if raw_out:
             try:
                 parsed_rt = json.loads(raw_out)

@@ -430,10 +430,14 @@ export function renderRuleCard(rule, rulesState) {
                 : `#${prio}`);
 
         const destPortText = escapeHtml(dest.port_range ? `${dest.port_range} (1:1)` : (dest.port || rule.port));
+        const rawExitTarget = (String(dest.type || '').toLowerCase() === 'nftables_dsr_direct' && dest.exit_target) ? String(dest.exit_target).trim() : '';
+        const exitTargetDisplay = rawExitTarget ? (rawExitTarget.includes(':') ? `[${escapeHtml(rawExitTarget)}]` : escapeHtml(rawExitTarget)) : '';
+        const exitPortText = rawExitTarget ? escapeHtml(dest.exit_port || rule.port) : '';
         const extraTags = [
             dest.tunnel_iface ? `<span class="mono-tag">${escapeHtml(dest.tunnel_iface)}</span>` : '',
             dest.ingress_iface ? `<span class="mono-tag">in:${escapeHtml(dest.ingress_iface)}</span>` : '',
-            dest.spoof_ip ? `<span class="mono-tag">spoof ${escapeHtml(dest.spoof_ip)}</span>` : ''
+            dest.spoof_ip ? `<span class="mono-tag">spoof ${escapeHtml(dest.spoof_ip)}</span>` : '',
+            rawExitTarget ? `<span class="mono-tag is-accent">3rd-hop exit</span>` : ''
         ].filter(Boolean).join('');
 
         const isLbPool = Boolean(dest.lb_enabled && Array.isArray(dest.lb_targets) && dest.lb_targets.length > 0);
@@ -514,11 +518,15 @@ export function renderRuleCard(rule, rulesState) {
                 </div>
             `;
         } else {
+            const exitHopHtml = rawExitTarget
+                ? `<span class="dest-hop-arrow" title="HAProxy exit relay">→</span><span class="path-dest-addr"><span class="dest-ip-host">${exitTargetDisplay}</span><span class="dest-colon">:</span><span class="dest-port ${isActive && isEnabled ? 'is-active' : ''}">${exitPortText}</span></span>`
+                : '';
+            const copyIpVal = rawExitTarget || rawTarget;
             destBodyHtml = `
                 <div class="path-dest">
-                    <span class="path-dest-addr"><span class="dest-ip-host">${targetDisplay}</span><span class="dest-colon">:</span><span class="dest-port ${isActive && isEnabled ? 'is-active' : ''}">${destPortText}</span></span>
+                    <span class="path-dest-addr"><span class="dest-ip-host">${targetDisplay}</span><span class="dest-colon">:</span><span class="dest-port ${isActive && isEnabled ? 'is-active' : ''}">${destPortText}</span></span>${exitHopHtml}
                     ${extraTags}
-                    <button class="btn-copy" onclick="copyText(decodeURIComponent('${encodeURIComponent(rawTarget)}'), this)" title="${escapeHtml(t("rules.copy_dest_ip", {}, "Copy Destination IP"))}">${copyPortSvg}</button>
+                    <button class="btn-copy" onclick="copyText(decodeURIComponent('${encodeURIComponent(copyIpVal)}'), this)" title="${escapeHtml(t("rules.copy_dest_ip", {}, "Copy Destination IP"))}">${copyPortSvg}</button>
                 </div>
             `;
         }
@@ -676,6 +684,8 @@ export function renderRuleListRow(rule, rulesState) {
         const statusDetail = stat.reason ? ` · ${stat.reason}` : (stat.status ? ` · ${String(stat.status).toUpperCase()}` : '');
 
         const destPortLabel = dest.port_range ? `${dest.port_range} (1:1)` : (dest.port || rule.port);
+        const rawExitT = (String(dest.type || '').toLowerCase() === 'nftables_dsr_direct' && dest.exit_target) ? String(dest.exit_target).trim() : '';
+        const exitSuffix = rawExitT ? ` → ${rawExitT.includes(':') ? `[${escapeHtml(rawExitT)}]` : escapeHtml(rawExitT)}:${escapeHtml(dest.exit_port || rule.port)}` : '';
         const destExtraNote = [
             dest.tunnel_iface || "",
             dest.ingress_iface ? `in:${dest.ingress_iface}` : "",
@@ -684,7 +694,7 @@ export function renderRuleListRow(rule, rulesState) {
         const isLbPool = Boolean(dest.lb_enabled && Array.isArray(dest.lb_targets) && dest.lb_targets.length > 0);
         const lbSummaryLabel = isLbPool
             ? `LB (${stat.lb_healthy_count !== undefined ? stat.lb_healthy_count : dest.lb_targets.filter(m => m.enabled !== false).length}/${dest.lb_targets.filter(m => m.enabled !== false).length}) · ${formatLbAlgoShort(dest.lb_mode)} · ${targetDisplay} +${Math.max(0, dest.lb_targets.length - 1)}`
-            : `${targetDisplay}:${escapeHtml(destPortLabel)}${destExtraNote ? ` (${escapeHtml(destExtraNote)})` : ''}`;
+            : `${targetDisplay}:${escapeHtml(destPortLabel)}${exitSuffix}${destExtraNote ? ` (${escapeHtml(destExtraNote)})` : ''}`;
         const lbTitleDetail = isLbPool
             ? ` | Pool: ${dest.lb_targets.map(m => `${m.target}:${m.port_range || m.port || rule.port}(w=${m.weight || 1})`).join(', ')}`
             : '';

@@ -1592,6 +1592,29 @@ def validate_rule(body: dict) -> Tuple[bool, str]:
         else:
             d.pop("snat_ip", None)
 
+        # Optional 3rd-hop Exit Server relay (used on Outside DSR Direct to splice local tunnel traffic to a remote exit node)
+        raw_exit_target = str(d.get("exit_target") or "").strip().strip("[]")
+        if d_type == "nftables_dsr_direct" and raw_exit_target:
+            try:
+                ipaddress.ip_address(raw_exit_target)
+            except ValueError:
+                return False, f"Invalid 3rd-hop Exit Server IP '{raw_exit_target}'. Must be a valid IPv4 or IPv6 address"
+            d["exit_target"] = raw_exit_target
+            raw_exit_port = d.get("exit_port")
+            if raw_exit_port is None or str(raw_exit_port).strip() == "":
+                d["exit_port"] = start_p
+            else:
+                ep_val, _, ep_range = parse_port_spec(raw_exit_port)
+                if ep_val is None or ep_range:
+                    return False, "3rd-hop Exit Port must be a valid single TCP port (1-65535)"
+                d["exit_port"] = ep_val
+            local_bind_p = int(d.get("port") or start_p)
+            if raw_exit_target == clean_target and int(d["exit_port"]) == local_bind_p:
+                return False, "3rd-hop Exit Server cannot point to the same local tunnel IP and port (self-loop)"
+        else:
+            d.pop("exit_target", None)
+            d.pop("exit_port", None)
+
     return True, ""
 
 

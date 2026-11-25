@@ -447,15 +447,19 @@ class XForwarderEngine:
                     only_enabled=True
                 )
                 for b in backends:
-                    raw_target = str(b.get("target", "")).strip().strip("[]")
+                    d_type_low = str(dest.get("type") or "").lower().strip()
+                    raw_exit_t = str(dest.get("exit_target") or "").strip().strip("[]") if d_type_low == "nftables_dsr_direct" else ""
+                    raw_target = raw_exit_t or str(b.get("target", "")).strip().strip("[]")
                     if not raw_target:
                         continue
                     clean_target = (sanitize_target_host(raw_target) or raw_target).lower()
                     probe_dest = {
-                        "target": raw_target,
+                        "target": str(b.get("target", "")).strip().strip("[]") or raw_target,
                         "type": dest.get("type"),
                         "tunnel_iface": b.get("tunnel_iface", ""),
-                        "port": b.get("port")
+                        "ingress_iface": dest.get("ingress_iface", ""),
+                        "exit_target": raw_exit_t,
+                        "port": (dest.get("exit_port") or b.get("port")) if raw_exit_t else b.get("port"),
                     }
                     is_valid, iface, reason = self._validate_probe_route(probe_dest)
                     if not is_valid:
@@ -1212,12 +1216,15 @@ class XForwarderEngine:
                 for lb_s_key in ("lb_members", "lb_healthy_count", "lb_total_count", "lb_active_keys"):
                     stat.pop(lb_s_key, None)
 
-            target = str(dest.get("target", "")).strip().strip("[]")
+            dest_type = str(dest.get("type", "haproxy")).lower()
+            raw_exit_tgt = str(dest.get("exit_target") or "").strip().strip("[]") if dest_type == "nftables_dsr_direct" else ""
+            raw_dest_tgt = str(dest.get("target", "")).strip().strip("[]")
+            target = raw_exit_tgt or raw_dest_tgt
             clean_tgt = (sanitize_target_host(target) or target).lower()
             is_valid, iface, route_err = self._validate_probe_route(dest)
 
-            # Check destination fingerprint: if target/iface changed, reset samples
-            curr_fp = f"{dest.get('type')}:{clean_tgt}:{dest.get('port')}:{iface}"
+            # Check destination fingerprint: if target/iface/exit changed, reset samples
+            curr_fp = f"{dest.get('type')}:{raw_dest_tgt}:{dest.get('port')}:{raw_exit_tgt}:{dest.get('exit_port')}:{iface}"
             if stat.get("fingerprint") != curr_fp:
                 stat["fingerprint"] = curr_fp
                 stat["samples"] = []
@@ -1248,11 +1255,13 @@ class XForwarderEngine:
                     if is_bh:
                         l4_fail_reason = bh_reason
 
-            # Verify remote TCP handshake on HAProxy TCP/both routes so ICMP replies never mask blocked ports
-            if not l4_fail_reason and dest_type == "haproxy" and dest_proto in ("tcp", "both") and target_port > 0 and is_valid:
-                l4_check = self._check_l4_port_cached(target, target_port, iface=iface)
+            # Verify remote TCP handshake on HAProxy TCP/both routes and DSR Direct 3rd-hop exit bridges
+            l4_probe_host = raw_exit_tgt if (dest_type == "nftables_dsr_direct" and raw_exit_tgt) else target
+            l4_probe_port = int(dest.get("exit_port") or rule_port or 0) if (dest_type == "nftables_dsr_direct" and raw_exit_tgt) else target_port
+            if not l4_fail_reason and (dest_type == "haproxy" or (dest_type == "nftables_dsr_direct" and raw_exit_tgt)) and dest_proto in ("tcp", "both") and l4_probe_port > 0 and is_valid:
+                l4_check = self._check_l4_port_cached(l4_probe_host, l4_probe_port, iface=iface)
                 if not l4_check.get("healthy"):
-                    l4_fail_reason = l4_check.get("reason") or f"TCP port {target_port} unreachable / connection refused"
+                    l4_fail_reason = l4_check.get("reason") or f"TCP port {l4_probe_port} unreachable / connection refused"
 
             if l4_fail_reason:
                 check_res = dict(check_res, healthy=False, packet_loss=100.0, packets_received=0, latency_ms=None, reason=l4_fail_reason)
@@ -1702,6 +1711,7 @@ class XForwarderEngine:
     def sync_firewall_and_proxies(self) -> Tuple[bool, List[str]]:
         wan_iface = self._detect_wan_interface()
         haproxy_entries = []
+        seen_haproxy_binds: Set[Tuple[str, int]] = set()
         udp_entries = []
         nginx_entries = []
         nft_dnat_rules = []
@@ -1787,6 +1797,7 @@ class XForwarderEngine:
                 bind_str = "\n    ".join(binds)
 
                 if proto in ("tcp", "both"):
+                    seen_haproxy_binds.add(("*", int(port)))
                     haproxy_entries.append(
                         f"listen fwd_{port}\n"
                         f"    {bind_str}\n"
@@ -2001,6 +2012,30 @@ class XForwarderEngine:
                     nft_raw_postrouting_rules.append(
                         f'        oifname "{wan_iface}" ip saddr {clean_target} tcp sport {backend_p} tcp flags & (syn | ack) != (syn | ack) counter name cnt_out_{client_p} ip saddr set {spoof_ip}{sport_set_clause}'
                     )
+                    # Optional 3rd-hop HAProxy listener splicing decrypted local tunnel packets onward to a remote exit server
+                    raw_exit = str(dest.get("exit_target") or "").strip().strip("[]")
+                    if raw_exit:
+                        try:
+                            exit_ip_obj = ipaddress.ip_address(raw_exit)
+                            exit_p = int(dest.get("exit_port") or client_p)
+                            is_self_loop = (raw_exit == clean_target and exit_p == backend_p)
+                            bind_conflict = (
+                                (clean_target, backend_p) in seen_haproxy_binds
+                                or ("*", backend_p) in seen_haproxy_binds
+                                or backend_p == web_port
+                            )
+                            if 1 <= exit_p <= 65535 and not is_self_loop and not bind_conflict:
+                                seen_haproxy_binds.add((clean_target, backend_p))
+                                exit_str = f"[{raw_exit}]:{exit_p}" if exit_ip_obj.version == 6 else f"{raw_exit}:{exit_p}"
+                                send_proxy = bool(dest.get("proxy_protocol", False) or dest.get("send_proxy", False))
+                                proxy_flag = " send-proxy-v2" if send_proxy else ""
+                                haproxy_entries.append(
+                                    f"listen dsr_exit_{client_p}_{backend_p}\n"
+                                    f"    bind {clean_target}:{backend_p}\n"
+                                    f"    server srv_exit_{client_p}_{backend_p} {exit_str}{proxy_flag} check inter 3s fall 2 rise 2\n"
+                                )
+                        except (ValueError, TypeError):
+                            pass
                 elif dest_type == "nftables_dsr_relay":
                     spoof_ip = str(dest.get("spoof_ip") or "").strip().strip("[]")
                     try:

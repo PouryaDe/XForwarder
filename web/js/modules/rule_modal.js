@@ -541,6 +541,11 @@ function ensureNetworkInterfacesLoaded() {
                     if (menu) menu.innerHTML = buildTunnelIfaceMenuHtml(prevVal, isIngress);
                     if (triggerText) triggerText.innerHTML = buildTunnelIfaceTriggerHtml(prevVal, isIngress);
                 });
+                document.querySelectorAll("#destinationsContainer .priority-box").forEach(box => {
+                    const sel = box.querySelector(".dest-type");
+                    if (sel) handleDestTypeChange(sel);
+                    refreshDsrFlowPreview(box);
+                });
             }
         })
         .catch(() => {})
@@ -767,6 +772,101 @@ function getDetectedServerIps() {
     return list;
 }
 
+function getDetectedTunnelPresets() {
+    const net = lastNetwork || {};
+    const primaryIface = String(net.primary_interface || "eth0").trim();
+    const list = [];
+    const seen = new Set();
+    (Array.isArray(net.tunnel_interfaces) ? net.tunnel_interfaces : []).forEach(tObj => {
+        const name = String((tObj && tObj.name) || "").trim();
+        if (!name || name === primaryIface || seen.has(name)) return;
+        seen.add(name);
+        const localIp = (tObj.ip && tObj.ip !== "No IP assigned") ? String(tObj.ip).trim() : "";
+        const peerIp = String((tObj && (tObj.peer_ip || tObj.target_to_ping)) || "").trim();
+        list.push({ name, localIp, peerIp, state: String(tObj.state || "UP").toUpperCase() });
+    });
+    return list;
+}
+
+/** Builds clickable tunnel preset chips for SYN-ACK / DSR Direct destination forms. */
+function buildDsrTunnelChipsHtml(type) {
+    const isDsrDirect = (type === "nftables_dsr_direct");
+    const isDsrSynack = (type === "nftables_dsr_synack");
+    if (!isDsrDirect && !isDsrSynack) return "";
+    const presets = getDetectedTunnelPresets().filter(p => isDsrDirect ? Boolean(p.localIp) : Boolean(p.peerIp));
+    if (presets.length === 0) return "";
+    return `<div class="dest-tunnel-suggestions"><span class="suggestion-hint">${escapeHtml(t("modal.suggested_ip", {}, "Suggested:"))}</span>${presets.map(p => {
+        const chipIp = isDsrDirect ? p.localIp : p.peerIp;
+        return `<button type="button" class="ip-chip font-mono" onclick="window.fillDsrTunnelPreset(this, decodeURIComponent('${encodeURIComponent(p.name)}'), decodeURIComponent('${encodeURIComponent(chipIp)}'))">${escapeHtml(p.name)} · ${escapeHtml(chipIp)}</button>`;
+    }).join("")}</div>`;
+}
+
+function buildDsrFlowPreviewHtml(opts) {
+    const type = opts.type || "";
+    if (type !== "nftables_dsr_synack" && type !== "nftables_dsr_direct") return "";
+    const inPort = escapeHtml(String(opts.inboundPort || "1036"));
+    const target = escapeHtml(opts.target || "10.250.51.2");
+    const port = escapeHtml(String(opts.port || opts.inboundPort || "24443"));
+    const spoofIp = escapeHtml(opts.spoofIp || (opts.wanIp || "Iran-IP"));
+    const tunIface = escapeHtml(opts.iface || "esp1");
+    const wanIface = escapeHtml(opts.wanIface || "eth0");
+    const exitTarget = escapeHtml(opts.exitTarget || "");
+    const exitPort = escapeHtml(String(opts.exitPort || opts.inboundPort || "1036"));
+
+    if (type === "nftables_dsr_synack") {
+        return `
+            <div class="dsr-flow-title">${escapeHtml(t("modal.dsr_flow_label", {}, "Traffic Flow Preview"))}</div>
+            <div class="dsr-flow-line font-mono"><span class="dsr-flow-tag is-up">UP</span> Client → <b>${spoofIp}:${inPort}</b> → <b>${tunIface}</b> → <b>${target}:${port}</b></div>
+            <div class="dsr-flow-line font-mono"><span class="dsr-flow-tag is-ret">RET</span> SYN-ACK returns via <b>${tunIface}</b> · Download goes <b>Direct</b> from Outside</div>
+        `;
+    }
+    const hop2 = exitTarget
+        ? `→ <b>HAProxy</b> → <b>${exitTarget}:${exitPort}</b>`
+        : `→ <b>Local Service</b> <span class="dsr-flow-dim">(on this server)</span>`;
+    return `
+        <div class="dsr-flow-title">${escapeHtml(t("modal.dsr_flow_label", {}, "Traffic Flow Preview"))}</div>
+        <div class="dsr-flow-line font-mono"><span class="dsr-flow-tag is-up">IN</span> <b>${tunIface}</b> → <b>${target}:${port}</b> ${hop2}</div>
+        <div class="dsr-flow-line font-mono"><span class="dsr-flow-tag is-ret">RET</span> SYN-ACK → <b>${tunIface}</b> · Download → <b>${wanIface}</b> as <b>${spoofIp}:${inPort}</b></div>
+    `;
+}
+
+export function refreshDsrFlowPreview(box) {
+    if (!box) return;
+    const guideEl = box.querySelector(".dest-dsr-flow-guide");
+    if (!guideEl) return;
+    const type = box.querySelector(".dest-type")?.value || "";
+    if (type !== "nftables_dsr_synack" && type !== "nftables_dsr_direct") {
+        guideEl.style.display = "none";
+        guideEl.innerHTML = "";
+        return;
+    }
+    const inboundSpec = getCurrentInboundSpec();
+    const inboundPort = inboundSpec ? (inboundSpec.rangeStr || inboundSpec.start) : (document.getElementById("formPort")?.value.trim() || "1036");
+    const target = box.querySelector(".dest-target")?.value.trim() || "";
+    const port = box.querySelector(".dest-port")?.value.trim() || "";
+    const spoofIp = box.querySelector(".dest-spoof-ip")?.value.trim() || "";
+    const iface = type === "nftables_dsr_direct"
+        ? (box.querySelector(".dest-ingress-iface")?.value.trim() || "")
+        : (box.querySelector(".dest-tunnel-iface")?.value.trim() || "");
+    const exitTarget = box.querySelector(".dest-exit-target")?.value.trim() || "";
+    const exitPort = box.querySelector(".dest-exit-port")?.value.trim() || "";
+    const net = lastNetwork || {};
+    const primaryWanIp = ((net.server_ips || []).find(s => s && s.is_primary && s.version === 4) || {}).ip || "";
+    guideEl.innerHTML = buildDsrFlowPreviewHtml({
+        type,
+        inboundPort,
+        target,
+        port,
+        spoofIp,
+        iface,
+        exitTarget,
+        exitPort,
+        wanIp: primaryWanIp,
+        wanIface: net.primary_interface || "eth0"
+    });
+    guideEl.style.display = "block";
+}
+
 if (typeof window !== "undefined") {
     window.fillDestSpoofIp = function (btn, ip) {
         if (!btn || !ip) return;
@@ -779,6 +879,30 @@ if (typeof window !== "undefined") {
             input.dispatchEvent(new Event("change", { bubbles: true }));
             input.focus();
         }
+    };
+    window.fillDsrTunnelPreset = function (btn, ifaceName, ip) {
+        if (!btn) return;
+        const box = btn.closest(".priority-box");
+        if (!box) return;
+        const dType = box.querySelector(".dest-type")?.value || "";
+        const tgtEl = box.querySelector(".dest-target");
+        if (tgtEl && ip) {
+            tgtEl.value = ip;
+        }
+        const ifaceClass = dType === "nftables_dsr_direct" ? ".dest-ingress-iface" : ".dest-tunnel-iface";
+        const isIngress = (dType === "nftables_dsr_direct");
+        const hidden = box.querySelector(ifaceClass);
+        const ms = hidden ? hidden.parentElement.querySelector(".iface-multiselect") : null;
+        if (hidden && ifaceName) {
+            hidden.value = ifaceName;
+            if (ms) {
+                const menu = ms.querySelector(".iface-dropdown-menu");
+                const triggerText = ms.querySelector(".iface-trigger-text");
+                if (menu) menu.innerHTML = buildTunnelIfaceMenuHtml(ifaceName, isIngress, ip || "");
+                if (triggerText) triggerText.innerHTML = buildTunnelIfaceTriggerHtml(ifaceName, isIngress);
+            }
+        }
+        refreshDsrFlowPreview(box);
     };
 }
 
@@ -833,9 +957,16 @@ export function renderDestinationRow(dest, index, totalCount) {
     const spoofLabelText = spoofRequired
         ? t("modal.spoof_ip", {}, "Iran / Spoof IP")
         : (isDsrSynack ? t("modal.spoof_ip_iran_opt", {}, "Iran Public IP (Optional)") : t("modal.spoof_ip_opt", {}, "Ingress IP (Optional)"));
+    const targetLabelText = isDsrSynack
+        ? t("modal.target_outside_tunnel", {}, "Outside Tunnel IP")
+        : (isDsrDirect ? t("modal.target_local_tunnel", {}, "Local Tunnel IP") : t("modal.dest_target", {}, "Target Host"));
+    const portLabelText = isDsrSynack
+        ? t("modal.port_tunnel_relay", {}, "Tunnel Relay Port")
+        : (isDsrDirect ? t("modal.port_tunnel_listen", {}, "Tunnel Listen Port") : t("modal.dest_port", {}, "Port"));
     const portPlaceholder = isRangeRule
         ? escapeHtml(t("modal.dest_port_range_placeholder", {}, "Same range or single port"))
-        : ((isDsrSynack || isDsrDirect) ? "Backend Port (e.g. 24443)" : "Default");
+        : ((isDsrSynack || isDsrDirect) ? "24443" : "Default");
+    const tunnelQuickChipsHtml = buildDsrTunnelChipsHtml(type);
 
     const detectedServerIps = getDetectedServerIps();
     const spoofDatalistId = `destSpoofIpList_${index}_${Math.random().toString(36).substr(2, 6)}`;
@@ -901,11 +1032,12 @@ export function renderDestinationRow(dest, index, totalCount) {
                 </select>
             </div>
             <div class="form-group dest-col-target" style="display:${lbEnabled ? "none" : "block"};">
-                <label>${escapeHtml(t("modal.dest_target"))}</label>
+                <label class="dest-target-label">${escapeHtml(targetLabelText)}</label>
                 <input type="text" class="form-control dest-target" placeholder="${targetPlaceholder}" value="${escapeHtml(target)}" ${lbEnabled ? "" : "required"}>
+                <div class="dest-tunnel-chips-slot">${tunnelQuickChipsHtml}</div>
             </div>
             <div class="form-group dest-col-port" style="display:${lbEnabled ? "none" : "block"};">
-                <label>${escapeHtml(t("modal.dest_port"))}</label>
+                <label class="dest-port-label">${escapeHtml(portLabelText)}</label>
                 <input type="text" inputmode="numeric" class="form-control dest-port" placeholder="${portPlaceholder}" value="${escapeHtml(port)}">
             </div>
         </div>
@@ -985,6 +1117,28 @@ export function renderDestinationRow(dest, index, totalCount) {
                 </datalist>
             </div>
         </div>
+        <div class="dest-exit-relay-box" style="display:${isDsrDirect ? "block" : "none"};">
+            <div class="dest-exit-relay-head">
+                <label class="label-with-tip">
+                    <span>${escapeHtml(t("modal.exit_relay_title", {}, "3rd Exit Server Relay (Optional · 3-Server Mode)"))}</span>
+                    <span class="xfwd-info-tip" tabindex="0" data-tip="${escapeHtml(t("modal.tip_exit_relay", {}, "XForwarder will automatically start an isolated HAProxy listener on the Local Tunnel IP:Port and splice traffic onward to this Exit Server."))}" aria-label="Info">
+                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                    </span>
+                </label>
+                <div class="dest-exit-relay-sub">${escapeHtml(t("modal.exit_relay_sub", {}, "Leave empty if Xray/3x-ui runs on this server. Fill if Xray/3x-ui runs on a 3rd server (e.g. Germany)."))}</div>
+            </div>
+            <div class="dest-meta-row">
+                <div class="form-group flex-1">
+                    <label>${escapeHtml(t("modal.exit_target", {}, "Exit Server IP"))}</label>
+                    <input type="text" class="form-control font-mono dest-exit-target" placeholder="203.0.113.50 (e.g. Germany 3x-ui)" value="${escapeHtml(dest.exit_target || "")}">
+                </div>
+                <div class="form-group" style="width: 130px; flex: 0 0 130px;">
+                    <label>${escapeHtml(t("modal.exit_port", {}, "Exit Port"))}</label>
+                    <input type="text" inputmode="numeric" class="form-control font-mono dest-exit-port" placeholder="${escapeHtml(String((inboundSpec && inboundSpec.start) || 1036))}" value="${escapeHtml(dest.exit_port !== undefined && dest.exit_port !== null ? String(dest.exit_port) : "")}">
+                </div>
+            </div>
+        </div>
+        <div class="dest-dsr-flow-guide" style="display:none;"></div>
         <div class="dest-meta-row">
             <div class="form-group dest-iface-group" style="display:${(showOutIface && !lbEnabled) ? "block" : "none"};">
                 <label class="label-with-tip">
@@ -1052,6 +1206,7 @@ export function renderDestinationRow(dest, index, totalCount) {
     if (lbEnabled) {
         refreshLbBoxState(div);
     }
+    refreshDsrFlowPreview(div);
 
     return div;
 }
@@ -1064,6 +1219,10 @@ export function handleDestTypeChange(selectEl) {
     const portCol = row.querySelector(".dest-col-port");
     const ifaceGroup = row.querySelector(".dest-iface-group");
     const dsrRow = row.querySelector(".dest-dsr-row");
+    const exitRelayBox = row.querySelector(".dest-exit-relay-box");
+    const tunnelChipsSlot = row.querySelector(".dest-tunnel-chips-slot");
+    const targetLabel = row.querySelector(".dest-target-label");
+    const portLabel = row.querySelector(".dest-port-label");
     const ingressGroup = row.querySelector(".dest-ingress-iface-group");
     const snatGroup = row.querySelector(".dest-snat-ip-group");
     const spoofLabel = row.querySelector(".dest-spoof-label");
@@ -1140,6 +1299,22 @@ export function handleDestTypeChange(selectEl) {
     if (snatGroup) {
         snatGroup.style.display = isDsrRelay ? "block" : "none";
     }
+    if (exitRelayBox) {
+        exitRelayBox.style.display = isDsrDirect ? "block" : "none";
+    }
+    if (targetLabel) {
+        targetLabel.textContent = isDsrSynack
+            ? t("modal.target_outside_tunnel", {}, "Outside Tunnel IP")
+            : (isDsrDirect ? t("modal.target_local_tunnel", {}, "Local Tunnel IP") : t("modal.dest_target", {}, "Target Host"));
+    }
+    if (portLabel) {
+        portLabel.textContent = isDsrSynack
+            ? t("modal.port_tunnel_relay", {}, "Tunnel Relay Port")
+            : (isDsrDirect ? t("modal.port_tunnel_listen", {}, "Tunnel Listen Port") : t("modal.dest_port", {}, "Port"));
+    }
+    if (tunnelChipsSlot) {
+        tunnelChipsSlot.innerHTML = buildDsrTunnelChipsHtml(val);
+    }
     if (spoofReqStar) {
         spoofReqStar.style.display = spoofRequired ? "inline" : "none";
     }
@@ -1171,7 +1346,10 @@ export function handleDestTypeChange(selectEl) {
     if (lbActive) {
         refreshLbBoxState(row);
     }
-    if (!targetInput) return;
+    if (!targetInput) {
+        refreshDsrFlowPreview(row);
+        return;
+    }
     if (val === "haproxy") {
         targetInput.placeholder = "2001:db8:cafe::1 (IPv6 only)";
     } else if (val === "nftables_dsr_relay") {
@@ -1185,6 +1363,7 @@ export function handleDestTypeChange(selectEl) {
     } else {
         targetInput.placeholder = "192.0.2.1 or 2001:db8::1";
     }
+    refreshDsrFlowPreview(row);
 }
 
 export function syncDestinationsFromDom() {
@@ -1214,6 +1393,10 @@ export function syncDestinationsFromDom() {
         const rawIngressIface = ingressIfaceEl ? ingressIfaceEl.value.trim() : "";
         const rawSpoofIp = spoofIpEl ? spoofIpEl.value.trim() : "";
         const rawSnatIp = snatIpEl ? snatIpEl.value.trim() : "";
+        const exitTargetEl = box.querySelector(".dest-exit-target");
+        const exitPortEl = box.querySelector(".dest-exit-port");
+        const rawExitTarget = exitTargetEl ? exitTargetEl.value.trim() : "";
+        const rawExitPort = exitPortEl ? exitPortEl.value.trim() : "";
         const lbEnabled = Boolean(isLbSupportedType(dType) && lbCheckEl && lbCheckEl.checked);
 
         const destObj = {
@@ -1235,6 +1418,17 @@ export function syncDestinationsFromDom() {
         if (dType === "nftables_dsr_relay" || dType === "nftables_dsr_direct") {
             if (rawIngressIface) destObj.ingress_iface = rawIngressIface;
             if (dType === "nftables_dsr_relay" && rawSnatIp) destObj.snat_ip = rawSnatIp;
+        }
+        if (dType === "nftables_dsr_direct" && rawExitTarget) {
+            destObj.exit_target = rawExitTarget;
+            if (rawExitPort) {
+                const parsedExitP = parsePortSpec(rawExitPort);
+                if (parsedExitP && !parsedExitP.rangeStr) {
+                    destObj.exit_port = parsedExitP.start;
+                } else {
+                    destObj._invalidExitPortInput = rawExitPort;
+                }
+            }
         }
         if (parsedDPort && parsedDPort.rangeStr) {
             destObj.port_range = parsedDPort.rangeStr;
@@ -1368,9 +1562,12 @@ export async function testModalDestination(index) {
     syncDestinationsFromDom();
     const dest = currentModalDestinations[index];
     if (!dest) return;
-    const target = (dest.target || "").trim().replace(/^\[|\]$/g, '');
+    const isDirectWithExit = (dest.type === "nftables_dsr_direct" && Boolean(dest.exit_target && dest.exit_target.trim()));
+    const target = isDirectWithExit
+        ? dest.exit_target.trim().replace(/^\[|\]$/g, '')
+        : (dest.target || "").trim().replace(/^\[|\]$/g, '');
     const listenRaw = document.getElementById("formPort") ? document.getElementById("formPort").value.trim() : "";
-    const portParsed = parsePortSpec(dest.port_range || dest.port || listenRaw);
+    const portParsed = parsePortSpec(isDirectWithExit ? (dest.exit_port || listenRaw) : (dest.port_range || dest.port || listenRaw));
     const port = portParsed ? portParsed.start : null;
     const resEl = document.getElementById(`testDestResult_${index}`);
     const btnEl = document.getElementById(`btnTestDest_${index}`);
@@ -1646,6 +1843,7 @@ export function initRuleModal(fetchStatusCallback) {
             if (menu) menu.innerHTML = buildTunnelIfaceMenuHtml(nextVal, isIngress, targetVal);
             if (triggerText) triggerText.innerHTML = buildTunnelIfaceTriggerHtml(nextVal, isIngress);
             ms.classList.remove("open");
+            if (box) refreshDsrFlowPreview(box);
         });
 
         destContainer.addEventListener("change", (ev) => {
@@ -1754,6 +1952,10 @@ export function initRuleModal(fetchStatusCallback) {
 
     if (destContainer) {
         destContainer.addEventListener("input", (ev) => {
+            const box = ev.target && ev.target.closest ? ev.target.closest(".priority-box") : null;
+            if (box && (ev.target.classList?.contains("dest-target") || ev.target.classList?.contains("dest-port") || ev.target.classList?.contains("dest-spoof-ip") || ev.target.classList?.contains("dest-exit-target") || ev.target.classList?.contains("dest-exit-port"))) {
+                refreshDsrFlowPreview(box);
+            }
             if (!ev.target || !ev.target.classList || !ev.target.classList.contains("dest-port")) return;
             const curVal = ev.target.value.trim();
             const parsedIn = parsePortSpec(formPortInput ? formPortInput.value : "");
@@ -1781,6 +1983,7 @@ export function initRuleModal(fetchStatusCallback) {
                 }
             });
             lastAutoInboundPort = fillVal;
+            document.querySelectorAll("#destinationsContainer .priority-box").forEach(b => refreshDsrFlowPreview(b));
         });
     }
 
@@ -1959,6 +2162,18 @@ export function initRuleModal(fetchStatusCallback) {
                         showToast(`Priority #${i + 1} (NFTables DSR Direct) requires Inbound Tunnel Interface`, "error");
                         return;
                     }
+                    if (d._invalidExitPortInput) {
+                        showToast(`Priority #${i + 1} has an invalid 3rd-hop Exit Port '${d._invalidExitPortInput}'`, "error");
+                        return;
+                    }
+                    if (d.exit_target && detectIpVersion(d.exit_target) === null) {
+                        showToast(`Priority #${i + 1} requires a valid IPv4 or IPv6 address for Exit Server IP`, "error");
+                        return;
+                    }
+                    if (d.exit_target && d.exit_target.trim() === d.target.trim() && (d.exit_port || inbound.start) === (d.port || inbound.start)) {
+                        showToast(`Priority #${i + 1} Exit Server cannot point to the same Local Tunnel IP and Port`, "error");
+                        return;
+                    }
                 }
                 if (inbound.rangeStr) {
                     if (!isNftablesType(d.type)) {
@@ -1975,6 +2190,7 @@ export function initRuleModal(fetchStatusCallback) {
                 }
                 const cleanDest = { ...d };
                 delete cleanDest._invalidPortInput;
+                delete cleanDest._invalidExitPortInput;
                 sanitizedDests.push(cleanDest);
             }
 
