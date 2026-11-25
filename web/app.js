@@ -100,7 +100,8 @@ import {
     initKernelOptimizer,
     refreshKernelOptimizerStatus,
     initDsrSpoofTester,
-    refreshSpoofTesterStatus
+    refreshSpoofTesterStatus,
+    initTransportCapabilityTester
 } from "./js/modules/system.js";
 import {
     getSanitizedRuleForExport,
@@ -402,6 +403,7 @@ async function initApp() {
     initServiceRestartControls(fetchStatus);
     initKernelOptimizer(fetchStatus);
     initDsrSpoofTester();
+    initTransportCapabilityTester();
     initLogs();
     initApiKeysManager();
 

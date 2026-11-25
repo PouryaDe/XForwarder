@@ -27,6 +27,7 @@ from core.kernel_tuner import (
     start_spoof_test_listener,
     stop_spoof_test_listener,
     run_spoof_egress_test,
+    run_transport_capability_test,
     get_spoof_test_status,
 )
 
@@ -325,6 +326,58 @@ class TestKernelTuner(unittest.TestCase):
         self.assertIn("btnRunSpoofTest", html)
         self.assertIn("198.51.100.10", html)
         self.assertIn("initDsrSpoofTester", sys_js)
+        self.assertIn("cardTransportCapabilityTester", html)
+        self.assertIn("btnRunCapTest", html)
+        self.assertIn("initTransportCapabilityTester", sys_js)
+
+    def test_transport_capability_and_dsr_return_tester(self):
+        # 1) Invalid inputs rejected cleanly
+        bad_ip = run_transport_capability_test("not-an-ip", port=443)
+        self.assertFalse(bad_ip["ok"])
+        bad_port = run_transport_capability_test("198.51.100.10", port=99999)
+        self.assertFalse(bad_port["ok"])
+
+        # 2) Clean underlay + throttled ESP tunnel -> esp_udp_throttled verdict
+        res_esp = run_transport_capability_test(
+            "198.51.100.10",
+            port=443,
+            mode="protocol",
+            icmp_fn=lambda ip, cnt: (
+                {"ok": True, "loss_pct": 25.0, "avg_ms": 90.0, "jitter_ms": 3.0, "received": 7, "sent": cnt}
+                if ip.startswith("10.87.")
+                else {"ok": True, "loss_pct": 0.0, "avg_ms": 88.0, "jitter_ms": 0.5, "received": cnt, "sent": cnt}
+            ),
+            tcp_fn=lambda ip, p: {"ok": True, "loss_pct": 0.0, "avg_ms": 91.0, "connected": 6, "attempts": 6},
+            tunnels_fn=lambda: [{"iface": "esp7", "local_ip": "10.87.7.1", "peer_ip": "10.87.7.2"}],
+        )
+        self.assertTrue(res_esp["ok"])
+        self.assertEqual(res_esp["verdict"], "esp_udp_throttled")
+        self.assertIn("TCP-TUN", res_esp["message"])
+
+        # 3) DSR Direct-Return blocked by BCP38 -> bcp38_blocked verdict
+        res_bcp = run_transport_capability_test(
+            "198.51.100.10",
+            port=9114,
+            mode="dsr_return",
+            icmp_fn=lambda ip, cnt: {"ok": True, "loss_pct": 0.0, "avg_ms": 88.0, "jitter_ms": 0.5, "received": cnt, "sent": cnt},
+            tcp_fn=lambda ip, p: {"ok": True, "loss_pct": 0.0, "avg_ms": 92.0, "connected": 6, "attempts": 6},
+            dsr_fn=lambda ip, p: {"status": "bcp38_blocked", "connect_ms": 95.0, "detail": "unacked=1"},
+        )
+        self.assertTrue(res_bcp["ok"])
+        self.assertEqual(res_bcp["verdict"], "bcp38_blocked")
+        self.assertIn("BCP38", res_bcp["message"])
+
+        # 4) DSR Direct-Return OK -> dsr_ready verdict
+        res_ok = run_transport_capability_test(
+            "198.51.100.10",
+            port=9114,
+            mode="dsr_return",
+            icmp_fn=lambda ip, cnt: {"ok": True, "loss_pct": 0.0, "avg_ms": 75.0, "jitter_ms": 0.3, "received": cnt, "sent": cnt},
+            tcp_fn=lambda ip, p: {"ok": True, "loss_pct": 0.0, "avg_ms": 78.0, "connected": 6, "attempts": 6},
+            dsr_fn=lambda ip, p: {"status": "ok", "connect_ms": 78.0, "detail": "Handshake + return data verified"},
+        )
+        self.assertTrue(res_ok["ok"])
+        self.assertEqual(res_ok["verdict"], "dsr_ready")
 
 
 if __name__ == "__main__":

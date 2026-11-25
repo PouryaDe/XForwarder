@@ -580,6 +580,9 @@ def build_openapi_spec(version: str = "1.9.0", server_url: str = "/") -> Dict[st
             "/api/system/spoof-test/run": {
                 "post": {"tags": ["Services & System"], "summary": "Run control vs spoofed UDP egress test against peer listener (admin scope)", "responses": {"200": {"description": "Spoof/DSR capability verdict"}}}
             },
+            "/api/system/transport-test/run": {
+                "post": {"tags": ["Services & System"], "summary": "Test underlay ICMP vs TCP stability, active tunnels, and DSR return-path BCP38 survival (admin scope)", "responses": {"200": {"description": "Transport & DSR capability report"}}}
+            },
             "/api/security/credentials": {
                 "post": {"tags": ["Auth"], "summary": "Update admin username/password (admin scope)", "responses": {"200": {"description": "Credentials updated"}}}
             },

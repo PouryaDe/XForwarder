@@ -1123,3 +1123,101 @@ export function initDsrSpoofTester() {
         });
     }
 }
+
+export function initTransportCapabilityTester() {
+    const card = document.getElementById("cardTransportCapabilityTester");
+    if (!card) return;
+    const modeTabs = card.querySelectorAll(".spoof-mode-tab[data-cap-mode]");
+    const btnRun = document.getElementById("btnRunCapTest");
+    const inpIp = document.getElementById("inpCapTargetIp");
+    const inpPort = document.getElementById("inpCapPort");
+    const resBox = document.getElementById("capTestResultBox");
+    const badge = document.getElementById("badgeCapVerdict");
+    const titleEl = document.getElementById("capPaneTitle");
+    const descEl = document.getElementById("capPaneDesc");
+    let activeMode = "protocol";
+
+    modeTabs.forEach(tab => {
+        tab.addEventListener("click", () => {
+            activeMode = tab.dataset.capMode || "protocol";
+            modeTabs.forEach(t => {
+                const isAct = t === tab;
+                t.classList.toggle("active", isAct);
+                t.setAttribute("aria-selected", isAct ? "true" : "false");
+            });
+            if (titleEl && descEl) {
+                if (activeMode === "dsr_return") {
+                    titleEl.textContent = t("network.cap_dsr_title", {}, "DSR Direct-Return & BCP38 Check");
+                    descEl.textContent = t("network.cap_dsr_desc", {}, "Verifies TCP handshake AND Direct-Return data survival against ISP Anti-Spoofing.");
+                } else {
+                    titleEl.textContent = t("network.cap_proto_title", {}, "Underlay vs Tunnel Stability");
+                    descEl.textContent = t("network.cap_proto_desc", {}, "Checks ICMP & TCP handshake loss to a peer server and compares against active tunnels.");
+                }
+            }
+        });
+    });
+
+    if (btnRun) {
+        btnRun.addEventListener("click", async () => {
+            const peerIp = (inpIp?.value || "").trim();
+            const port = parseInt(inpPort?.value || "443", 10) || 443;
+            if (!peerIp) {
+                showToast(t("network.cap_enter_ip", {}, "Enter Target IP first."), "error");
+                return;
+            }
+            btnRun.disabled = true;
+            const sp = btnRun.querySelector("span");
+            const prevTxt = sp ? sp.textContent : "";
+            if (sp) sp.textContent = t("network.spoof_running", {}, "Testing...");
+            try {
+                const res = await fetch(`${API_BASE}/system/transport-test/run`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json", "Accept": "application/json" },
+                    body: JSON.stringify({ peer_ip: peerIp, port, mode: activeMode })
+                });
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok || !data.ok) throw new Error(data.error || `HTTP ${res.status}`);
+
+                const v = data.verdict || "clean";
+                const isGood = (v === "clean" || v === "dsr_ready");
+                const isBad = (v === "bcp38_blocked" || v === "unreachable" || v === "tcp_blocked");
+                const cls = isGood ? "is-supported" : (isBad ? "is-blocked" : "is-warn");
+
+                if (badge) {
+                    badge.className = `stat-badge ${isGood ? "badge-active" : (isBad ? "badge-danger" : "badge-warn")}`;
+                    badge.textContent = v.toUpperCase().replace(/_/g, " ");
+                }
+
+                if (resBox) {
+                    const icmp = data.icmp || {};
+                    const tcp = data.tcp || {};
+                    const tuns = Array.isArray(data.tunnels) ? data.tunnels : [];
+                    const tunHtml = tuns.length > 0
+                        ? `<div class="font-mono" style="margin-top:4px;font-size:0.74rem;">Tunnels: ${tuns.map(x => `${escapeHtml(x.iface)}=${x.loss_pct}% (${x.avg_ms ?? "--"}ms)`).join(" · ")}</div>`
+                        : "";
+                    const dsrHtml = data.dsr_return && data.dsr_return.detail
+                        ? `<div class="font-mono" style="margin-top:4px;font-size:0.74rem;">DSR Return: ${escapeHtml(data.dsr_return.detail)}</div>`
+                        : "";
+
+                    resBox.className = `spoof-result-box ${cls}`;
+                    resBox.innerHTML = `
+                        <div><strong>${escapeHtml(data.message || "")}</strong></div>
+                        <div class="font-mono" style="margin-top:4px;font-size:0.74rem;">
+                            ICMP: ${icmp.loss_pct ?? 100}% loss (${icmp.avg_ms ?? "--"}ms) &middot;
+                            TCP :${data.port}: ${tcp.loss_pct ?? 100}% loss (${tcp.avg_ms ?? "--"}ms)
+                        </div>
+                        ${tunHtml}
+                        ${dsrHtml}
+                    `;
+                    resBox.style.display = "block";
+                }
+                showToast(data.message || "Capability test completed.", isGood ? "success" : "warn");
+            } catch (err) {
+                showToast(`Transport test failed: ${err.message}`, "error");
+            } finally {
+                btnRun.disabled = false;
+                if (sp && prevTxt) sp.textContent = prevTxt;
+            }
+        });
+    }
+}

@@ -1222,6 +1222,248 @@ def run_spoof_egress_test(
     }
 
 
+def _probe_icmp_burst(target_ip: str, count: int = 15, interval: float = 0.2) -> Dict[str, Any]:
+    ping_bin = _find_system_bin("ping")
+    if not ping_bin:
+        return {"ok": False, "loss_pct": 100.0, "avg_ms": None, "jitter_ms": None, "received": 0, "sent": count}
+    safe_cnt = max(3, min(int(count), 30))
+    cmd = [ping_bin, "-c", str(safe_cnt), "-i", str(interval), "-W", "1", target_ip]
+    try:
+        res = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, timeout=safe_cnt * interval + 6)
+        out = res.stdout or ""
+    except Exception:
+        return {"ok": False, "loss_pct": 100.0, "avg_ms": None, "jitter_ms": None, "received": 0, "sent": safe_cnt}
+
+    loss_m = re.search(r"(\d+(?:\.\d+)?)%\s*packet loss", out)
+    rx_m = re.search(r"(\d+)\s+received", out)
+    rtt_m = re.search(r"=\s*[\d.]+/([\d.]+)/[\d.]+/([\d.]+)\s*ms", out)
+    loss_pct = float(loss_m.group(1)) if loss_m else 100.0
+    received = int(rx_m.group(1)) if rx_m else 0
+    avg_ms = round(float(rtt_m.group(1)), 2) if rtt_m else None
+    jitter_ms = round(float(rtt_m.group(2)), 2) if rtt_m else None
+    return {
+        "ok": received > 0,
+        "loss_pct": round(loss_pct, 1),
+        "avg_ms": avg_ms,
+        "jitter_ms": jitter_ms,
+        "received": received,
+        "sent": safe_cnt,
+    }
+
+
+def _probe_tcp_burst(target_ip: str, port: int, attempts: int = 6, timeout: float = 2.0) -> Dict[str, Any]:
+    safe_attempts = max(2, min(int(attempts), 12))
+    latencies: List[float] = []
+    for _ in range(safe_attempts):
+        sock = None
+        t0 = time.monotonic()
+        try:
+            sock = socket.create_connection((target_ip, int(port)), timeout=timeout)
+            latencies.append(round((time.monotonic() - t0) * 1000.0, 2))
+        except Exception:
+            pass
+        finally:
+            if sock is not None:
+                try:
+                    sock.close()
+                except Exception:
+                    pass
+    connected = len(latencies)
+    loss_pct = round(((safe_attempts - connected) / float(safe_attempts)) * 100.0, 1)
+    avg_ms = round(sum(latencies) / len(latencies), 2) if latencies else None
+    return {
+        "ok": connected > 0,
+        "loss_pct": loss_pct,
+        "avg_ms": avg_ms,
+        "connected": connected,
+        "attempts": safe_attempts,
+    }
+
+
+def _probe_dsr_return_path(target_ip: str, port: int, timeout: float = 2.0) -> Dict[str, Any]:
+    sock = None
+    t0 = time.monotonic()
+    try:
+        sock = socket.create_connection((target_ip, int(port)), timeout=timeout)
+    except Exception as exc:
+        return {"status": "connect_failed", "connect_ms": None, "detail": str(exc)}
+
+    connect_ms = round((time.monotonic() - t0) * 1000.0, 2)
+    try:
+        sock.settimeout(1.8)
+        sock.sendall(b"HEAD / HTTP/1.0\r\n\r\n")
+        unacked = 0
+        retrans = 0
+        try:
+            data = sock.recv(512)
+            # Any reply (even HTTP error/FIN/reset) proves return-path data reached us
+            if data is not None:
+                return {"status": "ok", "connect_ms": connect_ms, "detail": f"Handshake + return data verified ({len(data)}B)"}
+        except socket.timeout:
+            # Inspect Linux TCP_INFO to see if payload ACK never returned (BCP38 drop)
+            tcp_info_opt = getattr(socket, "TCP_INFO", None)
+            if tcp_info_opt is not None:
+                try:
+                    raw_info = sock.getsockopt(socket.IPPROTO_TCP, tcp_info_opt, 104)
+                    if len(raw_info) >= 40:
+                        # On Linux x86_64/arm64, tcpi_retransmits is byte 2 and tcpi_unacked is u32 at offset 32
+                        retrans = int(raw_info[2])
+                        unacked = struct.unpack_from("=I", raw_info, 32)[0]
+                except Exception:
+                    pass
+            if unacked > 0 or retrans > 0:
+                return {
+                    "status": "bcp38_blocked",
+                    "connect_ms": connect_ms,
+                    "detail": f"TCP handshake succeeded ({connect_ms}ms) but return data timed out (unacked={unacked}, retrans={retrans}); Direct-Return spoofed packets are likely dropped by BCP38/Anti-Spoofing.",
+                }
+            return {
+                "status": "ok",
+                "connect_ms": connect_ms,
+                "detail": f"Handshake and payload ACK succeeded ({connect_ms}ms; peer kept idle socket open).",
+            }
+        except Exception:
+            # Connection reset by peer after sendall means return packet arrived
+            return {"status": "ok", "connect_ms": connect_ms, "detail": f"Handshake + peer response verified ({connect_ms}ms)"}
+    except Exception as exc:
+        return {"status": "bcp38_blocked", "connect_ms": connect_ms, "detail": f"Connected ({connect_ms}ms) but return transfer failed: {exc}"}
+    finally:
+        if sock is not None:
+            try:
+                sock.close()
+            except Exception:
+                pass
+
+
+def _discover_active_tunnel_peers() -> List[Dict[str, str]]:
+    ip_bin = _find_system_bin("ip")
+    if not ip_bin or not os.path.isdir("/sys/class/net"):
+        return []
+    prefixes = ("esp", "tcptun", "ipip", "gre", "awg", "wg", "ftcp")
+    try:
+        res = subprocess.run([ip_bin, "-4", "-j", "addr", "show"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, timeout=3)
+        if res.returncode != 0:
+            return []
+        ifaces = json.loads(res.stdout or "[]")
+    except Exception:
+        return []
+    peers: List[Dict[str, str]] = []
+    for item in ifaces:
+        ifname = str(item.get("ifname") or "")
+        if not ifname.startswith(prefixes):
+            continue
+        for addr_info in item.get("addr_info") or []:
+            local_ip = str(addr_info.get("local") or "")
+            plen = int(addr_info.get("prefixlen") or 0)
+            if plen != 30:
+                continue
+            parts = local_ip.split(".")
+            if len(parts) != 4:
+                continue
+            last_o = int(parts[3])
+            peer_last = last_o + 1 if (last_o % 4) == 1 else (last_o - 1 if (last_o % 4) == 2 else None)
+            if peer_last is not None:
+                peers.append({"iface": ifname, "local_ip": local_ip, "peer_ip": f"{parts[0]}.{parts[1]}.{parts[2]}.{peer_last}"})
+                break
+    return peers[:4]
+
+
+def run_transport_capability_test(
+    peer_ip: str,
+    port: int = 443,
+    mode: str = "protocol",
+    *,
+    icmp_fn: Optional[Callable[[str, int], Dict[str, Any]]] = None,
+    tcp_fn: Optional[Callable[[str, int], Dict[str, Any]]] = None,
+    dsr_fn: Optional[Callable[[str, int], Dict[str, Any]]] = None,
+    tunnels_fn: Optional[Callable[[], List[Dict[str, str]]]] = None,
+) -> Dict[str, Any]:
+    """
+    Tests underlay ICMP vs TCP stability, compares active L3 tunnels (esp/tcptun/ipip),
+    and optionally verifies end-to-end DSR Direct-Return survival against BCP38 filtering.
+    """
+    clean_peer = str(peer_ip or "").strip().strip("[]")
+    try:
+        ipaddress.ip_address(clean_peer)
+    except ValueError:
+        return {"ok": False, "error": f"Invalid Target IP address '{peer_ip}'."}
+
+    try:
+        safe_port = int(port)
+    except (TypeError, ValueError):
+        return {"ok": False, "error": "Invalid TCP port."}
+    if not (1 <= safe_port <= 65535):
+        return {"ok": False, "error": "Port must be between 1 and 65535."}
+
+    clean_mode = str(mode or "protocol").strip().lower()
+    if clean_mode not in ("protocol", "dsr_return"):
+        clean_mode = "protocol"
+
+    probe_icmp = icmp_fn or (lambda ip, cnt: _probe_icmp_burst(ip, count=cnt))
+    probe_tcp = tcp_fn or (lambda ip, p: _probe_tcp_burst(ip, p, attempts=6))
+    probe_dsr = dsr_fn or (lambda ip, p: _probe_dsr_return_path(ip, p))
+    discover_tunnels = tunnels_fn or _discover_active_tunnel_peers
+
+    icmp_res = probe_icmp(clean_peer, 15)
+    tcp_res = probe_tcp(clean_peer, safe_port)
+
+    tunnel_results: List[Dict[str, Any]] = []
+    if clean_mode == "protocol":
+        for tun in discover_tunnels():
+            t_res = probe_icmp(tun["peer_ip"], 10)
+            tunnel_results.append({
+                "iface": tun["iface"],
+                "peer_ip": tun["peer_ip"],
+                "loss_pct": t_res.get("loss_pct", 100.0),
+                "avg_ms": t_res.get("avg_ms"),
+            })
+
+    dsr_res = probe_dsr(clean_peer, safe_port) if clean_mode == "dsr_return" else None
+
+    icmp_loss = float(icmp_res.get("loss_pct", 100.0))
+    tcp_loss = float(tcp_res.get("loss_pct", 100.0))
+    bad_esp = [t for t in tunnel_results if not t["iface"].startswith("tcptun") and float(t.get("loss_pct", 0.0)) >= 10.0]
+
+    if dsr_res and dsr_res.get("status") == "bcp38_blocked":
+        verdict = "bcp38_blocked"
+        msg = "Direct-Return (DSR) return packets dropped by BCP38 / Anti-Spoofing. Use symmetric forwarding (HAProxy or standard NFTables over TCP-TUN)."
+    elif dsr_res and dsr_res.get("status") == "connect_failed":
+        verdict = "unreachable"
+        msg = f"TCP handshake failed on {clean_peer}:{safe_port} ({dsr_res.get('detail')})."
+    elif dsr_res and dsr_res.get("status") == "ok":
+        verdict = "dsr_ready"
+        msg = f"End-to-End DSR Direct-Return verified on {clean_peer}:{safe_port} ({dsr_res.get('connect_ms')}ms)."
+    elif bad_esp and tcp_loss <= 5.0:
+        ifaces_str = ", ".join(f"{t['iface']} ({t['loss_pct']}%)" for t in bad_esp)
+        verdict = "esp_udp_throttled"
+        msg = f"Tunnel loss detected on {ifaces_str} while underlay TCP ({tcp_loss}% loss) and ICMP ({icmp_loss}% loss) are clean. Switch to TCP-TUN or HAProxy."
+    elif icmp_loss == 0.0 and tcp_loss >= 30.0:
+        verdict = "tcp_blocked"
+        msg = f"ICMP is clean (0% loss) but TCP :{safe_port} has {tcp_loss}% failure. Port :{safe_port} may be closed or throttled."
+    elif icmp_loss >= 100.0 and tcp_loss >= 100.0:
+        verdict = "unreachable"
+        msg = f"Target {clean_peer} is unreachable on both ICMP and TCP :{safe_port}."
+    elif icmp_loss <= 5.0 and tcp_loss <= 5.0:
+        verdict = "clean"
+        msg = f"Underlay path to {clean_peer}:{safe_port} is clean (ICMP {icmp_loss}% loss, TCP {tcp_loss}% loss)."
+    else:
+        verdict = "degraded"
+        msg = f"Degraded path to {clean_peer}:{safe_port} (ICMP {icmp_loss}% loss, TCP {tcp_loss}% loss)."
+
+    return {
+        "ok": True,
+        "mode": clean_mode,
+        "peer_ip": clean_peer,
+        "port": safe_port,
+        "verdict": verdict,
+        "message": msg,
+        "icmp": icmp_res,
+        "tcp": tcp_res,
+        "tunnels": tunnel_results,
+        "dsr_return": dsr_res,
+    }
+
+
 def _print_cli_status(status: Dict[str, Any]) -> None:
     prof = status.get("profile", {})
     live = status.get("live", {})

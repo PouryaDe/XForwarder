@@ -86,12 +86,14 @@ try:
         get_kernel_tuning_status, apply_kernel_tuning,
         get_spoof_test_status, start_spoof_test_listener,
         stop_spoof_test_listener, run_spoof_egress_test,
+        run_transport_capability_test,
     )
 except ImportError:
     from kernel_tuner import (
         get_kernel_tuning_status, apply_kernel_tuning,
         get_spoof_test_status, start_spoof_test_listener,
         stop_spoof_test_listener, run_spoof_egress_test,
+        run_transport_capability_test,
     )
 
 def get_network_interfaces_info() -> Dict[str, Any]:
@@ -2179,6 +2181,23 @@ class XForwarderWebHandler(BaseHTTPRequestHandler):
                 self.send_json({"ok": False, "error": "Invalid port or count value."}, 400)
                 return
             res = run_spoof_egress_test(peer_ip=peer_ip, spoof_ip=spoof_ip, port=p_num, count=cnt)
+            self.send_json(res, 200 if res.get("ok") else 400)
+            return
+
+        elif subpath == "/api/system/transport-test/run":
+            if not _require_scope(self, "admin"):
+                return
+            if not isinstance(body, dict):
+                self.send_json({"ok": False, "error": "Invalid JSON body"}, 400)
+                return
+            peer_ip = str(body.get("peer_ip", "")).strip()
+            mode = str(body.get("mode", "protocol")).strip().lower()
+            try:
+                p_num = int(body.get("port", 443) or 443)
+            except (TypeError, ValueError):
+                self.send_json({"ok": False, "error": "Invalid port value."}, 400)
+                return
+            res = run_transport_capability_test(peer_ip=peer_ip, port=p_num, mode=mode)
             self.send_json(res, 200 if res.get("ok") else 400)
             return
 
