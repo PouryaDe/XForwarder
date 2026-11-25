@@ -2043,32 +2043,47 @@ export function initRuleModal(fetchStatusCallback) {
                 return;
             }
 
+            const openIpComboWrap = (wrap) => {
+                if (!wrap || !wrap.classList.contains("has-combo")) return;
+                document.querySelectorAll(".iface-multiselect.open, .ip-combo-wrap.open").forEach(el => {
+                    if (el !== wrap) el.classList.remove("open");
+                });
+                const box = wrap.closest(".priority-box");
+                const kind = wrap.dataset.comboKind || "";
+                const menu = wrap.querySelector(".ip-combo-menu");
+                const inputEl = wrap.querySelector("input");
+                const curVal = inputEl ? inputEl.value.trim() : "";
+                if (menu) {
+                    if (kind === "tunnel") {
+                        const dType = box?.querySelector(".dest-type")?.value || "";
+                        menu.innerHTML = buildDsrTunnelMenuHtml(dType, curVal);
+                    } else if (kind === "spoof") {
+                        const dType = box?.querySelector(".dest-type")?.value || "";
+                        const req = (dType === "nftables_dsr_relay" || dType === "nftables_dsr_direct");
+                        menu.innerHTML = buildServerIpMenuHtml(curVal, !req, "spoof");
+                    } else if (kind === "snat") {
+                        menu.innerHTML = buildServerIpMenuHtml(curVal, true, "snat");
+                    }
+                }
+                wrap.classList.add("open");
+            };
+
+            const comboInput = ev.target.closest(".ip-combo-wrap.has-combo > input");
+            if (comboInput) {
+                ev.stopPropagation();
+                openIpComboWrap(comboInput.closest(".ip-combo-wrap"));
+                return;
+            }
+
             const comboToggle = ev.target.closest(".ip-combo-toggle");
             if (comboToggle) {
                 ev.stopPropagation();
                 const wrap = comboToggle.closest(".ip-combo-wrap");
                 if (!wrap) return;
-                const wasOpen = wrap.classList.contains("open");
-                document.querySelectorAll(".iface-multiselect.open, .ip-combo-wrap.open").forEach(el => el.classList.remove("open"));
-                if (!wasOpen) {
-                    const box = wrap.closest(".priority-box");
-                    const kind = wrap.dataset.comboKind || "";
-                    const menu = wrap.querySelector(".ip-combo-menu");
-                    const inputEl = wrap.querySelector("input");
-                    const curVal = inputEl ? inputEl.value.trim() : "";
-                    if (menu) {
-                        if (kind === "tunnel") {
-                            const dType = box?.querySelector(".dest-type")?.value || "";
-                            menu.innerHTML = buildDsrTunnelMenuHtml(dType, curVal);
-                        } else if (kind === "spoof") {
-                            const dType = box?.querySelector(".dest-type")?.value || "";
-                            const req = (dType === "nftables_dsr_relay" || dType === "nftables_dsr_direct");
-                            menu.innerHTML = buildServerIpMenuHtml(curVal, !req, "spoof");
-                        } else if (kind === "snat") {
-                            menu.innerHTML = buildServerIpMenuHtml(curVal, true, "snat");
-                        }
-                    }
-                    wrap.classList.add("open");
+                if (wrap.classList.contains("open")) {
+                    wrap.classList.remove("open");
+                } else {
+                    openIpComboWrap(wrap);
                 }
                 return;
             }
