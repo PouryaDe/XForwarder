@@ -468,6 +468,8 @@ export function openEditRuleModal(ruleId) {
             ingress_iface: d.ingress_iface || "",
             spoof_ip: d.spoof_ip || "",
             snat_ip: d.snat_ip || "",
+            exit_target: d.exit_target || "",
+            exit_port: (d.exit_port !== undefined && d.exit_port !== null) ? d.exit_port : "",
             comment: d.comment || "",
             proxy_protocol: Boolean(d.proxy_protocol),
             is_relay: Boolean(d.is_relay),
@@ -1132,7 +1134,7 @@ export function renderDestinationRow(dest, index, totalCount) {
                     <label>${escapeHtml(t("modal.exit_target", {}, "Exit Server IP"))}</label>
                     <input type="text" class="form-control font-mono dest-exit-target" placeholder="203.0.113.50 (e.g. Germany 3x-ui)" value="${escapeHtml(dest.exit_target || "")}">
                 </div>
-                <div class="form-group" style="width: 130px; flex: 0 0 130px;">
+                <div class="form-group dest-exit-port-group">
                     <label>${escapeHtml(t("modal.exit_port", {}, "Exit Port"))}</label>
                     <input type="text" inputmode="numeric" class="form-control font-mono dest-exit-port" placeholder="${escapeHtml(String((inboundSpec && inboundSpec.start) || 1036))}" value="${escapeHtml(dest.exit_port !== undefined && dest.exit_port !== null ? String(dest.exit_port) : "")}">
                 </div>

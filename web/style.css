@@ -8066,8 +8066,8 @@ select option {
 /* Destination Form Row Proportions */
 .dest-form-row {
     display: grid;
-    grid-template-columns: minmax(180px, 1.2fr) minmax(0, 1.5fr) minmax(84px, 0.55fr);
-    align-items: end;
+    grid-template-columns: minmax(175px, 1.15fr) minmax(0, 1.35fr) minmax(132px, 0.78fr);
+    align-items: start;
     gap: 10px;
     margin-bottom: 12px;
 }
@@ -8077,9 +8077,15 @@ select option {
     min-width: 0;
 }
 
+.dest-form-row > .form-group > label {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
 @media (max-width: 640px) {
     .dest-form-row {
-        grid-template-columns: minmax(0, 1fr) 96px;
+        grid-template-columns: minmax(0, 1fr) 118px;
         gap: 8px;
     }
     .dest-col-type {
@@ -8114,19 +8120,27 @@ select option {
 }
 
 .dest-meta-row .dest-iface-group,
-.dest-meta-row .dest-comment-group {
+.dest-meta-row .dest-comment-group,
+.dest-dsr-row > .form-group {
     flex: 1 1 0;
     min-width: 0;
 }
 
 @media (max-width: 640px) {
+    .priority-box {
+        padding: 10px 12px;
+    }
     .dest-meta-row {
         flex-direction: column;
         gap: 0;
     }
     .dest-meta-row .dest-iface-group,
-    .dest-meta-row .dest-comment-group {
+    .dest-meta-row .dest-comment-group,
+    .dest-dsr-row > .form-group,
+    .dest-exit-relay-box .dest-meta-row > .form-group,
+    .dest-exit-relay-box .dest-exit-port-group {
         width: 100%;
+        flex: 1 1 100%;
     }
 }
 
@@ -8279,10 +8293,20 @@ select option {
     margin-top: 6px;
 }
 
-.dest-spoof-suggestions .suggestion-hint {
+.dest-spoof-suggestions .suggestion-hint,
+.dest-tunnel-suggestions .suggestion-hint {
     color: var(--text-muted);
     font-size: 0.72rem;
     font-weight: 500;
+}
+
+.dest-tunnel-chips-slot:empty {
+    display: none;
+}
+
+.dest-exit-port-group {
+    flex: 0 0 140px;
+    min-width: 0;
 }
 
 .ip-chip {

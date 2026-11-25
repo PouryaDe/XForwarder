@@ -1233,6 +1233,18 @@ class TestNFTablesDSRMethods(unittest.TestCase):
             self.assertEqual(stat["status"], "failed")
             self.assertEqual(stat["packet_loss"], 100.0)
 
+        # 6. UI Regression: openEditRuleModal preserves exit_target/exit_port and CSS row aligns from top & wraps on mobile
+        modal_js_path = os.path.join(REPO_ROOT, "web", "js", "modules", "rule_modal.js")
+        modals_css_path = os.path.join(REPO_ROOT, "web", "css", "modals.css")
+        with open(modal_js_path, "r", encoding="utf-8") as mf:
+            modal_js = mf.read()
+        with open(modals_css_path, "r", encoding="utf-8") as cf:
+            modals_css = cf.read()
+        self.assertIn("exit_target: d.exit_target", modal_js)
+        self.assertIn("exit_port:", modal_js)
+        self.assertIn("align-items: start;", modals_css)
+        self.assertIn(".dest-exit-port-group", modals_css)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -785,15 +785,19 @@ def migrate_and_normalize_config(cfg: Dict[str, Any]) -> Tuple[Dict[str, Any], b
                     d["target"] = clean_target
                     modified = True
 
-            for ip_key in ("spoof_ip", "snat_ip"):
+            for ip_key in ("spoof_ip", "snat_ip", "exit_target"):
                 if ip_key in d:
                     clean_ip = str(d.get(ip_key) or "").strip().strip("[]")
-                    if not clean_ip:
+                    if not clean_ip or (ip_key == "exit_target" and dtype != "nftables_dsr_direct"):
                         d.pop(ip_key, None)
                         modified = True
                     elif d.get(ip_key) != clean_ip:
                         d[ip_key] = clean_ip
                         modified = True
+
+            if "exit_port" in d and (dtype != "nftables_dsr_direct" or not d.get("exit_target")):
+                d.pop("exit_port", None)
+                modified = True
 
             if "ingress_iface" in d:
                 clean_in_if = str(d.get("ingress_iface") or "").strip()
