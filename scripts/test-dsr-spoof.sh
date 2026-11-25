@@ -143,6 +143,7 @@ import sys
 import time
 import json
 import uuid
+import select
 import shutil
 import socket
 import struct
@@ -274,45 +275,95 @@ if mode == "listen":
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     sock.bind(("0.0.0.0", port))
-    sock.settimeout(1.0)
+    sock.settimeout(0.5)
+
+    pkt_sock = None
+    if hasattr(socket, "AF_PACKET"):
+        try:
+            pkt_sock = socket.socket(socket.AF_PACKET, socket.SOCK_DGRAM, socket.htons(0x0800))
+            pkt_sock.setblocking(False)
+        except Exception:
+            if pkt_sock is not None:
+                pkt_sock.close()
+            pkt_sock = None
+
+    def record_probe(sessions_dict, kind_str, tok, src_ip, sport_num):
+        k_seen = "ctrl_seen" if kind_str == "CTRL" else "spoof_seen"
+        k_list = "ctrl" if kind_str == "CTRL" else "spoof"
+        st = sessions_dict.setdefault(tok, {"ctrl": [], "spoof": [], "ctrl_seen": set(), "spoof_seen": set()})
+        d_key = (src_ip, int(sport_num))
+        if d_key in st[k_seen]:
+            return
+        st[k_seen].add(d_key)
+        st[k_list].append(src_ip)
+        if kind_str == "CTRL":
+            print(f"  [CTRL ] token={tok[:8]} from={src_ip}:{sport_num}")
+        else:
+            print(f"  {G}[SPOOF]{N} token={tok[:8]} from={src_ip}:{sport_num} (SPOOFED PACKET DELIVERED!)")
 
     sessions = {}
     deadline = time.time() + timeout_sec
     try:
         while time.time() < deadline:
-            try:
-                data, addr = sock.recvfrom(2048)
-            except socket.timeout:
-                continue
-            msg = data.decode("utf-8", "replace").strip()
-            parts = msg.split(":")
-            kind = parts[0] if parts else ""
-            token = parts[1] if len(parts) > 1 else ""
-            if kind == "PING":
-                sock.sendto(f"PONG:{token}".encode("utf-8"), addr)
-            elif kind == "CTRL" and token:
-                st = sessions.setdefault(token, {"ctrl": [], "spoof": []})
-                st["ctrl"].append(addr[0])
-                print(f"  [CTRL ] token={token[:8]} from={addr[0]}:{addr[1]}")
-            elif kind == "SPOOF" and token:
-                st = sessions.setdefault(token, {"ctrl": [], "spoof": []})
-                st["spoof"].append(addr[0])
-                print(f"  {G}[SPOOF]{N} token={token[:8]} from={addr[0]}:{addr[1]} (SPOOFED PACKET DELIVERED!)")
-            elif kind == "QUERY" and token:
-                st = sessions.get(token, {"ctrl": [], "spoof": []})
-                resp = json.dumps({
-                    "ok": True,
-                    "ctrl_count": len(st["ctrl"]),
-                    "ctrl_ips": list(set(st["ctrl"])),
-                    "spoof_count": len(st["spoof"]),
-                    "spoof_ips": list(set(st["spoof"])),
-                }).encode("utf-8")
-                sock.sendto(resp, addr)
-                print(f"  [DONE ] token={token[:8]} -> ctrl={len(st['ctrl'])}, spoof={len(st['spoof'])}")
+            if pkt_sock is not None:
+                readable, _, _ = select.select([sock, pkt_sock], [], [], 0.5)
+            else:
+                readable = [sock]
+            for s_ready in readable:
+                if s_ready is pkt_sock:
+                    for _ in range(32):
+                        try:
+                            pkt, p_addr = pkt_sock.recvfrom(4096)
+                        except (BlockingIOError, socket.timeout):
+                            break
+                        if len(p_addr) >= 3 and (p_addr[0] == "lo" or p_addr[2] != 0):
+                            continue
+                        if len(pkt) < 28 or (pkt[0] >> 4) != 4 or pkt[9] != 17:
+                            continue
+                        ihl = (pkt[0] & 0x0F) * 4
+                        if ihl < 20 or len(pkt) < ihl + 8:
+                            continue
+                        sport_n, dport_n, ulen_n, _ = struct.unpack("!HHHH", pkt[ihl:ihl + 8])
+                        if dport_n != port:
+                            continue
+                        src_s = socket.inet_ntoa(pkt[12:16])
+                        end_i = min(len(pkt), ihl + ulen_n) if ulen_n >= 8 else len(pkt)
+                        msg = pkt[ihl + 8:end_i].decode("utf-8", "replace").strip()
+                        parts = msg.split(":")
+                        kind = parts[0] if parts else ""
+                        token = parts[1] if len(parts) > 1 else ""
+                        if kind in ("CTRL", "SPOOF") and token:
+                            record_probe(sessions, kind, token, src_s, sport_n)
+                    continue
+                try:
+                    data, addr = sock.recvfrom(2048)
+                except socket.timeout:
+                    continue
+                msg = data.decode("utf-8", "replace").strip()
+                parts = msg.split(":")
+                kind = parts[0] if parts else ""
+                token = parts[1] if len(parts) > 1 else ""
+                if kind == "PING":
+                    sock.sendto(f"PONG:{token}".encode("utf-8"), addr)
+                elif kind in ("CTRL", "SPOOF") and token:
+                    record_probe(sessions, kind, token, addr[0], addr[1])
+                elif kind == "QUERY" and token:
+                    st = sessions.get(token, {"ctrl": [], "spoof": []})
+                    resp = json.dumps({
+                        "ok": True,
+                        "ctrl_count": len(st["ctrl"]),
+                        "ctrl_ips": list(set(st["ctrl"])),
+                        "spoof_count": len(st["spoof"]),
+                        "spoof_ips": list(set(st["spoof"])),
+                    }).encode("utf-8")
+                    sock.sendto(resp, addr)
+                    print(f"  [DONE ] token={token[:8]} -> ctrl={len(st['ctrl'])}, spoof={len(st['spoof'])}")
     except KeyboardInterrupt:
         pass
     finally:
         sock.close()
+        if pkt_sock is not None:
+            pkt_sock.close()
     sys.exit(0)
 
 
@@ -337,8 +388,6 @@ if not wan_ip:
     sys.exit(1)
 
 spoof_ip = spoof_ip_arg or pick_default_spoof_ip(peer_ip, wan_ip)
-if spoof_ip == peer_ip:
-    print(f"{Y}[WARN] Spoof IP equals Listener IP ({peer_ip}); Linux may drop self-source packets locally as Martian.{N}")
 
 token = uuid.uuid4().hex[:12]
 print(f"\n{C}{B}=== 2. Datacenter Egress Spoof / uRPF Test ==={N}")

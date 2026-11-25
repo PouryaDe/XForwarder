@@ -22,6 +22,8 @@ from core.kernel_tuner import (
     get_kernel_tuning_status,
     apply_kernel_tuning,
     pick_default_spoof_ip,
+    _parse_ipv4_udp_packet,
+    _SPOOF_LISTENER,
     start_spoof_test_listener,
     stop_spoof_test_listener,
     run_spoof_egress_test,
@@ -295,6 +297,24 @@ class TestKernelTuner(unittest.TestCase):
              patch("core.kernel_tuner.check_local_spoof_capabilities", return_value={"raw_socket_ok": True, "wan_ip": "127.0.0.1"}):
             res_unreach = run_spoof_egress_test("127.0.0.1", spoof_ip="198.51.100.99", port=free_port, count=2)
         self.assertEqual(res_unreach["verdict"], "unreachable")
+
+        # Verify L2/IPv4 UDP packet parser & duplicate (src, sport) deduplication
+        import struct as _struct
+        payload = b"SPOOF:tok123:198.51.100.10"
+        udp_hdr = _struct.pack("!HHHH", 42001, 55199, 8 + len(payload), 0)
+        ip_hdr = _struct.pack(
+            "!BBHHHBBH4s4s",
+            0x45, 0, 20 + 8 + len(payload), 1, 0, 64, _sock.IPPROTO_UDP, 0,
+            _sock.inet_aton("198.51.100.10"), _sock.inet_aton("198.51.100.10"),
+        )
+        parsed_pkt = _parse_ipv4_udp_packet(ip_hdr + udp_hdr + payload, 55199)
+        self.assertEqual(parsed_pkt, ("198.51.100.10", 42001, payload))
+        self.assertIsNone(_parse_ipv4_udp_packet(ip_hdr + udp_hdr + payload, 9999))
+        _SPOOF_LISTENER._sessions = {}
+        _SPOOF_LISTENER._total_spoof = 0
+        _SPOOF_LISTENER._record_probe("SPOOF", "tok123", "198.51.100.10", 42001)
+        _SPOOF_LISTENER._record_probe("SPOOF", "tok123", "198.51.100.10", 42001)
+        self.assertEqual(_SPOOF_LISTENER._total_spoof, 1)
 
         # UI card and JS bindings present in Network section
         with open(os.path.join(REPO_ROOT, "web", "index.html"), "r", encoding="utf-8") as f:

@@ -12,6 +12,7 @@ import re
 import json
 import time
 import uuid
+import select
 import socket
 import struct
 import shutil
@@ -832,8 +833,23 @@ def check_local_spoof_capabilities(proc_sys_root: str = "/proc/sys") -> Dict[str
     }
 
 
+def _parse_ipv4_udp_packet(pkt: bytes, expected_port: int) -> Optional[Tuple[str, int, bytes]]:
+    """Extracts `(src_ip, sport, payload)` from an IPv4 datagram destined to `expected_port`/udp."""
+    if len(pkt) < 28 or (pkt[0] >> 4) != 4 or pkt[9] != 17:
+        return None
+    ihl = (pkt[0] & 0x0F) * 4
+    if ihl < 20 or len(pkt) < ihl + 8:
+        return None
+    sport, dport, ulen, _ = struct.unpack("!HHHH", pkt[ihl:ihl + 8])
+    if dport != expected_port:
+        return None
+    end_idx = min(len(pkt), ihl + ulen) if ulen >= 8 else len(pkt)
+    src_ip = socket.inet_ntoa(pkt[12:16])
+    return src_ip, sport, pkt[ihl + 8:end_idx]
+
+
 class _SpoofTestListenerManager:
-    """Singleton bounded UDP receiver for verifying incoming control vs spoofed probe datagrams."""
+    """Singleton bounded UDP receiver with AF_PACKET L2 fallback for `accept_local=0` self-source probes."""
 
     def __init__(self) -> None:
         self._lock = threading.Lock()
@@ -842,8 +858,9 @@ class _SpoofTestListenerManager:
         self._expires_at = 0.0
         self._stop_event = threading.Event()
         self._sock: Optional[socket.socket] = None
+        self._pkt_sock: Optional[socket.socket] = None
         self._thread: Optional[threading.Thread] = None
-        self._sessions: Dict[str, Dict[str, List[str]]] = {}
+        self._sessions: Dict[str, Dict[str, Any]] = {}
         self._recent_events: List[Dict[str, Any]] = []
         self._total_ctrl = 0
         self._total_spoof = 0
@@ -863,8 +880,24 @@ class _SpoofTestListenerManager:
             return False, f"Failed to bind UDP port {port}: {e}", self.status()
         sock.settimeout(0.5)
 
+        # Open AF_PACKET L2 socket (ETH_P_IP) so incoming packets with spoof_ip == local_ip
+        # are captured before Linux kernel accept_local=0 / rp_filter drops them at L3.
+        pkt_sock: Optional[socket.socket] = None
+        if hasattr(socket, "AF_PACKET"):
+            try:
+                pkt_sock = socket.socket(socket.AF_PACKET, socket.SOCK_DGRAM, socket.htons(0x0800))
+                pkt_sock.setblocking(False)
+            except Exception:
+                if pkt_sock is not None:
+                    try:
+                        pkt_sock.close()
+                    except Exception:
+                        pass
+                pkt_sock = None
+
         with self._lock:
             self._sock = sock
+            self._pkt_sock = pkt_sock
             self._port = int(port)
             self._expires_at = time.time() + safe_timeout
             self._stop_event.clear()
@@ -882,77 +915,127 @@ class _SpoofTestListenerManager:
         with self._lock:
             self._stop_event.set()
             sock = self._sock
+            pkt_sock = self._pkt_sock
             self._sock = None
+            self._pkt_sock = None
             t = self._thread
             self._thread = None
             self._active = False
-        if sock is not None:
-            try:
-                sock.close()
-            except Exception:
-                pass
+        for s in (sock, pkt_sock):
+            if s is not None:
+                try:
+                    s.close()
+                except Exception:
+                    pass
         if t is not None and t.is_alive() and threading.current_thread() is not t:
             t.join(timeout=1.5)
         return self.status()
+
+    def _record_probe(self, kind: str, token: str, src_ip: str, sport: int) -> None:
+        if kind not in ("CTRL", "SPOOF") or not token:
+            return
+        key_seen = "ctrl_seen" if kind == "CTRL" else "spoof_seen"
+        key_ips = "ctrl" if kind == "CTRL" else "spoof"
+        dedup_key = (src_ip, int(sport))
+        st = self._sessions.setdefault(token, {"ctrl": [], "spoof": [], "ctrl_seen": set(), "spoof_seen": set()})
+        if dedup_key in st[key_seen]:
+            return
+        st[key_seen].add(dedup_key)
+        st[key_ips].append(src_ip)
+        if kind == "CTRL":
+            self._total_ctrl += 1
+        else:
+            self._total_spoof += 1
+        self._recent_events.append({"kind": kind.lower(), "src": src_ip, "ts": int(time.time())})
+        self._recent_events = self._recent_events[-12:]
 
     def _serve_loop(self) -> None:
         try:
             while not self._stop_event.is_set() and time.time() < self._expires_at:
                 with self._lock:
                     sock = self._sock
+                    pkt_sock = self._pkt_sock
+                    listen_port = self._port
                 if sock is None:
                     break
-                try:
-                    data, addr = sock.recvfrom(2048)
-                except socket.timeout:
-                    continue
-                except OSError:
-                    break
-                msg = data.decode("utf-8", "replace").strip()
-                parts = msg.split(":")
-                kind = parts[0] if parts else ""
-                token = parts[1] if len(parts) > 1 else ""
-                with self._lock:
-                    if kind == "PING":
-                        try:
-                            sock.sendto(f"PONG:{token}".encode("utf-8"), addr)
-                        except Exception:
-                            pass
-                    elif kind == "CTRL" and token:
-                        st = self._sessions.setdefault(token, {"ctrl": [], "spoof": []})
-                        st["ctrl"].append(addr[0])
-                        self._total_ctrl += 1
-                        self._recent_events.append({"kind": "ctrl", "src": addr[0], "ts": int(time.time())})
-                        self._recent_events = self._recent_events[-12:]
-                    elif kind == "SPOOF" and token:
-                        st = self._sessions.setdefault(token, {"ctrl": [], "spoof": []})
-                        st["spoof"].append(addr[0])
-                        self._total_spoof += 1
-                        self._recent_events.append({"kind": "spoof", "src": addr[0], "ts": int(time.time())})
-                        self._recent_events = self._recent_events[-12:]
-                    elif kind == "QUERY" and token:
-                        st = self._sessions.get(token, {"ctrl": [], "spoof": []})
-                        payload = json.dumps({
-                            "ok": True,
-                            "ctrl_count": len(st["ctrl"]),
-                            "ctrl_ips": list(set(st["ctrl"])),
-                            "spoof_count": len(st["spoof"]),
-                            "spoof_ips": list(set(st["spoof"])),
-                        }).encode("utf-8")
-                        try:
-                            sock.sendto(payload, addr)
-                        except Exception:
-                            pass
+                if pkt_sock is not None:
+                    try:
+                        readable, _, _ = select.select([sock, pkt_sock], [], [], 0.5)
+                    except (OSError, ValueError):
+                        break
+                else:
+                    readable = [sock]
+
+                for s_ready in readable:
+                    if s_ready is pkt_sock:
+                        # Drain currently queued AF_PACKET frames cleanly
+                        for _ in range(32):
+                            try:
+                                pkt, p_addr = pkt_sock.recvfrom(4096)
+                            except (BlockingIOError, socket.timeout):
+                                break
+                            except OSError:
+                                break
+                            # Ignore local loopback or outgoing frames; accept incoming PACKET_HOST (0)
+                            if len(p_addr) >= 3 and (p_addr[0] == "lo" or p_addr[2] != 0):
+                                continue
+                            parsed = _parse_ipv4_udp_packet(pkt, listen_port)
+                            if not parsed:
+                                continue
+                            src_ip, sport, payload = parsed
+                            msg = payload.decode("utf-8", "replace").strip()
+                            parts = msg.split(":")
+                            kind = parts[0] if parts else ""
+                            token = parts[1] if len(parts) > 1 else ""
+                            if kind in ("CTRL", "SPOOF") and token:
+                                with self._lock:
+                                    self._record_probe(kind, token, src_ip, sport)
+                        continue
+
+                    try:
+                        data, addr = sock.recvfrom(2048)
+                    except socket.timeout:
+                        continue
+                    except OSError:
+                        break
+                    msg = data.decode("utf-8", "replace").strip()
+                    parts = msg.split(":")
+                    kind = parts[0] if parts else ""
+                    token = parts[1] if len(parts) > 1 else ""
+                    with self._lock:
+                        if kind == "PING":
+                            try:
+                                sock.sendto(f"PONG:{token}".encode("utf-8"), addr)
+                            except Exception:
+                                pass
+                        elif kind in ("CTRL", "SPOOF") and token:
+                            self._record_probe(kind, token, addr[0], addr[1])
+                        elif kind == "QUERY" and token:
+                            st = self._sessions.get(token, {"ctrl": [], "spoof": []})
+                            payload = json.dumps({
+                                "ok": True,
+                                "ctrl_count": len(st["ctrl"]),
+                                "ctrl_ips": list(set(st["ctrl"])),
+                                "spoof_count": len(st["spoof"]),
+                                "spoof_ips": list(set(st["spoof"])),
+                            }).encode("utf-8")
+                            try:
+                                sock.sendto(payload, addr)
+                            except Exception:
+                                pass
         finally:
             with self._lock:
                 sock = self._sock
+                pkt_sock = self._pkt_sock
                 self._sock = None
+                self._pkt_sock = None
                 self._active = False
-            if sock is not None:
-                try:
-                    sock.close()
-                except Exception:
-                    pass
+            for s in (sock, pkt_sock):
+                if s is not None:
+                    try:
+                        s.close()
+                    except Exception:
+                        pass
 
     def status(self) -> Dict[str, Any]:
         with self._lock:
