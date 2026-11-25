@@ -11,7 +11,12 @@ import sys
 import re
 import json
 import time
+import uuid
+import socket
+import struct
 import shutil
+import threading
+import ipaddress
 import subprocess
 from typing import Any, Callable, Dict, List, Optional, Set, Tuple
 
@@ -729,6 +734,408 @@ def apply_kernel_tuning(
         "reset": reset_report,
         "warnings": warnings,
         "status": status_after,
+    }
+
+
+def _ip_checksum(data: bytes) -> int:
+    if len(data) % 2:
+        data += b"\x00"
+    s = sum(struct.unpack("!%dH" % (len(data) // 2), data))
+    s = (s >> 16) + (s & 0xFFFF)
+    s += s >> 16
+    return (~s) & 0xFFFF
+
+
+def detect_wan_ipv4(target: str = "1.1.1.1") -> str:
+    """Returns primary local outbound IPv4 address without transmitting packets."""
+    try:
+        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        sock.connect((target, 80))
+        ip = sock.getsockname()[0]
+        sock.close()
+        return ip
+    except Exception:
+        return ""
+
+
+def pick_default_spoof_ip(dst_ip: str, wan_ip: str = "") -> str:
+    """Picks a routable, non-self IPv4 near `dst_ip` to avoid Martian self-source drops on the listener."""
+    try:
+        parts = [int(x) for x in str(dst_ip).strip().split(".")]
+        if len(parts) != 4:
+            raise ValueError()
+    except ValueError:
+        return "198.51.100.77"
+    d = parts[3]
+    for delta in (2, -2, 1, -1, 3, -3):
+        cand = d + delta
+        if 2 <= cand <= 253 and cand != d:
+            candidate_ip = f"{parts[0]}.{parts[1]}.{parts[2]}.{cand}"
+            if candidate_ip != wan_ip and candidate_ip != dst_ip:
+                return candidate_ip
+    return "198.51.100.77" if dst_ip != "198.51.100.77" else "198.51.100.78"
+
+
+def send_raw_udp_probe(src_ip: str, dst_ip: str, sport: int, dport: int, payload: bytes) -> None:
+    """Transmits a single UDP/IPv4 datagram with explicit `src_ip` via `SOCK_RAW` + `IP_HDRINCL`."""
+    udp_len = 8 + len(payload)
+    udp_hdr = struct.pack("!HHHH", sport, dport, udp_len, 0)
+    ip_id = os.getpid() & 0xFFFF
+    ip_hdr_zero = struct.pack(
+        "!BBHHHBBH4s4s",
+        0x45, 0, 20 + udp_len, ip_id, 0, 64,
+        socket.IPPROTO_UDP, 0, socket.inet_aton(src_ip), socket.inet_aton(dst_ip),
+    )
+    ck = _ip_checksum(ip_hdr_zero)
+    ip_hdr = struct.pack(
+        "!BBHHHBBH4s4s",
+        0x45, 0, 20 + udp_len, ip_id, 0, 64,
+        socket.IPPROTO_UDP, ck, socket.inet_aton(src_ip), socket.inet_aton(dst_ip),
+    )
+    raw = socket.socket(socket.AF_INET, socket.SOCK_RAW, socket.IPPROTO_RAW)
+    try:
+        raw.setsockopt(socket.IPPROTO_IP, socket.IP_HDRINCL, 1)
+        raw.sendto(ip_hdr + udp_hdr + payload, (dst_ip, 0))
+    finally:
+        raw.close()
+
+
+def check_local_spoof_capabilities(proc_sys_root: str = "/proc/sys") -> Dict[str, Any]:
+    """Checks whether this host supports raw IP_HDRINCL sockets and basic DSR routing primitives."""
+    raw_ok = False
+    raw_err: Optional[str] = None
+    try:
+        rs = socket.socket(socket.AF_INET, socket.SOCK_RAW, socket.IPPROTO_RAW)
+        try:
+            rs.setsockopt(socket.IPPROTO_IP, socket.IP_HDRINCL, 1)
+            raw_ok = True
+        finally:
+            rs.close()
+    except Exception as e:
+        raw_err = str(e)
+
+    ip_fwd = _read_sysctl_proc("net.ipv4.ip_forward", proc_sys_root)
+    rp_all = _read_sysctl_proc("net.ipv4.conf.all.rp_filter", proc_sys_root)
+    rp_def = _read_sysctl_proc("net.ipv4.conf.default.rp_filter", proc_sys_root)
+    nft_ok = bool(_find_system_bin("nft", ("/usr/sbin", "/sbin", "/usr/bin", "/bin")))
+    ip_ok = bool(_find_system_bin("ip", ("/sbin", "/usr/sbin", "/bin", "/usr/bin")))
+
+    return {
+        "raw_socket_ok": raw_ok,
+        "raw_socket_error": raw_err,
+        "ip_forward": (ip_fwd == "1") if ip_fwd is not None else None,
+        "rp_filter_all": int(rp_all) if (rp_all is not None and rp_all.lstrip("-").isdigit()) else None,
+        "rp_filter_default": int(rp_def) if (rp_def is not None and rp_def.lstrip("-").isdigit()) else None,
+        "nft_ok": nft_ok,
+        "iproute_ok": ip_ok,
+        "wan_ip": detect_wan_ipv4() or None,
+    }
+
+
+class _SpoofTestListenerManager:
+    """Singleton bounded UDP receiver for verifying incoming control vs spoofed probe datagrams."""
+
+    def __init__(self) -> None:
+        self._lock = threading.Lock()
+        self._active = False
+        self._port = 55199
+        self._expires_at = 0.0
+        self._stop_event = threading.Event()
+        self._sock: Optional[socket.socket] = None
+        self._thread: Optional[threading.Thread] = None
+        self._sessions: Dict[str, Dict[str, List[str]]] = {}
+        self._recent_events: List[Dict[str, Any]] = []
+        self._total_ctrl = 0
+        self._total_spoof = 0
+
+    def start(self, port: int = 55199, timeout_sec: int = 180) -> Tuple[bool, str, Dict[str, Any]]:
+        if not (1024 <= int(port) <= 65535):
+            return False, "Port must be between 1024 and 65535.", self.status()
+        safe_timeout = max(15, min(int(timeout_sec or 180), 600))
+        self.stop()
+
+        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        try:
+            sock.bind(("0.0.0.0", int(port)))
+        except Exception as e:
+            sock.close()
+            return False, f"Failed to bind UDP port {port}: {e}", self.status()
+        sock.settimeout(0.5)
+
+        with self._lock:
+            self._sock = sock
+            self._port = int(port)
+            self._expires_at = time.time() + safe_timeout
+            self._stop_event.clear()
+            self._sessions = {}
+            self._recent_events = []
+            self._total_ctrl = 0
+            self._total_spoof = 0
+            self._active = True
+            t = threading.Thread(target=self._serve_loop, name="xfwd-spoof-listener", daemon=True)
+            self._thread = t
+            t.start()
+        return True, f"UDP spoof test listener started on port {port} for {safe_timeout}s.", self.status()
+
+    def stop(self) -> Dict[str, Any]:
+        with self._lock:
+            self._stop_event.set()
+            sock = self._sock
+            self._sock = None
+            t = self._thread
+            self._thread = None
+            self._active = False
+        if sock is not None:
+            try:
+                sock.close()
+            except Exception:
+                pass
+        if t is not None and t.is_alive() and threading.current_thread() is not t:
+            t.join(timeout=1.5)
+        return self.status()
+
+    def _serve_loop(self) -> None:
+        try:
+            while not self._stop_event.is_set() and time.time() < self._expires_at:
+                with self._lock:
+                    sock = self._sock
+                if sock is None:
+                    break
+                try:
+                    data, addr = sock.recvfrom(2048)
+                except socket.timeout:
+                    continue
+                except OSError:
+                    break
+                msg = data.decode("utf-8", "replace").strip()
+                parts = msg.split(":")
+                kind = parts[0] if parts else ""
+                token = parts[1] if len(parts) > 1 else ""
+                with self._lock:
+                    if kind == "PING":
+                        try:
+                            sock.sendto(f"PONG:{token}".encode("utf-8"), addr)
+                        except Exception:
+                            pass
+                    elif kind == "CTRL" and token:
+                        st = self._sessions.setdefault(token, {"ctrl": [], "spoof": []})
+                        st["ctrl"].append(addr[0])
+                        self._total_ctrl += 1
+                        self._recent_events.append({"kind": "ctrl", "src": addr[0], "ts": int(time.time())})
+                        self._recent_events = self._recent_events[-12:]
+                    elif kind == "SPOOF" and token:
+                        st = self._sessions.setdefault(token, {"ctrl": [], "spoof": []})
+                        st["spoof"].append(addr[0])
+                        self._total_spoof += 1
+                        self._recent_events.append({"kind": "spoof", "src": addr[0], "ts": int(time.time())})
+                        self._recent_events = self._recent_events[-12:]
+                    elif kind == "QUERY" and token:
+                        st = self._sessions.get(token, {"ctrl": [], "spoof": []})
+                        payload = json.dumps({
+                            "ok": True,
+                            "ctrl_count": len(st["ctrl"]),
+                            "ctrl_ips": list(set(st["ctrl"])),
+                            "spoof_count": len(st["spoof"]),
+                            "spoof_ips": list(set(st["spoof"])),
+                        }).encode("utf-8")
+                        try:
+                            sock.sendto(payload, addr)
+                        except Exception:
+                            pass
+        finally:
+            with self._lock:
+                sock = self._sock
+                self._sock = None
+                self._active = False
+            if sock is not None:
+                try:
+                    sock.close()
+                except Exception:
+                    pass
+
+    def status(self) -> Dict[str, Any]:
+        with self._lock:
+            rem = max(0, int(self._expires_at - time.time())) if self._active else 0
+            return {
+                "active": bool(self._active and rem > 0),
+                "port": self._port,
+                "remaining_seconds": rem,
+                "sessions_count": len(self._sessions),
+                "total_ctrl": self._total_ctrl,
+                "total_spoof": self._total_spoof,
+                "recent_events": list(self._recent_events),
+            }
+
+
+_SPOOF_LISTENER = _SpoofTestListenerManager()
+
+
+def get_spoof_test_status(proc_sys_root: str = "/proc/sys") -> Dict[str, Any]:
+    """Returns combined local DSR readiness and temporary UDP test listener state."""
+    return {
+        "local": check_local_spoof_capabilities(proc_sys_root=proc_sys_root),
+        "listener": _SPOOF_LISTENER.status(),
+    }
+
+
+def start_spoof_test_listener(port: int = 55199, timeout_sec: int = 180) -> Tuple[bool, str, Dict[str, Any]]:
+    return _SPOOF_LISTENER.start(port=port, timeout_sec=timeout_sec)
+
+
+def stop_spoof_test_listener() -> Dict[str, Any]:
+    return _SPOOF_LISTENER.stop()
+
+
+def run_spoof_egress_test(
+    peer_ip: str,
+    spoof_ip: str = "",
+    port: int = 55199,
+    count: int = 5,
+    *,
+    send_fn: Optional[Callable[[str, str, int, int, bytes], None]] = None,
+    proc_sys_root: str = "/proc/sys",
+) -> Dict[str, Any]:
+    """
+    Executes a live control-vs-spoofed UDP egress test against a peer running the listener
+    (`scripts/test-dsr-spoof.sh --listen` or the panel UDP Test Listener).
+    """
+    clean_peer = str(peer_ip or "").strip().strip("[]")
+    try:
+        peer_obj = ipaddress.ip_address(clean_peer)
+        if peer_obj.version != 4:
+            return {"ok": False, "error": "Peer IP must be an IPv4 address."}
+    except ValueError:
+        return {"ok": False, "error": f"Invalid Peer IPv4 address '{peer_ip}'."}
+
+    if not (1024 <= int(port) <= 65535):
+        return {"ok": False, "error": "Port must be between 1024 and 65535."}
+    safe_count = max(2, min(int(count or 5), 10))
+    safe_port = int(port)
+
+    local = check_local_spoof_capabilities(proc_sys_root=proc_sys_root)
+    wan_ip = local.get("wan_ip") or detect_wan_ipv4(clean_peer)
+    if not local.get("raw_socket_ok") and send_fn is None:
+        return {
+            "ok": True,
+            "verdict": "local_failed",
+            "peer_ip": clean_peer,
+            "wan_ip": wan_ip,
+            "spoof_ip": "",
+            "port": safe_port,
+            "count": safe_count,
+            "ctrl_delivered": 0,
+            "spoof_delivered": 0,
+            "local": local,
+            "message": f"Raw socket (CAP_NET_RAW / IP_HDRINCL) failed: {local.get('raw_socket_error')}",
+        }
+
+    clean_spoof = str(spoof_ip or "").strip().strip("[]")
+    if clean_spoof:
+        try:
+            sp_obj = ipaddress.ip_address(clean_spoof)
+            if sp_obj.version != 4:
+                return {"ok": False, "error": "Spoof IP must be an IPv4 address."}
+        except ValueError:
+            return {"ok": False, "error": f"Invalid Spoof IPv4 address '{spoof_ip}'."}
+    else:
+        clean_spoof = pick_default_spoof_ip(clean_peer, wan_ip or "")
+
+    if not wan_ip:
+        return {"ok": False, "error": "Could not determine local outbound WAN IPv4."}
+
+    token = uuid.uuid4().hex[:12]
+    probe_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    probe_sock.settimeout(1.5)
+    try:
+        reachable = False
+        for _ in range(2):
+            try:
+                probe_sock.sendto(f"PING:{token}".encode("utf-8"), (clean_peer, safe_port))
+                reply, _ = probe_sock.recvfrom(1024)
+                if reply.decode("utf-8", "replace").startswith(f"PONG:{token}"):
+                    reachable = True
+                    break
+            except Exception:
+                time.sleep(0.2)
+
+        if not reachable:
+            return {
+                "ok": True,
+                "verdict": "unreachable",
+                "peer_ip": clean_peer,
+                "wan_ip": wan_ip,
+                "spoof_ip": clean_spoof,
+                "port": safe_port,
+                "count": safe_count,
+                "ctrl_delivered": 0,
+                "spoof_delivered": 0,
+                "local": local,
+                "message": f"Listener not reachable at {clean_peer}:{safe_port}/udp. Start UDP Test Listener on the peer first and allow UDP/{safe_port}.",
+            }
+
+        sender = send_fn or send_raw_udp_probe
+        for i in range(safe_count):
+            sender(wan_ip, clean_peer, 41000 + i, safe_port, f"CTRL:{token}".encode("utf-8"))
+            sender(clean_spoof, clean_peer, 42000 + i, safe_port, f"SPOOF:{token}:{clean_spoof}".encode("utf-8"))
+            time.sleep(0.05)
+
+        time.sleep(0.8)
+
+        result = None
+        for _ in range(2):
+            try:
+                probe_sock.sendto(f"QUERY:{token}".encode("utf-8"), (clean_peer, safe_port))
+                raw_resp, _ = probe_sock.recvfrom(4096)
+                result = json.loads(raw_resp.decode("utf-8", "replace"))
+                break
+            except Exception:
+                time.sleep(0.25)
+    finally:
+        probe_sock.close()
+
+    if not result or not result.get("ok"):
+        return {
+            "ok": True,
+            "verdict": "unreachable",
+            "peer_ip": clean_peer,
+            "wan_ip": wan_ip,
+            "spoof_ip": clean_spoof,
+            "port": safe_port,
+            "count": safe_count,
+            "ctrl_delivered": 0,
+            "spoof_delivered": 0,
+            "local": local,
+            "message": f"Could not retrieve probe query result from {clean_peer}:{safe_port}.",
+        }
+
+    ctrl_ok = int(result.get("ctrl_count", 0))
+    spoof_ok = int(result.get("spoof_count", 0))
+    if ctrl_ok > 0 and spoof_ok > 0:
+        verdict = "supported"
+        msg = f"SPOOF / DSR SUPPORTED: {ctrl_ok}/{safe_count} control and {spoof_ok}/{safe_count} spoofed packets delivered."
+    elif ctrl_ok > 0 and spoof_ok == 0:
+        verdict = "blocked"
+        msg = (
+            f"SPOOF / DSR BLOCKED by datacenter (uRPF / BCP38): {ctrl_ok}/{safe_count} control arrived, "
+            f"0/{safe_count} spoofed ({clean_spoof}) escaped."
+        )
+    else:
+        verdict = "unreachable"
+        msg = f"Inconclusive: 0/{safe_count} control packets delivered."
+
+    return {
+        "ok": True,
+        "verdict": verdict,
+        "peer_ip": clean_peer,
+        "wan_ip": wan_ip,
+        "spoof_ip": clean_spoof,
+        "port": safe_port,
+        "count": safe_count,
+        "ctrl_delivered": ctrl_ok,
+        "spoof_delivered": spoof_ok,
+        "local": local,
+        "message": msg,
     }
 
 

@@ -98,7 +98,9 @@ import {
     handleServiceRestart,
     pollDashboardReconnection,
     initKernelOptimizer,
-    refreshKernelOptimizerStatus
+    refreshKernelOptimizerStatus,
+    initDsrSpoofTester,
+    refreshSpoofTesterStatus
 } from "./js/modules/system.js";
 import {
     getSanitizedRuleForExport,
@@ -368,6 +370,7 @@ async function startAuthenticatedSession(username) {
     checkImportableRules();
     fetchSystemVersionInfo(false);
     refreshKernelOptimizerStatus();
+    refreshSpoofTesterStatus();
     fetchApiKeys();
     if (!statusPollInterval) {
         statusPollInterval = setInterval(fetchStatus, 3500);
@@ -398,6 +401,7 @@ async function initApp() {
     initSystemUpdateManager();
     initServiceRestartControls(fetchStatus);
     initKernelOptimizer(fetchStatus);
+    initDsrSpoofTester();
     initLogs();
     initApiKeysManager();
 

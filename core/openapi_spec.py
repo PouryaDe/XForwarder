@@ -571,6 +571,15 @@ def build_openapi_spec(version: str = "1.9.0", server_url: str = "/") -> Dict[st
                 "get": {"tags": ["Services & System"], "summary": "Inspect live kernel & network tuning status and conflicts (read scope)", "responses": {"200": {"description": "Kernel optimization telemetry"}}},
                 "post": {"tags": ["Services & System"], "summary": "Apply ESP/DSR-safe kernel & BBR tuning with optional cleanup reset (admin scope)", "responses": {"200": {"description": "Tuning applied"}}}
             },
+            "/api/system/spoof-test/status": {
+                "get": {"tags": ["Services & System"], "summary": "Inspect local DSR readiness and UDP spoof test listener state (read scope)", "responses": {"200": {"description": "Spoof test readiness & listener status"}}}
+            },
+            "/api/system/spoof-test/listen": {
+                "post": {"tags": ["Services & System"], "summary": "Start or stop temporary UDP receiver for Spoof/DSR egress verification (admin scope)", "responses": {"200": {"description": "Listener updated"}}}
+            },
+            "/api/system/spoof-test/run": {
+                "post": {"tags": ["Services & System"], "summary": "Run control vs spoofed UDP egress test against peer listener (admin scope)", "responses": {"200": {"description": "Spoof/DSR capability verdict"}}}
+            },
             "/api/security/credentials": {
                 "post": {"tags": ["Auth"], "summary": "Update admin username/password (admin scope)", "responses": {"200": {"description": "Credentials updated"}}}
             },

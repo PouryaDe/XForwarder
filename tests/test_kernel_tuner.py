@@ -21,6 +21,11 @@ from core.kernel_tuner import (
     detect_system_capacity,
     get_kernel_tuning_status,
     apply_kernel_tuning,
+    pick_default_spoof_ip,
+    start_spoof_test_listener,
+    stop_spoof_test_listener,
+    run_spoof_egress_test,
+    get_spoof_test_status,
 )
 
 
@@ -233,6 +238,72 @@ class TestKernelTuner(unittest.TestCase):
         self.assertIn("IP_HDRINCL", txt)
         self.assertIn("--listen", txt)
         self.assertIn("--outside", txt)
+
+    def test_spoof_tester_listener_loopback_supported_blocked_and_ui(self):
+        import socket as _sock
+        # Verify pick_default_spoof_ip chooses non-self routable neighbor
+        self.assertEqual(pick_default_spoof_ip("109.122.251.100", "87.120.244.123"), "109.122.251.102")
+        self.assertNotEqual(pick_default_spoof_ip("198.51.100.253", "198.51.100.10"), "198.51.100.253")
+
+        # Find a free loopback UDP port
+        tmp_s = _sock.socket(_sock.AF_INET, _sock.SOCK_DGRAM)
+        tmp_s.bind(("127.0.0.1", 0))
+        free_port = tmp_s.getsockname()[1]
+        tmp_s.close()
+
+        ok_l, msg_l, st_l = start_spoof_test_listener(port=free_port, timeout_sec=30)
+        self.assertTrue(ok_l, msg_l)
+        self.assertTrue(st_l["active"])
+        try:
+            # 1) Both control and spoofed datagrams delivered -> supported
+            def send_both(src_ip, dst_ip, sport, dport, payload):
+                u = _sock.socket(_sock.AF_INET, _sock.SOCK_DGRAM)
+                try:
+                    u.sendto(payload, (dst_ip, dport))
+                finally:
+                    u.close()
+
+            with patch("core.kernel_tuner.detect_wan_ipv4", return_value="127.0.0.1"), \
+                 patch("core.kernel_tuner.check_local_spoof_capabilities", return_value={"raw_socket_ok": True, "wan_ip": "127.0.0.1"}):
+                res_pass = run_spoof_egress_test("127.0.0.1", spoof_ip="109.122.251.99", port=free_port, count=3, send_fn=send_both)
+            self.assertEqual(res_pass["verdict"], "supported")
+            self.assertEqual(res_pass["ctrl_delivered"], 3)
+            self.assertEqual(res_pass["spoof_delivered"], 3)
+
+            # 2) Simulated ISP uRPF drop: control arrives, spoofed dropped -> blocked
+            def send_ctrl_only(src_ip, dst_ip, sport, dport, payload):
+                if payload.startswith(b"SPOOF:"):
+                    return
+                u = _sock.socket(_sock.AF_INET, _sock.SOCK_DGRAM)
+                try:
+                    u.sendto(payload, (dst_ip, dport))
+                finally:
+                    u.close()
+
+            with patch("core.kernel_tuner.detect_wan_ipv4", return_value="127.0.0.1"), \
+                 patch("core.kernel_tuner.check_local_spoof_capabilities", return_value={"raw_socket_ok": True, "wan_ip": "127.0.0.1"}):
+                res_blk = run_spoof_egress_test("127.0.0.1", spoof_ip="109.122.251.99", port=free_port, count=3, send_fn=send_ctrl_only)
+            self.assertEqual(res_blk["verdict"], "blocked")
+            self.assertEqual(res_blk["ctrl_delivered"], 3)
+            self.assertEqual(res_blk["spoof_delivered"], 0)
+        finally:
+            st_after = stop_spoof_test_listener()
+            self.assertFalse(st_after["active"])
+
+        # Stopped listener -> unreachable verdict
+        with patch("core.kernel_tuner.detect_wan_ipv4", return_value="127.0.0.1"), \
+             patch("core.kernel_tuner.check_local_spoof_capabilities", return_value={"raw_socket_ok": True, "wan_ip": "127.0.0.1"}):
+            res_unreach = run_spoof_egress_test("127.0.0.1", spoof_ip="109.122.251.99", port=free_port, count=2)
+        self.assertEqual(res_unreach["verdict"], "unreachable")
+
+        # UI card and JS bindings present in Network section
+        with open(os.path.join(REPO_ROOT, "web", "index.html"), "r", encoding="utf-8") as f:
+            html = f.read()
+        with open(os.path.join(REPO_ROOT, "web", "js", "modules", "system.js"), "r", encoding="utf-8") as f:
+            sys_js = f.read()
+        self.assertIn("cardDsrSpoofTester", html)
+        self.assertIn("btnRunSpoofTest", html)
+        self.assertIn("initDsrSpoofTester", sys_js)
 
 
 if __name__ == "__main__":

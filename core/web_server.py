@@ -82,9 +82,17 @@ except ImportError:
         flush_conntrack = lambda port, proto=None: None
 
 try:
-    from core.kernel_tuner import get_kernel_tuning_status, apply_kernel_tuning
+    from core.kernel_tuner import (
+        get_kernel_tuning_status, apply_kernel_tuning,
+        get_spoof_test_status, start_spoof_test_listener,
+        stop_spoof_test_listener, run_spoof_egress_test,
+    )
 except ImportError:
-    from kernel_tuner import get_kernel_tuning_status, apply_kernel_tuning
+    from kernel_tuner import (
+        get_kernel_tuning_status, apply_kernel_tuning,
+        get_spoof_test_status, start_spoof_test_listener,
+        stop_spoof_test_listener, run_spoof_egress_test,
+    )
 
 def get_network_interfaces_info() -> Dict[str, Any]:
     return sys_get_network_interfaces_info(config_loader_fn=load_config)
@@ -985,6 +993,9 @@ class XForwarderWebHandler(BaseHTTPRequestHandler):
                 return
             elif subpath == "/api/system/optimize":
                 self.send_json({"ok": True, **get_kernel_tuning_status()})
+                return
+            elif subpath == "/api/system/spoof-test/status":
+                self.send_json({"ok": True, **get_spoof_test_status()})
                 return
             elif subpath == "/api/traffic/summary":
                 parsed_url = urlparse(self.path)
@@ -2121,6 +2132,44 @@ class XForwarderWebHandler(BaseHTTPRequestHandler):
             with _SERVICES_LOCK:
                 _SERVICES_CACHE["expires"] = 0.0
             self.send_json(res, 200 if res.get("ok") else 500)
+            return
+
+        elif subpath == "/api/system/spoof-test/listen":
+            if not _require_scope(self, "admin"):
+                return
+            if not isinstance(body, dict):
+                body = {}
+            action = str(body.get("action", "start")).strip().lower()
+            if action == "stop":
+                st = stop_spoof_test_listener()
+                self.send_json({"ok": True, "message": "UDP spoof test listener stopped.", "listener": st})
+                return
+            try:
+                p_num = int(body.get("port", 55199) or 55199)
+                t_sec = int(body.get("timeout", 180) or 180)
+            except (TypeError, ValueError):
+                self.send_json({"ok": False, "error": "Invalid port or timeout value."}, 400)
+                return
+            ok_l, msg_l, st_l = start_spoof_test_listener(port=p_num, timeout_sec=t_sec)
+            self.send_json({"ok": ok_l, "message": msg_l, "error": None if ok_l else msg_l, "listener": st_l}, 200 if ok_l else 400)
+            return
+
+        elif subpath == "/api/system/spoof-test/run":
+            if not _require_scope(self, "admin"):
+                return
+            if not isinstance(body, dict):
+                self.send_json({"ok": False, "error": "Invalid JSON body"}, 400)
+                return
+            peer_ip = str(body.get("peer_ip", "")).strip()
+            spoof_ip = str(body.get("spoof_ip", "")).strip()
+            try:
+                p_num = int(body.get("port", 55199) or 55199)
+                cnt = int(body.get("count", 5) or 5)
+            except (TypeError, ValueError):
+                self.send_json({"ok": False, "error": "Invalid port or count value."}, 400)
+                return
+            res = run_spoof_egress_test(peer_ip=peer_ip, spoof_ip=spoof_ip, port=p_num, count=cnt)
+            self.send_json(res, 200 if res.get("ok") else 400)
             return
 
         elif subpath == "/api/traffic/reset":

@@ -925,3 +925,180 @@ export function initKernelOptimizer(fetchStatusCallback) {
         });
     }
 }
+
+let spoofStatusPollTimer = null;
+
+function renderSpoofTestState(data) {
+    if (!data || typeof data !== "object") return;
+    const local = data.local || {};
+    const listener = data.listener || {};
+    const badge = document.getElementById("badgeSpoofLocalReady");
+    const pillsEl = document.getElementById("spoofLocalPills");
+    const btnToggle = document.getElementById("btnSpoofListenToggle");
+    const statusBox = document.getElementById("spoofListenStatusBox");
+    const cliCode = document.getElementById("spoofListenCliCmd");
+
+    if (badge) {
+        if (local.raw_socket_ok) {
+            badge.className = "stat-badge badge-good";
+            badge.textContent = "READY";
+        } else {
+            badge.className = "stat-badge badge-rose";
+            badge.textContent = "RESTRICTED";
+        }
+    }
+
+    if (pillsEl) {
+        const rawCls = local.raw_socket_ok ? "is-ok" : "is-bad";
+        const fwdCls = local.ip_forward === true ? "is-ok" : "is-bad";
+        const rpCls = local.rp_filter_all === 0 ? "is-ok" : "";
+        pillsEl.innerHTML = `
+            <span class="spoof-pill font-mono ${rawCls}">RAW_HDRINCL: ${local.raw_socket_ok ? "OK" : "FAIL"}</span>
+            <span class="spoof-pill font-mono ${fwdCls}">ip_forward: ${local.ip_forward === true ? "1" : (local.ip_forward === false ? "0" : "?")}</span>
+            <span class="spoof-pill font-mono ${rpCls}">rp_filter: ${local.rp_filter_all !== null && local.rp_filter_all !== undefined ? local.rp_filter_all : "?"}</span>
+            <span class="spoof-pill font-mono">WAN: ${escapeHtml(local.wan_ip || "--")}</span>
+        `;
+    }
+
+    const listenPort = listener.port || document.getElementById("inpSpoofListenPort")?.value || 55199;
+    const wanIpHint = local.wan_ip || "<PEER_IP>";
+    if (cliCode) {
+        cliCode.textContent = `curl -fsSL https://raw.githubusercontent.com/PouryaDe/XForwarder/main/scripts/test-dsr-spoof.sh | bash -s -- --outside ${wanIpHint} --port ${listenPort}`;
+    }
+
+    if (btnToggle) {
+        const sp = btnToggle.querySelector("span");
+        if (listener.active) {
+            btnToggle.className = "btn btn-danger";
+            if (sp) sp.textContent = t("network.spoof_listen_stop", {}, "Stop Listener");
+        } else {
+            btnToggle.className = "btn btn-secondary";
+            if (sp) sp.textContent = t("network.spoof_listen_start", {}, "Start Listener");
+        }
+        btnToggle.dataset.active = listener.active ? "1" : "0";
+    }
+
+    if (statusBox) {
+        if (listener.active) {
+            statusBox.style.display = "block";
+            statusBox.textContent = `LISTENING on UDP :${listener.port} · ${listener.remaining_seconds}s left · Ctrl: ${listener.total_ctrl || 0} · Spoof: ${listener.total_spoof || 0}`;
+            if (!spoofStatusPollTimer) {
+                spoofStatusPollTimer = setInterval(refreshSpoofTesterStatus, 3000);
+            }
+        } else {
+            statusBox.style.display = "none";
+            if (spoofStatusPollTimer) {
+                clearInterval(spoofStatusPollTimer);
+                spoofStatusPollTimer = null;
+            }
+        }
+    }
+}
+
+export async function refreshSpoofTesterStatus() {
+    if (!document.getElementById("cardDsrSpoofTester")) return;
+    try {
+        const res = await fetch(`${API_BASE}/system/spoof-test/status`, { headers: { "Accept": "application/json" } });
+        if (!res.ok) return;
+        const data = await res.json();
+        renderSpoofTestState(data);
+    } catch (_) {}
+}
+
+export function initDsrSpoofTester() {
+    const btnRefresh = document.getElementById("btnRefreshSpoofStatus");
+    const btnToggle = document.getElementById("btnSpoofListenToggle");
+    const btnCopyCli = document.getElementById("btnCopySpoofCli");
+    const btnRun = document.getElementById("btnRunSpoofTest");
+    const inpListenPort = document.getElementById("inpSpoofListenPort");
+
+    if (btnRefresh) {
+        btnRefresh.addEventListener("click", async () => {
+            btnRefresh.disabled = true;
+            await refreshSpoofTesterStatus();
+            btnRefresh.disabled = false;
+        });
+    }
+
+    if (btnCopyCli) {
+        btnCopyCli.addEventListener("click", async () => {
+            const cmdText = document.getElementById("spoofListenCliCmd")?.textContent || "";
+            if (!cmdText) return;
+            try {
+                await navigator.clipboard.writeText(cmdText);
+                showToast("CLI command copied!", "success");
+            } catch (_) {
+                showToast("Select and copy the CLI command manually.", "warn");
+            }
+        });
+    }
+
+    if (btnToggle) {
+        btnToggle.addEventListener("click", async () => {
+            const isActive = btnToggle.dataset.active === "1";
+            const port = parseInt(inpListenPort?.value || "55199", 10) || 55199;
+            btnToggle.disabled = true;
+            try {
+                const res = await fetch(`${API_BASE}/system/spoof-test/listen`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json", "Accept": "application/json" },
+                    body: JSON.stringify(isActive ? { action: "stop" } : { action: "start", port, timeout: 180 })
+                });
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok || !data.ok) throw new Error(data.error || `HTTP ${res.status}`);
+                showToast(data.message || "Listener updated.", "success");
+                await refreshSpoofTesterStatus();
+            } catch (err) {
+                showToast(`Listener error: ${err.message}`, "error");
+            } finally {
+                btnToggle.disabled = false;
+            }
+        });
+    }
+
+    if (btnRun) {
+        btnRun.addEventListener("click", async () => {
+            const peerIp = (document.getElementById("inpSpoofPeerIp")?.value || "").trim();
+            const spoofIp = (document.getElementById("inpSpoofSrcIp")?.value || "").trim();
+            const port = parseInt(document.getElementById("inpSpoofRunPort")?.value || "55199", 10) || 55199;
+            const resBox = document.getElementById("spoofTestResultBox");
+            if (!peerIp) {
+                showToast("Enter Peer Listener IP (e.g. your Iran server IP) first.", "error");
+                return;
+            }
+            btnRun.disabled = true;
+            const sp = btnRun.querySelector("span");
+            const prevTxt = sp ? sp.textContent : "";
+            if (sp) sp.textContent = t("network.spoof_running", {}, "Testing...");
+            try {
+                const res = await fetch(`${API_BASE}/system/spoof-test/run`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json", "Accept": "application/json" },
+                    body: JSON.stringify({ peer_ip: peerIp, spoof_ip: spoofIp, port, count: 5 })
+                });
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok || !data.ok) throw new Error(data.error || `HTTP ${res.status}`);
+                if (resBox) {
+                    const cls = data.verdict === "supported"
+                        ? "is-supported"
+                        : (data.verdict === "blocked" || data.verdict === "local_failed" ? "is-blocked" : "is-warn");
+                    resBox.className = `spoof-result-box ${cls}`;
+                    resBox.innerHTML = `
+                        <div><strong>${escapeHtml(data.message || "")}</strong></div>
+                        <div class="font-mono" style="margin-top:4px;font-size:0.74rem;">
+                            Real (${escapeHtml(data.wan_ip || "--")}): ${data.ctrl_delivered}/${data.count} &middot;
+                            Spoofed (${escapeHtml(data.spoof_ip || "--")}): ${data.spoof_delivered}/${data.count}
+                        </div>
+                    `;
+                    resBox.style.display = "block";
+                }
+                showToast(data.verdict === "supported" ? "Spoof / DSR Supported!" : (data.verdict === "blocked" ? "Spoof Blocked by Datacenter (uRPF)" : data.message), data.verdict === "supported" ? "success" : "warn");
+            } catch (err) {
+                showToast(`Spoof test failed: ${err.message}`, "error");
+            } finally {
+                btnRun.disabled = false;
+                if (sp && prevTxt) sp.textContent = prevTxt;
+            }
+        });
+    }
+}
