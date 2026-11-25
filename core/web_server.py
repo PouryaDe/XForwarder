@@ -33,6 +33,7 @@ from core.config_manager import (
     load_config, save_config, load_state, update_state_rules, remove_state_rules,
     get_config_path, get_state_file_path, validate_rule,
     get_rule_port_bounds, ports_overlap, rules_ports_overlap,
+    find_dsr_backend_conflict,
     export_config_data, import_config_data, is_valid_target,
     is_port_in_use_by_external_service, migrate_and_normalize_config,
     validate_update_transport_config, sanitize_config_for_api,
@@ -1095,15 +1096,22 @@ class XForwarderWebHandler(BaseHTTPRequestHandler):
             }, 409)
             return
 
+        other_rules = []
         for idx, r in enumerate(rules):
             if existing_idx is not None and idx == existing_idx:
                 continue
             if existing_idx is None and r.get("id") == rule_id:
                 continue
+            other_rules.append(r)
             if rules_ports_overlap(payload, r):
                 ex_label = r.get("port_range") or r.get("port")
                 self.send_json({"ok": False, "error": f"Port / range {rule_label} overlaps with existing rule '{r.get('id')}' ({ex_label})"}, 409)
                 return
+
+        dsr_conflict_err = find_dsr_backend_conflict(payload, other_rules)
+        if dsr_conflict_err:
+            self.send_json({"ok": False, "error": dsr_conflict_err}, 409)
+            return
 
         if not payload.get("port_range") and is_port_in_use_by_external_service(payload["port"], rule_id, rules):
             self.send_json({

@@ -10656,6 +10656,56 @@ input#formCategory::-webkit-list-button {
     background: #f8fafc;
 }
 
+.dsr-conflict-alert {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 8px;
+    padding: 8px 10px;
+    border-radius: 8px;
+    background: rgba(239, 68, 68, 0.12);
+    border: 1px solid rgba(239, 68, 68, 0.35);
+    color: var(--danger, #f87171);
+    font-size: 0.74rem;
+    line-height: 1.45;
+}
+
+.dsr-conflict-text {
+    flex: 1 1 200px;
+    font-weight: 500;
+}
+
+.btn-dsr-use-port {
+    flex: 0 0 auto;
+    padding: 4px 10px;
+    border-radius: 7px;
+    border: 1px solid rgba(239, 68, 68, 0.45);
+    background: rgba(239, 68, 68, 0.18);
+    color: #fecaca;
+    font-size: 0.72rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s ease, transform 0.15s ease;
+}
+
+.btn-dsr-use-port:hover {
+    background: rgba(239, 68, 68, 0.3);
+    transform: translateY(-1px);
+}
+
+[data-theme="light"] .dsr-conflict-alert {
+    background: rgba(239, 68, 68, 0.08);
+    color: #b91c1c;
+}
+
+[data-theme="light"] .btn-dsr-use-port {
+    background: #fee2e2;
+    color: #991b1b;
+    border-color: rgba(185, 28, 28, 0.35);
+}
+
 /* ==========================================================================
    XForwarder - Persian (Farsi) & RTL Layout Styles
    Typography (Vazirmatn), BiDi Text Handling, & Directional Overrides

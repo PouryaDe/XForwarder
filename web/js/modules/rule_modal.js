@@ -803,9 +803,72 @@ function buildDsrTunnelChipsHtml(type) {
     }).join("")}</div>`;
 }
 
+const DSR_STATELESS_TYPES = new Set(["nftables_dsr_synack", "nftables_dsr_direct"]);
+
+function normalizeDsrTarget(target) {
+    return String(target || "").trim().replace(/^\[|\]$/g, "").toLowerCase();
+}
+
+function getModalEditingRuleId() {
+    const idEl = document.getElementById("editRuleId") || document.getElementById("ruleId");
+    const raw = (idEl && idEl.value) ? idEl.value.trim() : "";
+    return raw || currentEditingRuleId || "";
+}
+
+function collectUsedDsrPorts(dType, target) {
+    const used = new Map();
+    if (!DSR_STATELESS_TYPES.has(dType)) return used;
+    const cleanT = normalizeDsrTarget(target);
+    const editId = getModalEditingRuleId();
+    (Array.isArray(currentRules) ? currentRules : []).forEach(r => {
+        if (!r || typeof r !== "object") return;
+        const rid = String(getRuleId(r) || r.id || "");
+        if (editId && rid === editId) return;
+        const rPort = parseInt(r.port || "0", 10);
+        if (!rPort) return;
+        (Array.isArray(r.destinations) ? r.destinations : []).forEach(d => {
+            if (!d || d.enabled === false || d.type !== dType) return;
+            const dT = normalizeDsrTarget(d.target);
+            if (cleanT && dT !== cleanT) return;
+            const effPort = parseInt(d.port || rPort, 10);
+            if (effPort >= 1 && effPort <= 65535 && !used.has(effPort)) {
+                used.set(effPort, r);
+            }
+        });
+    });
+    return used;
+}
+
+function suggestFreeDsrPort(dType, target, startPort = 24443) {
+    const used = collectUsedDsrPorts(dType, target);
+    const base = (startPort >= 1 && startPort <= 65535) ? startPort : 24443;
+    for (let p = base; p <= 65535; p++) {
+        if (!used.has(p)) return p;
+    }
+    for (let p = 1024; p < base; p++) {
+        if (!used.has(p)) return p;
+    }
+    return base;
+}
+
+function findConflictingDsrRule(dType, target, backendPort) {
+    if (!DSR_STATELESS_TYPES.has(dType)) return null;
+    const cleanT = normalizeDsrTarget(target);
+    const effPort = parseInt(backendPort || "0", 10);
+    if (!cleanT || !effPort) return null;
+    const used = collectUsedDsrPorts(dType, cleanT);
+    const conflict = used.get(effPort) || null;
+    if (!conflict) return null;
+    return {
+        conflictRule: conflict,
+        effPort,
+        suggestedPort: suggestFreeDsrPort(dType, cleanT, effPort < 65535 ? effPort + 1 : 24443)
+    };
+}
+
 function buildDsrFlowPreviewHtml(opts) {
     const type = opts.type || "";
-    if (type !== "nftables_dsr_synack" && type !== "nftables_dsr_direct") return "";
+    if (!DSR_STATELESS_TYPES.has(type)) return "";
     const inPort = escapeHtml(String(opts.inboundPort || "1036"));
     const target = escapeHtml(opts.target || "10.250.51.2");
     const port = escapeHtml(String(opts.port || opts.inboundPort || "24443"));
@@ -815,8 +878,28 @@ function buildDsrFlowPreviewHtml(opts) {
     const exitTarget = escapeHtml(opts.exitTarget || "");
     const exitPort = escapeHtml(String(opts.exitPort || opts.inboundPort || "1036"));
 
+    let conflictHtml = "";
+    if (opts.conflictInfo && opts.conflictInfo.conflictRule) {
+        const cr = opts.conflictInfo.conflictRule;
+        const ruleLbl = String(cr.port_range || cr.port || getRuleId(cr) || cr.id || "");
+        const sug = opts.conflictInfo.suggestedPort;
+        const msg = t("modal.dsr_conflict_msg", {
+            port: opts.conflictInfo.effPort,
+            target: opts.target || "",
+            rule: ruleLbl
+        }, `Port ${opts.conflictInfo.effPort} on ${opts.target || ""} is already used by rule :${ruleLbl}. Stateless DSR requires a unique backend port per rule.`);
+        const btnTxt = t("modal.dsr_use_port", { port: sug }, `Use :${sug}`);
+        conflictHtml = `
+            <div class="dsr-conflict-alert">
+                <span class="dsr-conflict-text">${escapeHtml(msg)}</span>
+                <button type="button" class="btn-dsr-use-port font-mono" onclick="window.applySuggestedDsrPort(this, ${sug})">${escapeHtml(btnTxt)}</button>
+            </div>
+        `;
+    }
+
     if (type === "nftables_dsr_synack") {
         return `
+            ${conflictHtml}
             <div class="dsr-flow-title">${escapeHtml(t("modal.dsr_flow_label", {}, "Traffic Flow Preview"))}</div>
             <div class="dsr-flow-line font-mono"><span class="dsr-flow-tag is-up">UP</span> Client → <b>${spoofIp}:${inPort}</b> → <b>${tunIface}</b> → <b>${target}:${port}</b></div>
             <div class="dsr-flow-line font-mono"><span class="dsr-flow-tag is-ret">RET</span> SYN-ACK returns via <b>${tunIface}</b> · Download goes <b>Direct</b> from Outside</div>
@@ -826,6 +909,7 @@ function buildDsrFlowPreviewHtml(opts) {
         ? `→ <b>HAProxy</b> → <b>${exitTarget}:${exitPort}</b>`
         : `→ <b>Local Service</b> <span class="dsr-flow-dim">(on this server)</span>`;
     return `
+        ${conflictHtml}
         <div class="dsr-flow-title">${escapeHtml(t("modal.dsr_flow_label", {}, "Traffic Flow Preview"))}</div>
         <div class="dsr-flow-line font-mono"><span class="dsr-flow-tag is-up">IN</span> <b>${tunIface}</b> → <b>${target}:${port}</b> ${hop2}</div>
         <div class="dsr-flow-line font-mono"><span class="dsr-flow-tag is-ret">RET</span> SYN-ACK → <b>${tunIface}</b> · Download → <b>${wanIface}</b> as <b>${spoofIp}:${inPort}</b></div>
@@ -837,7 +921,7 @@ export function refreshDsrFlowPreview(box) {
     const guideEl = box.querySelector(".dest-dsr-flow-guide");
     if (!guideEl) return;
     const type = box.querySelector(".dest-type")?.value || "";
-    if (type !== "nftables_dsr_synack" && type !== "nftables_dsr_direct") {
+    if (!DSR_STATELESS_TYPES.has(type)) {
         guideEl.style.display = "none";
         guideEl.innerHTML = "";
         return;
@@ -854,6 +938,9 @@ export function refreshDsrFlowPreview(box) {
     const exitPort = box.querySelector(".dest-exit-port")?.value.trim() || "";
     const net = lastNetwork || {};
     const primaryWanIp = ((net.server_ips || []).find(s => s && s.is_primary && s.version === 4) || {}).ip || "";
+    const isEnabled = box.querySelector(".dest-enabled-check")?.checked ?? true;
+    const effPortNum = parseInt(port || (inboundSpec ? inboundSpec.start : inboundPort) || "0", 10);
+    const conflictInfo = isEnabled ? findConflictingDsrRule(type, target, effPortNum) : null;
     guideEl.innerHTML = buildDsrFlowPreviewHtml({
         type,
         inboundPort,
@@ -864,7 +951,8 @@ export function refreshDsrFlowPreview(box) {
         exitTarget,
         exitPort,
         wanIp: primaryWanIp,
-        wanIface: net.primary_interface || "eth0"
+        wanIface: net.primary_interface || "eth0",
+        conflictInfo
     });
     guideEl.style.display = "block";
 }
@@ -903,6 +991,20 @@ if (typeof window !== "undefined") {
                 if (menu) menu.innerHTML = buildTunnelIfaceMenuHtml(ifaceName, isIngress, ip || "");
                 if (triggerText) triggerText.innerHTML = buildTunnelIfaceTriggerHtml(ifaceName, isIngress);
             }
+        }
+        refreshDsrFlowPreview(box);
+    };
+    window.applySuggestedDsrPort = function (btn, port) {
+        if (!btn || !port) return;
+        const box = btn.closest(".priority-box");
+        if (!box) return;
+        const portInput = box.querySelector(".dest-port");
+        if (portInput) {
+            portInput.value = String(port);
+            portInput.dataset.autoSynced = "false";
+            portInput.dispatchEvent(new Event("input", { bubbles: true }));
+            portInput.dispatchEvent(new Event("change", { bubbles: true }));
+            portInput.focus();
         }
         refreshDsrFlowPreview(box);
     };
@@ -965,9 +1067,10 @@ export function renderDestinationRow(dest, index, totalCount) {
     const portLabelText = isDsrSynack
         ? t("modal.port_tunnel_relay", {}, "Tunnel Relay Port")
         : (isDsrDirect ? t("modal.port_tunnel_listen", {}, "Tunnel Listen Port") : t("modal.dest_port", {}, "Port"));
+    const dsrHintPort = (isDsrSynack || isDsrDirect) ? suggestFreeDsrPort(type, target) : 24443;
     const portPlaceholder = isRangeRule
         ? escapeHtml(t("modal.dest_port_range_placeholder", {}, "Same range or single port"))
-        : ((isDsrSynack || isDsrDirect) ? "24443" : "Default");
+        : ((isDsrSynack || isDsrDirect) ? String(dsrHintPort) : "Default");
     const tunnelQuickChipsHtml = buildDsrTunnelChipsHtml(type);
 
     const detectedServerIps = getDetectedServerIps();
@@ -1335,9 +1438,11 @@ export function handleDestTypeChange(selectEl) {
     if (singlePortInput) {
         const inboundSpec = getCurrentInboundSpec();
         const isRangeRule = Boolean(inboundSpec && inboundSpec.rangeStr);
+        const curTarget = targetInput ? targetInput.value.trim() : "";
+        const suggestedDsrPort = (isDsrSynack || isDsrDirect) ? suggestFreeDsrPort(val, curTarget) : 24443;
         singlePortInput.placeholder = isRangeRule
             ? t("modal.dest_port_range_placeholder", {}, "Same range or single port")
-            : ((isDsrSynack || isDsrDirect) ? "Backend Port (e.g. 24443)" : "Default");
+            : ((isDsrSynack || isDsrDirect) ? `Backend Port (e.g. ${suggestedDsrPort})` : "Default");
     }
     if (isDsrSynack || isDsrDirect) {
         const protoEl = document.getElementById("formProto");
@@ -1878,6 +1983,10 @@ export function initRuleModal(fetchStatusCallback) {
                 const box = ev.target.closest(".priority-box");
                 if (box) refreshLbBoxState(box);
             }
+            if (ev.target.classList?.contains("dest-enabled-check")) {
+                const box = ev.target.closest(".priority-box");
+                if (box) refreshDsrFlowPreview(box);
+            }
         });
 
         destContainer.addEventListener("input", (ev) => {
@@ -2174,6 +2283,20 @@ export function initRuleModal(fetchStatusCallback) {
                     }
                     if (d.exit_target && d.exit_target.trim() === d.target.trim() && (d.exit_port || inbound.start) === (d.port || inbound.start)) {
                         showToast(`Priority #${i + 1} Exit Server cannot point to the same Local Tunnel IP and Port`, "error");
+                        return;
+                    }
+                }
+                if (d.enabled !== false && DSR_STATELESS_TYPES.has(d.type)) {
+                    const effDsrPort = d.port || inbound.start;
+                    const conflict = findConflictingDsrRule(d.type, d.target, effDsrPort);
+                    if (conflict && conflict.conflictRule) {
+                        const cr = conflict.conflictRule;
+                        const ruleLbl = cr.port_range || cr.port || getRuleId(cr) || cr.id || "";
+                        showToast(t("modal.dsr_conflict_msg", {
+                            port: effDsrPort,
+                            target: d.target,
+                            rule: ruleLbl
+                        }, `Priority #${i + 1}: Port ${effDsrPort} on ${d.target} is already used by rule :${ruleLbl} (try ${conflict.suggestedPort})`), "error");
                         return;
                     }
                 }

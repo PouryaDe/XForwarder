@@ -1187,6 +1187,108 @@ def rules_ports_overlap(rule_a: dict, rule_b: dict) -> bool:
     return True
 
 
+DSR_STATELESS_MAP_TYPES = ("nftables_dsr_synack", "nftables_dsr_direct")
+
+
+def _clean_dsr_target(target: str) -> str:
+    return str(target or "").strip().strip("[]").lower()
+
+
+def _collect_used_dsr_ports(d_type: str, target: str, rules: List[dict], exclude_rule_id: Optional[str] = None) -> dict:
+    """Returns mapping of effective backend port -> conflicting rule dict for `(d_type, clean_target)`."""
+    clean_t = _clean_dsr_target(target)
+    used: dict = {}
+    if d_type not in DSR_STATELESS_MAP_TYPES or not clean_t or not isinstance(rules, list):
+        return used
+    for r in rules:
+        if not isinstance(r, dict):
+            continue
+        rid = str(r.get("id") or "")
+        if exclude_rule_id and rid == str(exclude_rule_id):
+            continue
+        r_start, _, _ = get_rule_port_bounds(r)
+        if r_start is None:
+            continue
+        for d in (r.get("destinations") or []):
+            if not isinstance(d, dict) or not d.get("enabled", True):
+                continue
+            if str(d.get("type") or "") != d_type:
+                continue
+            if _clean_dsr_target(d.get("target")) != clean_t:
+                continue
+            try:
+                eff_port = int(d.get("port") or r_start)
+            except (TypeError, ValueError):
+                continue
+            if 1 <= eff_port <= 65535 and eff_port not in used:
+                used[eff_port] = r
+    return used
+
+
+def suggest_free_dsr_port(
+    d_type: str,
+    target: str,
+    existing_rules: List[dict],
+    start_port: int = 24443,
+    exclude_rule_id: Optional[str] = None,
+) -> int:
+    """Returns the first unused backend port for a stateless DSR `(d_type, target)` starting at `start_port`."""
+    used = _collect_used_dsr_ports(d_type, target, existing_rules, exclude_rule_id=exclude_rule_id)
+    base = start_port if (isinstance(start_port, int) and 1 <= start_port <= 65535) else 24443
+    for candidate in range(base, 65536):
+        if candidate not in used:
+            return candidate
+    for candidate in range(1024, base):
+        if candidate not in used:
+            return candidate
+    return base
+
+
+def find_dsr_backend_conflict(rule: dict, existing_rules: List[dict]) -> Optional[str]:
+    """
+    Checks whether any enabled stateless DSR destination (`nftables_dsr_synack` or `nftables_dsr_direct`)
+    shares the exact same `(type, target, effective_backend_port)` with another rule.
+    Because `notrack` DSR bypasses Linux conntrack, two rules sharing a backend port cause
+    return SYN-ACK sport ambiguity and Outside HAProxy bind collisions.
+    """
+    if not isinstance(rule, dict) or not isinstance(existing_rules, list):
+        return None
+    r_start, _, _ = get_rule_port_bounds(rule)
+    if r_start is None:
+        return None
+    rid = str(rule.get("id") or "")
+    for idx, d in enumerate(rule.get("destinations") or [], start=1):
+        if not isinstance(d, dict) or not d.get("enabled", True):
+            continue
+        d_type = str(d.get("type") or "")
+        if d_type not in DSR_STATELESS_MAP_TYPES:
+            continue
+        raw_target = str(d.get("target") or "").strip()
+        if not raw_target:
+            continue
+        try:
+            eff_port = int(d.get("port") or r_start)
+        except (TypeError, ValueError):
+            continue
+        used = _collect_used_dsr_ports(d_type, raw_target, existing_rules, exclude_rule_id=rid or None)
+        conflict_rule = used.get(eff_port)
+        if conflict_rule is not None:
+            ex_label = conflict_rule.get("port_range") or conflict_rule.get("port") or conflict_rule.get("id")
+            suggested = suggest_free_dsr_port(
+                d_type,
+                raw_target,
+                existing_rules,
+                start_port=(eff_port + 1 if eff_port < 65535 else 24443),
+                exclude_rule_id=rid or None,
+            )
+            return (
+                f"Priority #{idx} ({d_type}): backend port {eff_port} on {raw_target} is already used by rule "
+                f"'{conflict_rule.get('id')}' (:{ex_label}). Stateless DSR requires a unique backend port per rule "
+                f"(try {suggested})."
+            )
+    return None
+
+
 def is_valid_target(target: str) -> bool:
     """Strictly validates if a destination target is a valid IPv4, IPv6, or RFC hostname."""
     if not target or not isinstance(target, str):
@@ -1771,6 +1873,21 @@ def import_config_data(imported_raw: Any, mode: str = "merge") -> Tuple[bool, st
             return False, f"Rule for port {label} is invalid: {err}", {}
         validated_rules.append(r)
 
+    if mode == "replace":
+        candidate_rules = list(validated_rules)
+    else:  # merge
+        current_rules = current_cfg.get("rules", [])
+        rules_map = {str(r.get("port_range") or r.get("port")): r for r in current_rules if isinstance(r, dict)}
+        for vr in validated_rules:
+            rules_map[str(vr.get("port_range") or vr.get("port"))] = vr
+        candidate_rules = list(rules_map.values())
+
+    for idx, cr in enumerate(candidate_rules):
+        other_rules = candidate_rules[:idx] + candidate_rules[idx + 1:]
+        dsr_err = find_dsr_backend_conflict(cr, other_rules)
+        if dsr_err:
+            return False, dsr_err, {}
+
     # Atomic Pre-Update Backup
     cfg_path = get_config_path()
     bak_path = f"{cfg_path}.bak.{int(time.time())}"
@@ -1782,8 +1899,8 @@ def import_config_data(imported_raw: Any, mode: str = "merge") -> Tuple[bool, st
     except Exception as e:
         print(f"[WARN] Failed to write pre-import backup {bak_path}: {e}", file=sys.stderr)
 
+    current_cfg["rules"] = candidate_rules
     if mode == "replace":
-        current_cfg["rules"] = validated_rules
         if "wan_interface" in imported_cfg and imported_cfg["wan_interface"]:
             current_cfg["wan_interface"] = imported_cfg["wan_interface"]
         for param in (
@@ -1796,12 +1913,6 @@ def import_config_data(imported_raw: Any, mode: str = "merge") -> Tuple[bool, st
         ):
             if param in imported_cfg:
                 current_cfg[param] = imported_cfg[param]
-    else:  # merge
-        current_rules = current_cfg.get("rules", [])
-        rules_map = {str(r.get("port_range") or r.get("port")): r for r in current_rules if isinstance(r, dict)}
-        for vr in validated_rules:
-            rules_map[str(vr.get("port_range") or vr.get("port"))] = vr
-        current_cfg["rules"] = list(rules_map.values())
 
     if save_config(current_cfg):
         return True, "", {

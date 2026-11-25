@@ -17,7 +17,10 @@ REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if REPO_ROOT not in sys.path:
     sys.path.insert(0, REPO_ROOT)
 
-from core.config_manager import validate_rule, migrate_and_normalize_config, is_nftables_type
+from core.config_manager import (
+    validate_rule, migrate_and_normalize_config, is_nftables_type,
+    find_dsr_backend_conflict, suggest_free_dsr_port, import_config_data
+)
 from core.firewall import generate_nftables_ruleset
 from core.engine import XForwarderEngine
 from core.prober import validate_probe_route, check_destination
@@ -1244,6 +1247,172 @@ class TestNFTablesDSRMethods(unittest.TestCase):
         self.assertIn("exit_port:", modal_js)
         self.assertIn("align-items: start;", modals_css)
         self.assertIn(".dest-exit-port-group", modals_css)
+
+    def test_dsr_backend_port_conflict_detection_import_and_api(self):
+        """Ensure stateless DSR rules cannot silently share (type, target, backend_port) across rules."""
+        rule_1036_synack = {
+            "id": "rule-1036",
+            "port": 1036,
+            "protocol": "tcp",
+            "destinations": [{
+                "priority": 1,
+                "type": "nftables_dsr_synack",
+                "target": "10.250.51.2",
+                "port": 24443,
+                "tunnel_iface": "esp1",
+                "enabled": True,
+            }],
+        }
+        rule_2036_conflict = {
+            "id": "rule-2036",
+            "port": 2036,
+            "protocol": "tcp",
+            "destinations": [{
+                "priority": 1,
+                "type": "nftables_dsr_synack",
+                "target": "10.250.51.2",
+                "port": 24443,
+                "tunnel_iface": "esp1",
+                "enabled": True,
+            }],
+        }
+        err = find_dsr_backend_conflict(rule_2036_conflict, [rule_1036_synack])
+        self.assertIsNotNone(err)
+        self.assertIn("24443", err)
+        self.assertIn("24444", err)
+        self.assertEqual(suggest_free_dsr_port("nftables_dsr_synack", "10.250.51.2", [rule_1036_synack]), 24444)
+
+        # Updating the same rule on 24443 is allowed
+        self.assertIsNone(find_dsr_backend_conflict(rule_1036_synack, [rule_1036_synack]))
+
+        # Distinct backend port 24444, distinct tunnel IP, or disabled destination are allowed
+        rule_2036_ok = {
+            **rule_2036_conflict,
+            "destinations": [{**rule_2036_conflict["destinations"][0], "port": 24444}],
+        }
+        self.assertIsNone(find_dsr_backend_conflict(rule_2036_ok, [rule_1036_synack]))
+
+        rule_2036_other_ip = {
+            **rule_2036_conflict,
+            "destinations": [{**rule_2036_conflict["destinations"][0], "target": "10.250.52.2"}],
+        }
+        self.assertIsNone(find_dsr_backend_conflict(rule_2036_other_ip, [rule_1036_synack]))
+
+        rule_2036_disabled = {
+            **rule_2036_conflict,
+            "destinations": [{**rule_2036_conflict["destinations"][0], "enabled": False}],
+        }
+        self.assertIsNone(find_dsr_backend_conflict(rule_2036_disabled, [rule_1036_synack]))
+
+        # nftables_dsr_direct collision check (including omitted port -> defaults to inbound rule port)
+        rule_direct_a = {
+            "id": "rule-1036",
+            "port": 1036,
+            "protocol": "tcp",
+            "destinations": [{
+                "priority": 1,
+                "type": "nftables_dsr_direct",
+                "target": "10.250.51.2",
+                "port": 24443,
+                "spoof_ip": "198.51.100.99",
+                "ingress_iface": "esp1",
+                "enabled": True,
+            }],
+        }
+        rule_direct_b = {
+            "id": "rule-2036",
+            "port": 2036,
+            "protocol": "tcp",
+            "destinations": [{
+                "priority": 1,
+                "type": "nftables_dsr_direct",
+                "target": "10.250.51.2",
+                "port": 24443,
+                "spoof_ip": "198.51.100.99",
+                "ingress_iface": "esp1",
+                "enabled": True,
+            }],
+        }
+        self.assertIsNotNone(find_dsr_backend_conflict(rule_direct_b, [rule_direct_a]))
+
+        # import_config_data rejects conflicting DSR rules and accepts unique backend ports
+        with tempfile.TemporaryDirectory() as tmp:
+            cfg_path = os.path.join(tmp, "config.json")
+            with open(cfg_path, "w", encoding="utf-8") as f:
+                json.dump({"schema_version": 3, "wan_interface": "eth0", "rules": []}, f)
+            with patch("core.config_manager.get_config_path", return_value=cfg_path):
+                ok_bad, msg_bad, _ = import_config_data(json.dumps([rule_direct_a, rule_direct_b]), mode="replace")
+                self.assertFalse(ok_bad)
+                self.assertIn("24443", msg_bad)
+
+                rule_direct_b_ok = {
+                    **rule_direct_b,
+                    "destinations": [{**rule_direct_b["destinations"][0], "port": 24444}],
+                }
+                ok_good, msg_good, info = import_config_data(json.dumps([rule_direct_a, rule_direct_b_ok]), mode="replace")
+                self.assertTrue(ok_good, msg_good)
+                self.assertEqual(info["count"], 2)
+
+            # _save_rule_payload API enforces 409 on backend DSR collision
+            from core import web_server
+            sent = []
+            handler = web_server.XForwarderWebHandler.__new__(web_server.XForwarderWebHandler)
+            handler.send_json = lambda obj, status=200: sent.append((status, obj))
+
+            def _load_tmp_cfg():
+                with open(cfg_path, encoding="utf-8") as fp:
+                    return json.load(fp)
+
+            def _save_tmp_cfg(cfg):
+                with open(cfg_path, "w", encoding="utf-8") as fp:
+                    json.dump(cfg, fp)
+                return True
+
+            with patch.object(web_server, "load_config", side_effect=_load_tmp_cfg), \
+                 patch.object(web_server, "save_config", side_effect=_save_tmp_cfg), \
+                 patch.object(web_server, "is_port_in_use_by_external_service", return_value=False), \
+                 patch.object(web_server, "sync_rules_and_notify", return_value=(True, [])):
+                # Attempt conflicting port 24443 on new rule 3036
+                handler._save_rule_payload({
+                    "id": "rule-3036",
+                    "port": 3036,
+                    "protocol": "tcp",
+                    "destinations": [{
+                        "priority": 1,
+                        "type": "nftables_dsr_direct",
+                        "target": "10.250.51.2",
+                        "port": 24443,
+                        "spoof_ip": "198.51.100.99",
+                        "ingress_iface": "esp1",
+                        "enabled": True,
+                    }],
+                })
+                self.assertEqual(sent[-1][0], 409)
+                self.assertIn("24445", sent[-1][1]["error"])
+
+                # Unique port 24445 succeeds with 200
+                handler._save_rule_payload({
+                    "id": "rule-3036",
+                    "port": 3036,
+                    "protocol": "tcp",
+                    "destinations": [{
+                        "priority": 1,
+                        "type": "nftables_dsr_direct",
+                        "target": "10.250.51.2",
+                        "port": 24445,
+                        "spoof_ip": "198.51.100.99",
+                        "ingress_iface": "esp1",
+                        "enabled": True,
+                    }],
+                })
+                self.assertEqual(sent[-1][0], 200)
+
+        # UI includes conflict guard and quick-apply action
+        modal_js_path = os.path.join(REPO_ROOT, "web", "js", "modules", "rule_modal.js")
+        with open(modal_js_path, "r", encoding="utf-8") as mf:
+            modal_js = mf.read()
+        self.assertIn("findConflictingDsrRule", modal_js)
+        self.assertIn("applySuggestedDsrPort", modal_js)
 
 
 if __name__ == "__main__":
