@@ -348,8 +348,7 @@ function refreshRangeConstraintUI() {
             selectEl.innerHTML = buildDestTypeOptionsHtml(prev, isRange);
             if (isRange && !isRangeCompatibleType(prev)) selectEl.value = "nftables";
             handleDestTypeChange(selectEl);
-        }
-        if (portEl) {
+        } else if (portEl) {
             portEl.placeholder = isRange
                 ? (t("modal.dest_port_range_placeholder", {}, "Same range or single port"))
                 : "Default";
@@ -839,16 +838,21 @@ function collectUsedDsrPorts(dType, target) {
     return used;
 }
 
-function suggestFreeDsrPort(dType, target, startPort = 24443) {
+function suggestFreeDsrPort(dType, target, preferredPort = null) {
     const used = collectUsedDsrPorts(dType, target);
-    const base = (startPort >= 1 && startPort <= 65535) ? startPort : 24443;
-    for (let p = base; p <= 65535; p++) {
+    const parsedPref = parseInt(preferredPort || "0", 10);
+    const startFrom = (parsedPref >= 1 && parsedPref <= 65535) ? parsedPref : 24443;
+    if (!used.has(startFrom)) return startFrom;
+    for (let p = 24443; p <= 65535; p++) {
         if (!used.has(p)) return p;
     }
-    for (let p = 1024; p < base; p++) {
+    for (let p = startFrom + 1; p <= 65535; p++) {
         if (!used.has(p)) return p;
     }
-    return base;
+    for (let p = 1024; p < 24443; p++) {
+        if (!used.has(p)) return p;
+    }
+    return startFrom;
 }
 
 function findConflictingDsrRule(dType, target, backendPort) {
@@ -859,10 +863,14 @@ function findConflictingDsrRule(dType, target, backendPort) {
     const used = collectUsedDsrPorts(dType, cleanT);
     const conflict = used.get(effPort) || null;
     if (!conflict) return null;
+    const inboundSpec = getCurrentInboundSpec();
+    const fallbackPref = (inboundSpec && inboundSpec.start && inboundSpec.start !== effPort)
+        ? inboundSpec.start
+        : (effPort < 65535 ? effPort + 1 : 24443);
     return {
         conflictRule: conflict,
         effPort,
-        suggestedPort: suggestFreeDsrPort(dType, cleanT, effPort < 65535 ? effPort + 1 : 24443)
+        suggestedPort: suggestFreeDsrPort(dType, cleanT, fallbackPref)
     };
 }
 
@@ -871,7 +879,7 @@ function buildDsrFlowPreviewHtml(opts) {
     if (!DSR_STATELESS_TYPES.has(type)) return "";
     const inPort = escapeHtml(String(opts.inboundPort || "1036"));
     const target = escapeHtml(opts.target || "10.250.51.2");
-    const port = escapeHtml(String(opts.port || opts.inboundPort || "24443"));
+    const port = escapeHtml(String(opts.port || opts.inboundPort || "1036"));
     const spoofIp = escapeHtml(opts.spoofIp || (opts.wanIp || "Iran-IP"));
     const tunIface = escapeHtml(opts.iface || "esp1");
     const wanIface = escapeHtml(opts.wanIface || "eth0");
@@ -1067,10 +1075,15 @@ export function renderDestinationRow(dest, index, totalCount) {
     const portLabelText = isDsrSynack
         ? t("modal.port_tunnel_relay", {}, "Tunnel Relay Port")
         : (isDsrDirect ? t("modal.port_tunnel_listen", {}, "Tunnel Listen Port") : t("modal.dest_port", {}, "Port"));
-    const dsrHintPort = (isDsrSynack || isDsrDirect) ? suggestFreeDsrPort(type, target) : 24443;
+    const inboundStart = (inboundSpec && !inboundSpec.rangeStr && inboundSpec.start) ? String(inboundSpec.start) : "";
+    const dsrHintPort = (isDsrSynack || isDsrDirect) ? suggestFreeDsrPort(type, target, inboundStart || 24443) : 24443;
     const portPlaceholder = isRangeRule
         ? escapeHtml(t("modal.dest_port_range_placeholder", {}, "Same range or single port"))
-        : ((isDsrSynack || isDsrDirect) ? String(dsrHintPort) : "Default");
+        : ((isDsrSynack || isDsrDirect) ? String(dsrHintPort) : (inboundStart || "Default"));
+    const exitPortPlaceholder = inboundStart || "Default";
+    const hasSavedExitPort = (dest.exit_port !== undefined && dest.exit_port !== null && String(dest.exit_port).trim() !== "");
+    const exitPortVal = hasSavedExitPort ? String(dest.exit_port) : inboundStart;
+    const exitPortAutoSynced = !hasSavedExitPort;
     const tunnelQuickChipsHtml = buildDsrTunnelChipsHtml(type);
 
     const detectedServerIps = getDetectedServerIps();
@@ -1239,7 +1252,7 @@ export function renderDestinationRow(dest, index, totalCount) {
                 </div>
                 <div class="form-group dest-exit-port-group">
                     <label>${escapeHtml(t("modal.exit_port", {}, "Exit Port"))}</label>
-                    <input type="text" inputmode="numeric" class="form-control font-mono dest-exit-port" placeholder="${escapeHtml(String((inboundSpec && inboundSpec.start) || 1036))}" value="${escapeHtml(dest.exit_port !== undefined && dest.exit_port !== null ? String(dest.exit_port) : "")}">
+                    <input type="text" inputmode="numeric" class="form-control font-mono dest-exit-port" placeholder="${escapeHtml(exitPortPlaceholder)}" value="${escapeHtml(exitPortVal)}" data-auto-synced="${exitPortAutoSynced ? "true" : "false"}">
                 </div>
             </div>
         </div>
@@ -1438,11 +1451,26 @@ export function handleDestTypeChange(selectEl) {
     if (singlePortInput) {
         const inboundSpec = getCurrentInboundSpec();
         const isRangeRule = Boolean(inboundSpec && inboundSpec.rangeStr);
+        const inSingleStr = (!isRangeRule && inboundSpec && inboundSpec.start) ? String(inboundSpec.start) : "";
         const curTarget = targetInput ? targetInput.value.trim() : "";
-        const suggestedDsrPort = (isDsrSynack || isDsrDirect) ? suggestFreeDsrPort(val, curTarget) : 24443;
+        const suggestedDsrPort = (isDsrSynack || isDsrDirect) ? suggestFreeDsrPort(val, curTarget, inSingleStr || 24443) : 24443;
         singlePortInput.placeholder = isRangeRule
             ? t("modal.dest_port_range_placeholder", {}, "Same range or single port")
-            : ((isDsrSynack || isDsrDirect) ? `Backend Port (e.g. ${suggestedDsrPort})` : "Default");
+            : ((isDsrSynack || isDsrDirect) ? String(suggestedDsrPort) : (inSingleStr || "Default"));
+        if ((isDsrSynack || isDsrDirect) && inSingleStr && !singlePortInput.value.trim() && singlePortInput.dataset.autoSynced !== "false") {
+            singlePortInput.value = String(suggestedDsrPort);
+            singlePortInput.dataset.autoSynced = (String(suggestedDsrPort) === inSingleStr) ? "true" : "false";
+        }
+    }
+    const exitPortInput = row.querySelector(".dest-exit-port");
+    if (exitPortInput) {
+        const inboundSpec = getCurrentInboundSpec();
+        const inExitStr = (inboundSpec && !inboundSpec.rangeStr && inboundSpec.start) ? String(inboundSpec.start) : "";
+        exitPortInput.placeholder = inExitStr || "Default";
+        if (isDsrDirect && inExitStr && !exitPortInput.value.trim() && exitPortInput.dataset.autoSynced !== "false") {
+            exitPortInput.value = inExitStr;
+            exitPortInput.dataset.autoSynced = "true";
+        }
     }
     if (isDsrSynack || isDsrDirect) {
         const protoEl = document.getElementById("formProto");
@@ -2067,7 +2095,7 @@ export function initRuleModal(fetchStatusCallback) {
             if (box && (ev.target.classList?.contains("dest-target") || ev.target.classList?.contains("dest-port") || ev.target.classList?.contains("dest-spoof-ip") || ev.target.classList?.contains("dest-exit-target") || ev.target.classList?.contains("dest-exit-port"))) {
                 refreshDsrFlowPreview(box);
             }
-            if (!ev.target || !ev.target.classList || !ev.target.classList.contains("dest-port")) return;
+            if (!ev.target || !ev.target.classList || (!ev.target.classList.contains("dest-port") && !ev.target.classList.contains("dest-exit-port"))) return;
             const curVal = ev.target.value.trim();
             const parsedIn = parsePortSpec(formPortInput ? formPortInput.value : "");
             const inVal = parsedIn ? String(parsedIn.rangeStr || parsedIn.start) : (formPortInput ? formPortInput.value.trim() : "");
@@ -2084,12 +2112,22 @@ export function initRuleModal(fetchStatusCallback) {
             }
             refreshRangeConstraintUI();
             const fillVal = parsed ? String(parsed.rangeStr || parsed.start) : rawVal;
+            const singleFillVal = (parsed && !parsed.rangeStr) ? String(parsed.start) : (!parsed ? rawVal : "");
             const portInputs = document.querySelectorAll("#destinationsContainer .dest-port");
             portInputs.forEach(input => {
                 const cur = input.value.trim();
                 const wasAuto = input.dataset.autoSynced !== "false";
                 if (wasAuto && (cur === "" || cur === lastAutoInboundPort)) {
                     input.value = fillVal;
+                    input.dataset.autoSynced = "true";
+                }
+            });
+            document.querySelectorAll("#destinationsContainer .dest-exit-port").forEach(input => {
+                input.placeholder = singleFillVal || "Default";
+                const cur = input.value.trim();
+                const wasAuto = input.dataset.autoSynced !== "false";
+                if (wasAuto && (cur === "" || cur === lastAutoInboundPort)) {
+                    input.value = singleFillVal;
                     input.dataset.autoSynced = "true";
                 }
             });

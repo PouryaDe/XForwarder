@@ -1413,6 +1413,8 @@ class TestNFTablesDSRMethods(unittest.TestCase):
             modal_js = mf.read()
         self.assertIn("findConflictingDsrRule", modal_js)
         self.assertIn("applySuggestedDsrPort", modal_js)
+        self.assertIn("exitPortVal", modal_js)
+        self.assertIn("suggestFreeDsrPort(type, target, inboundStart", modal_js)
 
 
 if __name__ == "__main__":
