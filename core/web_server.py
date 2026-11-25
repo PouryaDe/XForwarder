@@ -81,6 +81,11 @@ except ImportError:
     except ImportError:
         flush_conntrack = lambda port, proto=None: None
 
+try:
+    from core.kernel_tuner import get_kernel_tuning_status, apply_kernel_tuning
+except ImportError:
+    from kernel_tuner import get_kernel_tuning_status, apply_kernel_tuning
+
 def get_network_interfaces_info() -> Dict[str, Any]:
     return sys_get_network_interfaces_info(config_loader_fn=load_config)
 
@@ -977,6 +982,9 @@ class XForwarderWebHandler(BaseHTTPRequestHandler):
             elif subpath == "/api/system/update/status":
                 data = get_update_status()
                 self.send_json(data)
+                return
+            elif subpath == "/api/system/optimize":
+                self.send_json({"ok": True, **get_kernel_tuning_status()})
                 return
             elif subpath == "/api/traffic/summary":
                 parsed_url = urlparse(self.path)
@@ -2101,6 +2109,18 @@ class XForwarderWebHandler(BaseHTTPRequestHandler):
                 self.send_json({"ok": True, "service": svc, "message": msg, "reconnecting": is_reconnecting})
             else:
                 self.send_json({"ok": False, "service": svc, "error": msg}, 400 if "Invalid" in msg else 500)
+            return
+
+        elif subpath == "/api/system/optimize":
+            if not _require_scope(self, "admin"):
+                return
+            if not isinstance(body, dict):
+                body = {}
+            reset_existing = bool(body.get("reset_existing", False))
+            res = apply_kernel_tuning(reset_existing=reset_existing)
+            with _SERVICES_LOCK:
+                _SERVICES_CACHE["expires"] = 0.0
+            self.send_json(res, 200 if res.get("ok") else 500)
             return
 
         elif subpath == "/api/traffic/reset":

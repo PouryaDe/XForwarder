@@ -1318,6 +1318,65 @@
                         </div>
                     </div>
 
+                    <!-- Kernel & Network Optimizer Card -->
+                    <div class="overview-card" id="cardKernelOptimizer">
+                        <div class="overview-card-header">
+                            <div class="overview-card-title">
+                                <div class="stat-icon icon-emerald" style="width:36px;height:36px;">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+                                    </svg>
+                                </div>
+                                <div>
+                                    <div class="service-row-title-line">
+                                        <h3 data-i18n="services.kernel_opt_title">Kernel &amp; Network Optimizer</h3>
+                                        <span class="stat-badge" id="badgeKernelOptStatus" data-i18n="status.checking">CHECKING</span>
+                                    </div>
+                                    <span class="overview-card-sub" data-i18n="services.kernel_opt_sub">Adaptive BBR, fq qdisc, conntrack scaling, MTU probing &amp; ESP Spoof / DSR safety (rp_filter=0)</span>
+                                </div>
+                            </div>
+                            <div class="service-row-actions">
+                                <button type="button" class="btn btn-secondary service-action-btn" id="btnRefreshKernelOpt">
+                                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+                                    <span data-i18n="services.kernel_opt_refresh">Refresh</span>
+                                </button>
+                                <button type="button" class="btn btn-primary service-action-btn" id="btnApplyKernelOpt">
+                                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+                                    <span data-i18n="services.kernel_opt_apply">Optimize Now</span>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="overview-card-body">
+                            <div class="kernel-opt-metrics">
+                                <div class="kernel-opt-metric">
+                                    <span class="kernel-opt-metric-label" data-i18n="services.kernel_opt_profile_lbl">Host Profile</span>
+                                    <span class="kernel-opt-metric-val font-mono" id="kernelOptProfile">--</span>
+                                </div>
+                                <div class="kernel-opt-metric">
+                                    <span class="kernel-opt-metric-label" data-i18n="services.kernel_opt_tcp_lbl">TCP / Qdisc</span>
+                                    <span class="kernel-opt-metric-val font-mono" id="kernelOptTcp">--</span>
+                                </div>
+                                <div class="kernel-opt-metric">
+                                    <span class="kernel-opt-metric-label" data-i18n="services.kernel_opt_rp_lbl">RP Filter (ESP/DSR)</span>
+                                    <span class="kernel-opt-metric-val font-mono" id="kernelOptRpFilter">--</span>
+                                </div>
+                                <div class="kernel-opt-metric">
+                                    <span class="kernel-opt-metric-label" data-i18n="services.kernel_opt_ct_lbl">Conntrack</span>
+                                    <span class="kernel-opt-metric-val font-mono" id="kernelOptConntrack">--</span>
+                                </div>
+                            </div>
+                            <div class="kernel-opt-conflicts" id="kernelOptConflicts" style="display:none;"></div>
+                            <label class="kernel-opt-reset-row" for="chkKernelOptReset">
+                                <input type="checkbox" id="chkKernelOptReset">
+                                <span>
+                                    <strong data-i18n="services.kernel_opt_reset_title">Clean &amp; replace previous sysctl settings before applying</strong>
+                                    <small data-i18n="services.kernel_opt_reset_desc">Backs up and clears /etc/sysctl.conf, conflicting /etc/sysctl.d/*.conf files, and duplicate nf_conntrack lines in /etc/modules.</small>
+                                </span>
+                            </label>
+                            <div class="kernel-opt-result" id="kernelOptResult" style="display:none;"></div>
+                        </div>
+                    </div>
+
                     <!-- Discovery & Import Tool Card -->
                     <div class="overview-card">
                         <div class="overview-card-header">

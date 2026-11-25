@@ -789,3 +789,139 @@ export function pollDashboardReconnection() {
         }
     }, 1500);
 }
+
+/**
+ * Renders live kernel tuning telemetry and conflict alerts inside #cardKernelOptimizer.
+ */
+function renderKernelOptimizerState(data) {
+    const badge = document.getElementById("badgeKernelOptStatus");
+    const profEl = document.getElementById("kernelOptProfile");
+    const tcpEl = document.getElementById("kernelOptTcp");
+    const rpEl = document.getElementById("kernelOptRpFilter");
+    const ctEl = document.getElementById("kernelOptConntrack");
+    const conflictsEl = document.getElementById("kernelOptConflicts");
+    const resetRow = document.querySelector(".kernel-opt-reset-row");
+    if (!data || typeof data !== "object") return;
+
+    const prof = data.profile || {};
+    const live = data.live || {};
+    const conflicts = Array.isArray(data.conflicts) ? data.conflicts : [];
+
+    if (profEl) {
+        profEl.textContent = prof.mem_mb ? `${prof.mem_mb} MB · ${prof.cpu_cores || 1} vCPU` : "--";
+    }
+    if (tcpEl) {
+        tcpEl.textContent = `${live.congestion_control || "?"} · ${live.default_qdisc || "?"}`;
+    }
+    if (rpEl) {
+        const rpAll = live.rp_filter_all;
+        rpEl.textContent = (rpAll === 0) ? "0 (ESP/DSR Safe)" : (rpAll !== null && rpAll !== undefined ? `${rpAll} (Non-zero)` : "--");
+        rpEl.style.color = (rpAll === 0) ? "var(--accent-emerald, #10b981)" : (rpAll > 0 ? "#f59e0b" : "");
+    }
+    if (ctEl) {
+        const ctMaxStr = live.conntrack_max ? Number(live.conntrack_max).toLocaleString() : "--";
+        ctEl.textContent = live.conntrack_loaded ? `Loaded · max ${ctMaxStr}` : "Not loaded";
+    }
+
+    if (badge) {
+        if (conflicts.length > 0) {
+            badge.className = "stat-badge badge-amber";
+            badge.textContent = "CONFLICT";
+        } else if (data.optimal) {
+            badge.className = "stat-badge badge-good";
+            badge.textContent = "OPTIMIZED";
+        } else if (data.tuned) {
+            badge.className = "stat-badge badge-active";
+            badge.textContent = "TUNED";
+        } else {
+            badge.className = "stat-badge badge-warn";
+            badge.textContent = "DEFAULT";
+        }
+    }
+
+    if (conflictsEl) {
+        if (conflicts.length > 0) {
+            const hdr = escapeHtml(t("services.kernel_opt_conflict_hdr", {}, "Conflicts / legacy kernel settings detected:"));
+            const items = conflicts.map(c => `<li>${escapeHtml(String(c.message || c.code || ""))}</li>`).join("");
+            conflictsEl.innerHTML = `<strong>${hdr}</strong><ul>${items}</ul>`;
+            conflictsEl.style.display = "block";
+        } else {
+            conflictsEl.style.display = "none";
+            conflictsEl.innerHTML = "";
+        }
+    }
+    if (resetRow) {
+        resetRow.classList.toggle("has-warning", conflicts.length > 0);
+    }
+}
+
+export async function refreshKernelOptimizerStatus() {
+    if (!document.getElementById("cardKernelOptimizer")) return;
+    try {
+        const res = await fetch(`${API_BASE}/system/optimize`, { headers: { "Accept": "application/json" } });
+        if (!res.ok) return;
+        const data = await res.json();
+        renderKernelOptimizerState(data);
+    } catch (_) {}
+}
+
+export function initKernelOptimizer(fetchStatusCallback) {
+    const btnRefresh = document.getElementById("btnRefreshKernelOpt");
+    const btnApply = document.getElementById("btnApplyKernelOpt");
+    const chkReset = document.getElementById("chkKernelOptReset");
+    const resultEl = document.getElementById("kernelOptResult");
+
+    if (btnRefresh) {
+        btnRefresh.addEventListener("click", async () => {
+            btnRefresh.disabled = true;
+            await refreshKernelOptimizerStatus();
+            btnRefresh.disabled = false;
+        });
+    }
+
+    if (btnApply) {
+        btnApply.addEventListener("click", async () => {
+            const resetExisting = Boolean(chkReset && chkReset.checked);
+            const title = t("services.kernel_opt_confirm_title", {}, "Apply Kernel & Network Optimization?");
+            const msg = resetExisting
+                ? t("services.kernel_opt_confirm_reset_msg", {}, "Creates a backup, clears previous /etc/sysctl.conf and conflicting files, deduplicates /etc/modules, and applies clean ESP/DSR-safe optimization.")
+                : t("services.kernel_opt_confirm_msg", {}, "Applies adaptive BBR, fq qdisc, conntrack scaling, MTU probing, and rp_filter=0 cleanly.");
+            const confirmed = await askConfirm(title, msg, {
+                confirmText: t("services.kernel_opt_apply", {}, "Optimize Now"),
+                variant: resetExisting ? "warn" : "primary"
+            });
+            if (!confirmed) return;
+
+            btnApply.disabled = true;
+            const labelSpan = btnApply.querySelector("span");
+            const prevLabel = labelSpan ? labelSpan.textContent : "";
+            if (labelSpan) labelSpan.textContent = t("services.kernel_opt_applying", {}, "Optimizing...");
+
+            try {
+                const res = await fetch(`${API_BASE}/system/optimize`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json", "Accept": "application/json" },
+                    body: JSON.stringify({ reset_existing: resetExisting })
+                });
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok || !data.ok) {
+                    throw new Error(data.error || `HTTP ${res.status}`);
+                }
+                if (data.status) renderKernelOptimizerState(data.status);
+                if (chkReset) chkReset.checked = false;
+                if (resultEl) {
+                    const bakDir = data.reset && data.reset.backup_dir ? ` · Backup: <code class="font-mono">${escapeHtml(data.reset.backup_dir)}</code>` : "";
+                    resultEl.innerHTML = `<strong>OK:</strong> ${escapeHtml(data.message || "Kernel optimization applied")}${bakDir}`;
+                    resultEl.style.display = "block";
+                }
+                showToast(data.message || "Kernel optimization applied!", "success");
+                if (typeof fetchStatusCallback === "function") fetchStatusCallback();
+            } catch (err) {
+                showToast(`Optimization failed: ${err.message}`, "error");
+            } finally {
+                btnApply.disabled = false;
+                if (labelSpan && prevLabel) labelSpan.textContent = prevLabel;
+            }
+        });
+    }
+}

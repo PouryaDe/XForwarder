@@ -727,6 +727,117 @@
     }
 }
 
+/* ── Kernel & Network Optimizer Card ── */
+.kernel-opt-metrics {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(175px, 1fr));
+    gap: 10px;
+    margin-bottom: 14px;
+}
+
+.kernel-opt-metric {
+    padding: 10px 12px;
+    border-radius: 10px;
+    background: var(--raise-2);
+    border: 1px solid var(--line);
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.kernel-opt-metric-label {
+    font-size: 0.72rem;
+    color: var(--ink-3);
+}
+
+.kernel-opt-metric-val {
+    font-size: 0.84rem;
+    font-weight: 600;
+    color: var(--ink);
+    direction: ltr !important;
+    text-align: left;
+}
+
+[dir="rtl"] .kernel-opt-metric-val {
+    text-align: right;
+}
+
+.kernel-opt-conflicts {
+    margin-bottom: 12px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    background: rgba(245, 158, 11, 0.10);
+    border: 1px solid rgba(245, 158, 11, 0.35);
+    color: #fcd34d;
+    font-size: 0.78rem;
+    line-height: 1.5;
+}
+
+.kernel-opt-conflicts ul {
+    margin: 6px 0 0 18px;
+    padding: 0;
+}
+
+.kernel-opt-reset-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 11px 13px;
+    border-radius: 10px;
+    background: var(--raise-2);
+    border: 1px dashed var(--line);
+    cursor: pointer;
+    font-size: 0.80rem;
+    color: var(--ink-2);
+    transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.kernel-opt-reset-row.has-warning {
+    border-color: rgba(245, 158, 11, 0.45);
+    background: rgba(245, 158, 11, 0.06);
+}
+
+.kernel-opt-reset-row input[type="checkbox"] {
+    margin-top: 3px;
+    flex-shrink: 0;
+    accent-color: var(--accent);
+}
+
+.kernel-opt-reset-row strong {
+    display: block;
+    color: var(--ink);
+    font-weight: 600;
+    margin-bottom: 2px;
+}
+
+.kernel-opt-reset-row small {
+    display: block;
+    font-size: 0.73rem;
+    color: var(--ink-3);
+    line-height: 1.4;
+}
+
+.kernel-opt-result {
+    margin-top: 12px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    background: rgba(16, 185, 129, 0.10);
+    border: 1px solid rgba(16, 185, 129, 0.32);
+    color: var(--ink);
+    font-size: 0.78rem;
+    line-height: 1.5;
+}
+
+[data-theme="light"] .kernel-opt-conflicts {
+    background: rgba(245, 158, 11, 0.08);
+    color: #92400e;
+}
+
+[data-theme="light"] .kernel-opt-result {
+    background: rgba(16, 185, 129, 0.08);
+    color: #065f46;
+}
+
 .btn-hamburger {
     display: none;
     background: var(--raise-2);

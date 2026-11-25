@@ -515,7 +515,40 @@ ensure_dependencies() {
 }
 
 tune_network() {
+    local mode="${1:---apply}"
+    local tuner_root="$INSTALL_DIR"
+    local self_dir
+    self_dir="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" 2>/dev/null && pwd || true)"
+    if [[ ! -f "$tuner_root/core/kernel_tuner.py" && -n "$self_dir" && -f "$self_dir/core/kernel_tuner.py" ]]; then
+        tuner_root="$self_dir"
+    fi
+
+    if command -v python3 >/dev/null 2>&1 && [[ -f "$tuner_root/core/kernel_tuner.py" ]]; then
+        if [[ "$mode" == "--status" ]]; then
+            msg_info "Inspecting live kernel network tuning & ESP/DSR compatibility..."
+            PYTHONPATH="$tuner_root" python3 "$tuner_root/core/kernel_tuner.py" --status
+            return $?
+        fi
+        msg_info "Applying ESP/DSR-safe kernel network tuning (BBR, fq, MTU probing, conntrack & limits)..."
+        if [[ "$mode" == "--reset" ]]; then
+            PYTHONPATH="$tuner_root" python3 "$tuner_root/core/kernel_tuner.py" --apply --reset
+        else
+            PYTHONPATH="$tuner_root" python3 "$tuner_root/core/kernel_tuner.py" --apply "$@"
+        fi
+        return $?
+    fi
+
+    # Fallback if core/kernel_tuner.py is not yet present on disk
     msg_info "Applying high-performance kernel network tuning & system limits..."
+    if [[ "$mode" == "--reset" && -f /etc/sysctl.conf ]]; then
+        mkdir -p /etc/xforwarder/backups
+        cp /etc/sysctl.conf "/etc/xforwarder/backups/sysctl.conf.bak.$(date +%s)" 2>/dev/null || true
+        printf "# Reset by XForwarder Kernel Optimizer\n" > /etc/sysctl.conf
+    fi
+    modprobe nf_conntrack >/dev/null 2>&1 || true
+    if [[ -f /etc/modules ]] && ! grep -qxF "nf_conntrack" /etc/modules 2>/dev/null; then
+        echo "nf_conntrack" >> /etc/modules
+    fi
     local sys_mem_mb sys_cores
     sys_mem_mb=$(awk '/MemTotal/ { printf "%.0f", $2/1024 }' /proc/meminfo 2>/dev/null || echo 1024)
     sys_cores=$(nproc 2>/dev/null || echo 1)
@@ -678,6 +711,42 @@ EOF
     fi
 
     msg_ok "Kernel network tuning and system limits applied (Profile: ${sys_mem_mb}MB RAM, BBR=$(( bbr )))."
+}
+
+tune_network_menu() {
+    check_root
+    local opt_choice=0
+    while :; do
+        ui_header "" "Kernel & Network Optimizer"
+        ui_choose opt_choice "$opt_choice" \
+            "Apply Optimized Profile (BBR, fq, Conntrack, rp_filter=0)" \
+            "Reset Previous /etc/sysctl.conf & Conflicting Drop-ins + Apply (Backup First)" \
+            "Show Live Kernel Status & ESP/DSR Conflict Check" \
+            "Back to Main Menu" || break
+        echo ""
+        case "$opt_choice" in
+            0)
+                tune_network --apply
+                ;;
+            1)
+                local confirm_reset=""
+                read -r -p "  Back up & clear existing /etc/sysctl.conf, conflicting /etc/sysctl.d/*.conf, and duplicate /etc/modules? [y/N]: " confirm_reset <&"$UI_FD" || true
+                if [[ "${confirm_reset,,}" == "y" || "${confirm_reset,,}" == "yes" ]]; then
+                    tune_network --reset
+                else
+                    msg_info "Reset cancelled."
+                fi
+                ;;
+            2)
+                tune_network --status
+                ;;
+            3)
+                break
+                ;;
+        esac
+        echo ""
+        read -r -p "  Press Enter to continue..." _ <&"$UI_FD" || break
+    done
 }
 
 resolve_active_config() {
@@ -1967,7 +2036,7 @@ show_menu() {
             "Import Pre-existing Relay Rules (HAProxy & NFTables)" \
             "Backup & Restore (Export / Import JSON)" \
             "Check & Install System Dependencies" \
-            "Network Performance Tuning (BBR, Sysctl & Limits)" \
+            "Kernel & Network Optimizer (BBR, Conntrack, ESP/DSR & Reset)" \
             "Exit" || break
 
         MENU_ACTIVE=0
@@ -1984,7 +2053,7 @@ show_menu() {
             7) import_relay_rules ;;
             8) backup_restore_menu ;;
             9) check_root; ensure_dependencies ;;
-            10) check_root; tune_network ;;
+            10) tune_network_menu ;;
             11) break ;;
         esac
         echo ""
@@ -2133,8 +2202,21 @@ case "${1:-}" in
         ;;
     optimize|tune|tune-network)
         check_root
-        ui_header "" "Kernel & BBR Tuning"
-        tune_network
+        shift || true
+        case "${1:-}" in
+            --reset|reset)
+                ui_header "" "Kernel & BBR Reset + Tuning"
+                tune_network --reset
+                ;;
+            --status|status)
+                ui_header "" "Kernel Optimization Status"
+                tune_network --status
+                ;;
+            *)
+                ui_header "" "Kernel & BBR Tuning"
+                tune_network --apply
+                ;;
+        esac
         ;;
     "")
         if ! is_installed; then

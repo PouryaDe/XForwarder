@@ -567,6 +567,10 @@ def build_openapi_spec(version: str = "1.9.0", server_url: str = "/") -> Dict[st
             "/api/system/update/status": {
                 "get": {"tags": ["Services & System"], "summary": "Poll system update status & logs (read scope)", "responses": {"200": {"description": "Update status"}}}
             },
+            "/api/system/optimize": {
+                "get": {"tags": ["Services & System"], "summary": "Inspect live kernel & network tuning status and conflicts (read scope)", "responses": {"200": {"description": "Kernel optimization telemetry"}}},
+                "post": {"tags": ["Services & System"], "summary": "Apply ESP/DSR-safe kernel & BBR tuning with optional cleanup reset (admin scope)", "responses": {"200": {"description": "Tuning applied"}}}
+            },
             "/api/security/credentials": {
                 "post": {"tags": ["Auth"], "summary": "Update admin username/password (admin scope)", "responses": {"200": {"description": "Credentials updated"}}}
             },

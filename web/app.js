@@ -96,7 +96,9 @@ import {
     pollUpdateProgress,
     initServiceRestartControls,
     handleServiceRestart,
-    pollDashboardReconnection
+    pollDashboardReconnection,
+    initKernelOptimizer,
+    refreshKernelOptimizerStatus
 } from "./js/modules/system.js";
 import {
     getSanitizedRuleForExport,
@@ -365,6 +367,7 @@ async function startAuthenticatedSession(username) {
     await fetchStatus();
     checkImportableRules();
     fetchSystemVersionInfo(false);
+    refreshKernelOptimizerStatus();
     fetchApiKeys();
     if (!statusPollInterval) {
         statusPollInterval = setInterval(fetchStatus, 3500);
@@ -394,6 +397,7 @@ async function initApp() {
     initNetworkQualityMonitor();
     initSystemUpdateManager();
     initServiceRestartControls(fetchStatus);
+    initKernelOptimizer(fetchStatus);
     initLogs();
     initApiKeysManager();
 
