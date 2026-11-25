@@ -400,8 +400,9 @@ export async function handlePathDrop(e, ruleId, toIndex) {
         if (res.ok && data.ok) {
             const settledBox = activeCardEl?.querySelector(`.path-box[data-prio="${toIndex + 1}"]`);
             if (settledBox) {
-                settledBox.classList.add("is-just-activated");
+                settledBox.classList.add("is-just-activated", "is-saved");
                 setTimeout(() => settledBox.classList.remove("is-just-activated"), 460);
+                setTimeout(() => settledBox.classList.remove("is-saved"), 1200);
             }
             showToast(`Reordered: #${fromIndex + 1} -> #${toIndex + 1}`, "success");
         } else {
@@ -1058,11 +1059,16 @@ export async function handleOverrideChange(ruleId, val, fetchStatusCallback) {
         }
     }
 
-    // Smooth in-place segmented pill slide + timeline card switching feedback
+    // Smooth in-place segmented pill slide + loading spinner & checkmark feedback
     let activeBar = null;
     document.querySelectorAll(".rule-test-bar").forEach(bar => {
         if (bar.dataset.ruleId === ruleId) activeBar = bar;
     });
+    const cardEl = document.getElementById(`rule-card-${encodeInlineParam(ruleId)}`);
+    const targetPrio = prioVal > 0 ? prioVal : (rule ? (rule.active_priority || 1) : 1);
+    let targetPillBtn = null;
+    let targetPathBox = cardEl ? cardEl.querySelector(`.path-box[data-prio="${targetPrio}"]`) : null;
+
     if (activeBar) {
         activeBar.dataset.mode = prioVal > 0 ? "forced" : "auto";
         activeBar.classList.add("is-switching");
@@ -1072,20 +1078,24 @@ export async function handleOverrideChange(ruleId, val, fetchStatusCallback) {
             btn.classList.toggle("is-active", isMatch);
             btn.classList.toggle("auto", isMatch && prioVal === 0);
             btn.classList.toggle("forced", isMatch && prioVal > 0);
+            btn.classList.remove("is-pending", "is-saved");
+            if (isMatch) {
+                btn.classList.add("is-pending");
+                targetPillBtn = btn;
+            }
         });
         syncModeSliderThumbs(activeBar, true);
+        if (targetPathBox) {
+            targetPathBox.classList.remove("is-saved");
+            targetPathBox.classList.add("is-pending");
+        }
     } else if (rule) {
         renderRules(currentRules, lastRuntime);
-        const cardEl = document.getElementById(`rule-card-${encodeInlineParam(ruleId)}`);
-        if (cardEl) {
-            cardEl.classList.add("is-switching");
-            const targetPrio = prioVal > 0 ? prioVal : (rule.active_priority || 1);
-            const activatedBox = cardEl.querySelector(`.path-box[data-prio="${targetPrio}"]`);
-            if (activatedBox) activatedBox.classList.add("is-just-activated");
-            setTimeout(() => {
-                cardEl.classList.remove("is-switching");
-                if (activatedBox) activatedBox.classList.remove("is-just-activated");
-            }, 460);
+        const reCardEl = document.getElementById(`rule-card-${encodeInlineParam(ruleId)}`);
+        if (reCardEl) {
+            reCardEl.classList.add("is-switching");
+            targetPathBox = reCardEl.querySelector(`.path-box[data-prio="${targetPrio}"]`);
+            if (targetPathBox) targetPathBox.classList.add("is-pending", "is-just-activated");
         }
     }
 
@@ -1096,10 +1106,21 @@ export async function handleOverrideChange(ruleId, val, fetchStatusCallback) {
             body: JSON.stringify({ rule_id: ruleId, force_override: prioVal })
         });
         const data = await res.json().catch(() => ({}));
+        if (targetPillBtn) targetPillBtn.classList.remove("is-pending");
+        if (targetPathBox) targetPathBox.classList.remove("is-pending");
         if (res.ok && data.ok) {
+            if (targetPillBtn) {
+                targetPillBtn.classList.add("is-saved");
+                setTimeout(() => targetPillBtn.classList.remove("is-saved"), 1100);
+            }
+            if (targetPathBox) {
+                targetPathBox.classList.add("is-saved", "is-just-activated");
+                setTimeout(() => targetPathBox.classList.remove("is-just-activated"), 460);
+                setTimeout(() => targetPathBox.classList.remove("is-saved"), 1100);
+            }
             showToast(prioVal > 0 ? `Manually forced Priority #${prioVal}` : "Restored to Automatic Failover");
             if (typeof fetchStatusCallback === "function") {
-                setTimeout(() => fetchStatusCallback(), 240);
+                setTimeout(() => fetchStatusCallback(), 950);
             }
         } else {
             pendingOverrides.delete(ruleId);
@@ -1111,6 +1132,8 @@ export async function handleOverrideChange(ruleId, val, fetchStatusCallback) {
             showToast(data.error || "Failed to update override mode", "error");
         }
     } catch (_) {
+        if (targetPillBtn) targetPillBtn.classList.remove("is-pending");
+        if (targetPathBox) targetPathBox.classList.remove("is-pending");
         pendingOverrides.delete(ruleId);
         if (rule) {
             rule.force_override = prevForce;
@@ -1120,7 +1143,7 @@ export async function handleOverrideChange(ruleId, val, fetchStatusCallback) {
         showToast("Network error updating override mode", "error");
     } finally {
         if (activeBar) {
-            setTimeout(() => activeBar.classList.remove("is-switching"), 280);
+            setTimeout(() => activeBar.classList.remove("is-switching"), 320);
         }
     }
 }

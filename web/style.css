@@ -3969,12 +3969,87 @@ input:-webkit-autofill:active {
     pointer-events: none;
 }
 
+.path-box.is-pending::after {
+    content: "";
+    position: absolute;
+    top: 9px;
+    right: 10px;
+    width: 15px;
+    height: 15px;
+    border-radius: 50%;
+    border: 2px solid color-mix(in srgb, var(--accent) 26%, transparent);
+    border-top-color: var(--accent);
+    animation: xfwdSpin 0.6s linear infinite;
+    z-index: 6;
+    pointer-events: none;
+}
+
+.path-box.is-saved::after {
+    content: "✓";
+    position: absolute;
+    top: 8px;
+    right: 10px;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--accent-emerald, #3ee8a6);
+    color: #001a0f;
+    font-size: 0.7rem;
+    font-weight: 900;
+    line-height: 1;
+    box-shadow: 0 2px 8px var(--accent-glow);
+    animation: xfwdCheckPop 0.32s cubic-bezier(0.34, 1.56, 0.64, 1);
+    z-index: 6;
+    pointer-events: none;
+}
+
+[dir="rtl"] .path-box.is-pending::after,
+[dir="rtl"] .path-box.is-saved::after {
+    right: auto;
+    left: 10px;
+}
+
+.btn-mode-pill.is-pending {
+    pointer-events: none;
+    opacity: 0.88;
+}
+
+.btn-mode-pill.is-pending::before {
+    content: "";
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    border: 2px solid currentColor;
+    border-top-color: transparent;
+    animation: xfwdSpin 0.6s linear infinite;
+    flex-shrink: 0;
+}
+
+.btn-mode-pill.is-saved::before {
+    content: "✓";
+    font-size: 0.76rem;
+    font-weight: 900;
+    line-height: 1;
+    color: var(--accent-emerald, #3ee8a6);
+    animation: xfwdCheckPop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    flex-shrink: 0;
+}
+
 .rule-card.is-reordering {
     border-color: color-mix(in srgb, var(--accent) 45%, var(--border-color));
 }
 
 @keyframes xfwdSpin {
     to { transform: rotate(360deg); }
+}
+
+@keyframes xfwdCheckPop {
+    0% { transform: scale(0.4); opacity: 0; }
+    65% { transform: scale(1.16); opacity: 1; }
+    100% { transform: scale(1); opacity: 1; }
 }
 
 /* Light Theme Overrides */
