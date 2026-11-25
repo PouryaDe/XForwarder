@@ -12,9 +12,11 @@ let currentSort = localStorage.getItem("xfwd_rules_sort") || "port_asc";
 let activeFilter = "all";
 let searchQuery = "";
 let draggedPathInfo = null;
+let isFlipAnimating = false;
 let lastRenderedRulesFingerprint = null;
 const pendingOverrides = new Map();
 const pendingDestToggles = new Map();
+const pendingReorders = new Map();
 const expandedLbPools = new Set();
 let collapsedCategories = new Set();
 
@@ -318,72 +320,73 @@ export async function handlePathDrop(e, ruleId, toIndex) {
     if (fromIndex < 0 || toIndex < 0 || fromIndex >= dests.length || toIndex >= dests.length) return;
 
     const cardSelector = `#rule-card-${CSS.escape(encodeInlineParam(ruleId))}`;
-    const oldRects = new Map();
     const oldCardEl = document.querySelector(cardSelector);
+    const oldRectsByOrigIdx = new Map();
     if (oldCardEl) {
-        oldCardEl.querySelectorAll(".path-box[data-prio]").forEach(el => {
-            oldRects.set(String(el.dataset.prio), el.getBoundingClientRect().top);
+        oldCardEl.querySelectorAll(".path-box[data-prio]").forEach((el, idx) => {
+            oldRectsByOrigIdx.set(idx, el.getBoundingClientRect().top);
         });
     }
 
-    const moved = dests.splice(fromIndex, 1)[0];
-    const movedOldPrio = String(moved.priority || (fromIndex + 1));
-    dests.splice(toIndex, 0, moved);
-    dests.forEach((d, i) => d.priority = i + 1);
-    rule.destinations = dests;
+    const indexed = dests.map((d, idx) => ({ d, origIdx: idx }));
+    const [movedItem] = indexed.splice(fromIndex, 1);
+    indexed.splice(toIndex, 0, movedItem);
+    const reorderedDests = indexed.map((item, i) => ({ ...item.d, priority: i + 1 }));
+    rule.destinations = reorderedDests;
 
-    renderRules(currentRules, lastRuntime);
+    pendingReorders.set(ruleId, {
+        destinations: reorderedDests,
+        inFlight: true,
+        ts: Date.now()
+    });
 
-    const newCardEl = document.querySelector(cardSelector);
-    if (newCardEl) {
-        newCardEl.classList.add("is-reordering");
-        const newBoxes = Array.from(newCardEl.querySelectorAll(".path-box[data-prio]"));
-        // Map old priorities to new positions for FLIP animation
-        const prioMapping = [];
-        dests.forEach((d, idx) => {
-            const newP = String(idx + 1);
-            let oldP = newP;
-            if (idx === toIndex) {
-                oldP = movedOldPrio;
-            } else {
-                // Reconstruct which old slot shifted into idx
-                const origIdx = idx < toIndex && idx >= fromIndex ? idx + 1
-                    : (idx > toIndex && idx <= fromIndex ? idx - 1 : idx);
-                oldP = String(origIdx + 1);
+    // Update only the affected card in-place (no full-page DOM wipe!)
+    if (oldCardEl) {
+        const tmp = document.createElement("div");
+        const rulesState = (lastRuntime && lastRuntime.rules_state) ? lastRuntime.rules_state : {};
+        tmp.innerHTML = renderRuleCard(rule, rulesState).trim();
+        const freshCard = tmp.firstElementChild;
+        if (freshCard) {
+            const oldGrid = oldCardEl.querySelector(".paths-grid");
+            const newGrid = freshCard.querySelector(".paths-grid");
+            if (oldGrid && newGrid) {
+                oldGrid.innerHTML = newGrid.innerHTML;
             }
-            prioMapping.push({ newP, oldP });
-        });
-
-        newBoxes.forEach(box => {
-            const newP = String(box.dataset.prio);
-            const mapItem = prioMapping.find(m => m.newP === newP);
-            const oldTop = mapItem ? oldRects.get(mapItem.oldP) : undefined;
-            if (oldTop !== undefined) {
-                const deltaY = oldTop - box.getBoundingClientRect().top;
-                if (Math.abs(deltaY) > 1) {
-                    box.style.transition = "none";
-                    box.style.transform = `translateY(${deltaY}px)`;
+            oldCardEl.classList.add("is-reordering");
+            const newBoxes = Array.from(oldCardEl.querySelectorAll(".path-box[data-prio]"));
+            isFlipAnimating = true;
+            newBoxes.forEach((box, newIdx) => {
+                const origIdx = indexed[newIdx] ? indexed[newIdx].origIdx : newIdx;
+                const oldTop = oldRectsByOrigIdx.get(origIdx);
+                if (oldTop !== undefined) {
+                    const deltaY = oldTop - box.getBoundingClientRect().top;
+                    if (Math.abs(deltaY) > 1) {
+                        box.style.transition = "none";
+                        box.style.transform = `translateY(${deltaY}px)`;
+                    }
                 }
-            }
-        });
+            });
 
-        requestAnimationFrame(() => {
+            void oldCardEl.offsetHeight;
             requestAnimationFrame(() => {
                 newBoxes.forEach(box => {
-                    box.style.transition = "transform 0.36s cubic-bezier(0.22, 1, 0.36, 1)";
+                    box.style.transition = "transform 0.34s cubic-bezier(0.22, 1, 0.36, 1)";
                     box.style.transform = "translateY(0)";
-                    const onEnd = () => {
+                });
+                setTimeout(() => {
+                    newBoxes.forEach(box => {
                         box.style.transition = "";
                         box.style.transform = "";
-                        box.removeEventListener("transitionend", onEnd);
-                    };
-                    box.addEventListener("transitionend", onEnd);
-                });
+                    });
+                    isFlipAnimating = false;
+                }, 360);
             });
-        });
 
-        const movedBox = newCardEl.querySelector(`.path-box[data-prio="${toIndex + 1}"]`);
-        if (movedBox) movedBox.classList.add("is-pending");
+            const movedBox = oldCardEl.querySelector(`.path-box[data-prio="${toIndex + 1}"]`);
+            if (movedBox) movedBox.classList.add("is-pending");
+        }
+    } else {
+        renderRules(currentRules, lastRuntime);
     }
 
     try {
@@ -399,19 +402,30 @@ export async function handlePathDrop(e, ruleId, toIndex) {
             activeCardEl.querySelectorAll(".path-box.is-pending").forEach(b => b.classList.remove("is-pending"));
         }
         if (res.ok && data.ok) {
+            pendingReorders.set(ruleId, {
+                destinations: reorderedDests,
+                inFlight: false,
+                ts: Date.now()
+            });
             const settledBox = activeCardEl?.querySelector(`.path-box[data-prio="${toIndex + 1}"]`);
             if (settledBox) {
-                settledBox.classList.add("is-just-activated", "is-saved");
-                setTimeout(() => settledBox.classList.remove("is-just-activated"), 460);
-                setTimeout(() => settledBox.classList.remove("is-saved"), 1200);
+                settledBox.classList.add("is-saved");
+                setTimeout(() => settledBox.classList.remove("is-saved"), 1100);
             }
             showToast(`Reordered: #${fromIndex + 1} -> #${toIndex + 1}`, "success");
         } else {
+            pendingReorders.delete(ruleId);
             rule.destinations = prevDests;
             renderRules(currentRules, lastRuntime);
             showToast(data.error || "Failed to save reordered priority", "error");
         }
     } catch (_) {
+        pendingReorders.delete(ruleId);
+        const activeCardEl = document.querySelector(cardSelector);
+        if (activeCardEl) {
+            activeCardEl.classList.remove("is-reordering");
+            activeCardEl.querySelectorAll(".path-box.is-pending").forEach(b => b.classList.remove("is-pending"));
+        }
         rule.destinations = prevDests;
         renderRules(currentRules, lastRuntime);
         showToast("Network error reordering priority", "error");
@@ -860,15 +874,15 @@ export function renderRules(rules, runtime) {
     const rulesContainer = document.getElementById("rulesContainer");
     if (!rulesContainer) return;
 
-    if (draggedPathInfo !== null) {
+    if (draggedPathInfo !== null || isFlipAnimating) {
         return;
     }
 
-    // Preserve any in-flight or recently completed destination toggles so 3.5s polling never flashes stale state
+    // Preserve any in-flight or recently completed toggles, overrides, and reorders so 3.5s polling never flashes stale state
     const nowTs = Date.now();
     if (Array.isArray(rules) && pendingDestToggles.size > 0) {
         for (const [tKey, tInfo] of pendingDestToggles.entries()) {
-            if (!tInfo.inFlight && (nowTs - tInfo.ts > 1800)) {
+            if (!tInfo.inFlight && (nowTs - tInfo.ts > 2000)) {
                 pendingDestToggles.delete(tKey);
                 continue;
             }
@@ -877,6 +891,33 @@ export function renderRules(rules, runtime) {
                 ? rMatch.destinations.find(d => (d.priority || 1) === tInfo.prio)
                 : null;
             if (dMatch) dMatch.enabled = tInfo.enabled;
+        }
+    }
+    if (Array.isArray(rules) && pendingOverrides.size > 0) {
+        for (const [oRuleId, oInfo] of pendingOverrides.entries()) {
+            if (!oInfo.inFlight && (nowTs - oInfo.timestamp > 2000)) {
+                pendingOverrides.delete(oRuleId);
+                continue;
+            }
+            const rMatch = rules.find(r => getRuleId(r) === oRuleId);
+            if (rMatch) {
+                rMatch.force_override = oInfo.force_override;
+                if (oInfo.active_priority !== undefined) {
+                    rMatch.active_priority = oInfo.active_priority;
+                }
+            }
+        }
+    }
+    if (Array.isArray(rules) && pendingReorders.size > 0) {
+        for (const [rId, rInfo] of pendingReorders.entries()) {
+            if (!rInfo.inFlight && (nowTs - rInfo.ts > 2000)) {
+                pendingReorders.delete(rId);
+                continue;
+            }
+            const rMatch = rules.find(r => getRuleId(r) === rId);
+            if (rMatch && Array.isArray(rInfo.destinations)) {
+                rMatch.destinations = rInfo.destinations;
+            }
         }
     }
 
@@ -1059,6 +1100,9 @@ if (typeof window !== "undefined") {
 
 export async function handleOverrideChange(ruleId, val, fetchStatusCallback) {
     const prioVal = parseInt(val, 10);
+    const existingPending = pendingOverrides.get(ruleId);
+    if (existingPending && existingPending.inFlight) return;
+
     const rule = (currentRules || []).find(x => getRuleId(x) === ruleId);
     const prevForce = rule ? (rule.force_override || 0) : 0;
     const prevActive = rule ? (rule.active_priority || 1) : 1;
@@ -1066,6 +1110,7 @@ export async function handleOverrideChange(ruleId, val, fetchStatusCallback) {
     pendingOverrides.set(ruleId, {
         force_override: prioVal,
         active_priority: prioVal > 0 ? prioVal : undefined,
+        inFlight: true,
         timestamp: Date.now()
     });
 
@@ -1076,7 +1121,7 @@ export async function handleOverrideChange(ruleId, val, fetchStatusCallback) {
         }
     }
 
-    // Smooth in-place segmented pill slide + loading spinner & checkmark feedback
+    // Smooth in-place segmented pill slide + path-box highlight + timeline-node spinner & checkmark feedback
     let activeBar = null;
     document.querySelectorAll(".rule-test-bar").forEach(bar => {
         if (bar.dataset.ruleId === ruleId) activeBar = bar;
@@ -1102,17 +1147,33 @@ export async function handleOverrideChange(ruleId, val, fetchStatusCallback) {
             }
         });
         syncModeSliderThumbs(activeBar, true);
-        if (targetPathBox) {
-            targetPathBox.classList.remove("is-saved");
-            targetPathBox.classList.add("is-pending");
-        }
-    } else if (rule) {
+    }
+    if (cardEl) {
+        cardEl.querySelectorAll(".path-box[data-prio]").forEach(box => {
+            const bPrio = parseInt(box.dataset.prio || "0", 10);
+            const isTarget = bPrio === targetPrio;
+            box.classList.remove("is-pending", "is-saved", "is-just-activated");
+            if (!box.classList.contains("is-disabled")) {
+                box.classList.toggle("is-active", isTarget);
+                box.classList.toggle("is-failover", isTarget && targetPrio > 1);
+                const node = box.querySelector(".timeline-node");
+                if (node) {
+                    node.classList.toggle("is-active", isTarget && !(prioVal > 0));
+                    node.classList.toggle("is-forced", isTarget && prioVal > 0);
+                }
+            }
+            if (isTarget) {
+                box.classList.add("is-pending");
+                targetPathBox = box;
+            }
+        });
+    } else if (!activeBar && rule) {
         renderRules(currentRules, lastRuntime);
         const reCardEl = document.getElementById(`rule-card-${encodeInlineParam(ruleId)}`);
         if (reCardEl) {
             reCardEl.classList.add("is-switching");
             targetPathBox = reCardEl.querySelector(`.path-box[data-prio="${targetPrio}"]`);
-            if (targetPathBox) targetPathBox.classList.add("is-pending", "is-just-activated");
+            if (targetPathBox) targetPathBox.classList.add("is-pending");
         }
     }
 
@@ -1126,18 +1187,23 @@ export async function handleOverrideChange(ruleId, val, fetchStatusCallback) {
         if (targetPillBtn) targetPillBtn.classList.remove("is-pending");
         if (targetPathBox) targetPathBox.classList.remove("is-pending");
         if (res.ok && data.ok) {
+            pendingOverrides.set(ruleId, {
+                force_override: prioVal,
+                active_priority: prioVal > 0 ? prioVal : undefined,
+                inFlight: false,
+                timestamp: Date.now()
+            });
             if (targetPillBtn) {
                 targetPillBtn.classList.add("is-saved");
                 setTimeout(() => targetPillBtn.classList.remove("is-saved"), 1100);
             }
             if (targetPathBox) {
-                targetPathBox.classList.add("is-saved", "is-just-activated");
-                setTimeout(() => targetPathBox.classList.remove("is-just-activated"), 460);
+                targetPathBox.classList.add("is-saved");
                 setTimeout(() => targetPathBox.classList.remove("is-saved"), 1100);
             }
             showToast(prioVal > 0 ? `Manually forced Priority #${prioVal}` : "Restored to Automatic Failover");
             if (typeof fetchStatusCallback === "function") {
-                setTimeout(() => fetchStatusCallback(), 950);
+                setTimeout(() => fetchStatusCallback(), 1150);
             }
         } else {
             pendingOverrides.delete(ruleId);

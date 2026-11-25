@@ -1875,7 +1875,7 @@
     border-radius: 14px;
     padding: 13px 15px;
     position: relative;
-    transition: all var(--fast) var(--ease);
+    transition: border-color 0.22s ease, background-color 0.22s ease, box-shadow 0.22s ease;
 }
 
 [data-theme="light"] .path-box {
