@@ -242,7 +242,7 @@ class TestKernelTuner(unittest.TestCase):
     def test_spoof_tester_listener_loopback_supported_blocked_and_ui(self):
         import socket as _sock
         # Verify pick_default_spoof_ip chooses non-self routable neighbor
-        self.assertEqual(pick_default_spoof_ip("109.122.251.100", "87.120.244.123"), "109.122.251.102")
+        self.assertEqual(pick_default_spoof_ip("198.51.100.10", "203.0.113.20"), "198.51.100.12")
         self.assertNotEqual(pick_default_spoof_ip("198.51.100.253", "198.51.100.10"), "198.51.100.253")
 
         # Find a free loopback UDP port
@@ -265,7 +265,7 @@ class TestKernelTuner(unittest.TestCase):
 
             with patch("core.kernel_tuner.detect_wan_ipv4", return_value="127.0.0.1"), \
                  patch("core.kernel_tuner.check_local_spoof_capabilities", return_value={"raw_socket_ok": True, "wan_ip": "127.0.0.1"}):
-                res_pass = run_spoof_egress_test("127.0.0.1", spoof_ip="109.122.251.99", port=free_port, count=3, send_fn=send_both)
+                res_pass = run_spoof_egress_test("127.0.0.1", spoof_ip="198.51.100.99", port=free_port, count=3, send_fn=send_both)
             self.assertEqual(res_pass["verdict"], "supported")
             self.assertEqual(res_pass["ctrl_delivered"], 3)
             self.assertEqual(res_pass["spoof_delivered"], 3)
@@ -282,7 +282,7 @@ class TestKernelTuner(unittest.TestCase):
 
             with patch("core.kernel_tuner.detect_wan_ipv4", return_value="127.0.0.1"), \
                  patch("core.kernel_tuner.check_local_spoof_capabilities", return_value={"raw_socket_ok": True, "wan_ip": "127.0.0.1"}):
-                res_blk = run_spoof_egress_test("127.0.0.1", spoof_ip="109.122.251.99", port=free_port, count=3, send_fn=send_ctrl_only)
+                res_blk = run_spoof_egress_test("127.0.0.1", spoof_ip="198.51.100.99", port=free_port, count=3, send_fn=send_ctrl_only)
             self.assertEqual(res_blk["verdict"], "blocked")
             self.assertEqual(res_blk["ctrl_delivered"], 3)
             self.assertEqual(res_blk["spoof_delivered"], 0)
@@ -293,7 +293,7 @@ class TestKernelTuner(unittest.TestCase):
         # Stopped listener -> unreachable verdict
         with patch("core.kernel_tuner.detect_wan_ipv4", return_value="127.0.0.1"), \
              patch("core.kernel_tuner.check_local_spoof_capabilities", return_value={"raw_socket_ok": True, "wan_ip": "127.0.0.1"}):
-            res_unreach = run_spoof_egress_test("127.0.0.1", spoof_ip="109.122.251.99", port=free_port, count=2)
+            res_unreach = run_spoof_egress_test("127.0.0.1", spoof_ip="198.51.100.99", port=free_port, count=2)
         self.assertEqual(res_unreach["verdict"], "unreachable")
 
         # UI card and JS bindings present in Network section
@@ -303,6 +303,7 @@ class TestKernelTuner(unittest.TestCase):
             sys_js = f.read()
         self.assertIn("cardDsrSpoofTester", html)
         self.assertIn("btnRunSpoofTest", html)
+        self.assertIn("198.51.100.10", html)
         self.assertIn("initDsrSpoofTester", sys_js)
 
 
