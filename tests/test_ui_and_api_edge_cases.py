@@ -2204,11 +2204,11 @@ stream {
         with open(sh_path, "r", encoding="utf-8") as f:
             sh_code = f.read()
 
-        # 1. Version 1.9.0 alignment across stack
-        self.assertIn('APP_VERSION = "1.9.0"', svc_mgr)
-        self.assertIn('SCRIPT_VERSION="1.9.0"', sh_code)
-        self.assertIn('id="brandVersionBadge">v1.9.0</span>', html)
-        self.assertIn('id="valInstalledVersion">v1.9.0</span>', html)
+        # 1. Version 1.10.0 alignment across stack
+        self.assertIn('APP_VERSION = "1.10.0"', svc_mgr)
+        self.assertIn('SCRIPT_VERSION="1.10.0"', sh_code)
+        self.assertIn('id="brandVersionBadge">v1.10.0</span>', html)
+        self.assertIn('id="valInstalledVersion">v1.10.0</span>', html)
 
         # 2. Topbar manual refresh button completely removed
         self.assertNotIn('id="btnManualRefresh"', html)
