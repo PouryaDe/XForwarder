@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>XForwarder - Multi-Path Relay Dashboard</title>
+    <title>XForwarder</title>
     <link rel="icon" type="image/svg+xml" href="favicon.svg?v=3.2.24">
     <!-- Prevent Theme & Auth Screen Flicker Pre-Hydration -->
     <style id="preHydrationStyles">
@@ -981,14 +981,14 @@
                                 <button type="button" class="btn-range-tab" id="btnOvTraffic7d" data-range="7d" data-i18n="overview.7d">7 Days</button>
                             </div>
                             <button type="button" class="btn btn-secondary btn-sm" onclick="openTrafficModal('all', 'all')" title="Open detailed granular traffic modal with breakdown & resets">
-                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                     <circle cx="11" cy="11" r="8"></circle>
                                     <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
                                 </svg>
                                 <span data-i18n="overview.full_analytics">Full Analytics</span>
                             </button>
-                            <button type="button" class="btn btn-secondary btn-sm" id="btnRefreshOvTraffic" title="Refresh traffic data now" style="padding: 0 10px;">
-                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <button type="button" class="btn btn-secondary btn-sm" id="btnRefreshOvTraffic" title="Refresh traffic data now">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                     <polyline points="23 4 23 10 17 10"></polyline>
                                     <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
                                 </svg>
@@ -1195,11 +1195,11 @@
                                     <h3 data-i18n="network.spoof_title">IP Spoof / DSR Capability Tester</h3>
                                     <span class="stat-badge" id="badgeSpoofLocalReady" data-i18n="status.checking">CHECKING</span>
                                 </div>
-                                <span class="overview-card-sub" data-i18n="network.spoof_sub">Verify whether this Outside VPS &amp; datacenter permit spoofed source packets (<code class="font-mono">nftables_dsr_direct</code> / <code class="font-mono">synack</code>) or block them via uRPF / BCP38.</span>
+                                <span class="overview-card-sub" data-i18n="network.spoof_sub">Check if this server &amp; datacenter allow spoofed-source packets for DSR.</span>
                             </div>
                         </div>
                         <button type="button" class="btn btn-secondary btn-sm" id="btnRefreshSpoofStatus">
-                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
                             <span data-i18n="services.kernel_opt_refresh">Refresh</span>
                         </button>
                     </div>
@@ -1211,8 +1211,8 @@
                                 <div class="spoof-pane-head">
                                     <span class="spoof-step-badge">1</span>
                                     <div>
-                                        <h4 data-i18n="network.spoof_listen_title">Peer Test Listener (Run on Iran / Peer Server)</h4>
-                                        <p data-i18n="network.spoof_listen_desc">Open a temporary UDP receiver on this server so your Outside VPS can test control vs spoofed packet delivery.</p>
+                                        <h4 data-i18n="network.spoof_listen_title">Peer Listener (Iran Server)</h4>
+                                        <p data-i18n="network.spoof_listen_desc">Open a temporary UDP port to receive test probes.</p>
                                     </div>
                                 </div>
                                 <div class="spoof-inline-controls">
@@ -1220,13 +1220,13 @@
                                         <label for="inpSpoofListenPort" data-i18n="network.spoof_udp_port">UDP Port</label>
                                         <input type="number" id="inpSpoofListenPort" class="form-control font-mono" value="55199" min="1024" max="65535">
                                     </div>
-                                    <button type="button" class="btn btn-secondary" id="btnSpoofListenToggle" style="margin-top: auto;">
+                                    <button type="button" class="btn btn-secondary spoof-action-btn" id="btnSpoofListenToggle">
                                         <span data-i18n="network.spoof_listen_start">Start Listener</span>
                                     </button>
                                 </div>
                                 <div class="spoof-listen-status font-mono" id="spoofListenStatusBox" style="display:none;"></div>
                                 <div class="spoof-cli-hint">
-                                    <span class="spoof-cli-lbl" data-i18n="network.spoof_cli_hint">Standalone CLI command for any Outside VPS:</span>
+                                    <span class="spoof-cli-lbl" data-i18n="network.spoof_cli_hint">CLI command (run on Outside VPS):</span>
                                     <div class="spoof-cli-row">
                                         <code class="font-mono" id="spoofListenCliCmd">curl -fsSL https://raw.githubusercontent.com/PouryaDe/XForwarder/main/scripts/test-dsr-spoof.sh | bash -s -- --outside &lt;PEER_IP&gt; --port 55199</code>
                                         <button type="button" class="btn btn-secondary btn-xs" id="btnCopySpoofCli" data-i18n="common.copy">Copy</button>
@@ -1239,26 +1239,26 @@
                                 <div class="spoof-pane-head">
                                     <span class="spoof-step-badge is-run">2</span>
                                     <div>
-                                        <h4 data-i18n="network.spoof_run_title">Outside Egress Test (Run on Outside VPS)</h4>
-                                        <p data-i18n="network.spoof_run_desc">Send control + spoofed UDP probes from this server to your active Peer Listener to verify datacenter Anti-Spoof / uRPF.</p>
+                                        <h4 data-i18n="network.spoof_run_title">Egress Test (Outside VPS)</h4>
+                                        <p data-i18n="network.spoof_run_desc">Send normal &amp; spoofed probes to your Peer Listener.</p>
                                     </div>
                                 </div>
                                 <div class="spoof-run-inputs">
                                     <div class="spoof-field-grow">
-                                        <label for="inpSpoofPeerIp" data-i18n="network.spoof_peer_ip">Peer Listener IP</label>
-                                        <input type="text" id="inpSpoofPeerIp" class="form-control font-mono" placeholder="e.g. 198.51.100.10">
+                                        <label for="inpSpoofPeerIp" data-i18n="network.spoof_peer_ip">Peer IP</label>
+                                        <input type="text" id="inpSpoofPeerIp" class="form-control font-mono" placeholder="198.51.100.10">
                                     </div>
                                     <div class="spoof-field-md">
-                                        <label for="inpSpoofSrcIp" data-i18n="network.spoof_src_ip">Spoof IP (Opt)</label>
+                                        <label for="inpSpoofSrcIp" data-i18n="network.spoof_src_ip">Spoof IP</label>
                                         <input type="text" id="inpSpoofSrcIp" class="form-control font-mono" placeholder="Auto">
                                     </div>
                                     <div class="spoof-field-sm">
-                                        <label for="inpSpoofRunPort" data-i18n="network.spoof_udp_port">Port</label>
+                                        <label for="inpSpoofRunPort" data-i18n="network.spoof_port_short">Port</label>
                                         <input type="number" id="inpSpoofRunPort" class="form-control font-mono" value="55199" min="1024" max="65535">
                                     </div>
                                 </div>
                                 <div class="spoof-run-actions">
-                                    <button type="button" class="btn btn-primary" id="btnRunSpoofTest">
+                                    <button type="button" class="btn btn-primary spoof-action-btn" id="btnRunSpoofTest">
                                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
                                         <span data-i18n="network.spoof_run_btn">Run Spoof / DSR Test</span>
                                     </button>
