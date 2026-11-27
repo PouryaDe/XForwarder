@@ -24,3 +24,4 @@ Records of architectural decisions, critical invariants, and lessons learned dur
 | `018` | [Post-Sync UDP Conntrack Flushing and Boundary Cleanup](018-post-sync-udp-conntrack-flushing-and-boundary-cleanup.md) | `Networking & Reliability` | 2026-11-16 |
 | `019` | [Health-Aware Load Balancing for NFTables & Nginx Pools](019-health-aware-load-balancing-nftables-nginx.md) | `Architecture & Networking` | 2026-11-24 |
 | `020` | [O1 NFTables Maps VMaps and Kernel Qdisc Tuning](020-o1-nftables-maps-vmaps-and-kernel-qdisc-tuning.md) | `Performance & Networking` | 2026-11-24 |
+| `021` | [DSR Direct Kernel Route Self-Healing and ESP Tunnel Stability](021-dsr-direct-kernel-route-self-healing-and-esp-tunnel-stability.md) | `Networking` | 2026-11-27 |

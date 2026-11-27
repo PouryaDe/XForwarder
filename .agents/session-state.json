@@ -1,15 +1,15 @@
 {
-  "last_updated": "2026-11-25T02:12:00+03:30",
-  "active_task": "Scoped REST API Keys, Full RESTful API v1 & Documentation",
+  "last_updated": "2026-11-27T20:35:00+03:30",
+  "active_task": "DSR Direct Kernel Route Self-Healing & ESP-Direct Tunnel Stability (v1.11.1)",
   "active_spec": null,
   "phase": "Completed",
   "completed_milestones": [
-    "Added salted SHA-256 scoped API key subsystem (read/write/admin) with Bearer & X-API-Key auth in core/auth.py and core/config_manager.py",
-    "Added full RESTful endpoints (/api/* & /api/v1/*), PUT/PATCH/DELETE/OPTIONS support, /api/v1/settings, /api/v1/logs/switches, /api/v1/health, and /api/v1/openapi.json",
-    "Added API Keys management card (#cardApiKeys) and interactive API Reference modal (#apiDocsModal) in Security section with EN/FA i18n and RTL support",
-    "Authored complete Persian (docs/API.md) and English (docs/API.en.md) REST API documentation using strictly fictional RFC IPs",
-    "Bumped synchronized version to v1.8.0 and verified all 387+ unit tests, syntax, anti-patterns, and ES imports"
+    "Diagnosed esp3 blackout on 92.246.90.58 as kernel policy route eviction on table 42600+ after XFRM netdev delete plus replay_window=32 sequence drops and duplicate CHILD_SA churn",
+    "Extracted _parse_dsr_direct_ids() and expanded reconcile_dsr_direct_kernel_routes() in core/firewall.py to heal default/throw routes, ip rules, and rp_filter=0 without false positive writes",
+    "Updated apply_nftables() and XForwarderEngine.run_loop() (core/engine.py) to rebuild missing DSR Direct state files and reconcile routes continuously",
+    "Added unit & edge-case tests in tests/test_nftables_dsr.py and synchronized patch version v1.11.1 across runtime, CLI, web UI, README, and tests",
+    "Logged Experience 021 in .agents/experiences/ and updated AGENTS.md rule #24"
   ],
   "next_steps": [],
-  "notes": "All unit tests and verify-all checks pass with 0 regressions. Clean code, standard library only, Vanilla ES6+ frontend."
+  "notes": "Paired with XManager ESP-Direct v1.1.0 (--upgrade / option 18) for live upgrade of existing tunnels without dropping IPs, ports, or PSKs."
 }

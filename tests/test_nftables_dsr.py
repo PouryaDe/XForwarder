@@ -1416,6 +1416,222 @@ class TestNFTablesDSRMethods(unittest.TestCase):
         self.assertIn("exitPortVal", modal_js)
         self.assertIn("suggestFreeDsrPort(type, target, inboundStart", modal_js)
 
+    def test_reconcile_dsr_direct_kernel_routes_heals_missing_routes_rules_and_rp_filter(self):
+        from core.firewall import reconcile_dsr_direct_kernel_routes, apply_nftables
+        import core.firewall as fw_mod
+
+        with tempfile.TemporaryDirectory() as tmp:
+            st_file = os.path.join(tmp, "dsr_direct_routes.json")
+            sys_net = os.path.join(tmp, "sys_net")
+            proc_conf = os.path.join(tmp, "proc_conf")
+            os.makedirs(os.path.join(sys_net, "esp3"), exist_ok=True)
+            os.makedirs(os.path.join(proc_conf, "esp3"), exist_ok=True)
+            rp_file = os.path.join(proc_conf, "esp3", "rp_filter")
+            with open(rp_file, "w", encoding="utf-8") as f:
+                f.write("2\n")
+            with open(st_file, "w", encoding="utf-8") as f:
+                json.dump({
+                    "slots": [{
+                        "iface": "esp3",
+                        "table_id": 42600,
+                        "priority": 12600,
+                        "fwmark": "0x42600001",
+                        "throw_ips": ["109.122.251.101"]
+                    }]
+                }, f)
+
+            cmds = []
+            def fake_run(cmd, **kwargs):
+                cmds.append(cmd[1:])
+                res = MagicMock()
+                res.returncode = 0
+                res.stderr = ""
+                if cmd[1:4] == ["-4", "rule", "show"]:
+                    res.stdout = "0:\tfrom all lookup local\n32766:\tfrom all lookup main\n"
+                elif cmd[1:5] == ["-4", "route", "show", "table"]:
+                    # Simulate kernel deleting default & throw routes when esp3 was deleted
+                    res.returncode = 2
+                    res.stdout = ""
+                    res.stderr = "Error: ipv4: FIB table does not exist.\nDump terminated"
+                else:
+                    res.stdout = ""
+                return res
+
+            with patch("core.firewall._find_system_bin", return_value="/sbin/ip"), \
+                 patch("core.firewall.subprocess.run", side_effect=fake_run):
+                reconcile_dsr_direct_kernel_routes(
+                    state_path=st_file,
+                    proc_net_conf_dir=proc_conf,
+                    sys_net_dir=sys_net,
+                )
+
+            self.assertIn(["route", "replace", "default", "dev", "esp3", "table", "42600"], cmds)
+            self.assertIn(["route", "replace", "throw", "109.122.251.101/32", "table", "42600"], cmds)
+            self.assertIn(["rule", "add", "priority", "12600", "fwmark", "0x42600001/0xffffffff", "lookup", "42600"], cmds)
+            with open(rp_file, "r", encoding="utf-8") as f:
+                self.assertEqual(f.read().strip(), "0")
+
+            # Verify no redundant writes when routes, rule, and rp_filter=0 are already intact
+            cmds.clear()
+            def fake_run_healthy(cmd, **kwargs):
+                cmds.append(cmd[1:])
+                res = MagicMock()
+                res.returncode = 0
+                res.stderr = ""
+                if cmd[1:4] == ["-4", "rule", "show"]:
+                    res.stdout = "0:\tfrom all lookup local\n12600:\tfrom all fwmark 0x42600001 lookup 42600\n"
+                elif cmd[1:5] == ["-4", "route", "show", "table"]:
+                    res.stdout = "default dev esp3 scope link \nthrow 109.122.251.101 \n"
+                else:
+                    res.stdout = ""
+                return res
+
+            with patch("core.firewall._find_system_bin", return_value="/sbin/ip"), \
+                 patch("core.firewall.subprocess.run", side_effect=fake_run_healthy):
+                reconcile_dsr_direct_kernel_routes(
+                    state_path=st_file,
+                    proc_net_conf_dir=proc_conf,
+                    sys_net_dir=sys_net,
+                )
+            self.assertEqual(
+                [c for c in cmds if c[0] in ("route", "rule") and c[1] in ("replace", "add")],
+                []
+            )
+
+            # apply_nftables with unchanged content must call ensure_dsr_direct_policy_routing if state file disappeared
+            prev_applied = fw_mod._DSR_DIRECT_POLICY_APPLIED
+            try:
+                fw_mod._DSR_DIRECT_POLICY_APPLIED = True
+                slot_list = [{
+                    "iface": "esp3",
+                    "table_id": 42600,
+                    "priority": 12600,
+                    "fwmark": "0x42600001",
+                    "throw_ips": ["109.122.251.101"]
+                }]
+                fake_proc = MagicMock()
+                fake_proc.returncode = 0
+                fake_proc.communicate.return_value = ("", "")
+                with patch("core.firewall.shutil.which", return_value="/usr/sbin/nft"), \
+                     patch("core.firewall.subprocess.run", return_value=MagicMock(returncode=0)), \
+                     patch("core.firewall.subprocess.Popen", return_value=fake_proc), \
+                     patch("core.firewall.os.path.isfile", return_value=False), \
+                     patch("core.firewall.ensure_dsr_direct_policy_routing", return_value=(True, None)) as mock_ensure:
+                    ok_1, err_1, content_1 = apply_nftables([], dsr_direct_routes=slot_list)
+                    self.assertTrue(ok_1, err_1)
+                    # Call again with last_content == content_1 while state file is missing
+                    mock_ensure.reset_mock()
+                    ok_re, err_re, _ = apply_nftables([], last_content=content_1, dsr_direct_routes=slot_list)
+                    self.assertTrue(ok_re, err_re)
+                    mock_ensure.assert_called_once_with(slot_list)
+            finally:
+                fw_mod._DSR_DIRECT_POLICY_APPLIED = prev_applied
+
+    def test_parse_dsr_direct_ids_and_reconcile_edge_cases(self):
+        """Verify range/path-traversal guards and missing-state fallbacks in DSR Direct route reconciliation."""
+        from core.firewall import _parse_dsr_direct_ids, reconcile_dsr_direct_kernel_routes
+
+        ids, err = _parse_dsr_direct_ids(42600, 12600, "0x42600001")
+        self.assertIsNone(err)
+        self.assertEqual(ids, (42600, 12600, 0x42600001))
+
+        for args in [
+            ("bad", 12600, "0x42600001"),
+            (42599, 12600, "0x42600001"),
+            (42664, 12600, "0x42600001"),
+            (42600, 12599, "0x42600001"),
+            (42600, 12664, "0x42600001"),
+            (42600, 12600, "0x42600000"),
+            (42600, 12600, "0x42600041"),
+        ]:
+            bad_ids, bad_err = _parse_dsr_direct_ids(*args)
+            self.assertIsNone(bad_ids)
+            self.assertIsNotNone(bad_err)
+
+        with tempfile.TemporaryDirectory() as tmp:
+            # Missing state file -> safe no-op
+            with patch("core.firewall._find_system_bin", return_value="/sbin/ip"), \
+                 patch("core.firewall.subprocess.run") as mock_sub:
+                reconcile_dsr_direct_kernel_routes(
+                    state_path=os.path.join(tmp, "missing.json"),
+                    proc_net_conf_dir=tmp,
+                    sys_net_dir=tmp,
+                )
+                mock_sub.assert_not_called()
+
+            # Unsafe/nonexistent interface or out-of-range IDs in state file -> skip mutations
+            st_file = os.path.join(tmp, "dsr_direct_routes.json")
+            sys_net = os.path.join(tmp, "sys_net")
+            os.makedirs(os.path.join(sys_net, "esp3"), exist_ok=True)
+            with open(st_file, "w", encoding="utf-8") as f:
+                json.dump({
+                    "slots": [
+                        {"iface": "../etc", "table_id": 42600, "priority": 12600, "fwmark": "0x42600001"},
+                        {"iface": "esp99", "table_id": 42601, "priority": 12601, "fwmark": "0x42600002"},
+                        {"iface": "esp3", "table_id": 42600, "priority": 99999, "fwmark": "0x42600001"},
+                        {"iface": "esp3", "table_id": 42600, "priority": 12600, "fwmark": "0xdeadbeef"},
+                    ]
+                }, f)
+
+            cmds = []
+            def fake_rules_only(cmd, **kwargs):
+                cmds.append(cmd[1:])
+                return MagicMock(returncode=0, stdout="", stderr="")
+
+            with patch("core.firewall._find_system_bin", return_value="/sbin/ip"), \
+                 patch("core.firewall.subprocess.run", side_effect=fake_rules_only):
+                reconcile_dsr_direct_kernel_routes(
+                    state_path=st_file,
+                    proc_net_conf_dir=tmp,
+                    sys_net_dir=sys_net,
+                )
+            # Only the initial read-only `ip -4 rule show` may execute; zero route/rule writes
+            self.assertEqual([c for c in cmds if c[0] != "-4" or c[1] != "rule" or c[2] != "show"], [])
+
+    def test_engine_run_loop_rebuilds_or_reconciles_dsr_direct_routes(self):
+        """Verify XForwarderEngine.run_loop triggers DSR Direct rebuild/reconcile on steady-state ticks."""
+        eng = XForwarderEngine.__new__(XForwarderEngine)
+        eng.config = {"check_interval_seconds": 3, "rules": []}
+        eng.runtime_state = {"rules_state": {}, "active_services": {}}
+        eng.running = True
+        eng._last_applied_rules = "fp"
+        eng._last_dsr_direct_routes = [{"iface": "esp3", "table_id": 42600, "priority": 12600, "fwmark": "0x42600001"}]
+        eng._traffic_collector = None
+        eng._loss_scheduler = None
+        eng._probe_executor = None
+        eng._wake_event = MagicMock()
+        eng._wake_event.wait.side_effect = lambda timeout=0: setattr(eng, "running", False)
+        eng.load_config = MagicMock(return_value=eng.config)
+        eng._detect_wan_interface = MagicMock(return_value="eth0")
+        eng._probe_all_destinations = MagicMock(return_value={})
+        eng.evaluate_rule = MagicMock(return_value=False)
+        eng._get_rules_fingerprint = MagicMock(return_value="fp")
+        eng._save_state_file = MagicMock()
+        eng._write_pid_file = MagicMock()
+        eng._remove_pid_file = MagicMock()
+        eng.sync_firewall_and_proxies = MagicMock()
+
+        with patch("core.engine.LossMonitorScheduler", None), \
+             patch("core.engine.TrafficCollector", None), \
+             patch("core.engine.ensure_fq_qdisc"), \
+             patch("core.engine.os.path.isfile", return_value=False), \
+             patch("core.engine.ensure_dsr_direct_policy_routing") as mock_ensure, \
+             patch("core.engine.reconcile_dsr_direct_kernel_routes") as mock_reconcile:
+            eng.run_loop()
+            mock_ensure.assert_called_once_with(eng._last_dsr_direct_routes)
+            mock_reconcile.assert_not_called()
+
+        eng.running = True
+        with patch("core.engine.LossMonitorScheduler", None), \
+             patch("core.engine.TrafficCollector", None), \
+             patch("core.engine.ensure_fq_qdisc"), \
+             patch("core.engine.os.path.isfile", return_value=True), \
+             patch("core.engine.ensure_dsr_direct_policy_routing") as mock_ensure, \
+             patch("core.engine.reconcile_dsr_direct_kernel_routes") as mock_reconcile:
+            eng.run_loop()
+            mock_ensure.assert_not_called()
+            mock_reconcile.assert_called_once_with()
+
 
 if __name__ == "__main__":
     unittest.main()

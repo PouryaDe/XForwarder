@@ -453,6 +453,28 @@ def cleanup_dsr_direct_policy_routing(state_path: str = DSR_DIRECT_STATE_PATH) -
     _save_dsr_direct_state(state_path, [])
 
 
+def _parse_dsr_direct_ids(
+    raw_tid: Any, raw_prio: Any, raw_fwmark: Any
+) -> Tuple[Optional[Tuple[int, int, int]], Optional[str]]:
+    """
+    Parse and range-check DSR Direct policy routing identifiers (table_id,
+    priority, fwmark) so kernel tables/marks stay within the reserved slot block.
+    """
+    try:
+        tid = int(raw_tid)
+        prio = int(raw_prio)
+        mark_int = int(str(raw_fwmark), 0)
+    except (TypeError, ValueError):
+        return None, "Invalid DSR Direct policy routing identifiers"
+    if not (DSR_DIRECT_TABLE_BASE <= tid < DSR_DIRECT_TABLE_BASE + DSR_DIRECT_MAX_SLOTS):
+        return None, f"DSR Direct route table {tid} out of reserved range"
+    if not (DSR_DIRECT_PRIO_BASE <= prio < DSR_DIRECT_PRIO_BASE + DSR_DIRECT_MAX_SLOTS):
+        return None, f"DSR Direct rule priority {prio} out of reserved range"
+    if not (DSR_DIRECT_MARK_BASE <= mark_int < DSR_DIRECT_MARK_BASE + DSR_DIRECT_MAX_SLOTS):
+        return None, f"DSR Direct fwmark {hex(mark_int)} out of reserved range"
+    return (tid, prio, mark_int), None
+
+
 def ensure_dsr_direct_policy_routing(
     routes_spec: Optional[List[Dict[str, Any]]],
     state_path: str = DSR_DIRECT_STATE_PATH
@@ -480,18 +502,12 @@ def ensure_dsr_direct_policy_routing(
         iface = str(raw.get("iface") or "").strip()
         if not iface or not IFACE_NAME_REGEX.match(iface):
             return False, f"Invalid DSR Direct tunnel interface '{iface}'"
-        try:
-            tid = int(raw.get("table_id"))
-            prio = int(raw.get("priority"))
-            mark_int = int(str(raw.get("fwmark")), 0)
-        except (TypeError, ValueError):
-            return False, "Invalid DSR Direct policy routing identifiers"
-        if not (DSR_DIRECT_TABLE_BASE <= tid < DSR_DIRECT_TABLE_BASE + DSR_DIRECT_MAX_SLOTS):
-            return False, f"DSR Direct route table {tid} out of reserved range"
-        if not (DSR_DIRECT_PRIO_BASE <= prio < DSR_DIRECT_PRIO_BASE + DSR_DIRECT_MAX_SLOTS):
-            return False, f"DSR Direct rule priority {prio} out of reserved range"
-        if not (DSR_DIRECT_MARK_BASE <= mark_int < DSR_DIRECT_MARK_BASE + DSR_DIRECT_MAX_SLOTS):
-            return False, f"DSR Direct fwmark {hex(mark_int)} out of reserved range"
+        ids, err = _parse_dsr_direct_ids(
+            raw.get("table_id"), raw.get("priority"), raw.get("fwmark")
+        )
+        if err or ids is None:
+            return False, err
+        tid, prio, mark_int = ids
         clean_throws: List[str] = []
         seen_throws: Set[str] = set()
         for t_ip in (raw.get("throw_ips") or []):
@@ -633,30 +649,106 @@ def ensure_dsr_direct_policy_routing(
     return True, None
 
 
-def reconcile_dsr_direct_kernel_routes(state_path: str = DSR_DIRECT_STATE_PATH) -> None:
+def reconcile_dsr_direct_kernel_routes(
+    state_path: str = DSR_DIRECT_STATE_PATH,
+    proc_net_conf_dir: str = "/proc/sys/net/ipv4/conf",
+    sys_net_dir: str = "/sys/class/net",
+) -> None:
     """
-    Re-installs missing `default dev <iface>` entries in active DSR Direct routing
-    tables when an underlying tunnel interface (e.g. esp*, tcptun*) flaps or rekeys.
+    Re-installs missing `default dev <iface>`, `throw` routes, `ip rule` entries,
+    and `rp_filter=0` in active DSR Direct routing tables when an underlying tunnel
+    interface (e.g. esp*, tcptun*) flaps, deletes, or rekeys.
     """
-    ip_bin = shutil.which("ip")
+    ip_bin = _find_system_bin("ip", ("/sbin", "/usr/sbin", "/bin", "/usr/bin"))
     if not ip_bin or not os.path.isfile(state_path):
         return
     slots = _load_dsr_direct_state(state_path)
     if not slots:
         return
+
+    rules_loaded = False
+    seen_prios: Set[int] = set()
+    seen_tables: Set[int] = set()
+    rules_res = _run_ip_cmd(ip_bin, ["-4", "rule", "show"])
+    if rules_res.returncode == 0:
+        rules_loaded = True
+        for ln in (rules_res.stdout or "").splitlines():
+            if not ln.strip():
+                continue
+            l_prio, _, l_tbl, _ = _parse_ip_rule_entry(ln)
+            if l_prio is not None:
+                seen_prios.add(l_prio)
+            if l_tbl is not None:
+                seen_tables.add(l_tbl)
+
     for tid, slot in slots.items():
         iface = str(slot.get("iface") or "").strip()
-        if not iface or not os.path.exists(f"/sys/class/net/{iface}"):
+        if (
+            not iface
+            or "/" in iface
+            or ".." in iface
+            or not IFACE_NAME_REGEX.match(iface)
+            or not os.path.exists(os.path.join(sys_net_dir, iface))
+        ):
             continue
-        rt_res = _run_ip_cmd(ip_bin, ["-4", "route", "show", "table", str(tid), "default"])
-        err_l = rt_res.stderr.lower()
-        has_default = (
-            rt_res.returncode == 0
-            and "fib table does not exist" not in err_l
-            and f"dev {iface}" in rt_res.stdout
-        )
-        if not has_default:
-            _run_ip_cmd(ip_bin, ["route", "replace", "default", "dev", iface, "table", str(tid)])
+        ids, _ = _parse_dsr_direct_ids(tid, slot.get("priority"), slot.get("fwmark"))
+        if ids is None:
+            continue
+        _, prio, mark_int = ids
+
+        rt_res = _run_ip_cmd(ip_bin, ["-4", "route", "show", "table", str(tid)])
+        err_l = (rt_res.stderr or "").lower()
+        table_missing = "fib table does not exist" in err_l or "does not exist" in err_l
+        if rt_res.returncode == 0 or table_missing:
+            rt_lines = [] if table_missing else [ln.strip() for ln in (rt_res.stdout or "").splitlines() if ln.strip()]
+            has_default = any(
+                ln.startswith("default ") and f" dev {iface} " in f" {ln} "
+                for ln in rt_lines
+            )
+            if not has_default:
+                _run_ip_cmd(ip_bin, ["route", "replace", "default", "dev", iface, "table", str(tid)])
+
+            for raw_tip in (slot.get("throw_ips") or []):
+                try:
+                    t_ip = str(ipaddress.IPv4Address(str(raw_tip).strip()))
+                except ValueError:
+                    continue
+                has_throw = any(
+                    ln == f"throw {t_ip}" or ln.startswith(f"throw {t_ip} ") or ln.startswith(f"throw {t_ip}/")
+                    for ln in rt_lines
+                )
+                if not has_throw:
+                    _run_ip_cmd(ip_bin, ["route", "replace", "throw", f"{t_ip}/32", "table", str(tid)])
+
+        if rules_loaded and prio not in seen_prios and tid not in seen_tables:
+            _run_ip_cmd(
+                ip_bin,
+                ["rule", "add", "priority", str(prio), "fwmark", f"0x{mark_int:08x}/0xffffffff", "lookup", str(tid)],
+            )
+            seen_prios.add(prio)
+            seen_tables.add(tid)
+
+        rp_path = os.path.join(proc_net_conf_dir, iface, "rp_filter")
+        if os.path.isfile(rp_path):
+            try:
+                with open(rp_path, "r", encoding="utf-8") as rf:
+                    cur_rp = rf.read().strip()
+                if cur_rp != "0":
+                    try:
+                        with open(rp_path, "w", encoding="utf-8") as wf:
+                            wf.write("0\n")
+                    except OSError:
+                        sysctl_bin = _find_system_bin("sysctl", ("/sbin", "/usr/sbin", "/bin"))
+                        if sysctl_bin:
+                            subprocess.run(
+                                [sysctl_bin, "-w", f"net.ipv4.conf.{iface.replace('.', '/')}.rp_filter=0"],
+                                stdout=subprocess.DEVNULL,
+                                stderr=subprocess.DEVNULL,
+                                timeout=2.0,
+                                check=False,
+                            )
+            except OSError:
+                pass
 
 
 DSR_SYSCTL_CONF_PATH = "/etc/sysctl.d/99-xforwarder-dsr.conf"
@@ -1372,7 +1464,7 @@ def apply_nftables(
         if has_any_dsr and not _DSR_SYSCTL_APPLIED:
             ensure_dsr_sysctl(dsr_ifaces)
             _DSR_SYSCTL_APPLIED = True
-        if dsr_direct_routes and not _DSR_DIRECT_POLICY_APPLIED:
+        if dsr_direct_routes and (not _DSR_DIRECT_POLICY_APPLIED or not os.path.isfile(DSR_DIRECT_STATE_PATH)):
             ok_pr, err_pr = ensure_dsr_direct_policy_routing(dsr_direct_routes)
             if not ok_pr:
                 return False, err_pr, last_content

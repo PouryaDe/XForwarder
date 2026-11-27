@@ -199,6 +199,10 @@ XForwarder/
     - Cookie-backed browser mutations enforce CSRF `Origin`/`Referer` checks; stateless API key requests without cookies bypass browser Origin rejection while enforcing strict scope checks (`401`/`403`).
     - All API documentation (`docs/API.md`, `docs/API.en.md`, `core/openapi_spec.py`, and `#apiDocsModal`) must exclusively use fictional RFC 5737 / RFC 3849 / RFC 1918 documentation IPs.
 
+24. **DSR Direct Policy Route Self-Healing (`nftables_dsr_direct`) (Mandatory)**:
+    - Active `nftables_dsr_direct` slot metadata is persisted atomically in `/run/xforwarder/dsr_direct_routes.json` (`DSR_DIRECT_STATE_PATH`) and range-validated via `_parse_dsr_direct_ids()` within reserved table (`42600+`), rule priority (`12600+`), and fwmark (`0x42600001+`) bounds.
+    - `apply_nftables()` must never rely solely on `_DSR_DIRECT_POLICY_APPLIED` if `DSR_DIRECT_STATE_PATH` is absent on disk, and `XForwarderEngine.run_loop()` must continuously run `reconcile_dsr_direct_kernel_routes()` (or rebuild via `ensure_dsr_direct_policy_routing(self._last_dsr_direct_routes)` when state disappears) so tunnel interface flaps or deletions (`esp*`, `tcptun*`) never leave policy routing tables without `default dev <iface>`, `throw` routes, `ip rule` entries, or `rp_filter=0`.
+
 ---
 
 ## 🔍 Codebase Knowledge Graph (graphify)

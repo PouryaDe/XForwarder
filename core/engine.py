@@ -46,8 +46,9 @@ from core.prober import (
 )
 from core.firewall import (
     is_ipv6_supported, apply_nftables, flush_conntrack, build_nft_lb_dnat_entries,
-    ensure_fq_qdisc, reconcile_dsr_direct_kernel_routes, DSR_DIRECT_TABLE_BASE,
-    DSR_DIRECT_PRIO_BASE, DSR_DIRECT_MARK_BASE, DSR_DIRECT_MAX_SLOTS
+    ensure_fq_qdisc, ensure_dsr_direct_policy_routing, reconcile_dsr_direct_kernel_routes,
+    DSR_DIRECT_STATE_PATH, DSR_DIRECT_TABLE_BASE, DSR_DIRECT_PRIO_BASE,
+    DSR_DIRECT_MARK_BASE, DSR_DIRECT_MAX_SLOTS
 )
 from core.proxy_gen import (
     apply_haproxy, apply_nginx, build_nginx_lb_upstream,
@@ -102,6 +103,7 @@ class XForwarderEngine:
         self._last_applied_rules: Optional[str] = None
         self._wake_event = threading.Event()
         self._last_nft_content: Optional[str] = None
+        self._last_dsr_direct_routes: List[Dict[str, Any]] = []
         self._pid_path: Optional[str] = None
         self._loss_scheduler: Optional[Any] = None
         self._traffic_collector: Optional[Any] = None
@@ -2191,7 +2193,9 @@ class XForwarderEngine:
         if dsr_ifaces:
             nft_kwargs["dsr_ifaces"] = dsr_ifaces
         ok_nft, err_nft = self._apply_nftables(nft_dnat_rules, **nft_kwargs)
-        if not ok_nft and err_nft:
+        if ok_nft:
+            self._last_dsr_direct_routes = list(dsr_direct_routes)
+        elif err_nft:
             errors.append(err_nft)
 
         ok_ha, err_ha = self._apply_haproxy(haproxy_entries, udp_entries)
@@ -2457,7 +2461,10 @@ class XForwarderEngine:
                         if config_changed and self._loss_scheduler:
                             self._loss_scheduler.trigger_now()
                     else:
-                        reconcile_dsr_direct_kernel_routes()
+                        if self._last_dsr_direct_routes and not os.path.isfile(DSR_DIRECT_STATE_PATH):
+                            ensure_dsr_direct_policy_routing(self._last_dsr_direct_routes)
+                        else:
+                            reconcile_dsr_direct_kernel_routes()
                         self._save_state_file()
 
                     interval = int(self.config.get("check_interval_seconds", 8))
